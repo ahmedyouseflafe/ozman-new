@@ -21,7 +21,11 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
+        'image',
+        'role',
+        'is_active',
     ];
 
     /**
@@ -37,6 +41,16 @@ class User extends Authenticatable
     public function shops()
     {
         return $this->hasMany(Shop::class);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'super_admin';
+    }
+
+    public function isShopOwner(): bool
+    {
+        return $this->role === 'shop_owner';
     }
 
     /**

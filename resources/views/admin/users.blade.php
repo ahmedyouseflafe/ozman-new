@@ -2,788 +2,678 @@
 <html lang="ar" dir="rtl">
 
 <head>
-    <title>إدارة المستخدمين — هيلني شوب</title>
+    <title>إدارة المستخدمين - Ozman</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --red: #C0392B;
-            --red-light: #E74C3C;
-            --red-dark: #922B21;
-            --bg: #0a0a0a;
-            --bg2: #111;
-            --bg3: #1a1a1a;
-            --bg4: #222;
-            --border: #2a2a2a;
-            --border2: #333;
-            --text: #f0f0f0;
-            --text2: #aaa;
-            --text3: #666;
-            --gold: #D4AC0D;
+            --primary: #00e5ff;
+            --accent: #7000ff;
+            --green: #25d366;
+            --yellow: #ffd60a;
+            --danger: #ff3b30;
+            --bg: #050505;
+            --border: rgba(255, 255, 255, .1);
+            --text: #fff;
+            --muted: rgba(255, 255, 255, .64);
+            --dim: rgba(255, 255, 255, .4);
         }
 
         html,
         body {
-            height: 100%;
-            background: var(--bg);
+            min-height: 100%;
+            background:
+                radial-gradient(circle at 15% 14%, rgba(112, 0, 255, .14), transparent 29%),
+                radial-gradient(circle at 78% 8%, rgba(0, 229, 255, .14), transparent 34%),
+                linear-gradient(180deg, #030303 0%, #050505 52%, #08020f 100%);
             color: var(--text);
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            direction: rtl
+            font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+            direction: rtl;
         }
 
-        .shell {
-            display: flex;
-            min-height: 100vh
-        }
-
-        .sidebar {
-            width: 210px;
-            background: var(--bg2);
-            border-left: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
+        body::before {
+            content: '';
             position: fixed;
-            top: 0;
-            right: 0;
-            height: 100vh;
-            overflow-y: auto
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, .026) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, .026) 1px, transparent 1px);
+            background-size: 44px 44px;
+            mask-image: linear-gradient(to bottom, black, transparent 82%);
         }
 
-        .logo {
-            padding: 20px 16px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 10px
-        }
-
-        .logo-icon {
-            width: 36px;
-            height: 36px;
-            background: var(--red);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: 900;
-            color: #fff;
-            flex-shrink: 0
-        }
-
-        .logo-text {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text);
-            line-height: 1.2
-        }
-
-        .logo-sub {
-            font-size: 10px;
-            color: var(--text3)
-        }
-
-        nav {
-            padding: 12px 0;
-            flex: 1
-        }
-
-        .nav-section {
-            padding: 4px 12px 2px;
-            font-size: 10px;
-            color: var(--text3);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 8px
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            cursor: pointer;
-            font-size: 13px;
-            color: var(--text2);
-            border-right: 2px solid transparent;
-            text-decoration: none;
-            transition: all .15s
-        }
-
-        .nav-item:hover {
-            background: var(--bg3);
-            color: var(--text)
-        }
-
-        .nav-item.active {
-            background: rgba(192, 57, 43, .12);
-            color: var(--red-light);
-            border-right-color: var(--red)
-        }
-
-        .nav-item i {
-            font-size: 15px;
-            width: 18px;
-            text-align: center
-        }
+        .shell { min-height: 100vh; }
 
         .main {
-            flex: 1;
-            margin-right: 210px;
-            overflow: auto;
-            background: var(--bg)
+            min-height: 100vh;
+            margin-right: 245px;
+            position: relative;
+            z-index: 1;
         }
 
-        .topbar {
-            background: var(--bg2);
-            border-bottom: 1px solid var(--border);
-            padding: 0 24px;
-            height: 54px;
+        .content { padding: 28px 34px 46px; }
+
+        .hero-strip {
+            min-height: 136px;
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            background: linear-gradient(90deg, rgba(0, 229, 255, .08), rgba(255, 255, 255, .035), rgba(112, 0, 255, .08));
+            backdrop-filter: blur(18px);
+            overflow: hidden;
             display: flex;
             align-items: center;
+            box-shadow: 0 22px 60px rgba(0, 0, 0, .42), inset 0 0 45px rgba(0, 229, 255, .035);
+            margin-bottom: 28px;
+        }
+
+        .ticker {
+            display: flex;
+            gap: 54px;
+            width: max-content;
+            white-space: nowrap;
+            animation: slideRtl 24s linear infinite;
+            color: var(--primary);
+            font-size: 18px;
+            font-weight: 900;
+            text-shadow: 0 0 14px rgba(0, 229, 255, .55);
+        }
+
+        @keyframes slideRtl {
+            from { transform: translateX(0); }
+            to { transform: translateX(50%); }
+        }
+
+        .page-head {
+            display: flex;
             justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 10
+            align-items: flex-end;
+            gap: 18px;
+            margin-bottom: 22px;
         }
 
-        .topbar-title {
-            font-size: 15px;
-            font-weight: 600
+        .page-kicker {
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 900;
+            text-shadow: 0 0 12px rgba(0, 229, 255, .5);
+            margin-bottom: 6px;
         }
 
-        .topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 12px
+        h1 {
+            font-size: 34px;
+            line-height: 1.1;
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 20px rgba(0, 229, 255, .42);
         }
 
-        .topbar-btn {
-            background: transparent;
-            border: 1px solid var(--border2);
-            color: var(--text2);
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
+        .page-head p {
+            margin-top: 8px;
+            color: var(--muted);
             font-size: 14px;
-            transition: all .15s;
-            text-decoration: none
-        }
-
-        .topbar-btn:hover {
-            border-color: var(--red);
-            color: var(--red-light)
-        }
-
-        .avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--red-dark);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
             font-weight: 700;
-            cursor: pointer
         }
 
-        .content {
-            padding: 24px
+        .btn-primary {
+            border: 0;
+            color: #001014;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            min-height: 46px;
+            padding: 0 22px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 900;
+            text-decoration: none;
+            cursor: pointer;
+            box-shadow: 0 0 22px rgba(0, 229, 255, .34);
+            transition: transform .3s ease, box-shadow .3s ease;
         }
 
-        .page-header {
-            margin-bottom: 20px
-        }
-
-        .page-header h1 {
-            font-size: 20px;
-            font-weight: 700
-        }
-
-        .page-header p {
-            font-size: 13px;
-            color: var(--text3);
-            margin-top: 2px
-        }
-
-        .page-header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 20px
-        }
-
-        .page-header-row h1 {
-            font-size: 20px;
-            font-weight: 700
-        }
-
-        .page-header-row p {
-            font-size: 13px;
-            color: var(--text3);
-            margin-top: 2px
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 34px rgba(0, 229, 255, .58);
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
-            margin-bottom: 20px
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+
+        .stat-card,
+        .panel {
+            border: 1px solid var(--border);
+            background: linear-gradient(145deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .025));
+            backdrop-filter: blur(16px);
+            border-radius: 26px;
+            box-shadow: 0 18px 48px rgba(0, 0, 0, .34);
         }
 
         .stat-card {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 16px;
+            min-height: 142px;
+            padding: 22px;
             position: relative;
-            overflow: hidden
+            overflow: hidden;
         }
 
         .stat-card::before {
             content: '';
             position: absolute;
-            top: 0;
             right: 0;
-            width: 3px;
-            height: 100%;
-            background: var(--accent, var(--red))
+            bottom: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--card-color, var(--primary)));
+            box-shadow: 0 0 18px var(--card-color, var(--primary));
         }
 
         .stat-label {
-            font-size: 11px;
-            color: var(--text3);
-            margin-bottom: 6px
+            color: rgba(255, 255, 255, .72);
+            font-size: 13px;
+            font-weight: 900;
         }
 
         .stat-val {
-            font-size: 26px;
-            font-weight: 800;
-            color: var(--text);
-            line-height: 1
-        }
-
-        .stat-sub {
-            font-size: 11px;
-            margin-top: 6px
-        }
-
-        .stat-up {
-            color: #27AE60
-        }
-
-        .stat-down {
-            color: #E74C3C
+            margin-top: 18px;
+            color: var(--card-color, var(--primary));
+            font-size: 38px;
+            line-height: 1;
+            font-weight: 900;
+            text-shadow: 0 0 18px rgba(0, 229, 255, .45);
         }
 
         .stat-icon {
             position: absolute;
-            bottom: 10px;
-            left: 12px;
-            font-size: 28px;
-            opacity: .1;
-            pointer-events: none
+            left: 20px;
+            bottom: 18px;
+            font-size: 48px;
+            color: var(--card-color, var(--primary));
+            opacity: .18;
         }
 
-        .grid2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-            margin-bottom: 14px
-        }
+        .panel { padding: 24px; }
 
-        .card {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 14px
-        }
-
-        .card:last-child {
-            margin-bottom: 0
-        }
-
-        .card-hd {
+        .panel-head {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 14px
+            gap: 14px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 18px;
         }
 
-        .card-hd h3 {
-            font-size: 14px;
-            font-weight: 600
-        }
-
-        .badge {
-            font-size: 10px;
-            padding: 3px 8px;
-            border-radius: 20px;
-            background: rgba(192, 57, 43, .18);
-            color: var(--red-light)
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px
-        }
-
-        th {
-            text-align: right;
-            padding: 6px 8px;
-            color: var(--text3);
-            font-weight: 500;
-            border-bottom: 1px solid var(--border)
-        }
-
-        td {
-            padding: 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, .04);
-            color: var(--text2);
-            vertical-align: middle
-        }
-
-        tr:last-child td {
-            border-bottom: none
-        }
-
-        tr:hover td {
-            background: rgba(255, 255, 255, .02)
-        }
-
-        .tag {
-            display: inline-block;
-            font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: 500
-        }
-
-        .tag-g {
-            background: rgba(39, 174, 96, .15);
-            color: #27AE60
-        }
-
-        .tag-r {
-            background: rgba(231, 76, 60, .15);
-            color: #E74C3C
-        }
-
-        .tag-y {
-            background: rgba(241, 196, 15, .15);
-            color: #F1C40F
-        }
-
-        .btn-red {
-            background: var(--red);
+        .panel-title {
             color: #fff;
-            border: none;
-            padding: 7px 14px;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-            font-weight: 600;
-            display: inline-flex;
+            font-size: 19px;
+            font-weight: 900;
+            display: flex;
             align-items: center;
-            gap: 5px;
-            text-decoration: none
+            gap: 10px;
         }
 
-        .btn-red:hover {
-            background: var(--red-light)
-        }
-
-        .input-wrap {
-            position: relative
-        }
-
-        .search-inp {
-            background: var(--bg3);
-            border: 1px solid var(--border2);
-            color: var(--text);
-            padding: 6px 10px 6px 30px;
-            border-radius: 6px;
-            font-size: 12px;
-            outline: none;
-            width: 180px
-        }
-
-        .search-inp::placeholder {
-            color: var(--text3)
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 9px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text3);
-            font-size: 13px;
-            pointer-events: none
+        .panel-title i {
+            color: var(--primary);
+            filter: drop-shadow(0 0 10px rgba(0, 229, 255, .55));
         }
 
         .filter-row {
             display: flex;
-            gap: 8px;
-            align-items: center
-        }
-
-        select {
-            background: var(--bg3);
-            border: 1px solid var(--border2);
-            color: var(--text2);
-            padding: 5px 8px;
-            border-radius: 6px;
-            font-size: 12px;
-            outline: none;
-            cursor: pointer
-        }
-
-        input[type=text],
-        input[type=email],
-        input[type=password],
-        input[type=tel] {
-            background: var(--bg3);
-            border: 1px solid var(--border2);
-            color: var(--text);
-            padding: 8px 10px;
-            border-radius: 6px;
-            font-size: 13px;
-            outline: none;
-            width: 100%;
-            direction: rtl
-        }
-
-        input:focus {
-            border-color: var(--red)
-        }
-
-        .form-group {
-            margin-bottom: 12px
-        }
-
-        .form-label {
-            font-size: 11px;
-            color: var(--text3);
-            margin-bottom: 4px;
-            display: block
-        }
-
-        .recent-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px
-        }
-
-        .recent-item {
-            display: flex;
             align-items: center;
             gap: 10px;
-            padding: 8px;
-            background: var(--bg3);
-            border-radius: 7px
+            flex-wrap: wrap;
         }
 
-        .ri-icon {
-            width: 30px;
-            height: 30px;
-            border-radius: 7px;
-            background: var(--bg4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            color: var(--red-light);
-            flex-shrink: 0
+        .input-wrap { position: relative; }
+
+        .input-wrap i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+            font-size: 16px;
         }
 
-        .ri-info {
-            flex: 1
-        }
-
-        .ri-title {
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--text)
-        }
-
-        .ri-sub {
-            font-size: 10px;
-            color: var(--text3)
-        }
-
-        .ri-val {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--red-light)
-        }
-
-        .chart-bars {
-            display: flex;
-            align-items: flex-end;
-            gap: 6px;
-            height: 90px;
-            padding-top: 8px
-        }
-
-        .bar-wrap {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px
-        }
-
-        .bar {
-            width: 100%;
-            background: linear-gradient(to top, var(--red-dark), var(--red-light));
-            border-radius: 3px 3px 0 0
-        }
-
-        .bar-label {
-            font-size: 9px;
-            color: var(--text3)
-        }
-
-        .cat-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 14px
-        }
-
-        .cat-card {
-            background: var(--bg2);
+        .search-inp,
+        .filter-select {
+            height: 44px;
             border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center
+            background: rgba(255, 255, 255, .055);
+            border-radius: 999px;
+            color: #fff;
+            outline: none;
+            font-family: inherit;
+            font-size: 13px;
+            transition: all .3s ease;
         }
 
-        .cat-icon-wrap {
-            width: 54px;
-            height: 54px;
-            border-radius: 12px;
+        .search-inp {
+            width: 250px;
+            padding: 0 16px 0 42px;
+        }
+
+        .filter-select {
+            min-width: 178px;
+            padding: 0 16px;
+            cursor: pointer;
+        }
+
+        .search-inp:focus,
+        .filter-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 18px rgba(0, 229, 255, .22);
+        }
+
+        .search-inp::placeholder { color: var(--dim); }
+
+        .filter-select option {
+            color: #111;
+            background: #fff;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            background: rgba(0, 0, 0, .22);
+        }
+
+        table {
+            width: 100%;
+            min-width: 950px;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th,
+        td {
+            padding: 16px 18px;
+            text-align: right;
+            border-bottom: 1px solid rgba(255, 255, 255, .07);
+        }
+
+        th {
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 900;
+            text-shadow: 0 0 9px rgba(0, 229, 255, .35);
+            background: rgba(255, 255, 255, .025);
+        }
+
+        td {
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        tbody tr { transition: background .25s ease; }
+        tbody tr:hover { background: rgba(0, 229, 255, .055); }
+        tr:last-child td { border-bottom: 0; }
+
+        .user-cell {
             display: flex;
             align-items: center;
-            justify-content: center;
-            margin: 0 auto 12px
+            gap: 12px;
+            color: #fff;
+            font-weight: 900;
+            min-width: 220px;
         }
 
         .avatar-circle {
-            width: 28px;
-            height: 28px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
-            display: flex;
+            background: #000;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            display: grid;
+            place-items: center;
+            font-weight: 900;
+            box-shadow: 0 0 16px rgba(0, 229, 255, .35);
+            flex-shrink: 0;
+        }
+
+        .user-sub {
+            display: block;
+            color: var(--dim);
+            font-size: 11px;
+            margin-top: 3px;
+            direction: ltr;
+            text-align: right;
+        }
+
+        .tag {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
+            min-width: 76px;
+            min-height: 30px;
+            padding: 4px 12px;
+            border-radius: 999px;
             font-size: 11px;
-            font-weight: 700;
-            flex-shrink: 0
+            font-weight: 900;
+            border: 1px solid currentColor;
+        }
+
+        .tag-g { color: var(--green); background: rgba(37, 211, 102, .1); }
+        .tag-r { color: var(--danger); background: rgba(255, 59, 48, .1); }
+        .tag-y { color: var(--yellow); background: rgba(255, 214, 10, .1); }
+        .tag-c { color: var(--primary); background: rgba(0, 229, 255, .09); }
+        .tag-p { color: #b35cff; background: rgba(112, 0, 255, .12); }
+
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .05);
+            color: rgba(255, 255, 255, .72);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all .3s ease;
+        }
+
+        .icon-btn:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+            transform: translateY(-3px) scale(1.06);
+            box-shadow: 0 0 16px rgba(0, 229, 255, .32);
+        }
+
+        .empty-state {
+            padding: 46px 18px;
+            text-align: center;
+            color: var(--dim);
+        }
+
+        .empty-state i {
+            display: block;
+            color: var(--primary);
+            font-size: 42px;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 0 14px rgba(0, 229, 255, .45));
+        }
+
+        @media(max-width: 1100px) {
+            .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media(max-width: 900px) {
+            .main { margin-right: 0; }
+        }
+
+        @media(max-width: 680px) {
+            .content { padding: 20px 16px 34px; }
+            .page-head,
+            .panel-head {
+                align-items: stretch;
+                flex-direction: column;
+            }
+            .filter-row { width: 100%; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .search-inp,
+            .filter-select { width: 100%; }
+            h1 { font-size: 28px; }
         }
     </style>
 </head>
 
 <body>
-    <div class="shell">
-        <div class="sidebar">
-            <div class="logo">
-                <div class="logo-icon">H</div>
-                <div>
-                    <div class="logo-text">هيلني شوب</div>
-                    <div class="logo-sub">لوحة التحكم</div>
-                </div>
-            </div>
-             @include('admin.includes.sidebar')
-        </div>
-        <div class="main">
-            <div class="topbar">
-                <div class="topbar-title">إدارة المستخدمين</div>
-                <div class="topbar-right">
-                    <div class="input-wrap">
-                        <i class="ti ti-search search-icon" aria-hidden="true"></i>
-                        <input class="search-inp" placeholder="بحث...">
-                    </div>
-                    <a href="#" class="topbar-btn" aria-label="إشعارات"><i class="ti ti-bell"
-                            aria-hidden="true"></i></a>
-                    <a href="settings.html" class="topbar-btn" aria-label="إعدادات"><i class="ti ti-settings"
-                            aria-hidden="true"></i></a>
-                    <div class="avatar" title="المشرف">A</div>
-                </div>
-            </div>
-            <div class="content">
+    @php
+        $userItems = collect($users ?? [
+            [
+                'name' => 'Admin',
+                'email' => 'admin@ozman.com',
+                'phone' => '059-000-0001',
+                'role' => 'super_admin',
+                'role_label' => 'Super Admin',
+                'status_label' => 'نشط',
+                'status_class' => 'tag-g',
+            ],
+            [
+                'name' => 'محمد الإداري',
+                'email' => 'm.admin@ozman.com',
+                'phone' => '059-010-0100',
+                'role' => 'company_admin',
+                'role_label' => 'مشرف شركة',
+                'status_label' => 'نشط',
+                'status_class' => 'tag-g',
+            ],
+            [
+                'name' => 'أحمد سالم',
+                'email' => 'ahmed@ozman.com',
+                'phone' => '059-111-2222',
+                'role' => 'shop_owner',
+                'role_label' => 'صاحب متجر',
+                'status_label' => 'نشط',
+                'status_class' => 'tag-g',
+            ],
+            [
+                'name' => 'خالد وكيل',
+                'email' => 'khalid@example.com',
+                'phone' => '059-222-3333',
+                'role' => 'agent',
+                'role_label' => 'وكيل',
+                'status_label' => 'نشط',
+                'status_class' => 'tag-g',
+            ],
+            [
+                'name' => 'منى حسن',
+                'email' => 'mona@gmail.com',
+                'phone' => '059-333-4444',
+                'role' => 'customer',
+                'role_label' => 'عميل',
+                'status_label' => 'نشط',
+                'status_class' => 'tag-g',
+            ],
+        ]);
 
-                <div class="page-header-row">
+        $roleLabels = [
+            'super_admin' => 'Super Admin',
+            'company_admin' => 'مشرف شركة',
+            'shop_owner' => 'صاحب متجر',
+            'agent' => 'وكيل',
+            'distributor' => 'موزع',
+            'customer' => 'عميل',
+        ];
+
+        $roleClasses = [
+            'super_admin' => 'tag-r',
+            'company_admin' => 'tag-p',
+            'shop_owner' => 'tag-c',
+            'agent' => 'tag-y',
+            'distributor' => 'tag-p',
+            'customer' => 'tag-g',
+        ];
+
+        $usersTotal = $usersCount ?? $userItems->count();
+        $superAdminsCount = $superAdminsCount ?? $userItems->where('role', 'super_admin')->count();
+        $companyAdminsCount = $companyAdminsCount ?? $userItems->where('role', 'company_admin')->count();
+        $shopOwnersCount = $shopOwnersCount ?? $userItems->where('role', 'shop_owner')->count();
+        $customersCount = $customersCount ?? $userItems->where('role', 'customer')->count();
+    @endphp
+
+    <div class="shell">
+        @include('admin.includes.sidebar')
+
+        <main class="main">
+            @include('admin.includes.header', ['title' => 'إدارة المستخدمين'])
+
+            <div class="content">
+                <section class="hero-strip" aria-label="شريط المستخدمين">
+                    <div class="ticker">
+                        <span>إدارة مستخدمي Ozman من مكان واحد</span>
+                        <span>أدوار واضحة: إدارة، أصحاب متاجر، وكلاء، موزعون، وعملاء</span>
+                        <span>بحث وفلترة مباشرة داخل جدول المستخدمين</span>
+                        <span>إدارة مستخدمي Ozman من مكان واحد</span>
+                    </div>
+                </section>
+
+                <header class="page-head">
                     <div>
+                        <div class="page-kicker">الإدارة</div>
                         <h1>إدارة المستخدمين</h1>
-                        <p>3,891 مستخدم مسجل</p>
+                        <p>{{ $usersTotal }} مستخدم مسجل داخل النظام مع متابعة الأدوار والحالة.</p>
                     </div>
-                    <a href="#" class="btn-red"><i class="ti ti-plus" aria-hidden="true"></i> مستخدم جديد</a>
-                </div>
-                <div class="stats-grid">
-                    <div class="stat-card" style="--accent:var(--red)">
+                    <a href="#" class="btn-primary">
+                        <i class="ti ti-plus" aria-hidden="true"></i>
+                        مستخدم جديد
+                    </a>
+                </header>
+
+                <section class="stats-grid" aria-label="إحصائيات المستخدمين">
+                    <article class="stat-card" style="--card-color: var(--danger)">
                         <div class="stat-label">Super Admin</div>
-                        <div class="stat-val">1</div>
-                    </div>
-                    <div class="stat-card" style="--accent:#8E44AD">
-                        <div class="stat-label">مشرف شركة</div>
-                        <div class="stat-val">5</div>
-                    </div>
-                    <div class="stat-card" style="--accent:#2980B9">
-                        <div class="stat-label">أصحاب متاجر</div>
-                        <div class="stat-val">24</div>
-                    </div>
-                    <div class="stat-card" style="--accent:#16A085">
-                        <div class="stat-label">عملاء</div>
-                        <div class="stat-val">3,861</div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-hd">
-                        <h3>قائمة المستخدمين</h3>
+                        <div class="stat-val">{{ $superAdminsCount }}</div>
+                        <i class="ti ti-shield-star stat-icon" aria-hidden="true"></i>
+                    </article>
+
+                    <article class="stat-card" style="--card-color: var(--accent)">
+                        <div class="stat-label">مشرفو الشركة</div>
+                        <div class="stat-val">{{ $companyAdminsCount }}</div>
+                        <i class="ti ti-user-cog stat-icon" aria-hidden="true"></i>
+                    </article>
+
+                    <article class="stat-card" style="--card-color: var(--primary)">
+                        <div class="stat-label">أصحاب المتاجر</div>
+                        <div class="stat-val">{{ $shopOwnersCount }}</div>
+                        <i class="ti ti-building-store stat-icon" aria-hidden="true"></i>
+                    </article>
+
+                    <article class="stat-card" style="--card-color: var(--green)">
+                        <div class="stat-label">العملاء</div>
+                        <div class="stat-val">{{ $customersCount }}</div>
+                        <i class="ti ti-users stat-icon" aria-hidden="true"></i>
+                    </article>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-head">
+                        <h2 class="panel-title">
+                            <i class="ti ti-list-details" aria-hidden="true"></i>
+                            قائمة المستخدمين
+                        </h2>
+
                         <div class="filter-row">
-                            <select id="roleFilter">
+                            <select class="filter-select" id="roleFilter" aria-label="فلترة الدور">
                                 <option value="">كل الأدوار</option>
-                                <option value="super_admin">super_admin</option>
-                                <option value="company_admin">company_admin</option>
-                                <option value="shop_owner">shop_owner</option>
-                                <option value="agent">agent</option>
-                                <option value="distributor">distributor</option>
-                                <option value="customer">customer</option>
+                                @foreach($roleLabels as $role => $label)
+                                    <option value="{{ $role }}">{{ $label }}</option>
+                                @endforeach
                             </select>
-                            <div class="input-wrap"><i class="ti ti-search search-icon" aria-hidden="true"></i><input
-                                    class="search-inp" id="userSearch" placeholder="بحث..."></div>
+
+                            <div class="input-wrap">
+                                <i class="ti ti-search" aria-hidden="true"></i>
+                                <input class="search-inp" id="userSearch" type="search" placeholder="بحث بالاسم، البريد، الهاتف...">
+                            </div>
                         </div>
                     </div>
-                    <table id="usersTable">
-                        <thead>
-                            <tr>
-                                <th>الاسم</th>
-                                <th>الإيميل</th>
-                                <th>الهاتف</th>
-                                <th>الدور</th>
-                                <th>الحالة</th>
-                                <th>إجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr data-role="super_admin">
-                                <td>
-                                    <div style="display:flex;align-items:center;gap:8px">
-                                        <div class="avatar-circle" style="background:var(--red-dark)">A</div><span
-                                            style="color:var(--text)">Admin</span>
-                                    </div>
-                                </td>
-                                <td>admin@helni.com</td>
-                                <td dir="ltr">059-000-0001</td>
-                                <td><span class="tag"
-                                        style="background:rgba(192,57,43,.18);color:var(--red-light)">super_admin</span>
-                                </td>
-                                <td><span class="tag tag-g">نشط</span></td>
-                                <td><button class="topbar-btn" aria-label="تعديل"><i class="ti ti-edit"
-                                            aria-hidden="true"></i></button></td>
-                            </tr>
-                            <tr data-role="company_admin">
-                                <td>
-                                    <div style="display:flex;align-items:center;gap:8px">
-                                        <div class="avatar-circle" style="background:#8E44AD">م</div><span
-                                            style="color:var(--text)">محمد الإداري</span>
-                                    </div>
-                                </td>
-                                <td>m.admin@helni.com</td>
-                                <td dir="ltr">059-010-0100</td>
-                                <td><span class="tag"
-                                        style="background:rgba(142,68,173,.15);color:#8E44AD">company_admin</span></td>
-                                <td><span class="tag tag-g">نشط</span></td>
-                                <td><button class="topbar-btn" style="margin-left:4px" aria-label="تعديل"><i
-                                            class="ti ti-edit" aria-hidden="true"></i></button><button
-                                        class="topbar-btn" aria-label="حذف"><i class="ti ti-trash"
-                                            aria-hidden="true"></i></button></td>
-                            </tr>
-                            <tr data-role="shop_owner">
-                                <td>
-                                    <div style="display:flex;align-items:center;gap:8px">
-                                        <div class="avatar-circle" style="background:#2980B9">أ</div><span
-                                            style="color:var(--text)">أحمد سالم</span>
-                                    </div>
-                                </td>
-                                <td>ahmed@helni.com</td>
-                                <td dir="ltr">059-111-2222</td>
-                                <td><span class="tag"
-                                        style="background:rgba(41,128,185,.15);color:#2980B9">shop_owner</span></td>
-                                <td><span class="tag tag-g">نشط</span></td>
-                                <td><button class="topbar-btn" style="margin-left:4px" aria-label="تعديل"><i
-                                            class="ti ti-edit" aria-hidden="true"></i></button><button
-                                        class="topbar-btn" aria-label="حذف"><i class="ti ti-trash"
-                                            aria-hidden="true"></i></button></td>
-                            </tr>
-                            <tr data-role="agent">
-                                <td>
-                                    <div style="display:flex;align-items:center;gap:8px">
-                                        <div class="avatar-circle" style="background:var(--gold)">خ</div><span
-                                            style="color:var(--text)">خالد وكيل</span>
-                                    </div>
-                                </td>
-                                <td>khalid@example.com</td>
-                                <td dir="ltr">059-222-3333</td>
-                                <td><span class="tag"
-                                        style="background:rgba(212,172,13,.15);color:var(--gold)">agent</span></td>
-                                <td><span class="tag tag-g">نشط</span></td>
-                                <td><button class="topbar-btn" style="margin-left:4px" aria-label="تعديل"><i
-                                            class="ti ti-edit" aria-hidden="true"></i></button><button
-                                        class="topbar-btn" aria-label="حذف"><i class="ti ti-trash"
-                                            aria-hidden="true"></i></button></td>
-                            </tr>
-                            <tr data-role="customer">
-                                <td>
-                                    <div style="display:flex;align-items:center;gap:8px">
-                                        <div class="avatar-circle" style="background:#16A085">م</div><span
-                                            style="color:var(--text)">منى حسن</span>
-                                    </div>
-                                </td>
-                                <td>mona@gmail.com</td>
-                                <td dir="ltr">059-333-4444</td>
-                                <td><span class="tag"
-                                        style="background:rgba(22,160,133,.15);color:#16A085">customer</span></td>
-                                <td><span class="tag tag-g">نشط</span></td>
-                                <td><button class="topbar-btn" style="margin-left:4px" aria-label="تعديل"><i
-                                            class="ti ti-edit" aria-hidden="true"></i></button><button
-                                        class="topbar-btn" aria-label="حذف"><i class="ti ti-trash"
-                                            aria-hidden="true"></i></button></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
 
+                    <div class="table-wrap">
+                        <table id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>المستخدم</th>
+                                    <th>البريد الإلكتروني</th>
+                                    <th>الهاتف</th>
+                                    <th>الدور</th>
+                                    <th>الحالة</th>
+                                    <th>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($userItems as $user)
+                                    @php
+                                        $role = data_get($user, 'role', 'customer');
+                                        $roleLabel = data_get($user, 'role_label', $roleLabels[$role] ?? $role);
+                                        $roleClass = data_get($user, 'role_class', $roleClasses[$role] ?? 'tag-c');
+                                        $statusClass = data_get($user, 'status_class', data_get($user, 'is_active', true) ? 'tag-g' : 'tag-r');
+                                        $statusLabel = data_get($user, 'status_label', data_get($user, 'is_active', true) ? 'نشط' : 'غير نشط');
+                                        $name = data_get($user, 'name', '-');
+                                    @endphp
+                                    <tr data-role="{{ $role }}">
+                                        <td>
+                                            <div class="user-cell">
+                                                <span class="avatar-circle">{{ mb_substr($name, 0, 1) }}</span>
+                                                <span>
+                                                    {{ $name }}
+                                                    <span class="user-sub">{{ data_get($user, 'created_at') ? 'انضم: ' . data_get($user, 'created_at') : 'Ozman user' }}</span>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td dir="ltr">{{ data_get($user, 'email', '-') }}</td>
+                                        <td dir="ltr">{{ data_get($user, 'phone', '-') }}</td>
+                                        <td><span class="tag {{ $roleClass }}">{{ $roleLabel }}</span></td>
+                                        <td><span class="tag {{ $statusClass }}">{{ $statusLabel }}</span></td>
+                                        <td>
+                                            <div class="actions">
+                                                <button type="button" class="icon-btn" aria-label="تعديل">
+                                                    <i class="ti ti-edit" aria-hidden="true"></i>
+                                                </button>
+                                                @if($role !== 'super_admin')
+                                                    <button type="button" class="icon-btn" aria-label="حذف">
+                                                        <i class="ti ti-trash" aria-hidden="true"></i>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6">
+                                            <div class="empty-state">
+                                                <i class="ti ti-user-off" aria-hidden="true"></i>
+                                                لا يوجد مستخدمون لعرضهم حاليا
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
             </div>
-        </div>
+        </main>
     </div>
+
     <script>
+        const userSearch = document.getElementById('userSearch');
+        const roleFilter = document.getElementById('roleFilter');
+        const userRows = document.querySelectorAll('#usersTable tbody tr');
+
         function filterUsers() {
-            const q = document.getElementById('userSearch').value.toLowerCase();
-            const r = document.getElementById('roleFilter').value;
-            document.querySelectorAll('#usersTable tbody tr').forEach(row => {
-                const mq = row.textContent.toLowerCase().includes(q);
-                const mr = !r || row.dataset.role === r;
-                row.style.display = (mq && mr) ? '' : 'none';
+            const query = (userSearch?.value || '').trim().toLowerCase();
+            const role = roleFilter?.value || '';
+
+            userRows.forEach((row) => {
+                const matchesQuery = row.textContent.toLowerCase().includes(query);
+                const matchesRole = !role || row.dataset.role === role;
+                row.style.display = matchesQuery && matchesRole ? '' : 'none';
             });
         }
-        document.getElementById('userSearch').addEventListener('input', filterUsers);
-        document.getElementById('roleFilter').addEventListener('change', filterUsers);
+
+        userSearch?.addEventListener('input', filterUsers);
+        roleFilter?.addEventListener('change', filterUsers);
     </script>
 </body>
 

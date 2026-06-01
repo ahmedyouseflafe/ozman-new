@@ -40,10 +40,10 @@ class Shop extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function socials()
-    {
-        return $this->hasOne(ShopSocial::class);
-    }
+   public function social()
+{
+    return $this->hasOne(ShopSocial::class);
+}
 
     public function categories()
     {

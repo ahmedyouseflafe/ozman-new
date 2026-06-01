@@ -2,710 +2,558 @@
 <html lang="ar" dir="rtl">
 
 <head>
-    <title>الإعدادات — هيلني شوب</title>
+    <title>الإعدادات - Ozman</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --red: #C0392B;
-            --red-light: #E74C3C;
-            --red-dark: #922B21;
-            --bg: #0a0a0a;
-            --bg2: #111;
-            --bg3: #1a1a1a;
-            --bg4: #222;
-            --border: #2a2a2a;
-            --border2: #333;
-            --text: #f0f0f0;
-            --text2: #aaa;
-            --text3: #666;
-            --gold: #D4AC0D;
+            --primary: #00e5ff;
+            --accent: #7000ff;
+            --green: #25d366;
+            --yellow: #ffd60a;
+            --danger: #ff3b30;
+            --bg: #050505;
+            --border: rgba(255, 255, 255, .1);
+            --text: #fff;
+            --muted: rgba(255, 255, 255, .64);
+            --dim: rgba(255, 255, 255, .4);
         }
 
         html,
         body {
-            height: 100%;
-            background: var(--bg);
+            min-height: 100%;
+            background:
+                radial-gradient(circle at 15% 14%, rgba(112, 0, 255, .14), transparent 29%),
+                radial-gradient(circle at 78% 8%, rgba(0, 229, 255, .14), transparent 34%),
+                linear-gradient(180deg, #030303 0%, #050505 52%, #08020f 100%);
             color: var(--text);
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            direction: rtl
+            font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+            direction: rtl;
         }
 
-        .shell {
-            display: flex;
-            min-height: 100vh
-        }
-
-        .sidebar {
-            width: 210px;
-            background: var(--bg2);
-            border-left: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
+        body::before {
+            content: '';
             position: fixed;
-            top: 0;
-            right: 0;
-            height: 100vh;
-            overflow-y: auto
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, .026) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, .026) 1px, transparent 1px);
+            background-size: 44px 44px;
+            mask-image: linear-gradient(to bottom, black, transparent 82%);
         }
 
-        .logo {
-            padding: 20px 16px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 10px
-        }
-
-        .logo-icon {
-            width: 36px;
-            height: 36px;
-            background: var(--red);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: 900;
-            color: #fff;
-            flex-shrink: 0
-        }
-
-        .logo-text {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text);
-            line-height: 1.2
-        }
-
-        .logo-sub {
-            font-size: 10px;
-            color: var(--text3)
-        }
-
-        nav {
-            padding: 12px 0;
-            flex: 1
-        }
-
-        .nav-section {
-            padding: 4px 12px 2px;
-            font-size: 10px;
-            color: var(--text3);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 8px
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            cursor: pointer;
-            font-size: 13px;
-            color: var(--text2);
-            border-right: 2px solid transparent;
-            text-decoration: none;
-            transition: all .15s
-        }
-
-        .nav-item:hover {
-            background: var(--bg3);
-            color: var(--text)
-        }
-
-        .nav-item.active {
-            background: rgba(192, 57, 43, .12);
-            color: var(--red-light);
-            border-right-color: var(--red)
-        }
-
-        .nav-item i {
-            font-size: 15px;
-            width: 18px;
-            text-align: center
-        }
+        .shell { min-height: 100vh; }
 
         .main {
-            flex: 1;
-            margin-right: 210px;
-            overflow: auto;
-            background: var(--bg)
+            min-height: 100vh;
+            margin-right: 245px;
+            position: relative;
+            z-index: 1;
         }
 
-        .topbar {
-            background: var(--bg2);
-            border-bottom: 1px solid var(--border);
-            padding: 0 24px;
-            height: 54px;
+        .content { padding: 28px 34px 46px; }
+
+        .hero-strip {
+            min-height: 136px;
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            background: linear-gradient(90deg, rgba(0, 229, 255, .08), rgba(255, 255, 255, .035), rgba(112, 0, 255, .08));
+            backdrop-filter: blur(18px);
+            overflow: hidden;
             display: flex;
             align-items: center;
+            box-shadow: 0 22px 60px rgba(0, 0, 0, .42), inset 0 0 45px rgba(0, 229, 255, .035);
+            margin-bottom: 28px;
+        }
+
+        .ticker {
+            display: flex;
+            gap: 54px;
+            width: max-content;
+            white-space: nowrap;
+            animation: slideRtl 24s linear infinite;
+            color: var(--primary);
+            font-size: 18px;
+            font-weight: 900;
+            text-shadow: 0 0 14px rgba(0, 229, 255, .55);
+        }
+
+        @keyframes slideRtl {
+            from { transform: translateX(0); }
+            to { transform: translateX(50%); }
+        }
+
+        .page-head {
+            display: flex;
             justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 10
+            align-items: flex-end;
+            gap: 18px;
+            margin-bottom: 22px;
         }
 
-        .topbar-title {
-            font-size: 15px;
-            font-weight: 600
+        .page-kicker {
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 900;
+            text-shadow: 0 0 12px rgba(0, 229, 255, .5);
+            margin-bottom: 6px;
         }
 
-        .topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 12px
+        h1 {
+            font-size: 34px;
+            line-height: 1.1;
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 20px rgba(0, 229, 255, .42);
         }
 
-        .topbar-btn {
-            background: transparent;
-            border: 1px solid var(--border2);
-            color: var(--text2);
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
+        .page-head p {
+            margin-top: 8px;
+            color: var(--muted);
             font-size: 14px;
-            transition: all .15s;
-            text-decoration: none
+            font-weight: 700;
         }
 
-        .topbar-btn:hover {
-            border-color: var(--red);
-            color: var(--red-light)
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
         }
 
-        .avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--red-dark);
+        .panel {
+            border: 1px solid var(--border);
+            background: linear-gradient(145deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .025));
+            backdrop-filter: blur(16px);
+            border-radius: 26px;
+            box-shadow: 0 18px 48px rgba(0, 0, 0, .34);
+            padding: 24px;
+            min-height: 100%;
+        }
+
+        .panel-head {
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 12px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 18px;
+        }
+
+        .panel-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            background: #000;
+            display: grid;
+            place-items: center;
+            font-size: 20px;
+            box-shadow: 0 0 18px rgba(0, 229, 255, .3);
+            flex-shrink: 0;
+        }
+
+        .panel-title {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 900;
+            line-height: 1.2;
+        }
+
+        .panel-subtitle {
+            color: var(--dim);
             font-size: 12px;
             font-weight: 700;
-            cursor: pointer
+            margin-top: 4px;
         }
 
-        .content {
-            padding: 24px
-        }
-
-        .page-header {
-            margin-bottom: 20px
-        }
-
-        .page-header h1 {
-            font-size: 20px;
-            font-weight: 700
-        }
-
-        .page-header p {
-            font-size: 13px;
-            color: var(--text3);
-            margin-top: 2px
-        }
-
-        .page-header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 20px
-        }
-
-        .page-header-row h1 {
-            font-size: 20px;
-            font-weight: 700
-        }
-
-        .page-header-row p {
-            font-size: 13px;
-            color: var(--text3);
-            margin-top: 2px
-        }
-
-        .stats-grid {
+        .form-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
             gap: 14px;
-            margin-bottom: 20px
         }
 
-        .stat-card {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 16px;
-            position: relative;
-            overflow: hidden
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 3px;
-            height: 100%;
-            background: var(--accent, var(--red))
-        }
-
-        .stat-label {
-            font-size: 11px;
-            color: var(--text3);
-            margin-bottom: 6px
-        }
-
-        .stat-val {
-            font-size: 26px;
-            font-weight: 800;
-            color: var(--text);
-            line-height: 1
-        }
-
-        .stat-sub {
-            font-size: 11px;
-            margin-top: 6px
-        }
-
-        .stat-up {
-            color: #27AE60
-        }
-
-        .stat-down {
-            color: #E74C3C
-        }
-
-        .stat-icon {
-            position: absolute;
-            bottom: 10px;
-            left: 12px;
-            font-size: 28px;
-            opacity: .1;
-            pointer-events: none
-        }
-
-        .grid2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-            margin-bottom: 14px
-        }
-
-        .card {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 14px
-        }
-
-        .card:last-child {
-            margin-bottom: 0
-        }
-
-        .card-hd {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 14px
-        }
-
-        .card-hd h3 {
-            font-size: 14px;
-            font-weight: 600
-        }
-
-        .badge {
-            font-size: 10px;
-            padding: 3px 8px;
-            border-radius: 20px;
-            background: rgba(192, 57, 43, .18);
-            color: var(--red-light)
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px
-        }
-
-        th {
-            text-align: right;
-            padding: 6px 8px;
-            color: var(--text3);
-            font-weight: 500;
-            border-bottom: 1px solid var(--border)
-        }
-
-        td {
-            padding: 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, .04);
-            color: var(--text2);
-            vertical-align: middle
-        }
-
-        tr:last-child td {
-            border-bottom: none
-        }
-
-        tr:hover td {
-            background: rgba(255, 255, 255, .02)
-        }
-
-        .tag {
-            display: inline-block;
-            font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: 500
-        }
-
-        .tag-g {
-            background: rgba(39, 174, 96, .15);
-            color: #27AE60
-        }
-
-        .tag-r {
-            background: rgba(231, 76, 60, .15);
-            color: #E74C3C
-        }
-
-        .tag-y {
-            background: rgba(241, 196, 15, .15);
-            color: #F1C40F
-        }
-
-        .btn-red {
-            background: var(--red);
-            color: #fff;
-            border: none;
-            padding: 7px 14px;
-            border-radius: 6px;
+        .field label {
+            display: block;
+            color: rgba(255, 255, 255, .72);
             font-size: 12px;
-            cursor: pointer;
-            font-weight: 600;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+
+        .field input,
+        .field select {
+            width: 100%;
+            min-height: 46px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .055);
+            border-radius: 16px;
+            color: #fff;
+            padding: 0 15px;
+            outline: none;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            transition: all .3s ease;
+        }
+
+        .field input:focus,
+        .field select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 18px rgba(0, 229, 255, .22);
+        }
+
+        .field input::placeholder { color: var(--dim); }
+
+        .field select option {
+            color: #111;
+            background: #fff;
+        }
+
+        .btn-primary {
+            border: 0;
+            color: #001014;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            min-height: 46px;
+            padding: 0 22px;
+            border-radius: 999px;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            text-decoration: none
-        }
-
-        .btn-red:hover {
-            background: var(--red-light)
-        }
-
-        .input-wrap {
-            position: relative
-        }
-
-        .search-inp {
-            background: var(--bg3);
-            border: 1px solid var(--border2);
-            color: var(--text);
-            padding: 6px 10px 6px 30px;
-            border-radius: 6px;
-            font-size: 12px;
-            outline: none;
-            width: 180px
-        }
-
-        .search-inp::placeholder {
-            color: var(--text3)
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 9px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text3);
-            font-size: 13px;
-            pointer-events: none
-        }
-
-        .filter-row {
-            display: flex;
-            gap: 8px;
-            align-items: center
-        }
-
-        select {
-            background: var(--bg3);
-            border: 1px solid var(--border2);
-            color: var(--text2);
-            padding: 5px 8px;
-            border-radius: 6px;
-            font-size: 12px;
-            outline: none;
-            cursor: pointer
-        }
-
-        input[type=text],
-        input[type=email],
-        input[type=password],
-        input[type=tel] {
-            background: var(--bg3);
-            border: 1px solid var(--border2);
-            color: var(--text);
-            padding: 8px 10px;
-            border-radius: 6px;
-            font-size: 13px;
-            outline: none;
-            width: 100%;
-            direction: rtl
-        }
-
-        input:focus {
-            border-color: var(--red)
-        }
-
-        .form-group {
-            margin-bottom: 12px
-        }
-
-        .form-label {
-            font-size: 11px;
-            color: var(--text3);
-            margin-bottom: 4px;
-            display: block
-        }
-
-        .recent-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px
-        }
-
-        .recent-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            background: var(--bg3);
-            border-radius: 7px
-        }
-
-        .ri-icon {
-            width: 30px;
-            height: 30px;
-            border-radius: 7px;
-            background: var(--bg4);
-            display: flex;
-            align-items: center;
             justify-content: center;
+            gap: 9px;
+            font-family: inherit;
             font-size: 14px;
-            color: var(--red-light);
-            flex-shrink: 0
+            font-weight: 900;
+            text-decoration: none;
+            cursor: pointer;
+            box-shadow: 0 0 22px rgba(0, 229, 255, .34);
+            transition: transform .3s ease, box-shadow .3s ease;
+            margin-top: 4px;
+            width: max-content;
         }
 
-        .ri-info {
-            flex: 1
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 34px rgba(0, 229, 255, .58);
         }
 
-        .ri-title {
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--text)
-        }
-
-        .ri-sub {
-            font-size: 10px;
-            color: var(--text3)
-        }
-
-        .ri-val {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--red-light)
-        }
-
-        .chart-bars {
-            display: flex;
-            align-items: flex-end;
-            gap: 6px;
-            height: 90px;
-            padding-top: 8px
-        }
-
-        .bar-wrap {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px
-        }
-
-        .bar {
-            width: 100%;
-            background: linear-gradient(to top, var(--red-dark), var(--red-light));
-            border-radius: 3px 3px 0 0
-        }
-
-        .bar-label {
-            font-size: 9px;
-            color: var(--text3)
-        }
-
-        .cat-grid {
+        .toggle-list {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 14px
+            gap: 14px;
         }
 
-        .cat-card {
-            background: var(--bg2);
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 15px;
             border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center
+            border-radius: 18px;
+            background: rgba(255, 255, 255, .035);
         }
 
-        .cat-icon-wrap {
-            width: 54px;
-            height: 54px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 12px
+        .toggle-title {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 900;
         }
 
-        .avatar-circle {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .toggle-subtitle {
+            color: var(--dim);
             font-size: 11px;
             font-weight: 700;
-            flex-shrink: 0
+            margin-top: 3px;
+        }
+
+        .switch {
+            position: relative;
+            width: 58px;
+            height: 32px;
+            flex-shrink: 0;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            inset: 0;
+            cursor: pointer;
+            background: rgba(255, 255, 255, .08);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            transition: all .3s ease;
+        }
+
+        .slider::before {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            right: 4px;
+            top: 3px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, .72);
+            transition: all .3s ease;
+        }
+
+        .switch input:checked + .slider {
+            background: rgba(37, 211, 102, .22);
+            border-color: var(--green);
+            box-shadow: 0 0 18px rgba(37, 211, 102, .25);
+        }
+
+        .switch input:checked + .slider::before {
+            transform: translateX(-26px);
+            background: var(--green);
+            box-shadow: 0 0 12px rgba(37, 211, 102, .7);
+        }
+
+        .system-card {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .mini-stat {
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 14px;
+            background: rgba(0, 0, 0, .22);
+        }
+
+        .mini-stat span {
+            display: block;
+            color: var(--dim);
+            font-size: 11px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .mini-stat strong {
+            color: var(--primary);
+            font-size: 18px;
+            font-weight: 900;
+            text-shadow: 0 0 12px rgba(0, 229, 255, .32);
+        }
+
+        @media(max-width: 1100px) {
+            .settings-grid { grid-template-columns: 1fr; }
+        }
+
+        @media(max-width: 900px) {
+            .main { margin-right: 0; }
+        }
+
+        @media(max-width: 680px) {
+            .content { padding: 20px 16px 34px; }
+            .page-head { align-items: stretch; flex-direction: column; }
+            .system-card { grid-template-columns: 1fr; }
+            h1 { font-size: 28px; }
+            .btn-primary { width: 100%; }
         }
     </style>
 </head>
 
 <body>
+    @php
+        $adminName = $adminName ?? data_get(auth()->user(), 'name', 'Admin');
+        $adminEmail = $adminEmail ?? data_get(auth()->user(), 'email', 'admin@ozman.com');
+        $adminPhone = $adminPhone ?? '059-000-0001';
+        $systemName = $systemName ?? 'Ozman';
+        $defaultCurrency = $defaultCurrency ?? '₪ شيكل';
+    @endphp
+
     <div class="shell">
-        <div class="sidebar">
-            <div class="logo">
-                <div class="logo-icon">H</div>
-                <div>
-                    <div class="logo-text">هيلني شوب</div>
-                    <div class="logo-sub">لوحة التحكم</div>
-                </div>
-            </div>
-            @include('admin.includes.sidebar')
-        </div>
-        <div class="main">
-            <div class="topbar">
-                <div class="topbar-title">الإعدادات</div>
-                <div class="topbar-right">
-                    <div class="input-wrap">
-                        <i class="ti ti-search search-icon" aria-hidden="true"></i>
-                        <input class="search-inp" placeholder="بحث...">
-                    </div>
-                    <a href="#" class="topbar-btn" aria-label="إشعارات"><i class="ti ti-bell"
-                            aria-hidden="true"></i></a>
-                    <a href="settings.html" class="topbar-btn" aria-label="إعدادات"><i class="ti ti-settings"
-                            aria-hidden="true"></i></a>
-                    <div class="avatar" title="المشرف">A</div>
-                </div>
-            </div>
+        @include('admin.includes.sidebar')
+
+        <main class="main">
+            @include('admin.includes.header', ['title' => 'الإعدادات'])
+
             <div class="content">
+                <section class="hero-strip" aria-label="شريط الإعدادات">
+                    <div class="ticker">
+                        <span>إعدادات الحساب والنظام في مكان واحد</span>
+                        <span>تحكم بالإشعارات، العملة، وبيانات لوحة Ozman</span>
+                        <span>واجهة إدارة واضحة وسريعة لفريق المتجر</span>
+                        <span>إعدادات الحساب والنظام في مكان واحد</span>
+                    </div>
+                </section>
 
-                <div class="page-header">
-                    <h1>الإعدادات</h1>
-                    <p>إعدادات النظام والحساب</p>
-                </div>
-                <div class="grid2">
-                    <div class="card">
-                        <div class="card-hd">
-                            <h3><i class="ti ti-user" style="margin-left:6px;color:var(--red-light)"
-                                    aria-hidden="true"></i>الملف الشخصي</h3>
-                        </div>
-                        <div class="form-group"><label class="form-label">الاسم الكامل</label><input type="text"
-                                value="Admin"></div>
-                        <div class="form-group"><label class="form-label">البريد الإلكتروني</label><input type="email"
-                                value="admin@helni.com"></div>
-                        <div class="form-group"><label class="form-label">رقم الهاتف</label><input type="tel"
-                                value="059-000-0001"></div>
-                        <button class="btn-red"><i class="ti ti-device-floppy" aria-hidden="true"></i> حفظ
-                            التغييرات</button>
+                <header class="page-head">
+                    <div>
+                        <div class="page-kicker">الإدارة</div>
+                        <h1>الإعدادات</h1>
+                        <p>إدارة بيانات الحساب، كلمة المرور، تفضيلات التنبيهات، وإعدادات النظام.</p>
                     </div>
-                    <div class="card">
-                        <div class="card-hd">
-                            <h3><i class="ti ti-lock" style="margin-left:6px;color:var(--red-light)"
-                                    aria-hidden="true"></i>تغيير كلمة المرور</h3>
-                        </div>
-                        <div class="form-group"><label class="form-label">كلمة المرور الحالية</label><input
-                                type="password" placeholder="••••••••"></div>
-                        <div class="form-group"><label class="form-label">كلمة المرور الجديدة</label><input
-                                type="password" placeholder="••••••••"></div>
-                        <div class="form-group"><label class="form-label">تأكيد كلمة المرور</label><input
-                                type="password" placeholder="••••••••"></div>
-                        <button class="btn-red"><i class="ti ti-refresh" aria-hidden="true"></i> تحديث</button>
-                    </div>
-                </div>
-                <div class="grid2">
-                    <div class="card">
-                        <div class="card-hd">
-                            <h3><i class="ti ti-bell" style="margin-left:6px;color:var(--red-light)"
-                                    aria-hidden="true"></i>الإشعارات</h3>
-                        </div>
-                        <div style="display:flex;flex-direction:column;gap:12px">
-                            <label
-                                style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
-                                <span style="font-size:13px;color:var(--text2)">إشعارات المتاجر الجديدة</span>
-                                <input type="checkbox" checked style="width:auto;cursor:pointer">
-                            </label>
-                            <label
-                                style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
-                                <span style="font-size:13px;color:var(--text2)">إشعارات المنتجات المنتهية</span>
-                                <input type="checkbox" checked style="width:auto;cursor:pointer">
-                            </label>
-                            <label
-                                style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
-                                <span style="font-size:13px;color:var(--text2)">إشعارات المستخدمين الجدد</span>
-                                <input type="checkbox" style="width:auto;cursor:pointer">
-                            </label>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-hd">
-                            <h3><i class="ti ti-building-store" style="margin-left:6px;color:var(--red-light)"
-                                    aria-hidden="true"></i>إعدادات النظام</h3>
-                        </div>
-                        <div class="form-group"><label class="form-label">اسم النظام</label><input type="text"
-                                value="هيلني شوب"></div>
-                        <div class="form-group"><label class="form-label">العملة الافتراضية</label>
-                            <select style="width:100%;padding:8px 10px">
-                                <option>₪ شيكل إسرائيلي</option>
-                                <option>$ دولار أمريكي</option>
-                                <option>€ يورو</option>
-                            </select>
-                        </div>
-                        <button class="btn-red"><i class="ti ti-device-floppy" aria-hidden="true"></i> حفظ</button>
-                    </div>
-                </div>
+                </header>
 
+                <section class="settings-grid">
+                    <form class="panel" action="#" method="post">
+                        @csrf
+                        <div class="panel-head">
+                            <div class="panel-icon"><i class="ti ti-user" aria-hidden="true"></i></div>
+                            <div>
+                                <h2 class="panel-title">الملف الشخصي</h2>
+                                <p class="panel-subtitle">بيانات حساب المسؤول الظاهرة داخل لوحة التحكم</p>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="adminName">الاسم الكامل</label>
+                                <input id="adminName" type="text" name="name" value="{{ $adminName }}">
+                            </div>
+                            <div class="field">
+                                <label for="adminEmail">البريد الإلكتروني</label>
+                                <input id="adminEmail" type="email" name="email" value="{{ $adminEmail }}" dir="ltr">
+                            </div>
+                            <div class="field">
+                                <label for="adminPhone">رقم الهاتف</label>
+                                <input id="adminPhone" type="tel" name="phone" value="{{ $adminPhone }}" dir="ltr">
+                            </div>
+                            <button class="btn-primary" type="submit">
+                                <i class="ti ti-device-floppy" aria-hidden="true"></i>
+                                حفظ التغييرات
+                            </button>
+                        </div>
+                    </form>
+
+                    <form class="panel" action="#" method="post">
+                        @csrf
+                        <div class="panel-head">
+                            <div class="panel-icon"><i class="ti ti-lock" aria-hidden="true"></i></div>
+                            <div>
+                                <h2 class="panel-title">تغيير كلمة المرور</h2>
+                                <p class="panel-subtitle">تحديث كلمة المرور الخاصة بحساب الإدارة</p>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="currentPassword">كلمة المرور الحالية</label>
+                                <input id="currentPassword" type="password" name="current_password" placeholder="••••••••">
+                            </div>
+                            <div class="field">
+                                <label for="newPassword">كلمة المرور الجديدة</label>
+                                <input id="newPassword" type="password" name="password" placeholder="••••••••">
+                            </div>
+                            <div class="field">
+                                <label for="confirmPassword">تأكيد كلمة المرور</label>
+                                <input id="confirmPassword" type="password" name="password_confirmation" placeholder="••••••••">
+                            </div>
+                            <button class="btn-primary" type="submit">
+                                <i class="ti ti-refresh" aria-hidden="true"></i>
+                                تحديث كلمة المرور
+                            </button>
+                        </div>
+                    </form>
+
+                    <section class="panel">
+                        <div class="panel-head">
+                            <div class="panel-icon"><i class="ti ti-bell" aria-hidden="true"></i></div>
+                            <div>
+                                <h2 class="panel-title">الإشعارات</h2>
+                                <p class="panel-subtitle">اختيار أنواع التنبيهات التي تظهر للمسؤول</p>
+                            </div>
+                        </div>
+
+                        <div class="toggle-list">
+                            <label class="toggle-row">
+                                <span>
+                                    <span class="toggle-title">إشعارات المتاجر الجديدة</span>
+                                    <span class="toggle-subtitle">تنبيه عند تسجيل متجر جديد داخل النظام</span>
+                                </span>
+                                <span class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+
+                            <label class="toggle-row">
+                                <span>
+                                    <span class="toggle-title">إشعارات المنتجات المنتهية</span>
+                                    <span class="toggle-subtitle">تنبيه عند وصول الكمية إلى صفر</span>
+                                </span>
+                                <span class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+
+                            <label class="toggle-row">
+                                <span>
+                                    <span class="toggle-title">إشعارات المستخدمين الجدد</span>
+                                    <span class="toggle-subtitle">تنبيه عند إنشاء حساب مستخدم جديد</span>
+                                </span>
+                                <span class="switch">
+                                    <input type="checkbox">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </section>
+
+                    <form class="panel" action="#" method="post">
+                        @csrf
+                        <div class="panel-head">
+                            <div class="panel-icon"><i class="ti ti-building-store" aria-hidden="true"></i></div>
+                            <div>
+                                <h2 class="panel-title">إعدادات النظام</h2>
+                                <p class="panel-subtitle">اسم النظام والعملة الافتراضية وبعض حالة المنصة</p>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="systemName">اسم النظام</label>
+                                <input id="systemName" type="text" name="system_name" value="{{ $systemName }}">
+                            </div>
+                            <div class="field">
+                                <label for="currency">العملة الافتراضية</label>
+                                <select id="currency" name="currency">
+                                    <option @selected($defaultCurrency === '₪ شيكل')>₪ شيكل</option>
+                                    <option @selected($defaultCurrency === '$ دولار')>$ دولار</option>
+                                    <option @selected($defaultCurrency === '€ يورو')>€ يورو</option>
+                                </select>
+                            </div>
+
+                            <div class="system-card">
+                                <div class="mini-stat">
+                                    <span>حالة النظام</span>
+                                    <strong>متصل</strong>
+                                </div>
+                                <div class="mini-stat">
+                                    <span>الواجهة</span>
+                                    <strong>RTL</strong>
+                                </div>
+                                <div class="mini-stat">
+                                    <span>النمط</span>
+                                    <strong>Neon</strong>
+                                </div>
+                            </div>
+
+                            <button class="btn-primary" type="submit">
+                                <i class="ti ti-device-floppy" aria-hidden="true"></i>
+                                حفظ الإعدادات
+                            </button>
+                        </div>
+                    </form>
+                </section>
             </div>
-        </div>
+        </main>
     </div>
-
 </body>
 
 </html>
