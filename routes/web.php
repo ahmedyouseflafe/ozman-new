@@ -9,6 +9,7 @@ use App\Http\Controllers\FrontController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ScreenController;
 use App\Http\Controllers\ShopController;
+use App\Models\AdminNotification;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [FrontController::class, 'index'])->name('home');
@@ -97,6 +98,16 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
 
         return view('admin.settings');
     })->name('settings');
+
+    Route::post('/admin-notifications/read-all', function () {
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+
+        AdminNotification::query()
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return back();
+    })->name('admin.notifications.readAll');
 
     Route::get('/shops', [ShopController::class, 'index'])->name('shops');
     Route::get('/shops/create', [ShopController::class, 'create'])->name('shops.create');

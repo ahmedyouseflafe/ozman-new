@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AdminNotification;
 use App\Models\Shop;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -72,5 +73,28 @@ abstract class Controller
         $shopId = $model instanceof Shop ? $model->id : $model->getAttribute('shop_id');
 
         abort_unless(in_array((int) $shopId, $this->ownedShopIds(), true), 403);
+    }
+
+    protected function notifySuperAdmin(
+        string $type,
+        Model $subject,
+        string $title,
+        ?string $message = null,
+        ?string $url = null,
+        array $data = []
+    ): void {
+        $shopId = $data['shop_id'] ?? ($subject instanceof Shop ? $subject->id : $subject->getAttribute('shop_id'));
+
+        AdminNotification::create([
+            'shop_id' => $shopId,
+            'user_id' => Auth::id(),
+            'type' => $type,
+            'title' => $title,
+            'message' => $message,
+            'subject_type' => $subject::class,
+            'subject_id' => $subject->getKey(),
+            'url' => $url,
+            'data' => $data ?: null,
+        ]);
     }
 }

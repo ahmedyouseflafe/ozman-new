@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}" dir="rtl">
 
 <head>
@@ -19,10 +19,8 @@
         $shopLogo = $shop?->logo ? asset($shop->logo) : asset('images/logo.jpg');
         $ozmanName = $ozmanShop?->name ?? 'Ozman';
         $ozmanLogo = $ozmanShop?->logo ? asset($ozmanShop->logo) : asset('images/logo.jpg');
-        $ozmanWelcomeText = __('أهلاً بك في Ozman - اكتشف فئاتنا ومنتجاتنا المميزة');
-        $welcomeText = app()->getLocale() === 'ar' 
-            ? "أهلاً بك في {$shopName} - اكتشف أقسام ومنتجات المتجر" 
-            : "ברוכים הבאים ל-{$shopName} - גלו את מחלקות ומוצרי החנות";
+        $ozmanWelcomeText = 'أهلا بك في Ozman - اكتشف فئاتنا ومنتجاتنا المميزة';
+        $welcomeText = "أهلا بك في {$shopName} - اكتشف أقسام ومنتجات المتجر";
         $social = optional($shop?->social);
         $socialLinks = [
             ['title' => 'فيسبوك', 'icon' => 'fab fa-facebook-f', 'url' => $social->facebook],
@@ -45,10 +43,10 @@
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <div class="location-btn location-btn-trigger">
-                        <i class="fas fa-map-marker-alt"></i> {{ __('حدد موقعك') }}
+                        <i class="fas fa-map-marker-alt"></i> حدد موقعك
                     </div>
                     <a href="{{ route('lang.switch', app()->getLocale() === 'ar' ? 'he' : 'ar') }}" class="location-btn" style="text-decoration: none;">
-                        <i class="fas fa-globe"></i> {{ app()->getLocale() === 'ar' ? 'עברית' : 'العربية' }}
+                        <i class="fas fa-globe"></i> العربية
                     </a>
                 </div>
             </div>
@@ -75,7 +73,7 @@
         <section class="carousel-3d-section animate">
             <h2
                 style="color: var(--primary-color); margin-bottom: 20px; font-weight: 900; text-shadow: 0 0 10px var(--primary-color);">
-                {{ __('فئات Ozman') }}</h2>
+                فئات Ozman</h2>
             <div class="carousel-3d-container" id="carouselProducts">
                 @forelse($ozmanCategories as $category)
                     <div class="carousel-item-3d prod-item" data-index="{{ $loop->index }}" data-ozman-category="{{ $category->name }}" data-product-name="{{ $category->name }}">
@@ -110,10 +108,10 @@
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <div class="location-btn location-btn-trigger">
-                        <i class="fas fa-map-marker-alt"></i> {{ __('حدد موقعك') }}
+                        <i class="fas fa-map-marker-alt"></i> حدد موقعك
                     </div>
                     <a href="{{ route('lang.switch', app()->getLocale() === 'ar' ? 'he' : 'ar') }}" class="location-btn" style="text-decoration: none;">
-                        <i class="fas fa-globe"></i> {{ app()->getLocale() === 'ar' ? 'עברית' : 'العربية' }}
+                        <i class="fas fa-globe"></i> العربية
                     </a>
                 </div>
             </div>
@@ -153,9 +151,9 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                         <h3 id="productsScatterTitle"
                             style="padding: 12px 30px; border-radius: 20px; color: var(--primary-color); border: 1px solid var(--glass-border); background: rgba(0,0,0,0.85); margin: 0; font-size: 1.4rem; font-weight: 900; box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);">
-                            {{ __('اسم القسم') }}</h3>
+                            اسم القسم</h3>
                         <button class="back-btn" id="backToDeptsBtn" style="direction: rtl;">
-                            <i class="fas fa-chevron-right" style="margin-left: 8px;"></i> {{ __('عودة للأقسام') }}
+                            <i class="fas fa-chevron-right" style="margin-left: 8px;"></i> عودة للأقسام
                         </button>
                     </div>
                     <!-- Product summary -->
@@ -177,22 +175,22 @@
 
     <nav class="bottom-nav">
         <div class="nav-icons">
-            <div class="nav-btn" id="navHomeBtn" title="{{ __('الرئيسية') }}"><i class="fas fa-home"></i></div>
-            <div class="nav-btn" id="navSearchBtn" title="{{ __('البحث') }}"><i class="fas fa-search"></i></div>
-            <div class="nav-btn" id="navCartBtn" title="{{ __('سلة المشتريات') }}"><i class="fas fa-shopping-cart"></i></div>
+            <div class="nav-btn" id="navHomeBtn" title="الرئيسية"><i class="fas fa-home"></i></div>
+            <div class="nav-btn" id="navSearchBtn" title="البحث"><i class="fas fa-search"></i></div>
+            <div class="nav-btn" id="navCartBtn" title="سلة المشتريات"><i class="fas fa-shopping-cart"></i></div>
             <!-- Chatbot and WhatsApp actions -->
-            <div class="nav-btn" id="chatbotToggleBtn" title="{{ __('المساعد الذكي') }}" style="position: relative;">
+            <div class="nav-btn" id="chatbotToggleBtn" title="المساعد الذكي" style="position: relative;">
                 <i class="fas fa-comments"></i>
                 <span
                     style="position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; background: var(--primary-color); border-radius: 50%; box-shadow: 0 0 5px var(--primary-color);"></span>
             </div>
             <a href="https://wa.me/{{ preg_replace('/\D+/', '', $shop?->whatsapp ?: $shop?->phone ?: '970599000000') }}" target="_blank" class="nav-btn" id="whatsappQuickBtn"
-                title="{{ __('تواصل مباشرة عبر واتساب') }}"
+                title="تواصل مباشرة عبر واتساب"
                 style="color: #25d366; text-decoration: none; display: flex; align-items: center;">
                 <i class="fab fa-whatsapp"></i>
             </a>
         </div>
-        <div class="buy-btn">{{ __('اطلب الآن') }}</div>
+        <div class="buy-btn">اطلب الآن</div>
     </nav>
 
     <script>
@@ -204,7 +202,7 @@
     <div class="modal-overlay" id="locationModal">
         <div class="modal-content glass">
             <div class="modal-header">
-                <h3><i class="fas fa-map-marker-alt"></i> {{ __('تحديد الموقع') }}</h3>
+                <h3><i class="fas fa-map-marker-alt"></i> تحديد الموقع</h3>
                 <span class="close-modal" id="closeLocationModal">&times;</span>
             </div>
             <div class="modal-body">
@@ -215,7 +213,7 @@
                         loading="lazy"></iframe>
                 </div>
                 <div class="location-actions">
-                    <button class="buy-btn" style="width: 100%; margin-top: 15px;" id="confirmLocationBtn">{{ __('تأكيد الموقع') }}</button>
+                    <button class="buy-btn" style="width: 100%; margin-top: 15px;" id="confirmLocationBtn">تأكيد الموقع</button>
                 </div>
             </div>
         </div>
@@ -239,10 +237,10 @@
             <!-- Right Side: Details & Actions -->
             <div class="product-modal-info">
                 <div>
-                    <h2 class="product-modal-title" id="modalProductTitle">{{ __('اسم المنتج') }}</h2>
-                    <div class="product-modal-price" id="modalProductPrice">75 ₪</div>
+                    <h2 class="product-modal-title" id="modalProductTitle">اسم المنتج</h2>
+                    <div class="product-modal-price" id="modalProductPrice">75 شيكل</div>
                     <p class="product-modal-description" id="modalProductDesc">
-                        {{ __('منتج مميز من متجر Ozman.') }}
+                        منتج مميز من متجر Ozman.
                     </p>
                     <ul class="product-features-list">
                         <!-- Will be generated by JS -->
@@ -256,9 +254,9 @@
                         <button class="qty-btn" id="qtyPlus"><i class="fas fa-plus"></i></button>
                     </div>
                     <div class="modal-action-buttons">
-                        <button class="modal-btn-cart" id="modalAddToCartBtn">{{ __('أضف إلى السلة') }}</button>
+                        <button class="modal-btn-cart" id="modalAddToCartBtn">أضف إلى السلة</button>
                         <button class="modal-btn-whatsapp" id="modalWhatsappBtn">
-                            <i class="fab fa-whatsapp"></i> {{ __('اطلب عبر واتساب') }}
+                            <i class="fab fa-whatsapp"></i> اطلب عبر واتساب
                         </button>
                     </div>
                 </div>
@@ -270,15 +268,15 @@
     <div class="chatbot-widget active" id="chatbotWidget">
         <div class="chatbot-header">
             <button class="chatbot-close" id="closeChatbotBtn">
-                <i class="fas fa-chevron-right"></i> {{ __('عودة') }}
+                <i class="fas fa-chevron-right"></i> عودة
             </button>
             <div class="chatbot-info">
                 <div class="chatbot-avatar">
                     <i class="fas fa-robot"></i>
                     <span class="online-indicator"></span>
                 </div>
-                <h4>{{ __('مساعد Ozman الذكي') }}</h4>
-                <p>{{ __('متصل الآن') }}</p>
+                <h4>مساعد Ozman الذكي</h4>
+                <p>متصل الآن</p>
             </div>
             <!-- Blank div to balance flexbox layout for centered info -->
             <div style="width: 55px;"></div>
@@ -286,22 +284,22 @@
 
         <div class="chatbot-messages" id="chatbotMessages">
             <div class="chat-message bot">
-                {!! __('أهلاً بك في Ozman! أنا مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟') !!}
+                أهلا بك في Ozman! أنا مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟
             </div>
             <!-- Quick Options / Smart Suggestion Tags -->
             <div class="chat-options-container">
-                <button class="chat-option-btn" data-reply="جسم">{{ __('منتجات العناية بالجسم') }}</button>
-                <button class="chat-option-btn" data-reply="شعر">{{ __('منتجات العناية بالشعر') }}</button>
-                <button class="chat-option-btn" data-reply="وجه">{{ __('منتجات العناية بالوجه') }}</button>
-                <button class="chat-option-btn" data-reply="طلب">{{ __('كيف أقوم بالطلب والتوصيل؟') }}</button>
-                <button class="chat-option-btn" data-reply="دعم">{{ __('التحدث مباشرة مع الدعم') }}</button>
+                <button class="chat-option-btn" data-reply="جسم">منتجات العناية بالجسم</button>
+                <button class="chat-option-btn" data-reply="شعر">منتجات العناية بالشعر</button>
+                <button class="chat-option-btn" data-reply="وجه">منتجات العناية بالوجه</button>
+                <button class="chat-option-btn" data-reply="طلب">كيف أقوم بالطلب والتوصيل؟</button>
+                <button class="chat-option-btn" data-reply="دعم">التحدث مباشرة مع الدعم</button>
             </div>
         </div>
 
         <div class="chatbot-input-area">
             <button class="imessage-plus-btn"><i class="fas fa-plus"></i></button>
             <div class="imessage-input-wrapper">
-                <input type="text" id="chatbotInput" placeholder="{{ __('اكتب رسالتك') }}" dir="rtl">
+                <input type="text" id="chatbotInput" placeholder="اكتب رسالتك" dir="rtl">
                 <button id="chatbotSendBtn" class="chatbot-send-btn">
                     <i class="fas fa-arrow-up"></i>
                 </button>

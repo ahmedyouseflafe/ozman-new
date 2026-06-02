@@ -57,7 +57,15 @@ class AdvertisementController extends Controller
         $data['is_active'] = $request->boolean('is_active');
         $data['media'] = $this->resolveMedia($request);
 
-        Advertisement::create($data);
+        $ad = Advertisement::create($data);
+
+        $this->notifySuperAdmin(
+            'advertisement_created',
+            $ad,
+            'تمت إضافة إعلان جديد',
+            "المتجر {$ad->shop?->name} أضاف إعلان: {$ad->title}",
+            route('ads.show', $ad)
+        );
 
         return redirect()
             ->route('ads')

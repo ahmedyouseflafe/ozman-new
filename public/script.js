@@ -573,12 +573,12 @@
                 thumbEl.style.transition = 'all 0.85s cubic-bezier(0.175, 0.885, 0.32, 1.35)';
 
                 thumbEl.innerHTML = mediaItem.type === 'video'
-                    ? `<video src="${mediaItem.src}" muted playsinline style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></video><span class="open-full-hint" style="opacity:1"><i class="fas fa-play"></i> فيديو</span>`
+                    ? `<video src="${mediaItem.src}" preload="metadata" playsinline loop style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></video><span class="open-full-hint" style="opacity:1"><i class="fas fa-play"></i> فيديو</span>`
                     : `<img src="${mediaItem.src}" alt="thumbnail" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
 
                 thumbEl.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    if (thumbEl.dataset.isCampaign === 'true') {
+                    if (thumbEl.dataset.isCampaign === 'true' && thumbEl.dataset.mediaType !== 'video') {
                         openCampaignModal({
                             src: thumbEl.dataset.mediaSrc,
                             type: thumbEl.dataset.mediaType,
@@ -607,6 +607,10 @@
                             t.style.setProperty('transform', `translate(calc(-50% + ${sideX}px), calc(-50% + ${sideY}px)) scale(1)`, 'important');
                             t.style.setProperty('z-index', '90', 'important');
                             t.dataset.isLarge = "";
+                            const sideVideo = t.querySelector('video');
+                            if (sideVideo) {
+                                sideVideo.pause();
+                            }
                             sideIndex++;
                         });
 
@@ -617,6 +621,15 @@
                         thumbEl.style.setProperty('z-index', '100', 'important');
                         thumbEl.style.setProperty('border', '4px solid var(--primary-color)', 'important');
                         thumbEl.style.setProperty('box-shadow', '0 0 60px rgba(0, 229, 255, 0.45), 0 20px 50px rgba(0, 0, 0, 0.9)', 'important');
+
+                        const activeVideo = thumbEl.querySelector('video');
+                        if (activeVideo) {
+                            activeVideo.muted = false;
+                            activeVideo.play().catch(() => {
+                                activeVideo.muted = true;
+                                activeVideo.play().catch(() => {});
+                            });
+                        }
                         
                         // Ø¥Ø¶Ø§ÙØ© Ù†Øµ ØªÙˆØ¶ÙŠØ­ÙŠ Ø¯Ø§Ø®Ù„ÙŠ ÙƒÙ…Ø§ ÙƒØ§Ù† ÙÙŠ Ø§Ù„Ø¯Ø§Ø¦Ø±Ø© Ø§Ù„Ø³Ø§Ø¨Ù‚Ø©
                         let hint = thumbEl.querySelector('.open-full-hint');
@@ -630,6 +643,10 @@
                         }
                         
                     } else {
+                        const activeVideo = thumbEl.querySelector('video');
+                        if (activeVideo) {
+                            activeVideo.pause();
+                        }
                         openFullscreenMedia(thumbEl.dataset.mediaSrc, thumbEl.dataset.mediaType);
                         return;
                         // Ø¹Ù†Ø¯ Ø§Ù„Ø¶ØºØ· Ø§Ù„Ù…Ø²Ø¯ÙˆØ¬ Ø¹Ù„Ù‰ Ø§Ù„Ø¯Ø§Ø¦Ø±Ø© Ø§Ù„ÙƒØ¨ÙŠØ±Ø© ØªÙØªØ­ Ù…Ù„Ø¡ Ø§Ù„Ø´Ø§Ø´Ø©

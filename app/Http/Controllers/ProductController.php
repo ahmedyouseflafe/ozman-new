@@ -67,7 +67,26 @@ class ProductController extends Controller
 
         $product = Product::create($data);
         $this->storeGalleryImages($request, $product);
-        $this->storeCampaigns($request, $product);
+        $createdCampaigns = $this->storeCampaigns($request, $product);
+
+        $this->notifySuperAdmin(
+            'product_created',
+            $product,
+            'تمت إضافة منتج جديد',
+            "المتجر {$product->shop?->name} أضاف منتج: {$product->name}",
+            route('products.show', $product)
+        );
+
+        foreach ($createdCampaigns as $campaign) {
+            $this->notifySuperAdmin(
+                'campaign_created',
+                $campaign,
+                'تمت إضافة حملة جديدة',
+                "المتجر {$product->shop?->name} أضاف حملة للمنتج: {$product->name}",
+                route('products.show', $product),
+                ['shop_id' => $product->shop_id, 'product_id' => $product->id, 'product_name' => $product->name]
+            );
+        }
 
         return redirect()
             ->route('products')
@@ -118,7 +137,18 @@ class ProductController extends Controller
         $product->update($data);
         $this->deleteCampaigns($request, $product);
         $this->storeGalleryImages($request, $product);
-        $this->storeCampaigns($request, $product);
+        $createdCampaigns = $this->storeCampaigns($request, $product);
+
+        foreach ($createdCampaigns as $campaign) {
+            $this->notifySuperAdmin(
+                'campaign_created',
+                $campaign,
+                'تمت إضافة حملة جديدة',
+                "المتجر {$product->shop?->name} أضاف حملة للمنتج: {$product->name}",
+                route('products.show', $product),
+                ['shop_id' => $product->shop_id, 'product_id' => $product->id, 'product_name' => $product->name]
+            );
+        }
 
         return redirect()
             ->route('products')
@@ -230,8 +260,10 @@ class ProductController extends Controller
         }
     }
 
-    private function storeCampaigns(Request $request, Product $product): void
+    private function storeCampaigns(Request $request, Product $product): \Illuminate\Support\Collection
     {
+        $createdCampaigns = collect();
+
         foreach ($request->input('campaigns', []) as $index => $campaign) {
             $title = trim($campaign['title'] ?? '');
             $type = $campaign['type'] ?? null;
@@ -250,13 +282,15 @@ class ProductController extends Controller
             $directory = $type === 'image' ? 'products/campaigns/images' : 'products/campaigns/videos';
             $path = $file->store($directory, 'public');
 
-            ProductCampaign::create([
+            $createdCampaigns->push(ProductCampaign::create([
                 'product_id' => $product->id,
                 'title' => $title,
                 'type' => $type,
                 'media' => 'storage/' . $path,
-            ]);
+            ]));
         }
+
+        return $createdCampaigns;
     }
 
     private function deleteCampaigns(Request $request, Product $product): void

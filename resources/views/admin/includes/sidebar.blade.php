@@ -177,26 +177,26 @@
         <div class="admin-sidebar-logo-icon">O</div>
         <div>
             <div class="admin-sidebar-logo-text">Ozman</div>
-            <div class="admin-sidebar-logo-sub">{{ __('Ù„ÙˆØ­Ø© Ø§Ù„ØªØ­ÙƒÙ…') }}</div>
+            <div class="admin-sidebar-logo-sub">لوحة التحكم</div>
         </div>
     </div>
 
     <nav class="admin-sidebar-nav">
-        <div class="admin-sidebar-section">{{ __('Ø¹Ø§Ù…') }}</div>
+        <div class="admin-sidebar-section">عام</div>
 
         <a href="{{ route('dashboard') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
              <i class="ti ti-layout-dashboard" aria-hidden="true"></i>
-             {{ __('Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©') }}
+             الرئيسية
         </a>
 
-        <div class="admin-sidebar-section">{{ __('Ø§Ù„Ù…ØªØ¬Ø±') }}</div>
+        <div class="admin-sidebar-section">المتجر</div>
 
         @if($isSuperAdmin)
         <a href="{{ route('dashboard.main') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('dashboard.main') ? 'active' : '' }}">
              <i class="ti ti-dashboard" aria-hidden="true"></i>
-             {{ __('Ù„ÙˆØ­Ø© Ø§Ù„ØªØ­ÙƒÙ… Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©') }}
+             لوحة التحكم الرئيسية
         </a>
 
         @endif
@@ -204,13 +204,13 @@
         <a href="{{ route('shops') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('shops') || request()->routeIs('shops.*') ? 'active' : '' }}">
              <i class="ti ti-building-store" aria-hidden="true"></i>
-             {{ __('Ø§Ù„Ù…ØªØ§Ø¬Ø±') }}
+             المتاجر
         </a>
 
         <a href="{{ route('products') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('products') || request()->routeIs('products.create') || request()->routeIs('products.edit') || request()->routeIs('products.show') ? 'active' : '' }}">
              <i class="ti ti-package" aria-hidden="true"></i>
-             {{ __('Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª') }}
+             المنتجات
         </a>
 
         <a href="{{ route('products.preview', $previewShopId ? ['shop_id' => $previewShopId] : []) }}"
@@ -222,25 +222,25 @@
         <a href="{{ route('categories') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('categories*') ? 'active' : '' }}">
              <i class="ti ti-category" aria-hidden="true"></i>
-             {{ __('Ø§Ù„ÙØ¦Ø§Øª') }}
+             الفئات
         </a>
 
-        <div class="admin-sidebar-section">{{ __('Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª') }}</div>
+        <div class="admin-sidebar-section">الإعلانات</div>
 
         <a href="{{ route('ads') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('ads*') ? 'active' : '' }}">
              <i class="ti ti-speakerphone" aria-hidden="true"></i>
-             {{ __('Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª') }}
+             الإعلانات
         </a>
 
         @if($isSuperAdmin)
         <a href="{{ route('screens') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('screens*') ? 'active' : '' }}">
              <i class="ti ti-device-tv" aria-hidden="true"></i>
-             {{ __('Ø§Ù„Ø´Ø§Ø´Ø§Øª') }}
+             الشاشات
         </a>
 
-        <div class="admin-sidebar-section">{{ __('Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©') }}</div>
+        <div class="admin-sidebar-section">الإدارة</div>
 
         @endif
 
@@ -248,7 +248,7 @@
         <a href="{{ route('users') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('users') ? 'active' : '' }}">
              <i class="ti ti-users" aria-hidden="true"></i>
-             {{ __('Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙˆÙ†') }}
+             المستخدمون
         </a>
 
         @endif
@@ -256,20 +256,20 @@
         <a href="{{ route('agents') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('agents*') ? 'active' : '' }}">
              <i class="ti ti-user-star" aria-hidden="true"></i>
-             {{ __('Ø§Ù„ÙˆÙƒÙ„Ø§Ø¡') }}
+             الوكلاء
         </a>
 
         <a href="{{ route('distributors') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('distributors') ? 'active' : '' }}">
              <i class="ti ti-truck-delivery" aria-hidden="true"></i>
-             {{ __('Ø§Ù„Ù…ÙˆØ²Ø¹ÙˆÙ†') }}
+             الموزعون
         </a>
 
         @if($isSuperAdmin)
         <a href="{{ route('settings') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('settings') ? 'active' : '' }}">
              <i class="ti ti-settings" aria-hidden="true"></i>
-             {{ __('Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª') }}
+             الإعدادات
         </a>
         @endif
     </nav>
@@ -278,12 +278,12 @@
         @csrf
         <button type="submit" class="admin-sidebar-item" style="width:100%;justify-content:flex-start;background:rgba(255,255,255,.05);cursor:pointer;font-family:inherit;">
             <i class="ti ti-logout" aria-hidden="true"></i>
-            ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬
+            تسجيل الخروج
         </button>
     </form>
 
     <div class="admin-sidebar-footer">
         <i class="ti ti-circle-check" aria-hidden="true"></i>
-        {{ __('Ø§Ù„Ù†Ø¸Ø§Ù… Ù…ØªØµÙ„ ÙˆØ¬Ø§Ù‡Ø²') }}
+        النظام متصل وجاهز
     </div>
 </div>

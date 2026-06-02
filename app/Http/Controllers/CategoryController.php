@@ -56,7 +56,15 @@ class CategoryController extends Controller
             $data['image'] = $this->storeUpload($request, 'image', 'categories');
         }
 
-        Category::create($data);
+        $category = Category::create($data);
+
+        $this->notifySuperAdmin(
+            'category_created',
+            $category,
+            'تمت إضافة فئة جديدة',
+            "المتجر {$category->shop?->name} أضاف فئة: {$category->name}",
+            route('categories.show', $category)
+        );
 
         return redirect()
             ->route('categories')
