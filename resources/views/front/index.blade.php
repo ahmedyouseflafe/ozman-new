@@ -33,6 +33,7 @@
         ];
     @endphp
 
+    @unless($isDashboardPreview ?? false)
     <header>
         <div class="header-right-group">
             <div class="logo-container">
@@ -93,6 +94,9 @@
         </section>
 
         <hr class="section-divider">
+    @else
+    <main>
+    @endunless
 
         <!-- Infinite Vertical Carousel Section -->
         <header>

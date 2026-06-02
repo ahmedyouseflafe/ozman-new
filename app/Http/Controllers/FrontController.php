@@ -74,21 +74,6 @@ class FrontController extends Controller
     {
         $selectedShop = $this->previewShop($request);
 
-        $ozmanShop = Shop::query()
-            ->where('slug', 'ozman')
-            ->with([
-                'social',
-                'categories' => fn($query) => $query
-                    ->where('is_active', true)
-                    ->with(['products' => fn($productQuery) => $productQuery
-                        ->where('is_active', true)
-                        ->with(['images', 'campaigns'])
-                        ->latest()
-                    ])
-                    ->latest(),
-            ])
-            ->first();
-
         $shop = $selectedShop->load([
             'social',
             'agents' => fn($query) => $query->where('is_active', true)->latest(),
@@ -104,10 +89,10 @@ class FrontController extends Controller
         ]);
 
         $shops = collect([$shop]);
-        $ozmanCategories = $ozmanShop?->categories ?? collect();
+        $ozmanCategories = collect();
 
         return view('front.index', [
-            'ozmanShop' => $ozmanShop,
+            'ozmanShop' => null,
             'shop' => $shop,
             'shops' => $shops,
             'agents' => $shop->agents,
@@ -123,9 +108,9 @@ class FrontController extends Controller
         $user = Auth::user();
         abort_unless($user, 403);
 
-        if ($user->isSuperAdmin()) {
-            $shopId = $request->integer('shop_id');
+        $shopId = $request->integer('shop_id');
 
+        if ($user->isSuperAdmin()) {
             return Shop::query()
                 ->where('slug', '!=', 'ozman')
                 ->when($shopId, fn($query) => $query->whereKey($shopId))
@@ -133,7 +118,9 @@ class FrontController extends Controller
                 ->firstOrFail();
         }
 
-        return $user->shops()->firstOrFail();
+        return $user->shops()
+            ->when($shopId, fn($query) => $query->whereKey($shopId))
+            ->firstOrFail();
     }
 
     private function frontData($shops, $ozmanCategories): array
