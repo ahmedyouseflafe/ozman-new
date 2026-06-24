@@ -218,7 +218,8 @@
         }
 
         input,
-        textarea {
+        textarea,
+        select {
             width: 100%;
             border: 1px solid var(--border);
             background: rgba(255, 255, 255, .055);
@@ -239,13 +240,19 @@
         }
 
         input:focus,
-        textarea:focus {
+        textarea:focus,
+        select:focus {
             border-color: var(--primary);
             box-shadow: 0 0 18px rgba(0, 229, 255, .22);
         }
 
         input::placeholder,
         textarea::placeholder { color: var(--dim); }
+
+        select option {
+            background: #080808;
+            color: #fff;
+        }
 
         input[type="time"],
         input[type="email"],
@@ -942,6 +949,80 @@
     </div>
 
 </section>
+
+                    <section class="form-section">
+                        <div class="section-head">
+                            <div class="section-icon"><i class="ti ti-credit-card-pay" aria-hidden="true"></i></div>
+                            <div>
+                                <h2>معلومات الدفع</h2>
+                                <p>تحديث بيانات الحساب الذي يستقبل دفعات العملاء الخاصة بهذا المتجر.</p>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label" for="payment_method"><i class="ti ti-wallet" aria-hidden="true"></i>طريقة الدفع</label>
+                                <div class="field">
+                                    <select id="payment_method" name="payment_method">
+                                        <option value="">اختر طريقة الدفع</option>
+                                        <option value="bank_transfer" @selected(old('payment_method', data_get($shop, 'payment_method')) === 'bank_transfer')>تحويل بنكي</option>
+                                        <option value="wallet" @selected(old('payment_method', data_get($shop, 'payment_method')) === 'wallet')>محفظة إلكترونية</option>
+                                        <option value="cash" @selected(old('payment_method', data_get($shop, 'payment_method')) === 'cash')>كاش / عند الاستلام</option>
+                                        <option value="other" @selected(old('payment_method', data_get($shop, 'payment_method')) === 'other')>أخرى</option>
+                                    </select>
+                                    <i class="ti ti-wallet field-icon" aria-hidden="true"></i>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="payment_provider"><i class="ti ti-building-bank" aria-hidden="true"></i>البنك أو مزود الدفع</label>
+                                <div class="field">
+                                    <input type="text" id="payment_provider" name="payment_provider" value="{{ old('payment_provider', data_get($shop, 'payment_provider')) }}" placeholder="اسم البنك أو المحفظة">
+                                    <i class="ti ti-building-bank field-icon" aria-hidden="true"></i>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="payment_account_holder"><i class="ti ti-user-dollar" aria-hidden="true"></i>اسم صاحب الحساب</label>
+                                <div class="field">
+                                    <input type="text" id="payment_account_holder" name="payment_account_holder" value="{{ old('payment_account_holder', data_get($shop, 'payment_account_holder')) }}" placeholder="الاسم كما يظهر في الحساب">
+                                    <i class="ti ti-user-dollar field-icon" aria-hidden="true"></i>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="payment_account_number"><i class="ti ti-number" aria-hidden="true"></i>رقم الحساب</label>
+                                <div class="field">
+                                    <input type="text" id="payment_account_number" name="payment_account_number" value="{{ old('payment_account_number', data_get($shop, 'payment_account_number')) }}" dir="ltr" placeholder="Account number">
+                                    <i class="ti ti-number field-icon" aria-hidden="true"></i>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="payment_iban"><i class="ti ti-receipt" aria-hidden="true"></i>IBAN</label>
+                                <div class="field">
+                                    <input type="text" id="payment_iban" name="payment_iban" value="{{ old('payment_iban', data_get($shop, 'payment_iban')) }}" dir="ltr" placeholder="IBAN">
+                                    <i class="ti ti-receipt field-icon" aria-hidden="true"></i>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="payment_wallet_number"><i class="ti ti-device-mobile-dollar" aria-hidden="true"></i>رقم المحفظة</label>
+                                <div class="field">
+                                    <input type="text" id="payment_wallet_number" name="payment_wallet_number" value="{{ old('payment_wallet_number', data_get($shop, 'payment_wallet_number')) }}" dir="ltr" placeholder="+970599999999">
+                                    <i class="ti ti-device-mobile-dollar field-icon" aria-hidden="true"></i>
+                                </div>
+                            </div>
+
+                            <div class="form-group full">
+                                <label class="form-label" for="payment_notes"><i class="ti ti-notes" aria-hidden="true"></i>ملاحظات الدفع</label>
+                                <div class="field">
+                                    <textarea id="payment_notes" name="payment_notes" placeholder="أي تعليمات إضافية للدفع أو التحويل">{{ old('payment_notes', data_get($shop, 'payment_notes')) }}</textarea>
+                                    <i class="ti ti-notes field-icon" aria-hidden="true"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
                     <section class="form-section">
                         <div class="section-head">

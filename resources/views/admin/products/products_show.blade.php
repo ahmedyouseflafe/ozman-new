@@ -112,7 +112,7 @@
         .tag-y { color: var(--yellow); background: rgba(255, 214, 10, .1); }
         .tag-c { color: var(--primary); background: rgba(0, 229, 255, .09); }
 
-        .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+        .stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
         .stat {
             min-height: 118px;
             border: 1px solid var(--border);
@@ -160,6 +160,8 @@
         .campaign-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
         .campaign h3 { color: var(--primary); font-size: 14px; font-weight: 900; overflow-wrap: anywhere; }
         .campaign img, .campaign video { width: 100%; height: 190px; object-fit: cover; border-radius: 16px; border: 1px solid var(--border); background: #000; display: block; }
+        .campaign-offer { margin-bottom: 12px; color: rgba(255,255,255,.76); font-size: 12px; font-weight: 800; line-height: 1.8; }
+        .campaign-offer strong { color: var(--primary); font-size: 15px; }
 
         .empty-state {
             border: 1px dashed rgba(255, 255, 255, .16);
@@ -193,6 +195,25 @@
 </head>
 
 <body>
+    @php
+        $currentUser = auth()->user();
+        $currentUserAgentIds = $currentUser?->isAgent()
+            ? \App\Models\Agent::query()
+                ->where(function ($query) use ($currentUser) {
+                    $query->where('user_id', $currentUser->id);
+
+                    if ($currentUser->email) {
+                        $query->orWhere('email', $currentUser->email);
+                    }
+                })
+                ->pluck('id')
+                ->map(fn($id) => (int) $id)
+                ->all()
+            : [];
+        $canManageProducts = ! $currentUser?->isDistributor()
+            && (! $currentUser?->isAgent() || in_array((int) $product->agent_id, $currentUserAgentIds, true));
+    @endphp
+
     <div class="shell">
         @include('admin.includes.sidebar')
         <main class="main">
@@ -205,7 +226,9 @@
                         <p>{{ $product->shop?->name ?? 'متجر غير محدد' }} / {{ $product->category?->name ?? 'فئة غير محددة' }}</p>
                     </div>
                     <div class="actions" style="margin-top:0">
-                        <a href="{{ route('products.edit', $product) }}" class="btn btn-primary"><i class="ti ti-edit"></i>تعديل المنتج</a>
+                        @if($canManageProducts)
+                            <a href="{{ route('products.edit', $product) }}" class="btn btn-primary"><i class="ti ti-edit"></i>تعديل المنتج</a>
+                        @endif
                         <a href="{{ route('products') }}" class="btn"><i class="ti ti-arrow-right"></i>رجوع للمنتجات</a>
                     </div>
                 </header>
@@ -223,6 +246,34 @@
                         <div>
                             <div class="stat-label">سعر الخصم</div>
                             <div class="stat-value">{{ $product->discount_price ? number_format((float) $product->discount_price, 2) . ' شيكل' : '-' }}</div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <i class="ti ti-building-store"></i>
+                        <div>
+                            <div class="stat-label">سعر التاجر</div>
+                            <div class="stat-value">{{ $product->merchant_price ? number_format((float) $product->merchant_price, 2) . ' شيكل' : '-' }}</div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <i class="ti ti-package"></i>
+                        <div>
+                            <div class="stat-label">سعر العبوة</div>
+                            <div class="stat-value">{{ $product->package_price ? number_format((float) $product->package_price, 2) . ' شيكل' : '-' }}</div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <i class="ti ti-stack-3"></i>
+                        <div>
+                            <div class="stat-label">سعر المشطاح</div>
+                            <div class="stat-value">{{ $product->pallet_price ? number_format((float) $product->pallet_price, 2) . ' شيكل' : '-' }}</div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <i class="ti ti-box"></i>
+                        <div>
+                            <div class="stat-label">سعر الكرتونة</div>
+                            <div class="stat-value">{{ $product->carton_price ? number_format((float) $product->carton_price, 2) . ' شيكل' : '-' }}</div>
                         </div>
                     </div>
                     <div class="stat">
@@ -309,12 +360,27 @@
                                         <div class="campaign">
                                             <div class="campaign-head">
                                                 <h3>{{ $campaign->title }}</h3>
-                                                <span class="tag tag-c">{{ $campaign->type === 'image' ? 'صورة' : 'فيديو' }}</span>
+                                                <span class="tag tag-c">{{ $campaign->media ? ($campaign->type === 'image' ? 'صورة' : 'فيديو') : 'عرض' }}</span>
                                             </div>
-                                            @if($campaign->type === 'image')
-                                                <img src="{{ asset($campaign->media) }}" alt="{{ $campaign->title }}">
-                                            @else
-                                                <video src="{{ asset($campaign->media) }}" controls></video>
+                                            @if($campaign->offer_quantity || $campaign->offer_price || $campaign->offer_note || $campaign->starts_at || $campaign->ends_at)
+                                                <div class="campaign-offer">
+                                                    @if($campaign->offer_quantity && $campaign->offer_price)
+                                                        <div><strong>{{ $campaign->offer_quantity }} بسعر {{ number_format((float) $campaign->offer_price, 2) }}</strong></div>
+                                                    @endif
+                                                    @if($campaign->offer_note)
+                                                        <div>{{ $campaign->offer_note }}</div>
+                                                    @endif
+                                                    @if($campaign->starts_at || $campaign->ends_at)
+                                                        <div>الفترة: {{ $campaign->starts_at?->format('Y-m-d') ?? 'بدون بداية' }} - {{ $campaign->ends_at?->format('Y-m-d') ?? 'بدون نهاية' }}</div>
+                                                    @endif
+                                                </div>
+                                            @endif
+                                            @if($campaign->media)
+                                                @if($campaign->type === 'image')
+                                                    <img src="{{ asset($campaign->media) }}" alt="{{ $campaign->title }}">
+                                                @else
+                                                    <video src="{{ asset($campaign->media) }}" controls></video>
+                                                @endif
                                             @endif
                                         </div>
                                     @endforeach

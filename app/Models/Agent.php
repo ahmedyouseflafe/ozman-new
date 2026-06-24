@@ -11,6 +11,7 @@ class Agent extends Model
 
     protected $fillable = [
         'shop_id',
+        'user_id',
         'name',
         'image',
         'phone',
@@ -31,5 +32,25 @@ class Agent extends Model
     public function shop()
     {
         return $this->belongsTo(Shop::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function distributors()
+    {
+        return $this->hasMany(Distributor::class);
+    }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    public function categories()
+    {
+        return $this->hasMany(Category::class);
     }
 }

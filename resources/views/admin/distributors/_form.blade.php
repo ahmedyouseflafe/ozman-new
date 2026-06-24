@@ -12,7 +12,7 @@
     <div class="form-grid">
         <div class="form-group">
             <label class="form-label" for="shop_id">المتجر</label>
-            <select id="shop_id" name="shop_id" required>
+            <select id="shop_id" name="shop_id">
                 <option value="">اختر المتجر</option>
                 @foreach($shops as $shop)
                     <option value="{{ $shop->id }}" @selected(old('shop_id', $distributor->shop_id ?? $selectedShopId ?? '') == $shop->id)>{{ $shop->name }}</option>
@@ -21,8 +21,37 @@
         </div>
 
         <div class="form-group">
+            <label class="form-label" for="agent_id">الوكيل التابع له</label>
+            <select id="agent_id" name="agent_id">
+                <option value="">بدون وكيل مباشر</option>
+                @foreach($agents ?? [] as $agent)
+                    <option value="{{ $agent->id }}" @selected(old('agent_id', $distributor->agent_id ?? '') == $agent->id)>
+                        {{ $agent->name }} - {{ $agent->shop?->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="form-group">
             <label class="form-label" for="name">اسم الموزع</label>
             <input type="text" id="name" name="name" value="{{ old('name', $distributor->name ?? '') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="user_id">حساب دخول الموزع</label>
+            <select id="user_id" name="user_id">
+                <option value="">بدون ربط مباشر</option>
+                @foreach($distributorUsers ?? [] as $distributorUser)
+                    <option value="{{ $distributorUser->id }}" @selected(old('user_id', $distributor->user_id ?? '') == $distributorUser->id)>
+                        {{ $distributorUser->name }} - {{ $distributorUser->email }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="login_password">كلمة مرور دخول الموزع</label>
+            <input type="password" id="login_password" name="login_password" autocomplete="new-password" placeholder="اتركها فارغة إذا لا تريد إنشاء/تغيير الحساب">
         </div>
 
         <div class="form-group">

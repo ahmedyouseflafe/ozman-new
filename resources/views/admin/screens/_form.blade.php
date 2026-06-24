@@ -35,7 +35,7 @@
                 <span class="card-icon"><i class="ti ti-upload" aria-hidden="true"></i></span>
                 <span>
                     <span class="card-title">ملف الشاشة</span>
-                    <span class="card-sub">{{ $isEdit ? 'اتركه فارغاً للاحتفاظ بالملف الحالي' : 'ارفع صورة أو فيديو حسب النوع' }}</span>
+                    <span class="card-sub">{{ $isEdit ? 'اتركه فارغاً للاحتفاظ بالملف الحالي' : 'ارفع صورة أو فيديو حسب النوع' }} - الحد الأقصى 1GB</span>
                 </span>
             </label>
         </div>

@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Shop;
 use App\Models\User;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +24,7 @@ class ShopController extends Controller
     {
         $shops = Shop::query()
             ->where('slug', '!=', 'ozman')
-            ->when(! $this->isSuperAdmin(), fn($query) => $query->whereIn('id', $this->ownedShopIds()))
+            ->when(! $this->hasGlobalDashboardAccess(), fn($query) => $query->whereIn('id', $this->ownedShopIds()))
             ->withCount('products')
             ->latest()
             ->get()
@@ -51,12 +55,51 @@ class ShopController extends Controller
             'advertisements' => fn($query) => $query->latest(),
         ])->loadCount(['products', 'categories', 'agents', 'distributors', 'advertisements']);
 
-        return view('admin.shop.shops_list', compact('shop'));
+        $publicShopUrl = route('front.shop.slug', $shop);
+        $shopQrCodeSvg = (new Writer(new ImageRenderer(
+            new RendererStyle(360, 2),
+            new SvgImageBackEnd()
+        )))->writeString($publicShopUrl);
+        $shopQrCodeDataUri = 'data:image/svg+xml;base64,' . base64_encode($shopQrCodeSvg);
+        $socialLinks = collect([
+            ['label' => 'Facebook', 'icon' => 'ti-brand-facebook', 'value' => optional($shop->social)->facebook],
+            ['label' => 'Instagram', 'icon' => 'ti-brand-instagram', 'value' => optional($shop->social)->instagram],
+            ['label' => 'TikTok', 'icon' => 'ti-brand-tiktok', 'value' => optional($shop->social)->tiktok],
+            ['label' => 'Telegram', 'icon' => 'ti-brand-telegram', 'value' => optional($shop->social)->telegram],
+            ['label' => 'Snapchat', 'icon' => 'ti-brand-snapchat', 'value' => optional($shop->social)->snapchat],
+            ['label' => 'Twitter / X', 'icon' => 'ti-brand-x', 'value' => optional($shop->social)->twitter],
+            ['label' => 'YouTube', 'icon' => 'ti-brand-youtube', 'value' => optional($shop->social)->youtube],
+            ['label' => 'WhatsApp', 'icon' => 'ti-brand-whatsapp', 'value' => optional($shop->social)->whatsapp],
+        ])
+            ->filter(fn($link) => filled($link['value']))
+            ->map(function ($link) {
+                $link['url'] = Str::startsWith($link['value'], ['http://', 'https://'])
+                    ? $link['value']
+                    : 'https://' . ltrim($link['value'], '/');
+
+                return $link;
+            })
+            ->values();
+
+        $paymentMethodLabels = [
+            'bank_transfer' => 'تحويل بنكي',
+            'wallet' => 'محفظة إلكترونية',
+            'cash' => 'كاش / عند الاستلام',
+            'other' => 'أخرى',
+        ];
+
+        return view('admin.shop.shops_list', compact(
+            'shop',
+            'publicShopUrl',
+            'shopQrCodeDataUri',
+            'socialLinks',
+            'paymentMethodLabels'
+        ));
     }
 
     public function ozman(): RedirectResponse
     {
-        abort_unless($this->isSuperAdmin(), 403);
+        abort_unless($this->canAccessCurrentRoute(), 403);
 
         $shop = Shop::query()->firstOrCreate(
             ['slug' => 'ozman'],
@@ -75,14 +118,14 @@ class ShopController extends Controller
 
     public function create(): View
     {
-        abort_unless($this->isSuperAdmin(), 403);
+        abort_unless($this->canAccessCurrentRoute(), 403);
 
         return view('admin.shop.shops_create');
     }
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless($this->isSuperAdmin(), 403);
+        abort_unless($this->canAccessCurrentRoute(), 403);
 
         $data = $this->validatedData($request);
         $owner = $this->resolveShopOwner($request, $data);
@@ -111,6 +154,15 @@ class ShopController extends Controller
             'youtube'   => $request->youtube,
             'whatsapp'  => $request->social_whatsapp,
         ]);
+
+        $this->notifySuperAdmin(
+            'shop_created',
+            $shop,
+            'تم تسجيل متجر جديد',
+            "تم إنشاء متجر جديد داخل النظام: {$shop->name}",
+            route('shops.show', $shop),
+            ['shop_id' => $shop->id, 'owner_id' => $owner->id]
+        );
 
         return redirect()
             ->route('shops')
@@ -169,7 +221,7 @@ class ShopController extends Controller
 
     public function destroy(Shop $shop): RedirectResponse
     {
-        abort_unless($this->isSuperAdmin(), 403);
+        abort_unless($this->canAccessCurrentRoute(), 403);
 
         $this->deleteUpload($shop->logo);
         $this->deleteUpload($shop->banner);
@@ -201,6 +253,13 @@ class ShopController extends Controller
             'country' => ['nullable', 'string', 'max:255'],
             'open_time' => ['nullable', 'date_format:H:i'],
             'close_time' => ['nullable', 'date_format:H:i'],
+            'payment_method' => ['nullable', 'string', 'max:255'],
+            'payment_provider' => ['nullable', 'string', 'max:255'],
+            'payment_account_holder' => ['nullable', 'string', 'max:255'],
+            'payment_account_number' => ['nullable', 'string', 'max:255'],
+            'payment_iban' => ['nullable', 'string', 'max:255'],
+            'payment_wallet_number' => ['nullable', 'string', 'max:255'],
+            'payment_notes' => ['nullable', 'string'],
             'logo' => ['nullable', 'image', 'max:2048'],
             'banner' => ['nullable', 'image', 'max:4096'],
             'owner_email' => [
@@ -227,6 +286,28 @@ class ShopController extends Controller
 
     private function updateShopOwner(Request $request, Shop $shop, array $data): void
     {
+        if ($shop->user?->isSuperAdmin()) {
+            if (! $request->filled('owner_email') || $request->input('owner_email') === $shop->user->email) {
+                return;
+            }
+
+            $ownerData = [
+                'name' => $data['name'],
+                'email' => $request->input('owner_email'),
+                'phone' => $data['phone'] ?? null,
+                'password' => $request->filled('owner_password')
+                    ? Hash::make($request->input('owner_password'))
+                    : Hash::make(Str::random(16)),
+                'role' => 'shop_owner',
+                'is_active' => true,
+            ];
+
+            $owner = User::create($ownerData);
+            $shop->update(['user_id' => $owner->id]);
+
+            return;
+        }
+
         $ownerData = [
             'name' => $data['name'],
             'phone' => $data['phone'] ?? null,

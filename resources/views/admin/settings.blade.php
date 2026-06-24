@@ -319,35 +319,6 @@
             box-shadow: 0 0 12px rgba(37, 211, 102, .7);
         }
 
-        .system-card {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 12px;
-            margin-top: 14px;
-        }
-
-        .mini-stat {
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 14px;
-            background: rgba(0, 0, 0, .22);
-        }
-
-        .mini-stat span {
-            display: block;
-            color: var(--dim);
-            font-size: 11px;
-            font-weight: 800;
-            margin-bottom: 8px;
-        }
-
-        .mini-stat strong {
-            color: var(--primary);
-            font-size: 18px;
-            font-weight: 900;
-            text-shadow: 0 0 12px rgba(0, 229, 255, .32);
-        }
-
         @media(max-width: 1100px) {
             .settings-grid { grid-template-columns: 1fr; }
         }
@@ -359,7 +330,6 @@
         @media(max-width: 680px) {
             .content { padding: 20px 16px 34px; }
             .page-head { align-items: stretch; flex-direction: column; }
-            .system-card { grid-template-columns: 1fr; }
             h1 { font-size: 28px; }
             .btn-primary { width: 100%; }
         }
@@ -373,6 +343,11 @@
         $adminPhone = $adminPhone ?? '059-000-0001';
         $systemName = $systemName ?? 'Ozman';
         $defaultCurrency = $defaultCurrency ?? '₪ شيكل';
+        $notificationSettings = $notificationSettings ?? [
+            'new_shops' => true,
+            'out_of_stock' => true,
+            'new_users' => false,
+        ];
     @endphp
 
     <div class="shell">
@@ -399,9 +374,26 @@
                     </div>
                 </header>
 
+                @if (session('status'))
+                    <div class="panel"
+                        style="margin-bottom:18px;border-color:rgba(37,211,102,.35);background:rgba(37,211,102,.08);color:#fff;min-height:auto">
+                        {{ session('status') }}
+                    </div>
+                @endif
+
+                @if ($errors->any())
+                    <div class="panel"
+                        style="margin-bottom:18px;border-color:rgba(255,59,48,.35);background:rgba(255,59,48,.08);color:#ffb4bd;min-height:auto">
+                        @foreach ($errors->all() as $error)
+                            <div>{{ $error }}</div>
+                        @endforeach
+                    </div>
+                @endif
+
                 <section class="settings-grid">
-                    <form class="panel" action="#" method="post">
+                    <form class="panel" action="{{ route('settings.profile.update') }}" method="post">
                         @csrf
+                        @method('PUT')
                         <div class="panel-head">
                             <div class="panel-icon"><i class="ti ti-user" aria-hidden="true"></i></div>
                             <div>
@@ -413,15 +405,15 @@
                         <div class="form-grid">
                             <div class="field">
                                 <label for="adminName">الاسم الكامل</label>
-                                <input id="adminName" type="text" name="name" value="{{ $adminName }}">
+                                <input id="adminName" type="text" name="name" value="{{ old('name', $adminName) }}">
                             </div>
                             <div class="field">
                                 <label for="adminEmail">البريد الإلكتروني</label>
-                                <input id="adminEmail" type="email" name="email" value="{{ $adminEmail }}" dir="ltr">
+                                <input id="adminEmail" type="email" name="email" value="{{ old('email', $adminEmail) }}" dir="ltr">
                             </div>
                             <div class="field">
                                 <label for="adminPhone">رقم الهاتف</label>
-                                <input id="adminPhone" type="tel" name="phone" value="{{ $adminPhone }}" dir="ltr">
+                                <input id="adminPhone" type="tel" name="phone" value="{{ old('phone', $adminPhone) }}" dir="ltr">
                             </div>
                             <button class="btn-primary" type="submit">
                                 <i class="ti ti-device-floppy" aria-hidden="true"></i>
@@ -430,8 +422,9 @@
                         </div>
                     </form>
 
-                    <form class="panel" action="#" method="post">
+                    <form class="panel" action="{{ route('settings.password.update') }}" method="post">
                         @csrf
+                        @method('PUT')
                         <div class="panel-head">
                             <div class="panel-icon"><i class="ti ti-lock" aria-hidden="true"></i></div>
                             <div>
@@ -460,7 +453,9 @@
                         </div>
                     </form>
 
-                    <section class="panel">
+                    <form class="panel" action="{{ route('settings.notifications.update') }}" method="post">
+                        @csrf
+                        @method('PUT')
                         <div class="panel-head">
                             <div class="panel-icon"><i class="ti ti-bell" aria-hidden="true"></i></div>
                             <div>
@@ -476,7 +471,7 @@
                                     <span class="toggle-subtitle">تنبيه عند تسجيل متجر جديد داخل النظام</span>
                                 </span>
                                 <span class="switch">
-                                    <input type="checkbox" checked>
+                                    <input type="checkbox" name="new_shops" value="1" @checked(old('new_shops', $notificationSettings['new_shops'] ?? true))>
                                     <span class="slider"></span>
                                 </span>
                             </label>
@@ -487,7 +482,7 @@
                                     <span class="toggle-subtitle">تنبيه عند وصول الكمية إلى صفر</span>
                                 </span>
                                 <span class="switch">
-                                    <input type="checkbox" checked>
+                                    <input type="checkbox" name="out_of_stock" value="1" @checked(old('out_of_stock', $notificationSettings['out_of_stock'] ?? true))>
                                     <span class="slider"></span>
                                 </span>
                             </label>
@@ -498,15 +493,20 @@
                                     <span class="toggle-subtitle">تنبيه عند إنشاء حساب مستخدم جديد</span>
                                 </span>
                                 <span class="switch">
-                                    <input type="checkbox">
+                                    <input type="checkbox" name="new_users" value="1" @checked(old('new_users', $notificationSettings['new_users'] ?? false))>
                                     <span class="slider"></span>
                                 </span>
                             </label>
                         </div>
-                    </section>
+                        <button class="btn-primary" type="submit">
+                            <i class="ti ti-device-floppy" aria-hidden="true"></i>
+                            حفظ الإشعارات
+                        </button>
+                    </form>
 
-                    <form class="panel" action="#" method="post">
+                    <form class="panel" action="{{ route('settings.system.update') }}" method="post">
                         @csrf
+                        @method('PUT')
                         <div class="panel-head">
                             <div class="panel-icon"><i class="ti ti-building-store" aria-hidden="true"></i></div>
                             <div>
@@ -518,30 +518,15 @@
                         <div class="form-grid">
                             <div class="field">
                                 <label for="systemName">اسم النظام</label>
-                                <input id="systemName" type="text" name="system_name" value="{{ $systemName }}">
+                                <input id="systemName" type="text" name="system_name" value="{{ old('system_name', $systemName) }}">
                             </div>
                             <div class="field">
                                 <label for="currency">العملة الافتراضية</label>
                                 <select id="currency" name="currency">
-                                    <option @selected($defaultCurrency === '₪ شيكل')>₪ شيكل</option>
-                                    <option @selected($defaultCurrency === '$ دولار')>$ دولار</option>
-                                    <option @selected($defaultCurrency === '€ يورو')>€ يورو</option>
+                                    <option @selected(old('currency', $defaultCurrency) === '₪ شيكل')>₪ شيكل</option>
+                                    <option @selected(old('currency', $defaultCurrency) === '$ دولار')>$ دولار</option>
+                                    <option @selected(old('currency', $defaultCurrency) === '€ يورو')>€ يورو</option>
                                 </select>
-                            </div>
-
-                            <div class="system-card">
-                                <div class="mini-stat">
-                                    <span>حالة النظام</span>
-                                    <strong>متصل</strong>
-                                </div>
-                                <div class="mini-stat">
-                                    <span>الواجهة</span>
-                                    <strong>RTL</strong>
-                                </div>
-                                <div class="mini-stat">
-                                    <span>النمط</span>
-                                    <strong>Neon</strong>
-                                </div>
                             </div>
 
                             <button class="btn-primary" type="submit">

@@ -4,14 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Concerns\HasLocalizedText;
 
 class Category extends Model
 {
-    use HasFactory;
+    use HasFactory, HasLocalizedText;
 
     protected $fillable = [
         'shop_id',
+        'agent_id',
         'name',
+        'name_translations',
         'slug',
         'image',
         'is_active',
@@ -19,6 +22,7 @@ class Category extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'name_translations' => 'array',
     ];
 
     // العلاقات
@@ -26,6 +30,11 @@ class Category extends Model
     public function shop()
     {
         return $this->belongsTo(Shop::class);
+    }
+
+    public function agent()
+    {
+        return $this->belongsTo(Agent::class);
     }
 
     public function products()

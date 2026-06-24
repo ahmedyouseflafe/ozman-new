@@ -13,9 +13,11 @@ use Illuminate\View\View;
 
 class ScreenController extends Controller
 {
+    private const MAX_SCREEN_UPLOAD_KILOBYTES = 1048576; // 1 GB
+
     public function index(): View
     {
-        abort_unless($this->isSuperAdmin(), 403);
+        abort_unless($this->canAccessCurrentRoute(), 403);
 
         $screens = MainScreen::query()
             ->latest()
@@ -39,14 +41,14 @@ class ScreenController extends Controller
 
     public function create(): View
     {
-        abort_unless($this->isSuperAdmin(), 403);
+        abort_unless($this->canAccessCurrentRoute(), 403);
 
         return view('admin.screens.screens_create');
     }
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless($this->isSuperAdmin(), 403);
+        abort_unless($this->canAccessCurrentRoute(), 403);
 
         $data = $this->validatedData($request);
         $data['duration'] = $data['duration'] ?? 10;
@@ -62,21 +64,21 @@ class ScreenController extends Controller
 
     public function show(MainScreen $screen): View
     {
-        abort_unless($this->isSuperAdmin(), 403);
+        abort_unless($this->canAccessCurrentRoute(), 403);
 
         return view('admin.screens.screens_show', compact('screen'));
     }
 
     public function edit(MainScreen $screen): View
     {
-        abort_unless($this->isSuperAdmin(), 403);
+        abort_unless($this->canAccessCurrentRoute(), 403);
 
         return view('admin.screens.screens_edit', compact('screen'));
     }
 
     public function update(Request $request, MainScreen $screen): RedirectResponse
     {
-        abort_unless($this->isSuperAdmin(), 403);
+        abort_unless($this->canAccessCurrentRoute(), 403);
 
         $data = $this->validatedData($request, $screen);
         $data['duration'] = $data['duration'] ?? 10;
@@ -98,7 +100,7 @@ class ScreenController extends Controller
 
     public function destroy(MainScreen $screen): RedirectResponse
     {
-        abort_unless($this->isSuperAdmin(), 403);
+        abort_unless($this->canAccessCurrentRoute(), 403);
 
         $this->deleteUpload($screen->media);
         $screen->delete();
@@ -155,7 +157,7 @@ class ScreenController extends Controller
                 Rule::requiredIf(fn() => $isCreate && in_array($request->input('type'), ['image', 'video'], true)),
                 'nullable',
                 'file',
-                'max:20480',
+                'max:' . self::MAX_SCREEN_UPLOAD_KILOBYTES,
             ],
             'duration' => ['nullable', 'integer', 'min:1', 'max:3600'],
         ]);

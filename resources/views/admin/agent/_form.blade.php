@@ -26,6 +26,23 @@
         </div>
 
         <div class="form-group">
+            <label class="form-label" for="user_id">حساب دخول الوكيل</label>
+            <select id="user_id" name="user_id">
+                <option value="">بدون ربط مباشر</option>
+                @foreach($agentUsers ?? [] as $agentUser)
+                    <option value="{{ $agentUser->id }}" @selected(old('user_id', $agent->user_id ?? '') == $agentUser->id)>
+                        {{ $agentUser->name }} - {{ $agentUser->email }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="login_password">كلمة مرور دخول الوكيل</label>
+            <input type="password" id="login_password" name="login_password" autocomplete="new-password" placeholder="اتركها فارغة إذا لا تريد إنشاء/تغيير الحساب">
+        </div>
+
+        <div class="form-group">
             <label class="form-label" for="phone">الهاتف</label>
             <input type="text" id="phone" name="phone" value="{{ old('phone', $agent->phone ?? '') }}" dir="ltr">
         </div>

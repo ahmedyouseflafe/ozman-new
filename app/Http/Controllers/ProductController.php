@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Agent;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductCampaign;
@@ -20,7 +21,8 @@ class ProductController extends Controller
     {
         $products = Product::query()
             ->with(['shop', 'category'])
-            ->when(! $this->isSuperAdmin(), fn($query) => $this->scopeToAccessibleShops($query))
+            ->when(! $this->hasGlobalDashboardAccess(), fn($query) => $this->scopeToAccessibleShops($query))
+            ->when(auth()->user()?->isAgent(), fn($query) => $query->whereIn('agent_id', $this->currentUserAgentIds()))
             ->latest()
             ->get();
 
@@ -36,6 +38,8 @@ class ProductController extends Controller
 
     public function create(Request $request): View
     {
+        $this->authorizeProductManagement();
+
         return view('admin.products.products_create', array_merge(
             $this->formOptions(),
             [
@@ -47,11 +51,17 @@ class ProductController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $this->authorizeProductManagement();
+
         $data = $this->validatedData($request);
         unset($data['images'], $data['campaigns']);
         $this->normalizeShopId($data);
+        $this->applyAgentOwnership($data);
         $this->authorizeCategoryForShop((int) $data['category_id'], (int) $data['shop_id']);
+        $this->authorizeAgentForShop(isset($data['agent_id']) ? (int) $data['agent_id'] : null, (int) $data['shop_id']);
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name']);
+        $data['name_translations'] = $this->localizedInput($request, 'name', $data['name']);
+        $data['description_translations'] = $this->localizedInput($request, 'description', $data['description'] ?? null);
         $data['quantity'] = $data['quantity'] ?? 0;
         $data['rating'] = $data['rating'] ?? 0;
         $data['is_featured'] = $request->boolean('is_featured');
@@ -77,6 +87,16 @@ class ProductController extends Controller
             route('products.show', $product)
         );
 
+        if ((int) $product->quantity <= 0) {
+            $this->notifySuperAdmin(
+                'product_out_of_stock',
+                $product,
+                'منتج منتهي الكمية',
+                "المنتج {$product->name} في متجر {$product->shop?->name} كميته صفر.",
+                route('products.show', $product)
+            );
+        }
+
         foreach ($createdCampaigns as $campaign) {
             $this->notifySuperAdmin(
                 'campaign_created',
@@ -96,6 +116,7 @@ class ProductController extends Controller
     public function show(Product $product): View
     {
         $this->authorizeShopAccess($product);
+        $this->authorizeProductVisibility($product);
         $product->load(['shop', 'category', 'images', 'campaigns']);
 
         return view('admin.products.products_show', compact('product'));
@@ -103,6 +124,7 @@ class ProductController extends Controller
 
     public function edit(Product $product): View
     {
+        $this->authorizeProductManagement($product);
         $this->authorizeShopAccess($product);
         $product->load(['images', 'campaigns']);
 
@@ -114,11 +136,18 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product): RedirectResponse
     {
+        $this->authorizeProductManagement($product);
+        $wasInStock = (int) $product->quantity > 0;
+
         $data = $this->validatedData($request, $product);
-        unset($data['images'], $data['campaigns'], $data['delete_campaign_ids']);
+        unset($data['images'], $data['campaigns'], $data['existing_campaigns'], $data['delete_campaign_ids']);
         $this->normalizeShopId($data);
+        $this->applyAgentOwnership($data, $product);
         $this->authorizeCategoryForShop((int) $data['category_id'], (int) $data['shop_id']);
+        $this->authorizeAgentForShop(isset($data['agent_id']) ? (int) $data['agent_id'] : null, (int) $data['shop_id']);
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name'], $product);
+        $data['name_translations'] = $this->localizedInput($request, 'name', $data['name']);
+        $data['description_translations'] = $this->localizedInput($request, 'description', $data['description'] ?? null);
         $data['quantity'] = $data['quantity'] ?? 0;
         $data['rating'] = $data['rating'] ?? 0;
         $data['is_featured'] = $request->boolean('is_featured');
@@ -136,8 +165,19 @@ class ProductController extends Controller
 
         $product->update($data);
         $this->deleteCampaigns($request, $product);
+        $this->updateCampaigns($request, $product);
         $this->storeGalleryImages($request, $product);
         $createdCampaigns = $this->storeCampaigns($request, $product);
+
+        if ($wasInStock && (int) $product->quantity <= 0) {
+            $this->notifySuperAdmin(
+                'product_out_of_stock',
+                $product,
+                'منتج منتهي الكمية',
+                "المنتج {$product->name} في متجر {$product->shop?->name} وصلت كميته إلى صفر.",
+                route('products.show', $product)
+            );
+        }
 
         foreach ($createdCampaigns as $campaign) {
             $this->notifySuperAdmin(
@@ -157,6 +197,7 @@ class ProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse
     {
+        $this->authorizeProductManagement($product);
         $this->authorizeShopAccess($product);
         $product->load(['images', 'campaigns']);
         $this->deleteUpload($product->main_image);
@@ -179,10 +220,104 @@ class ProductController extends Controller
 
     private function formOptions(): array
     {
+        $agentsQuery = $this->scopeToAccessibleShops(Agent::query())
+            ->with('shop')
+            ->orderBy('name');
+        $categoriesQuery = $this->scopeToAccessibleShops(Category::query())
+            ->with('shop')
+            ->orderBy('name');
+
+        if (auth()->user()?->isAgent()) {
+            $agentsQuery->whereIn('id', $this->currentUserAgentIds());
+            $categoriesQuery->whereIn('agent_id', $this->currentUserAgentIds());
+        }
+
         return [
             'shops' => $this->accessibleShops(),
-            'categories' => $this->scopeToAccessibleShops(Category::query())->with('shop')->orderBy('name')->get(),
+            'categories' => $categoriesQuery->get(),
+            'agents' => $agentsQuery->get(),
         ];
+    }
+
+    private function authorizeProductManagement(?Product $product = null): void
+    {
+        $user = auth()->user();
+
+        abort_if($user?->isDistributor(), 403);
+
+        if (! $user?->isAgent()) {
+            return;
+        }
+
+        if (! $product) {
+            return;
+        }
+
+        abort_unless(in_array((int) $product->agent_id, $this->currentUserAgentIds(), true), 403);
+    }
+
+    private function authorizeProductVisibility(Product $product): void
+    {
+        if (! auth()->user()?->isAgent()) {
+            return;
+        }
+
+        abort_unless(in_array((int) $product->agent_id, $this->currentUserAgentIds(), true), 403);
+    }
+
+    private function applyAgentOwnership(array &$data, ?Product $product = null): void
+    {
+        $user = auth()->user();
+
+        if (! $user?->isAgent()) {
+            return;
+        }
+
+        $agentId = $product?->agent_id ?: $this->currentUserAgentIdForShop((int) $data['shop_id']);
+        abort_if(! $agentId, 403);
+
+        $data['agent_id'] = $agentId;
+    }
+
+    private function currentUserAgentIds(): array
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return [];
+        }
+
+        return Agent::query()
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+
+                if ($user->email) {
+                    $query->orWhere('email', $user->email);
+                }
+            })
+            ->pluck('id')
+            ->map(fn($id) => (int) $id)
+            ->all();
+    }
+
+    private function currentUserAgentIdForShop(int $shopId): ?int
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return null;
+        }
+
+        return Agent::query()
+            ->where('shop_id', $shopId)
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+
+                if ($user->email) {
+                    $query->orWhere('email', $user->email);
+                }
+            })
+            ->value('id');
     }
 
     private function validatedData(Request $request, ?Product $product = null): array
@@ -190,7 +325,10 @@ class ProductController extends Controller
         return $request->validate([
             'shop_id' => ['required', 'integer', Rule::exists('shops', 'id')],
             'category_id' => ['required', 'integer', Rule::exists('categories', 'id')],
+            'agent_id' => ['nullable', 'integer', Rule::exists('agents', 'id')],
             'name' => ['required', 'string', 'max:255'],
+            'name_en' => ['nullable', 'string', 'max:255'],
+            'name_he' => ['nullable', 'string', 'max:255'],
             'slug' => [
                 'nullable',
                 'string',
@@ -198,20 +336,52 @@ class ProductController extends Controller
                 Rule::unique('products', 'slug')->ignore($product?->id),
             ],
             'description' => ['nullable', 'string'],
+            'description_en' => ['nullable', 'string'],
+            'description_he' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
             'discount_price' => ['nullable', 'numeric', 'min:0', 'lt:price'],
+            'merchant_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'package_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'pallet_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'carton_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'sku' => ['nullable', 'string', 'max:255'],
             'barcode' => ['nullable', 'string', 'max:255'],
             'rating' => ['nullable', 'numeric', 'between:0,5'],
-            'main_image' => ['nullable', 'image', 'max:4096'],
+            'main_image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif', 'max:4096'],
             'video' => ['nullable', 'file', 'mimes:mp4,mov,avi,webm', 'max:20480'],
             'images' => ['nullable', 'array'],
-            'images.*' => ['image', 'max:4096'],
+            'images.*' => ['file', 'mimes:jpg,jpeg,png,webp,gif', 'max:4096'],
             'campaigns' => ['nullable', 'array'],
             'campaigns.*.title' => ['nullable', 'string', 'max:255'],
+            'campaigns.*.title_en' => ['nullable', 'string', 'max:255'],
+            'campaigns.*.title_he' => ['nullable', 'string', 'max:255'],
             'campaigns.*.type' => ['nullable', Rule::in(['image', 'video'])],
             'campaigns.*.media' => ['nullable', 'file', 'max:20480'],
+            'campaigns.*.offer_type' => ['nullable', Rule::in(['bundle_price', 'custom'])],
+            'campaigns.*.unit_key' => ['nullable', Rule::in(['package', 'pallet', 'carton'])],
+            'campaigns.*.offer_quantity' => ['nullable', 'integer', 'min:1', 'max:999999'],
+            'campaigns.*.offer_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'campaigns.*.offer_note' => ['nullable', 'string', 'max:500'],
+            'campaigns.*.offer_note_en' => ['nullable', 'string', 'max:500'],
+            'campaigns.*.offer_note_he' => ['nullable', 'string', 'max:500'],
+            'campaigns.*.starts_at' => ['nullable', 'date'],
+            'campaigns.*.ends_at' => ['nullable', 'date'],
+            'existing_campaigns' => ['nullable', 'array'],
+            'existing_campaigns.*.title' => ['nullable', 'string', 'max:255'],
+            'existing_campaigns.*.title_en' => ['nullable', 'string', 'max:255'],
+            'existing_campaigns.*.title_he' => ['nullable', 'string', 'max:255'],
+            'existing_campaigns.*.type' => ['nullable', Rule::in(['image', 'video'])],
+            'existing_campaigns.*.media' => ['nullable', 'file', 'max:20480'],
+            'existing_campaigns.*.offer_type' => ['nullable', Rule::in(['bundle_price', 'custom'])],
+            'existing_campaigns.*.unit_key' => ['nullable', Rule::in(['package', 'pallet', 'carton'])],
+            'existing_campaigns.*.offer_quantity' => ['nullable', 'integer', 'min:1', 'max:999999'],
+            'existing_campaigns.*.offer_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'existing_campaigns.*.offer_note' => ['nullable', 'string', 'max:500'],
+            'existing_campaigns.*.offer_note_en' => ['nullable', 'string', 'max:500'],
+            'existing_campaigns.*.offer_note_he' => ['nullable', 'string', 'max:500'],
+            'existing_campaigns.*.starts_at' => ['nullable', 'date'],
+            'existing_campaigns.*.ends_at' => ['nullable', 'date'],
             'delete_campaign_ids' => ['nullable', 'array'],
             'delete_campaign_ids.*' => ['integer'],
         ]);
@@ -243,6 +413,22 @@ class ProductController extends Controller
             Category::query()
                 ->whereKey($categoryId)
                 ->where('shop_id', $shopId)
+                ->when(auth()->user()?->isAgent(), fn($query) => $query->whereIn('agent_id', $this->currentUserAgentIds()))
+                ->exists(),
+            422
+        );
+    }
+
+    private function authorizeAgentForShop(?int $agentId, int $shopId): void
+    {
+        if (! $agentId) {
+            return;
+        }
+
+        abort_unless(
+            Agent::query()
+                ->whereKey($agentId)
+                ->where('shop_id', $shopId)
                 ->exists(),
             422
         );
@@ -266,27 +452,75 @@ class ProductController extends Controller
 
         foreach ($request->input('campaigns', []) as $index => $campaign) {
             $title = trim($campaign['title'] ?? '');
+            $titleEn = trim($campaign['title_en'] ?? '');
+            $titleHe = trim($campaign['title_he'] ?? '');
             $type = $campaign['type'] ?? null;
             $file = $request->file("campaigns.{$index}.media");
+            $offerType = $campaign['offer_type'] ?? null;
+            $unitKey = $campaign['unit_key'] ?? null;
+            $offerQuantity = $campaign['offer_quantity'] ?? null;
+            $offerPrice = $campaign['offer_price'] ?? null;
+            $offerNote = trim($campaign['offer_note'] ?? '');
+            $offerNoteEn = trim($campaign['offer_note_en'] ?? '');
+            $offerNoteHe = trim($campaign['offer_note_he'] ?? '');
+            $startsAt = $campaign['starts_at'] ?? null;
+            $endsAt = $campaign['ends_at'] ?? null;
+            $hasOffer = filled($offerQuantity)
+                || filled($offerPrice)
+                || $offerNote !== ''
+                || filled($startsAt)
+                || filled($endsAt);
 
-            if ($title === '' && ! $file) {
+            if ($title === '' && ! $file && ! $hasOffer) {
                 continue;
             }
 
-            if ($title === '' || ! in_array($type, ['image', 'video'], true) || ! $file) {
+            if ($title === '' && $hasOffer) {
+                $title = filled($offerQuantity) && filled($offerPrice)
+                    ? "عرض {$offerQuantity} بسعر {$offerPrice}"
+                    : 'عرض المنتج';
+            }
+
+            if ($title === '') {
                 continue;
             }
 
-            $this->validateCampaignFile($file, $type);
+            $media = null;
+            if ($file) {
+                if (! in_array($type, ['image', 'video'], true)) {
+                    continue;
+                }
 
-            $directory = $type === 'image' ? 'products/campaigns/images' : 'products/campaigns/videos';
-            $path = $file->store($directory, 'public');
+                $this->validateCampaignFile($file, $type);
+
+                $directory = $type === 'image' ? 'products/campaigns/images' : 'products/campaigns/videos';
+                $path = $file->store($directory, 'public');
+                $media = 'storage/' . $path;
+            }
 
             $createdCampaigns->push(ProductCampaign::create([
                 'product_id' => $product->id,
                 'title' => $title,
-                'type' => $type,
-                'media' => 'storage/' . $path,
+                'title_translations' => array_filter([
+                    'ar' => $title,
+                    'en' => $titleEn,
+                    'he' => $titleHe,
+                ], fn($value) => filled($value)),
+                'type' => $file ? $type : 'image',
+                'media' => $media,
+                'offer_type' => $offerType ?: null,
+                'unit_key' => $unitKey ?: null,
+                'offer_quantity' => filled($offerQuantity) ? (int) $offerQuantity : null,
+                'offer_price' => filled($offerPrice) ? $offerPrice : null,
+                'offer_note' => $offerNote !== '' ? $offerNote : null,
+                'offer_note_translations' => array_filter([
+                    'ar' => $offerNote,
+                    'en' => $offerNoteEn,
+                    'he' => $offerNoteHe,
+                ], fn($value) => filled($value)),
+                'starts_at' => $startsAt ?: null,
+                'ends_at' => $endsAt ?: null,
+                'is_active' => true,
             ]));
         }
 
@@ -312,12 +546,94 @@ class ProductController extends Controller
         }
     }
 
+    private function updateCampaigns(Request $request, Product $product): void
+    {
+        $deletedIds = collect($request->input('delete_campaign_ids', []))
+            ->map(fn($id) => (int) $id)
+            ->filter()
+            ->all();
+
+        foreach ($request->input('existing_campaigns', []) as $campaignId => $campaignData) {
+            $campaignId = (int) $campaignId;
+
+            if (in_array($campaignId, $deletedIds, true)) {
+                continue;
+            }
+
+            $campaign = $product->campaigns()->whereKey($campaignId)->first();
+            if (! $campaign) {
+                continue;
+            }
+
+            $title = trim($campaignData['title'] ?? '');
+            $titleEn = trim($campaignData['title_en'] ?? '');
+            $titleHe = trim($campaignData['title_he'] ?? '');
+            $offerNote = trim($campaignData['offer_note'] ?? '');
+            $offerNoteEn = trim($campaignData['offer_note_en'] ?? '');
+            $offerNoteHe = trim($campaignData['offer_note_he'] ?? '');
+            $type = $campaignData['type'] ?? $campaign->type;
+            $unitKey = $campaignData['unit_key'] ?? null;
+            $file = $request->file("existing_campaigns.{$campaignId}.media");
+
+            if ($title === '') {
+                $title = $campaign->title ?: (
+                    filled($campaignData['offer_quantity'] ?? null) && filled($campaignData['offer_price'] ?? null)
+                        ? "عرض {$campaignData['offer_quantity']} بسعر {$campaignData['offer_price']}"
+                        : 'عرض المنتج'
+                );
+            }
+
+            $updates = [
+                'title' => $title,
+                'title_translations' => array_filter([
+                    'ar' => $title,
+                    'en' => $titleEn,
+                    'he' => $titleHe,
+                ], fn($value) => filled($value)),
+                'type' => in_array($type, ['image', 'video'], true) ? $type : $campaign->type,
+                'offer_type' => $campaignData['offer_type'] ?? null,
+                'unit_key' => $unitKey ?: null,
+                'offer_quantity' => filled($campaignData['offer_quantity'] ?? null) ? (int) $campaignData['offer_quantity'] : null,
+                'offer_price' => filled($campaignData['offer_price'] ?? null) ? $campaignData['offer_price'] : null,
+                'offer_note' => $offerNote !== '' ? $offerNote : null,
+                'offer_note_translations' => array_filter([
+                    'ar' => $offerNote,
+                    'en' => $offerNoteEn,
+                    'he' => $offerNoteHe,
+                ], fn($value) => filled($value)),
+                'starts_at' => $campaignData['starts_at'] ?? null ?: null,
+                'ends_at' => $campaignData['ends_at'] ?? null ?: null,
+            ];
+
+            if ($file) {
+                $mediaType = $updates['type'];
+                $this->validateCampaignFile($file, $mediaType);
+                $this->deleteUpload($campaign->media);
+
+                $directory = $mediaType === 'image' ? 'products/campaigns/images' : 'products/campaigns/videos';
+                $path = $file->store($directory, 'public');
+                $updates['media'] = 'storage/' . $path;
+            }
+
+            $campaign->update($updates);
+        }
+    }
+
     private function validateCampaignFile($file, string $type): void
     {
         $mime = $file->getMimeType();
 
         abort_if($type === 'image' && ! str_starts_with($mime, 'image/'), 422);
         abort_if($type === 'video' && ! str_starts_with($mime, 'video/'), 422);
+    }
+
+    private function localizedInput(Request $request, string $field, ?string $arabicValue = null): array
+    {
+        return array_filter([
+            'ar' => $arabicValue,
+            'en' => $request->input("{$field}_en"),
+            'he' => $request->input("{$field}_he"),
+        ], fn($value) => filled($value));
     }
 
     private function storeUpload(Request $request, string $field, string $directory): string

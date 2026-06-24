@@ -5,15 +5,31 @@ use App\Http\Controllers\AgentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DistributorController;
+use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\FrontController;
+use App\Http\Controllers\FrontOrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\RewardWheelController;
 use App\Http\Controllers\ScreenController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShopController;
+use App\Http\Controllers\TranslationController;
+use App\Http\Controllers\TextToSpeechController;
+use App\Http\Controllers\VisitorRegistrationAdminController;
+use App\Http\Controllers\VisitorRegistrationController;
 use App\Models\AdminNotification;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [FrontController::class, 'index'])->name('home');
+Route::get('/market', [FrontController::class, 'index'])->name('front.home');
 Route::get('/front/shops/{shop}', [FrontController::class, 'index'])->name('front.shop');
+Route::get('/stores/{shop:slug}', [FrontController::class, 'index'])->name('front.shop.slug');
+Route::view('/customer-login', 'front.customer_login')->name('customer.login');
+Route::get('/tts/hebrew', [TextToSpeechController::class, 'hebrew'])->name('tts.hebrew');
+Route::post('/visitor-registrations', [VisitorRegistrationController::class, 'store'])->name('visitor-registrations.store');
+Route::post('/front-orders', [FrontOrderController::class, 'store'])->name('front-orders.store');
+Route::post('/front-orders/{order}/spin-reward', [FrontOrderController::class, 'spinReward'])->name('front-orders.spinReward');
+Route::patch('/front-orders/{order}/reward', [FrontOrderController::class, 'reward'])->name('front-orders.reward');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -33,6 +49,14 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
             return redirect()->route('shops.show', auth()->user()->shops()->first());
         }
 
+        if (auth()->user()?->isAgent() || auth()->user()?->isDistributor()) {
+            return redirect()->route('products');
+        }
+
+        if (auth()->user()?->isMarketer()) {
+            return redirect()->route('reward-wheels.marketer.play');
+        }
+
         return view('admin.dashboard');
     })->name('dashboard');
 
@@ -41,8 +65,14 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
             return redirect()->route('shops.show', auth()->user()->shops()->first());
         }
 
+        if (auth()->user()?->isAgent() || auth()->user()?->isDistributor()) {
+            return redirect()->route('products');
+        }
+
         return view('admin.dashboard_main');
     })->name('dashboard.main');
+
+    Route::post('/translations/suggest', [TranslationController::class, 'suggest'])->name('translations.suggest');
 
     Route::get('/ads', [AdvertisementController::class, 'index'])->name('ads');
     Route::get('/ads/create', [AdvertisementController::class, 'create'])->name('ads.create');
@@ -93,14 +123,14 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::delete('/screens/{screen}', [ScreenController::class, 'destroy'])->name('screens.destroy');
     Route::get('/screens/{screen}', [ScreenController::class, 'show'])->name('screens.show');
 
-    Route::get('/settings', function () {
-        abort_unless(auth()->user()?->isSuperAdmin(), 403);
-
-        return view('admin.settings');
-    })->name('settings');
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
+    Route::put('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile.update');
+    Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
+    Route::put('/settings/system', [SettingsController::class, 'updateSystem'])->name('settings.system.update');
+    Route::put('/settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications.update');
 
     Route::post('/admin-notifications/read-all', function () {
-        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+        abort_unless(auth()->user()?->isSuperAdmin() || (auth()->user()?->isEmployee() && auth()->user()?->canAccessRouteName('admin.notifications.readAll')), 403);
 
         AdminNotification::query()
             ->whereNull('read_at')
@@ -119,14 +149,68 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::get('/shops/{shop}', [ShopController::class, 'show'])->name('shops.show');
 
     Route::get('/users', function () {
-        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+        abort_unless(
+            auth()->user()?->isSuperAdmin()
+                || (auth()->user()?->isEmployee() && auth()->user()?->canAccessRouteName('users')),
+            403
+        );
 
         return view('admin.users');
     })->name('users');
+
+    Route::get('/employees', [EmployeeController::class, 'index'])->name('employees');
+    Route::get('/employees/create', [EmployeeController::class, 'create'])->name('employees.create');
+    Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
+    Route::get('/employees/{employee}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
+    Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
+    Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
+    Route::get('/employees/{employee}/permissions', [EmployeeController::class, 'editPermissions'])->name('employees.permissions.edit');
+    Route::put('/employees/{employee}/permissions', [EmployeeController::class, 'updatePermissions'])->name('employees.permissions.update');
+
+    Route::get('/visitor-registrations', [VisitorRegistrationAdminController::class, 'index'])
+        ->name('visitor-registrations.index');
+
+    Route::get('/front-orders', [FrontOrderController::class, 'index'])
+        ->name('front-orders.index');
+
+    Route::get('/reward-wheels/customer-signup', [RewardWheelController::class, 'edit'])
+        ->name('reward-wheels.customer-signup.edit');
+    Route::put('/reward-wheels/customer-signup', [RewardWheelController::class, 'update'])
+        ->name('reward-wheels.customer-signup.update');
+    Route::get('/reward-wheels/purchase', [RewardWheelController::class, 'purchaseIndex'])
+        ->name('reward-wheels.purchase.index');
+    Route::post('/reward-wheels/purchase', [RewardWheelController::class, 'purchaseStore'])
+        ->name('reward-wheels.purchase.store');
+    Route::get('/reward-wheels/purchase/{wheel}/edit', [RewardWheelController::class, 'purchaseEdit'])
+        ->name('reward-wheels.purchase.edit');
+    Route::put('/reward-wheels/purchase/{wheel}', [RewardWheelController::class, 'purchaseUpdate'])
+        ->name('reward-wheels.purchase.update');
+    Route::delete('/reward-wheels/purchase/{wheel}', [RewardWheelController::class, 'purchaseDestroy'])
+        ->name('reward-wheels.purchase.destroy');
+    Route::get('/reward-wheels/marketer/settings', [RewardWheelController::class, 'marketerEdit'])
+        ->name('reward-wheels.marketer.edit');
+    Route::put('/reward-wheels/marketer/settings', [RewardWheelController::class, 'marketerUpdate'])
+        ->name('reward-wheels.marketer.update');
+    Route::get('/reward-wheels/marketer/play', [RewardWheelController::class, 'marketerPlay'])
+        ->name('reward-wheels.marketer.play');
+    Route::post('/reward-wheels/marketer/unlock', [RewardWheelController::class, 'marketerUnlock'])
+        ->name('reward-wheels.marketer.unlock');
+    Route::post('/reward-wheels/marketer/spin', [RewardWheelController::class, 'marketerSpin'])
+        ->name('reward-wheels.marketer.spin');
+    Route::post('/reward-wheels/marketer/reset', [RewardWheelController::class, 'marketerReset'])
+        ->name('reward-wheels.marketer.reset');
+    Route::get('/reward-wheels/marketer/direct/settings', [RewardWheelController::class, 'marketerDirectEdit'])
+        ->name('reward-wheels.marketer.direct.edit');
+    Route::put('/reward-wheels/marketer/direct/settings', [RewardWheelController::class, 'marketerDirectUpdate'])
+        ->name('reward-wheels.marketer.direct.update');
+    Route::get('/reward-wheels/marketer/direct/play', [RewardWheelController::class, 'marketerDirectPlay'])
+        ->name('reward-wheels.marketer.direct.play');
+    Route::post('/reward-wheels/marketer/direct/spin', [RewardWheelController::class, 'marketerDirectSpin'])
+        ->name('reward-wheels.marketer.direct.spin');
 });
 
 Route::get('/lang/{locale}', function ($locale) {
-    if (in_array($locale, ['ar', 'he'], true)) {
+    if (in_array($locale, ['ar', 'he', 'en'], true)) {
         session(['locale' => $locale]);
     }
 

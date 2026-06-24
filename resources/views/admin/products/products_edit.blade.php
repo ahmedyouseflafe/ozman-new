@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
 <head>
@@ -114,9 +114,22 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="form-group"><label class="form-label" for="name">اسم المنتج</label><input type="text" id="name" name="name" value="{{ old('name', $product->name) }}" required></div>
+                            <div class="form-group">
+                                <label class="form-label" for="agent_id">الوكيل</label>
+                                <select id="agent_id" name="agent_id">
+                                    <option value="">منتج رئيسي للمتجر</option>
+                                    @foreach($agents as $agent)
+                                        <option value="{{ $agent->id }}" data-shop-id="{{ $agent->shop_id }}" @selected(old('agent_id', $product->agent_id) == $agent->id)>{{ $agent->name }} - {{ $agent->shop?->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="form-group"><label class="form-label" for="name">اسم المنتج</label><input type="text" id="name" name="name" value="{{ old('name', $product->name) }}" data-auto-translate-source required></div>
+                            <div class="form-group"><label class="form-label" for="name_en">اسم المنتج بالإنجليزي</label><input type="text" id="name_en" name="name_en" value="{{ old('name_en', data_get($product->name_translations, 'en')) }}" dir="ltr"></div>
+                            <div class="form-group"><label class="form-label" for="name_he">اسم المنتج بالعبري</label><input type="text" id="name_he" name="name_he" value="{{ old('name_he', data_get($product->name_translations, 'he')) }}"></div>
                             <div class="form-group"><label class="form-label" for="slug">الرابط المختصر</label><input type="text" id="slug" name="slug" value="{{ old('slug', $product->slug) }}"></div>
-                            <div class="form-group full"><label class="form-label" for="description">الوصف</label><textarea id="description" name="description">{{ old('description', $product->description) }}</textarea></div>
+                            <div class="form-group full"><label class="form-label" for="description">الوصف</label><textarea id="description" name="description" data-auto-translate-source>{{ old('description', $product->description) }}</textarea></div>
+                            <div class="form-group full"><label class="form-label" for="description_en">الوصف بالإنجليزي</label><textarea id="description_en" name="description_en" dir="ltr">{{ old('description_en', data_get($product->description_translations, 'en')) }}</textarea></div>
+                            <div class="form-group full"><label class="form-label" for="description_he">الوصف بالعبري</label><textarea id="description_he" name="description_he">{{ old('description_he', data_get($product->description_translations, 'he')) }}</textarea></div>
                         </div>
                     </section>
 
@@ -125,6 +138,10 @@
                         <div class="form-grid">
                             <div class="form-group"><label class="form-label" for="price">السعر</label><input type="number" step="0.01" min="0" id="price" name="price" value="{{ old('price', $product->price) }}" required></div>
                             <div class="form-group"><label class="form-label" for="discount_price">سعر الخصم</label><input type="number" step="0.01" min="0" id="discount_price" name="discount_price" value="{{ old('discount_price', $product->discount_price) }}"></div>
+                            <div class="form-group"><label class="form-label" for="merchant_price">سعر التاجر</label><input type="number" step="0.01" min="0" id="merchant_price" name="merchant_price" value="{{ old('merchant_price', $product->merchant_price) }}"></div>
+                            <div class="form-group"><label class="form-label" for="package_price">سعر العبوة</label><input type="number" step="0.01" min="0" id="package_price" name="package_price" value="{{ old('package_price', $product->package_price) }}"></div>
+                            <div class="form-group"><label class="form-label" for="pallet_price">سعر المشطاح</label><input type="number" step="0.01" min="0" id="pallet_price" name="pallet_price" value="{{ old('pallet_price', $product->pallet_price) }}"></div>
+                            <div class="form-group"><label class="form-label" for="carton_price">سعر الكرتونة</label><input type="number" step="0.01" min="0" id="carton_price" name="carton_price" value="{{ old('carton_price', $product->carton_price) }}"></div>
                             <div class="form-group"><label class="form-label" for="quantity">الكمية</label><input type="number" min="0" id="quantity" name="quantity" value="{{ old('quantity', $product->quantity) }}"></div>
                             <div class="form-group"><label class="form-label" for="rating">التقييم</label><input type="number" step="0.1" min="0" max="5" id="rating" name="rating" value="{{ old('rating', $product->rating) }}"></div>
                             <div class="form-group"><label class="form-label" for="sku">SKU</label><input type="text" id="sku" name="sku" value="{{ old('sku', $product->sku) }}" dir="ltr"></div>
@@ -135,9 +152,9 @@
                     <section class="form-section">
                         <div class="section-head"><div class="section-icon"><i class="ti ti-photo-up"></i></div><div><h2>الصور والفيديو</h2><p>اترك الملفات فارغة للاحتفاظ بالملفات الحالية.</p></div></div>
                         <div class="upload-grid">
-                            <label class="upload-box"><input type="file" name="main_image" accept="image/*"><span class="card-icon"><i class="ti ti-photo"></i></span><span><span class="card-title">تغيير الصورة الرئيسية</span><span class="card-sub">PNG أو JPG</span></span></label>
+                            <label class="upload-box"><input type="file" name="main_image" accept="image/*,.gif"><span class="card-icon"><i class="ti ti-photo"></i></span><span><span class="card-title">تغيير الصورة الرئيسية</span><span class="card-sub">PNG أو JPG أو GIF</span></span></label>
                             <label class="upload-box"><input type="file" name="video" accept="video/*"><span class="card-icon"><i class="ti ti-video"></i></span><span><span class="card-title">تغيير الفيديو</span><span class="card-sub">MP4 أو WebM</span></span></label>
-                            <label class="upload-box"><input type="file" name="images[]" accept="image/*" multiple><span class="card-icon"><i class="ti ti-library-photo"></i></span><span><span class="card-title">إضافة صور</span><span class="card-sub">تضاف للمعرض الحالي</span></span></label>
+                            <label class="upload-box"><input type="file" name="images[]" accept="image/*,.gif" multiple><span class="card-icon"><i class="ti ti-library-photo"></i></span><span><span class="card-title">إضافة صور</span><span class="card-sub">تضاف للمعرض الحالي وتدعم GIF</span></span></label>
                         </div>
                         <div class="preview-grid">
                             @if($product->main_image)
@@ -154,7 +171,7 @@
                             <div class="section-icon"><i class="ti ti-speakerphone"></i></div>
                             <div>
                                 <h2>حملات المنتج</h2>
-                                <p>احذف حملات قديمة أو أضف حملات جديدة بصورة أو فيديو مع عنوان.</p>
+                                <p>احذف حملات قديمة أو أضف عرض حملة فعلي مثل: 3 عبوات بسعر 10، مع صورة أو فيديو اختياري.</p>
                             </div>
                         </div>
 
@@ -163,18 +180,106 @@
                                 @foreach($product->campaigns as $campaign)
                                     <div class="campaign-card">
                                         <div class="campaign-head">
-                                            <div class="campaign-title"><i class="ti ti-ad"></i>{{ $campaign->title }}</div>
+                                            <div class="campaign-title"><i class="ti ti-ad"></i>{{ $campaign->title ?: 'حملة المنتج' }}</div>
                                             <label class="campaign-remove">
                                                 <input type="checkbox" name="delete_campaign_ids[]" value="{{ $campaign->id }}" style="width:auto;margin-left:6px">
                                                 حذف الحملة
                                             </label>
                                         </div>
+                                        <div class="form-grid">
+                                            <div class="form-group">
+                                                <label class="form-label">عنوان الحملة</label>
+                                                <input type="text" name="existing_campaigns[{{ $campaign->id }}][title]" value="{{ old("existing_campaigns.{$campaign->id}.title", $campaign->title) }}" data-auto-translate-source placeholder="مثال: عرض الصيف">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">عنوان الحملة بالإنجليزي</label>
+                                                <input type="text" name="existing_campaigns[{{ $campaign->id }}][title_en]" value="{{ old("existing_campaigns.{$campaign->id}.title_en", data_get($campaign->title_translations, 'en')) }}" dir="ltr">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">عنوان الحملة بالعبري</label>
+                                                <input type="text" name="existing_campaigns[{{ $campaign->id }}][title_he]" value="{{ old("existing_campaigns.{$campaign->id}.title_he", data_get($campaign->title_translations, 'he')) }}">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">نوع الحملة</label>
+                                                <select name="existing_campaigns[{{ $campaign->id }}][type]">
+                                                    <option value="image" @selected(old("existing_campaigns.{$campaign->id}.type", $campaign->type) === 'image')>صورة</option>
+                                                    <option value="video" @selected(old("existing_campaigns.{$campaign->id}.type", $campaign->type) === 'video')>فيديو</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">نوع العرض</label>
+                                                <select name="existing_campaigns[{{ $campaign->id }}][offer_type]">
+                                                    <option value="bundle_price" @selected(old("existing_campaigns.{$campaign->id}.offer_type", $campaign->offer_type ?: 'bundle_price') === 'bundle_price')>عدد بسعر محدد</option>
+                                                    <option value="custom" @selected(old("existing_campaigns.{$campaign->id}.offer_type", $campaign->offer_type) === 'custom')>عرض مخصص</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">تطبيق الحملة على</label>
+                                                <select name="existing_campaigns[{{ $campaign->id }}][unit_key]">
+                                                    <option value="" @selected(old("existing_campaigns.{$campaign->id}.unit_key", $campaign->unit_key) === null || old("existing_campaigns.{$campaign->id}.unit_key", $campaign->unit_key) === '')>السعر الأساسي</option>
+                                                    <option value="package" @selected(old("existing_campaigns.{$campaign->id}.unit_key", $campaign->unit_key) === 'package')>العبوة</option>
+                                                    <option value="pallet" @selected(old("existing_campaigns.{$campaign->id}.unit_key", $campaign->unit_key) === 'pallet')>المشطاح</option>
+                                                    <option value="carton" @selected(old("existing_campaigns.{$campaign->id}.unit_key", $campaign->unit_key) === 'carton')>الكرتونة</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">عدد القطع في العرض</label>
+                                                <input type="number" min="1" name="existing_campaigns[{{ $campaign->id }}][offer_quantity]" value="{{ old("existing_campaigns.{$campaign->id}.offer_quantity", $campaign->offer_quantity) }}" placeholder="مثال: 3">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">سعر العرض</label>
+                                                <input type="number" min="0" step="0.01" name="existing_campaigns[{{ $campaign->id }}][offer_price]" value="{{ old("existing_campaigns.{$campaign->id}.offer_price", $campaign->offer_price) }}" placeholder="مثال: 10">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">بداية العرض</label>
+                                                <input type="date" name="existing_campaigns[{{ $campaign->id }}][starts_at]" value="{{ old("existing_campaigns.{$campaign->id}.starts_at", $campaign->starts_at?->format('Y-m-d')) }}">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">نهاية العرض</label>
+                                                <input type="date" name="existing_campaigns[{{ $campaign->id }}][ends_at]" value="{{ old("existing_campaigns.{$campaign->id}.ends_at", $campaign->ends_at?->format('Y-m-d')) }}">
+                                            </div>
+                                            <div class="form-group full">
+                                                <label class="form-label">وصف العرض</label>
+                                                <textarea name="existing_campaigns[{{ $campaign->id }}][offer_note]" data-auto-translate-source placeholder="مثال: اشتري 3 عبوات بسعر 10 بدل 12">{{ old("existing_campaigns.{$campaign->id}.offer_note", $campaign->offer_note) }}</textarea>
+                                            </div>
+                                            <div class="form-group full">
+                                                <label class="form-label">وصف العرض بالإنجليزي</label>
+                                                <textarea name="existing_campaigns[{{ $campaign->id }}][offer_note_en]" dir="ltr">{{ old("existing_campaigns.{$campaign->id}.offer_note_en", data_get($campaign->offer_note_translations, 'en')) }}</textarea>
+                                            </div>
+                                            <div class="form-group full">
+                                                <label class="form-label">وصف العرض بالعبري</label>
+                                                <textarea name="existing_campaigns[{{ $campaign->id }}][offer_note_he]">{{ old("existing_campaigns.{$campaign->id}.offer_note_he", data_get($campaign->offer_note_translations, 'he')) }}</textarea>
+                                            </div>
+                                            <div class="form-group full">
+                                                <label class="upload-box">
+                                                    <input type="file" name="existing_campaigns[{{ $campaign->id }}][media]" accept="image/*,video/*">
+                                                    <span class="card-icon"><i class="ti ti-upload"></i></span>
+                                                    <span><span class="card-title">تغيير ملف الحملة</span><span class="card-sub">اتركه فارغًا للاحتفاظ بالملف الحالي</span></span>
+                                                </label>
+                                            </div>
+                                        </div>
                                         <div class="campaign-media">
-                                            النوع: {{ $campaign->type === 'image' ? 'صورة' : 'فيديو' }}
+                                            @if($campaign->offer_quantity || $campaign->offer_price || $campaign->offer_note)
+                                                <div>
+                                                    العرض:
+                                                    @if($campaign->offer_quantity && $campaign->offer_price)
+                                                        {{ $campaign->offer_quantity }} بسعر {{ number_format((float) $campaign->offer_price, 2) }}
+                                                    @endif
+                                                    @if($campaign->offer_note)
+                                                        - {{ $campaign->offer_note }}
+                                                    @endif
+                                                </div>
+                                            @endif
+                                            @if($campaign->starts_at || $campaign->ends_at)
+                                                <div>الفترة: {{ $campaign->starts_at?->format('Y-m-d') ?? 'بدون بداية' }} - {{ $campaign->ends_at?->format('Y-m-d') ?? 'بدون نهاية' }}</div>
+                                            @endif
+                                            @if($campaign->media)
+                                            <div>النوع: {{ $campaign->type === 'image' ? 'صورة' : 'فيديو' }}</div>
                                             @if($campaign->type === 'image')
                                                 <img src="{{ asset($campaign->media) }}" alt="{{ $campaign->title }}">
                                             @else
                                                 <video src="{{ asset($campaign->media) }}" muted controls></video>
+                                            @endif
                                             @endif
                                         </div>
                                     </div>
@@ -184,7 +289,7 @@
 
                         <div class="campaign-list" id="campaignList">
                             @php
-                                $oldCampaigns = old('campaigns', [['title' => '', 'type' => 'image']]);
+                                $oldCampaigns = old('campaigns', [['title' => '', 'type' => 'image', 'offer_type' => 'bundle_price']]);
                             @endphp
 
                             @foreach($oldCampaigns as $index => $campaign)
@@ -196,7 +301,15 @@
                                     <div class="form-grid">
                                         <div class="form-group">
                                             <label class="form-label">عنوان الحملة</label>
-                                            <input type="text" name="campaigns[{{ $index }}][title]" value="{{ data_get($campaign, 'title') }}" placeholder="مثال: عرض الصيف">
+                                            <input type="text" name="campaigns[{{ $index }}][title]" value="{{ data_get($campaign, 'title') }}" data-auto-translate-source placeholder="مثال: عرض الصيف">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">عنوان الحملة بالإنجليزي</label>
+                                            <input type="text" name="campaigns[{{ $index }}][title_en]" value="{{ data_get($campaign, 'title_en') }}" dir="ltr">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">عنوان الحملة بالعبري</label>
+                                            <input type="text" name="campaigns[{{ $index }}][title_he]" value="{{ data_get($campaign, 'title_he') }}">
                                         </div>
                                         <div class="form-group">
                                             <label class="form-label">نوع الحملة</label>
@@ -205,11 +318,55 @@
                                                 <option value="video" @selected(data_get($campaign, 'type') === 'video')>فيديو</option>
                                             </select>
                                         </div>
+                                        <div class="form-group">
+                                            <label class="form-label">نوع العرض</label>
+                                            <select name="campaigns[{{ $index }}][offer_type]">
+                                                <option value="bundle_price" @selected(data_get($campaign, 'offer_type', 'bundle_price') === 'bundle_price')>عدد بسعر محدد</option>
+                                                <option value="custom" @selected(data_get($campaign, 'offer_type') === 'custom')>عرض مخصص</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">تطبيق الحملة على</label>
+                                            <select name="campaigns[{{ $index }}][unit_key]">
+                                                <option value="" @selected(data_get($campaign, 'unit_key') === null || data_get($campaign, 'unit_key') === '')>السعر الأساسي</option>
+                                                <option value="package" @selected(data_get($campaign, 'unit_key') === 'package')>العبوة</option>
+                                                <option value="pallet" @selected(data_get($campaign, 'unit_key') === 'pallet')>المشطاح</option>
+                                                <option value="carton" @selected(data_get($campaign, 'unit_key') === 'carton')>الكرتونة</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">عدد القطع في العرض</label>
+                                            <input type="number" min="1" name="campaigns[{{ $index }}][offer_quantity]" value="{{ data_get($campaign, 'offer_quantity') }}" placeholder="مثال: 3">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">سعر العرض</label>
+                                            <input type="number" min="0" step="0.01" name="campaigns[{{ $index }}][offer_price]" value="{{ data_get($campaign, 'offer_price') }}" placeholder="مثال: 10">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">بداية العرض</label>
+                                            <input type="date" name="campaigns[{{ $index }}][starts_at]" value="{{ data_get($campaign, 'starts_at') }}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">نهاية العرض</label>
+                                            <input type="date" name="campaigns[{{ $index }}][ends_at]" value="{{ data_get($campaign, 'ends_at') }}">
+                                        </div>
+                                        <div class="form-group full">
+                                            <label class="form-label">وصف العرض</label>
+                                            <textarea name="campaigns[{{ $index }}][offer_note]" data-auto-translate-source placeholder="مثال: اشتري 3 عبوات بسعر 10 بدل 12">{{ data_get($campaign, 'offer_note') }}</textarea>
+                                        </div>
+                                        <div class="form-group full">
+                                            <label class="form-label">وصف العرض بالإنجليزي</label>
+                                            <textarea name="campaigns[{{ $index }}][offer_note_en]" dir="ltr">{{ data_get($campaign, 'offer_note_en') }}</textarea>
+                                        </div>
+                                        <div class="form-group full">
+                                            <label class="form-label">وصف العرض بالعبري</label>
+                                            <textarea name="campaigns[{{ $index }}][offer_note_he]">{{ data_get($campaign, 'offer_note_he') }}</textarea>
+                                        </div>
                                         <div class="form-group full">
                                             <label class="upload-box">
                                                 <input type="file" name="campaigns[{{ $index }}][media]" accept="image/*,video/*">
                                                 <span class="card-icon"><i class="ti ti-upload"></i></span>
-                                                <span><span class="card-title">ملف الحملة</span><span class="card-sub">اختر صورة أو فيديو حسب نوع الحملة</span></span>
+                                                <span><span class="card-title">ملف الحملة</span><span class="card-sub">اختياري: اختر صورة أو فيديو للحملة</span></span>
                                             </label>
                                         </div>
                                     </div>
@@ -247,11 +404,20 @@
     <script>
         const shopSelect = document.getElementById('shop_id');
         const categorySelect = document.getElementById('category_id');
+        const agentSelect = document.getElementById('agent_id');
         function filterCategories() {
             const shopId = shopSelect.value;
             [...categorySelect.options].forEach((option) => {
                 option.hidden = option.value && shopId && option.dataset.shopId !== shopId;
             });
+
+            [...agentSelect.options].forEach((option) => {
+                option.hidden = option.value && shopId && option.dataset.shopId !== shopId;
+            });
+
+            if (agentSelect.selectedOptions[0]?.hidden) {
+                agentSelect.value = '';
+            }
         }
         shopSelect.addEventListener('change', filterCategories);
         filterCategories();
@@ -277,7 +443,15 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">عنوان الحملة</label>
-                            <input type="text" name="campaigns[${index}][title]" placeholder="مثال: عرض الصيف">
+                            <input type="text" name="campaigns[${index}][title]" data-auto-translate-source placeholder="مثال: عرض الصيف">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">عنوان الحملة بالإنجليزي</label>
+                            <input type="text" name="campaigns[${index}][title_en]" dir="ltr">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">عنوان الحملة بالعبري</label>
+                            <input type="text" name="campaigns[${index}][title_he]">
                         </div>
                         <div class="form-group">
                             <label class="form-label">نوع الحملة</label>
@@ -286,11 +460,55 @@
                                 <option value="video">فيديو</option>
                             </select>
                         </div>
+                        <div class="form-group">
+                            <label class="form-label">نوع العرض</label>
+                            <select name="campaigns[${index}][offer_type]">
+                                <option value="bundle_price">عدد بسعر محدد</option>
+                                <option value="custom">عرض مخصص</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">تطبيق الحملة على</label>
+                            <select name="campaigns[${index}][unit_key]">
+                                <option value="">السعر الأساسي</option>
+                                <option value="package">العبوة</option>
+                                <option value="pallet">المشطاح</option>
+                                <option value="carton">الكرتونة</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">عدد القطع في العرض</label>
+                            <input type="number" min="1" name="campaigns[${index}][offer_quantity]" placeholder="مثال: 3">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">سعر العرض</label>
+                            <input type="number" min="0" step="0.01" name="campaigns[${index}][offer_price]" placeholder="مثال: 10">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">بداية العرض</label>
+                            <input type="date" name="campaigns[${index}][starts_at]">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">نهاية العرض</label>
+                            <input type="date" name="campaigns[${index}][ends_at]">
+                        </div>
+                        <div class="form-group full">
+                            <label class="form-label">وصف العرض</label>
+                            <textarea name="campaigns[${index}][offer_note]" data-auto-translate-source placeholder="مثال: اشتري 3 عبوات بسعر 10 بدل 12"></textarea>
+                        </div>
+                        <div class="form-group full">
+                            <label class="form-label">وصف العرض بالإنجليزي</label>
+                            <textarea name="campaigns[${index}][offer_note_en]" dir="ltr"></textarea>
+                        </div>
+                        <div class="form-group full">
+                            <label class="form-label">وصف العرض بالعبري</label>
+                            <textarea name="campaigns[${index}][offer_note_he]"></textarea>
+                        </div>
                         <div class="form-group full">
                             <label class="upload-box">
                                 <input type="file" name="campaigns[${index}][media]" accept="image/*,video/*">
                                 <span class="card-icon"><i class="ti ti-upload"></i></span>
-                                <span><span class="card-title">ملف الحملة</span><span class="card-sub">اختر صورة أو فيديو حسب نوع الحملة</span></span>
+                                <span><span class="card-title">ملف الحملة</span><span class="card-sub">اختياري: اختر صورة أو فيديو للحملة</span></span>
                             </label>
                         </div>
                     </div>
@@ -315,6 +533,7 @@
 
         refreshCampaignNumbers();
     </script>
+    @include('admin.includes.auto_translate')
 </body>
 
 </html>

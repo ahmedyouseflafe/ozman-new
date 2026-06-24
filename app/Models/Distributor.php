@@ -11,6 +11,8 @@ class Distributor extends Model
 
     protected $fillable = [
         'shop_id',
+        'user_id',
+        'agent_id',
         'name',
         'image',
         'phone',
@@ -31,5 +33,15 @@ class Distributor extends Model
     public function shop()
     {
         return $this->belongsTo(Shop::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function agent()
+    {
+        return $this->belongsTo(Agent::class);
     }
 }

@@ -10,6 +10,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 class LanguageMiddleware
 {
+    private array $supportedLocales = ['ar', 'he', 'en'];
+
     /**
      * Handle an incoming request.
      *
@@ -18,10 +20,18 @@ class LanguageMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         if (Session::has('locale')) {
-            App::setLocale(Session::get('locale'));
+            $locale = Session::get('locale');
         } else {
-            App::setLocale('ar');
+            $locale = $request->getPreferredLanguage($this->supportedLocales) ?: config('app.locale', 'ar');
+            Session::put('locale', $locale);
         }
+
+        if (! in_array($locale, $this->supportedLocales, true)) {
+            $locale = 'ar';
+            Session::put('locale', $locale);
+        }
+
+        App::setLocale($locale);
 
         return $next($request);
     }

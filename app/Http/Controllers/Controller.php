@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 abstract class Controller
 {
@@ -16,20 +17,34 @@ abstract class Controller
         return Auth::user()?->isSuperAdmin() === true;
     }
 
+    protected function hasGlobalDashboardAccess(): bool
+    {
+        return Auth::user()?->isSuperAdmin() === true
+            || Auth::user()?->isEmployee() === true;
+    }
+
+    protected function canAccessCurrentRoute(): bool
+    {
+        $user = Auth::user();
+
+        return $user?->isSuperAdmin() === true
+            || ($user?->isEmployee() === true && $user->canAccessRouteName(request()->route()?->getName()));
+    }
+
     protected function ownedShopIds(): array
     {
-        if ($this->isSuperAdmin()) {
+        if ($this->hasGlobalDashboardAccess()) {
             return [];
         }
 
         return Auth::user()
-            ? Auth::user()->shops()->pluck('id')->all()
+            ? Auth::user()->accessibleShopIds()
             : [];
     }
 
     protected function scopeToAccessibleShops(Builder $query, string $column = 'shop_id'): Builder
     {
-        if ($this->isSuperAdmin()) {
+        if ($this->hasGlobalDashboardAccess()) {
             return $query;
         }
 
@@ -38,14 +53,14 @@ abstract class Controller
 
     protected function accessibleShops(): Collection
     {
-        return $this->isSuperAdmin()
+        return $this->hasGlobalDashboardAccess()
             ? Shop::query()->orderBy('name')->get()
-            : Auth::user()?->shops()->orderBy('name')->get() ?? collect();
+            : Shop::query()->whereIn('id', $this->ownedShopIds())->orderBy('name')->get();
     }
 
     protected function firstAccessibleShopId(): ?int
     {
-        if ($this->isSuperAdmin()) {
+        if ($this->hasGlobalDashboardAccess()) {
             return null;
         }
 
@@ -54,11 +69,15 @@ abstract class Controller
 
     protected function normalizeShopId(array &$data): void
     {
-        if ($this->isSuperAdmin()) {
+        if ($this->hasGlobalDashboardAccess()) {
             return;
         }
 
-        $shopId = $this->firstAccessibleShopId();
+        $ownedShopIds = $this->ownedShopIds();
+        $requestedShopId = isset($data['shop_id']) ? (int) $data['shop_id'] : null;
+        $shopId = $requestedShopId && in_array($requestedShopId, $ownedShopIds, true)
+            ? $requestedShopId
+            : ($ownedShopIds[0] ?? null);
         abort_if($shopId === null, 403);
 
         $data['shop_id'] = $shopId;
@@ -66,7 +85,7 @@ abstract class Controller
 
     protected function authorizeShopAccess(Model $model): void
     {
-        if ($this->isSuperAdmin()) {
+        if ($this->hasGlobalDashboardAccess()) {
             return;
         }
 
@@ -83,6 +102,10 @@ abstract class Controller
         ?string $url = null,
         array $data = []
     ): void {
+        if (! $this->adminNotificationEnabled($type)) {
+            return;
+        }
+
         $shopId = $data['shop_id'] ?? ($subject instanceof Shop ? $subject->id : $subject->getAttribute('shop_id'));
 
         AdminNotification::create([
@@ -96,5 +119,35 @@ abstract class Controller
             'url' => $url,
             'data' => $data ?: null,
         ]);
+    }
+
+    protected function adminNotificationEnabled(string $type): bool
+    {
+        $settingsKey = match ($type) {
+            'shop_created' => 'new_shops',
+            'product_out_of_stock' => 'out_of_stock',
+            'user_created' => 'new_users',
+            default => null,
+        };
+
+        if (! $settingsKey) {
+            return true;
+        }
+
+        $defaults = [
+            'new_shops' => true,
+            'out_of_stock' => true,
+            'new_users' => false,
+        ];
+
+        $stored = [];
+        if (Storage::disk('local')->exists('ozman_settings.json')) {
+            $stored = json_decode(Storage::disk('local')->get('ozman_settings.json'), true);
+            $stored = is_array($stored) ? $stored : [];
+        }
+
+        $notifications = array_replace($defaults, $stored['notifications'] ?? []);
+
+        return (bool) ($notifications[$settingsKey] ?? true);
     }
 }

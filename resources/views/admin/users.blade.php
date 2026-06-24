@@ -494,6 +494,7 @@
             'shop_owner' => 'صاحب متجر',
             'agent' => 'وكيل',
             'distributor' => 'موزع',
+            'marketer' => 'مسوقة',
             'customer' => 'عميل',
         ];
 
@@ -503,6 +504,7 @@
             'shop_owner' => 'tag-c',
             'agent' => 'tag-y',
             'distributor' => 'tag-p',
+            'marketer' => 'tag-c',
             'customer' => 'tag-g',
         ];
 

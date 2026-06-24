@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Agent;
 use App\Models\Distributor;
 use App\Models\Shop;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -15,8 +18,8 @@ class DistributorController extends Controller
     public function index(): View
     {
         $distributors = Distributor::query()
-            ->with('shop')
-            ->when(! $this->isSuperAdmin(), fn($query) => $this->scopeToAccessibleShops($query))
+            ->with(['shop', 'agent'])
+            ->when(! $this->hasGlobalDashboardAccess(), fn($query) => $this->scopeToAccessibleShops($query))
             ->latest()
             ->get()
             ->map(function (Distributor $distributor) {
@@ -40,6 +43,8 @@ class DistributorController extends Controller
     {
         return view('admin.distributors.distributors_create', [
             'shops' => $this->accessibleShops(),
+            'agents' => $this->accessibleAgents(),
+            'distributorUsers' => $this->distributorUsers(),
             'selectedShopId' => $request->integer('shop_id') ?: $this->firstAccessibleShopId(),
         ]);
     }
@@ -47,7 +52,9 @@ class DistributorController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validatedData($request);
+        $this->applyAgentShop($data);
         $this->normalizeShopId($data);
+        $this->syncLoginAccount($data);
         $data['is_active'] = $request->boolean('is_active');
 
         if ($request->hasFile('image')) {
@@ -65,6 +72,7 @@ class DistributorController extends Controller
     {
         $this->authorizeShopAccess($distributor);
         $distributor->load('shop');
+        $distributor->load('agent');
 
         return view('admin.distributors.distributors_show', compact('distributor'));
     }
@@ -76,13 +84,17 @@ class DistributorController extends Controller
         return view('admin.distributors.distributors_edit', [
             'distributor' => $distributor,
             'shops' => $this->accessibleShops(),
+            'agents' => $this->accessibleAgents(),
+            'distributorUsers' => $this->distributorUsers(),
         ]);
     }
 
     public function update(Request $request, Distributor $distributor): RedirectResponse
     {
         $data = $this->validatedData($request);
+        $this->applyAgentShop($data);
         $this->normalizeShopId($data);
+        $this->syncLoginAccount($data);
         $data['is_active'] = $request->boolean('is_active');
 
         if ($request->hasFile('image')) {
@@ -111,7 +123,10 @@ class DistributorController extends Controller
     private function validatedData(Request $request): array
     {
         return $request->validate([
-            'shop_id' => ['required', 'integer', Rule::exists('shops', 'id')],
+            'shop_id' => ['nullable', 'required_without:agent_id', 'integer', Rule::exists('shops', 'id')],
+            'user_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('role', 'distributor')],
+            'agent_id' => ['nullable', 'integer', Rule::exists('agents', 'id')],
+            'login_password' => ['nullable', 'string', 'min:6', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
             'image' => ['nullable', 'image', 'max:2048'],
             'phone' => ['nullable', 'string', 'max:255'],
@@ -121,6 +136,86 @@ class DistributorController extends Controller
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
+    }
+
+    private function applyAgentShop(array &$data): void
+    {
+        if (empty($data['agent_id'])) {
+            return;
+        }
+
+        $agent = $this->scopeToAccessibleShops(Agent::query())
+            ->whereKey($data['agent_id'])
+            ->firstOrFail();
+
+        $data['shop_id'] = $agent->shop_id;
+    }
+
+    private function syncLoginAccount(array &$data): void
+    {
+        $password = $data['login_password'] ?? null;
+        unset($data['login_password']);
+
+        if (! filled($password)) {
+            return;
+        }
+
+        $email = $data['email'] ?? null;
+        if (! filled($email)) {
+            throw ValidationException::withMessages([
+                'email' => 'أدخل بريد الموزع الإلكتروني لإنشاء حساب دخول.',
+            ]);
+        }
+
+        if (! empty($data['user_id'])) {
+            $user = User::query()
+                ->where('role', 'distributor')
+                ->findOrFail($data['user_id']);
+
+            $user->forceFill([
+                'name' => $data['name'],
+                'phone' => $data['phone'] ?? $user->phone,
+                'password' => $password,
+                'is_active' => true,
+            ])->save();
+
+            return;
+        }
+
+        if (User::query()->where('email', $email)->exists()) {
+            throw ValidationException::withMessages([
+                'email' => 'هذا البريد مستخدم بحساب آخر. اختر الحساب من خانة حساب دخول الموزع أو استخدم بريد مختلف.',
+            ]);
+        }
+
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $email,
+            'phone' => $data['phone'] ?? null,
+            'password' => $password,
+            'role' => 'distributor',
+            'is_active' => true,
+        ]);
+
+        $data['user_id'] = $user->id;
+    }
+
+    private function distributorUsers()
+    {
+        return User::query()
+            ->where('role', 'distributor')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function accessibleAgents()
+    {
+        return $this->scopeToAccessibleShops(Agent::query())
+            ->with('shop')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
     }
 
     private function storeUpload(Request $request): string

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
 <head>
@@ -143,7 +143,15 @@
 
                             <div class="form-group">
                                 <label class="form-label" for="name"><i class="ti ti-tag" aria-hidden="true"></i>اسم الفئة</label>
-                                <input type="text" id="name" name="name" value="{{ old('name') }}" placeholder="مثال: مشروبات" required>
+                                <input type="text" id="name" name="name" value="{{ old('name') }}" data-auto-translate-source placeholder="مثال: مشروبات" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="name_en">اسم الفئة بالإنجليزي</label>
+                                <input type="text" id="name_en" name="name_en" value="{{ old('name_en') }}" dir="ltr">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="name_he">اسم الفئة بالعبري</label>
+                                <input type="text" id="name_he" name="name_he" value="{{ old('name_he') }}">
                             </div>
 
                             <div class="form-group full">
@@ -191,6 +199,8 @@
             </div>
         </main>
     </div>
+    @include('admin.includes.auto_translate')
 </body>
 
 </html>
+

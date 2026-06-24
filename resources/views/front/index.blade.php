@@ -1,16 +1,21 @@
 ﻿<!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" dir="rtl">
+<html lang="{{ app()->getLocale() }}" dir="{{ in_array(app()->getLocale(), ['ar', 'he'], true) ? 'rtl' : 'ltr' }}">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Ozman</title>
     <link rel="stylesheet" href="{{ asset('style.css') }}">
     <!-- Font Awesome icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
-    <style>.logo-dropdown > .dropdown-item:nth-child(n+3){display:none}</style>
-    
+    <style>
+        .logo-dropdown>.dropdown-item:nth-child(n+3) {
+            display: none
+        }
+    </style>
+
 </head>
 
 <body>
@@ -19,294 +24,964 @@
         $shopLogo = $shop?->logo ? asset($shop->logo) : asset('images/logo.jpg');
         $ozmanName = $ozmanShop?->name ?? 'Ozman';
         $ozmanLogo = $ozmanShop?->logo ? asset($ozmanShop->logo) : asset('images/logo.jpg');
-        $ozmanWelcomeText = 'أهلا بك في Ozman - اكتشف فئاتنا ومنتجاتنا المميزة';
-        $welcomeText = "أهلا بك في {$shopName} - اكتشف أقسام ومنتجات المتجر";
-        $social = optional($shop?->social);
-        $socialLinks = [
-            ['title' => 'فيسبوك', 'icon' => 'fab fa-facebook-f', 'url' => $social->facebook],
-            ['title' => 'تويتر', 'icon' => 'fab fa-twitter', 'url' => $social->twitter],
-            ['title' => 'انستجرام', 'icon' => 'fab fa-instagram', 'url' => $social->instagram],
-            ['title' => 'تيك توك', 'icon' => 'fab fa-tiktok', 'url' => $social->tiktok],
-            ['title' => 'تلجرام', 'icon' => 'fab fa-telegram', 'url' => $social->telegram],
+        $locale = app()->getLocale();
+        $ozmanWelcomeText = __('أهلا بك في Ozman - اكتشف فئاتنا ومنتجاتنا المميزة');
+        $welcomeText = __('أهلا بك في :shop - اكتشف أقسام ومنتجات المتجر', ['shop' => $shopName]);
+        $languageLabels = ['ar' => 'العربية', 'he' => 'עברית', 'en' => 'English'];
+        $frontLabels = [
+            'cartEmpty' => __('السلة فارغة حاليا'),
+            'noPrice' => __('بدون سعر'),
+            'items' => __('عدد المنتجات'),
+            'total' => __('المجموع'),
+            'discount' => __('الخصم'),
+            'shekel' => __('شيكل'),
+            'addAnotherForDiscount' => __('أضف منتج آخر إلى السلة واحصل على خصم 5% من المبلغ الإجمالي'),
+            'discountApplied' => __('تم تفعيل خصم 5% على المبلغ الإجمالي'),
+            'quickSearchEmpty' => __('اكتب اسم المنتج أو المحل لعرض النتائج'),
+            'noSearchResults' => __('لا توجد نتائج مطابقة'),
+            'cartIsEmpty' => __('السلة فارغة'),
+            'chooseProductsBeforePayment' => __('اختار منتجاتك قبل الدفع'),
+            'customerSaved' => __('تم حفظ بيانات العميل'),
+            'locationLoading' => __('جاري تحديد موقعك...'),
+            'locationDetected' => __('تم تحديد موقعك على الخريطة.'),
+            'locationUnsupported' => __('المتصفح لا يدعم تحديد الموقع تلقائيا.'),
+            'locationDenied' => __('لم نقدر نحدد الموقع. تأكد من السماح للموقع بالوصول للّوكيشن.'),
+            'savedLocationLoaded' => __('تم تحميل الموقع المحفوظ مسبقا.'),
         ];
+        $paymentMethodLabels = [
+            'bank_transfer' => __('تحويل بنكي'),
+            'wallet' => __('محفظة إلكترونية'),
+            'cash' => __('كاش / عند الاستلام'),
+            'other' => __('أخرى'),
+        ];
+        $shopPaymentDetails = [
+            'method' => $shop?->payment_method,
+            'method_label' => $paymentMethodLabels[$shop?->payment_method] ?? $shop?->payment_method,
+            'provider' => $shop?->payment_provider,
+            'account_holder' => $shop?->payment_account_holder,
+            'account_number' => $shop?->payment_account_number,
+            'iban' => $shop?->payment_iban,
+            'wallet_number' => $shop?->payment_wallet_number,
+            'notes' => $shop?->payment_notes,
+        ];
+        $hasShopPaymentDetails = collect($shopPaymentDetails)
+            ->except(['method_label'])
+            ->filter(fn($value) => filled($value))
+            ->isNotEmpty();
+        $normalizeSocialUrl = function (?string $url): ?string {
+            if (!filled($url)) {
+                return null;
+            }
+
+            $url = trim($url);
+
+            if (str_starts_with($url, '@')) {
+                return null;
+            }
+
+            if (preg_match('/^https?:\/\//i', $url)) {
+                return $url;
+            }
+
+            return 'https://' . ltrim($url, '/');
+        };
+
+        $socialLinksFor = function ($targetShop) use ($normalizeSocialUrl) {
+            $social = optional($targetShop?->social);
+
+            return collect([
+                [
+                    'title' => __('فيسبوك'),
+                    'icon' => 'fab fa-facebook-f',
+                    'url' => $normalizeSocialUrl($social->facebook),
+                ],
+                ['title' => __('تويتر'), 'icon' => 'fab fa-twitter', 'url' => $normalizeSocialUrl($social->twitter)],
+                [
+                    'title' => __('انستجرام'),
+                    'icon' => 'fab fa-instagram',
+                    'url' => $normalizeSocialUrl($social->instagram),
+                ],
+                ['title' => __('تيك توك'), 'icon' => 'fab fa-tiktok', 'url' => $normalizeSocialUrl($social->tiktok)],
+                ['title' => __('تلجرام'), 'icon' => 'fab fa-telegram', 'url' => $normalizeSocialUrl($social->telegram)],
+                ['title' => __('يوتيوب'), 'icon' => 'fab fa-youtube', 'url' => $normalizeSocialUrl($social->youtube)],
+                [
+                    'title' => __('سناب شات'),
+                    'icon' => 'fab fa-snapchat',
+                    'url' => $normalizeSocialUrl($social->snapchat),
+                ],
+            ])
+                ->filter(fn($item) => filled($item['url']))
+                ->values();
+        };
+
+        $ozmanSocialLinks = $socialLinksFor($ozmanShop);
+        $shopSocialLinks = $socialLinksFor($shop);
+        $mediaUrl = function (?string $path): string {
+            if (!filled($path)) {
+                return '';
+            }
+
+            if (preg_match('/^https?:\/\//i', $path)) {
+                return $path;
+            }
+
+            return asset($path);
+        };
+        $youtubeEmbedUrl = function (?string $url): string {
+            if (!filled($url)) {
+                return '';
+            }
+
+            if (
+                preg_match(
+                    '/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]+)/',
+                    $url,
+                    $matches,
+                )
+            ) {
+                return 'https://www.youtube.com/embed/' . $matches[1] . '?autoplay=1&mute=1&playsinline=1&rel=0';
+            }
+
+            return $url;
+        };
+        $ozmanDisplayItems = collect($ozmanScreens ?? [])
+            ->merge($ozmanAdvertisements ?? [])
+            ->filter(fn($item) => filled($item->media))
+            ->values();
+        $shopDisplayItems = collect($shop?->advertisements ?? [])
+            ->filter(fn($item) => filled($item->media))
+            ->values();
     @endphp
 
-    @unless($isDashboardPreview ?? false)
-    <header>
-        <div class="header-right-group">
-            <div class="logo-container">
-                <div class="logo">
-                    <img src="{{ $ozmanLogo }}" alt="{{ $ozmanName }} Logo" class="logo-img">
-                    <div class="logo-dropdown">
-                        @include('front.logo_dropdown')
-                    </div>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <div class="location-btn location-btn-trigger">
-                        <i class="fas fa-map-marker-alt"></i> حدد موقعك
-                    </div>
-                    <a href="{{ route('lang.switch', app()->getLocale() === 'ar' ? 'he' : 'ar') }}" class="location-btn" style="text-decoration: none;">
-                        <i class="fas fa-globe"></i> العربية
-                    </a>
-                </div>
-            </div>
-            <!-- Social icons -->
-            <div class="social-icons-vertical">
-                <div class="social-icon" title="فيسبوك"><i class="fab fa-facebook-f"></i></div>
-                <div class="social-icon" title="تويتر"><i class="fab fa-twitter"></i></div>
-                <div class="social-icon" title="انستجرام"><i class="fab fa-instagram"></i></div>
-                <div class="social-icon" title="تيك توك"><i class="fab fa-tiktok"></i></div>
-                <div class="social-icon" title="تلجرام"><i class="fab fa-telegram"></i></div>
-            </div>
-        </div>
-
-        <div class="display-screen glass" style="margin-left: -100px;">
-            <div class="story-slider">
-                <span class="welcome-msg">{{ $ozmanWelcomeText }}</span>
-                <span class="welcome-msg">{{ $ozmanWelcomeText }}</span>
-            </div>
-        </div>
-    </header>
-
-    <main>
-        <!-- Top Products Carousel Section -->
-        <section class="carousel-3d-section animate">
-            <h2
-                style="color: var(--primary-color); margin-bottom: 20px; font-weight: 900; text-shadow: 0 0 10px var(--primary-color);">
-                فئات Ozman</h2>
-            <div class="carousel-3d-container" id="carouselProducts">
-                @forelse($ozmanCategories as $category)
-                    <div class="carousel-item-3d prod-item" data-index="{{ $loop->index }}" data-ozman-category="{{ $category->name }}" data-product-name="{{ $category->name }}">
-                        <div class="card-3d">
-                            <img src="{{ $category->image ? asset($category->image) : asset('images/logo.jpg') }}" alt="{{ $category->name }}">
-                        </div>
-                        <span>{{ $category->name }}</span>
-                    </div>
-                @empty
-                    <div class="carousel-item-3d prod-item" data-index="0" data-product-name="Ozman">
-                        <div class="card-3d"><img src="{{ asset('images/logo.jpg') }}" alt="Ozman"></div>
-                        <span>Ozman</span>
-                    </div>
-                @endforelse
-            </div>
-        </section>
-
-        <hr class="section-divider">
-    @else
-    <main>
-    @endunless
-
-        <!-- Infinite Vertical Carousel Section -->
+    @unless ($isDashboardPreview ?? false)
         <header>
             <div class="header-right-group">
                 <div class="logo-container">
-                <div class="logo">
-                    <img src="{{ $shopLogo }}" alt="{{ $shopName }} Logo" class="logo-img">
-                    <div class="logo-dropdown">
-                        @include('front.logo_dropdown')
+                    <div class="logo">
+                        <img src="{{ $ozmanLogo }}" alt="{{ $ozmanName }} Logo" class="logo-img">
+                        <div class="logo-dropdown">
+                            @include('front.logo_dropdown', [
+                                'agents' => $ozmanShop?->agents ?? collect(),
+                                'distributors' => $ozmanShop?->distributors ?? collect(),
+                                'shopLogo' => $ozmanLogo,
+                                'shopName' => $ozmanName,
+                            ])
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <div class="location-btn location-btn-trigger">
+                            <i class="fas fa-map-marker-alt"></i> {{ __('حدد موقعك') }}
+                        </div>
+                        <div class="language-switcher">
+                            <button type="button" class="location-btn language-switcher-btn">
+                                <i class="fas fa-globe"></i> {{ $languageLabels[$locale] ?? 'Language' }}
+                            </button>
+                            <div class="language-switcher-menu">
+                                @foreach ($languageLabels as $languageCode => $languageName)
+                                    <a href="{{ route('lang.switch', $languageCode) }}"
+                                        class="{{ $locale === $languageCode ? 'active' : '' }}">{{ $languageName }}</a>
+                                @endforeach
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div style="display: flex; gap: 8px;">
-                    <div class="location-btn location-btn-trigger">
-                        <i class="fas fa-map-marker-alt"></i> حدد موقعك
-                    </div>
-                    <a href="{{ route('lang.switch', app()->getLocale() === 'ar' ? 'he' : 'ar') }}" class="location-btn" style="text-decoration: none;">
-                        <i class="fas fa-globe"></i> العربية
-                    </a>
-                </div>
-            </div>
                 <!-- Social icons -->
                 <div class="social-icons-vertical">
-                    <div class="social-icon" title="فيسبوك"><i class="fab fa-facebook-f"></i></div>
-                    <div class="social-icon" title="تويتر"><i class="fab fa-twitter"></i></div>
-                    <div class="social-icon" title="انستجرام"><i class="fab fa-instagram"></i></div>
-                    <div class="social-icon" title="تيك توك"><i class="fab fa-tiktok"></i></div>
-                    <div class="social-icon" title="تلجرام"><i class="fab fa-telegram"></i></div>
+                    @forelse($ozmanSocialLinks as $socialLink)
+                        <a href="{{ $socialLink['url'] }}" target="_blank" rel="noopener noreferrer" class="social-icon"
+                            title="{{ $socialLink['title'] }}" aria-label="{{ $socialLink['title'] }}">
+                            <i class="{{ $socialLink['icon'] }}"></i>
+                        </a>
+                    @empty
+                        <span class="social-icon social-icon-muted" title="{{ __('لا توجد روابط تواصل') }}">
+                            <i class="fas fa-share-nodes"></i>
+                        </span>
+                    @endforelse
                 </div>
             </div>
 
-            <div class="display-screen glass" style="margin-left: -100px;">
-                <div class="story-slider">
-                    <span class="welcome-msg">{{ $welcomeText }}</span>
-                    <span class="welcome-msg">{{ $welcomeText }}</span>
-                </div>
+            <div class="display-screen glass header-display-screen">
+                @if ($ozmanDisplayItems->isNotEmpty())
+                    <div class="media-story-slider" data-media-story>
+                        @foreach ($ozmanDisplayItems as $item)
+                            <article class="media-story-slide {{ $loop->first ? 'active' : '' }}"
+                                data-duration="{{ max((int) ($item->duration ?? 8), 1) * 1000 }}">
+                                @if ($item->type === 'video')
+                                    <video src="{{ $mediaUrl($item->media) }}" muted playsinline loop></video>
+                                @elseif($item->type === 'youtube')
+                                    <iframe src="{{ $youtubeEmbedUrl($item->media) }}" title="{{ $item->title }}"
+                                        allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+                                @else
+                                    <img src="{{ $mediaUrl($item->media) }}" alt="{{ $item->title }}">
+                                @endif
+                            </article>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="story-slider">
+                        <span class="welcome-msg">{{ $ozmanWelcomeText }}</span>
+                        <span class="welcome-msg">{{ $ozmanWelcomeText }}</span>
+                    </div>
+                @endif
             </div>
         </header>
 
+        <main>
+            <!-- Top Products Carousel Section -->
+            <section class="carousel-3d-section animate">
+                <h2
+                    style="color: var(--primary-color); margin-bottom: 20px; font-weight: 900; text-shadow: 0 0 10px var(--primary-color);">
+                    {{ __('فئات Ozman') }}</h2>
+                <div class="carousel-3d-container" id="carouselProducts">
+                    @forelse($ozmanCategories as $category)
+                        @php($categoryTitle = $category->localized('name'))
+                        <div class="carousel-item-3d prod-item" data-index="{{ $loop->index }}"
+                            data-ozman-category="{{ $categoryTitle }}" data-product-name="{{ $categoryTitle }}">
+                            <div class="card-3d">
+                                <img src="{{ $category->image ? asset($category->image) : asset('images/logo.jpg') }}"
+                                    alt="{{ $categoryTitle }}">
+                            </div>
+                            <span>{{ $categoryTitle }}</span>
+                        </div>
+                    @empty
+                        <div class="carousel-item-3d prod-item" data-index="0" data-product-name="Ozman">
+                            <div class="card-3d"><img src="{{ asset('images/logo.jpg') }}" alt="Ozman"></div>
+                            <span>Ozman</span>
+                        </div>
+                    @endforelse
+                </div>
+            </section>
 
-        <hr class="section-divider">
+            <hr class="section-divider">
+        @else
+            <main>
+            @endunless
 
-        <!-- Radial Category Selection Section -->
-        <section class="radial-section animate" style="margin-right: 60px; margin-bottom: 60px;">
-            <div class="side-nav-vertical v-carousel-container" id="sideVCarousel">
-                <div class="side-circles-list v-carousel-track" id="sideVTrack">
-                    <!-- Items will be generated by JS -->
+            <!-- Infinite Vertical Carousel Section -->
+            <header>
+                <div class="header-right-group">
+                    <div class="logo-container">
+                        <div class="logo">
+                            <img src="{{ $shopLogo }}" alt="{{ $shopName }} Logo" class="logo-img"
+                                id="activeShopLogo">
+                            <div class="logo-dropdown" id="activeShopLogoDropdown">
+                                @include('front.logo_dropdown', [
+                                    'agents' => $shop?->agents ?? collect(),
+                                    'distributors' => $shop?->distributors ?? collect(),
+                                    'shopLogo' => $shopLogo,
+                                    'shopName' => $shopName,
+                                ])
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <div class="location-btn location-btn-trigger">
+                                <i class="fas fa-map-marker-alt"></i> {{ __('حدد موقعك') }}
+                            </div>
+                            <div class="language-switcher">
+                                <button type="button" class="location-btn language-switcher-btn">
+                                    <i class="fas fa-globe"></i> {{ $languageLabels[$locale] ?? 'Language' }}
+                                </button>
+                                <div class="language-switcher-menu">
+                                    @foreach ($languageLabels as $languageCode => $languageName)
+                                        <a href="{{ route('lang.switch', $languageCode) }}"
+                                            class="{{ $locale === $languageCode ? 'active' : '' }}">{{ $languageName }}</a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Social icons -->
+                    <div class="social-icons-vertical" id="activeShopSocials">
+                        @forelse($shopSocialLinks as $socialLink)
+                            <a href="{{ $socialLink['url'] }}" target="_blank" rel="noopener noreferrer"
+                                class="social-icon" title="{{ $socialLink['title'] }}"
+                                aria-label="{{ $socialLink['title'] }}">
+                                <i class="{{ $socialLink['icon'] }}"></i>
+                            </a>
+                        @empty
+                            <span class="social-icon social-icon-muted" title="{{ __('لا توجد روابط تواصل') }}">
+                                <i class="fas fa-share-nodes"></i>
+                            </span>
+                        @endforelse
+                    </div>
+                </div>
+
+                <div class="display-screen glass header-display-screen" id="activeShopDisplay"
+                    data-empty-text-template="{{ __('أهلا بك في :shop - اكتشف أقسام ومنتجات المتجر') }}">
+                    @if ($shopDisplayItems->isNotEmpty())
+                        <div class="media-story-slider" data-media-story>
+                            @foreach ($shopDisplayItems as $item)
+                                <article class="media-story-slide {{ $loop->first ? 'active' : '' }}"
+                                    data-duration="{{ max((int) ($item->duration ?? 8), 1) * 1000 }}">
+                                    @if ($item->type === 'video')
+                                        <video src="{{ $mediaUrl($item->media) }}" muted playsinline loop></video>
+                                    @elseif($item->type === 'youtube')
+                                        <iframe src="{{ $youtubeEmbedUrl($item->media) }}"
+                                            title="{{ $item->title }}"
+                                            allow="autoplay; encrypted-media; picture-in-picture"
+                                            allowfullscreen></iframe>
+                                    @else
+                                        <img src="{{ $mediaUrl($item->media) }}" alt="{{ $item->title }}">
+                                    @endif
+                                </article>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="story-slider">
+                            <span class="welcome-msg">{{ $welcomeText }}</span>
+                            <span class="welcome-msg">{{ $welcomeText }}</span>
+                        </div>
+                    @endif
+                </div>
+            </header>
+
+
+            <hr class="section-divider">
+
+            <!-- Radial Category Selection Section -->
+            <section class="radial-section animate" style="margin-right: 60px; margin-bottom: 60px;">
+                <div class="side-nav-vertical v-carousel-container" id="sideVCarousel">
+                    <div class="side-circles-list v-carousel-track" id="sideVTrack">
+                        <!-- Items will be generated by JS -->
+                    </div>
+                </div>
+
+                <div class="radial-container" style="position: relative;">
+                    <div class="shop-directions-panel" id="shopDirectionsPanel" hidden>
+                        <div>
+                            <span>{{ __('الوصول إلى المحل') }}</span>
+                            <strong id="shopDirectionsTitle">{{ __('اختر المحل لعرض الاتجاهات') }}</strong>
+                        </div>
+                        <a href="#" target="_blank" rel="noopener noreferrer" id="shopDirectionsLink">
+                            <i class="fas fa-map-location-dot"></i>
+                            {{ __('انقر فوق الخارطة للوصول للمحل عبر GPS') }}
+                        </a>
+                    </div>
+
+                    <!-- Floating Info/Header Panel when showing scattered products -->
+                    <div class="products-scatter-header" id="productsScatterHeader"
+                        style="display: none; flex-direction: column; gap: 15px; width: 100%; position: absolute; top: -10px; left: 0; padding: 0 40px; z-index: 30; direction: rtl;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <h3 id="productsScatterTitle"
+                                style="padding: 12px 30px; border-radius: 20px; color: var(--primary-color); border: 1px solid var(--glass-border); background: rgba(0,0,0,0.85); margin: 0; font-size: 1.4rem; font-weight: 900; box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);">
+                                {{ __('اسم القسم') }}</h3>
+                            <button class="back-btn" id="backToDeptsBtn" style="direction: rtl;">
+                                <i class="fas fa-chevron-right" style="margin-left: 8px;"></i>
+                                {{ __('عودة للأقسام') }}
+                            </button>
+                        </div>
+                        <!-- Product summary -->
+                        <div id="productsScatterDesc"
+                            style="display: none; width: max-content; max-width: 80%; padding: 10px 25px; border-radius: 15px; background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); font-size: 0.95rem; line-height: 1.5; box-shadow: 0 5px 15px rgba(0,0,0,0.2); animation: fadeInUp 0.4s ease; text-align: right;">
+                        </div>
+                    </div>
+
+                    <div class="watch-grid-wrapper" id="watchGridWrapper" style="width: 100%; height: 650px;">
+                        <div class="watch-grid-container" id="watchGridContainer">
+                            <div class="watch-grid-track" id="watchGridTrack">
+                                <!-- Items will be generated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @unless ($isDashboardPreview ?? false)
+                    <div class="purchase-wheels-side v-carousel-container" id="purchaseWheelsCarousel"
+                        aria-label="{{ __('عجلات جوائز الشراء') }}" hidden>
+                        <div class="purchase-wheels-track v-carousel-track" id="purchaseWheelsTrack"></div>
+                    </div>
+                @endunless
+            </section>
+        </main>
+
+        <nav class="bottom-nav">
+            <div class="nav-icons">
+                <div class="nav-btn" id="navHomeBtn" title="{{ __('الرئيسية') }}"><i class="fas fa-home"></i></div>
+                <div class="nav-btn" id="navSearchBtn" title="{{ __('البحث') }}"><i class="fas fa-search"></i>
+                </div>
+                <div class="nav-btn" id="navCartBtn" title="{{ __('سلة المشتريات') }}">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count-badge" id="cartCountBadge">0</span>
+                </div>
+                <!-- Chatbot and WhatsApp actions -->
+                <div class="nav-btn" id="chatbotToggleBtn" title="{{ __('المساعد الذكي') }}"
+                    style="position: relative;">
+                    <i class="fas fa-comments"></i>
+                    <span
+                        style="position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; background: var(--primary-color); border-radius: 50%; box-shadow: 0 0 5px var(--primary-color);"></span>
+                </div>
+                <a href="https://wa.me/{{ preg_replace('/\D+/', '', $shop?->whatsapp ?: $shop?->phone ?: '970599000000') }}"
+                    target="_blank" class="nav-btn" id="whatsappQuickBtn"
+                    title="{{ __('تواصل مباشرة عبر واتساب') }}"
+                    style="color: #25d366; text-decoration: none; display: flex; align-items: center;">
+                    <i class="fab fa-whatsapp"></i>
+                </a>
+            </div>
+            <div class="buy-btn" id="customerLoginOpenBtn">{{ __('اطلب الآن') }}</div>
+        </nav>
+
+        <div class="front-search-panel" id="frontSearchPanel" aria-hidden="true">
+            <div class="front-search-card">
+                <div class="front-search-head">
+                    <div class="front-search-title">
+                        <i class="fas fa-search"></i>
+                        <span>{{ __('بحث سريع') }}</span>
+                    </div>
+                    <button type="button" class="front-search-close" id="frontSearchClose"
+                        aria-label="{{ __('إغلاق البحث') }}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <label class="front-search-input-wrap" for="frontSearchInput">
+                    <i class="fas fa-magnifying-glass"></i>
+                    <input type="search" id="frontSearchInput"
+                        placeholder="{{ __('ابحث باسم المنتج أو المحل...') }}" autocomplete="off">
+                </label>
+
+                <div class="front-search-results" id="frontSearchResults">
+                    <div class="front-search-empty">{{ __('اكتب اسم المنتج أو المحل لعرض النتائج') }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cart-panel" id="cartPanel" aria-hidden="true">
+            <div class="cart-card">
+                <div class="cart-head">
+                    <div>
+                        <div class="cart-kicker">{{ __('سلة المشتريات') }}</div>
+                        <h3>{{ __('طلباتك الحالية') }}</h3>
+                    </div>
+                    <button type="button" class="cart-close" id="cartCloseBtn"
+                        aria-label="{{ __('إغلاق السلة') }}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="cart-items" id="cartItems">
+                    <div class="cart-empty">{{ __('السلة فارغة حاليا') }}</div>
+                </div>
+
+                <div class="cart-promo" id="cartPromoBox" hidden>
+                    <i class="fas fa-tags"></i>
+                    <span
+                        id="cartPromoText">{{ __('أضف منتج آخر إلى السلة واحصل على خصم 5% من المبلغ الإجمالي') }}</span>
+                </div>
+
+                <div class="cart-summary">
+                    <div>
+                        <span>{{ __('عدد المنتجات') }}</span>
+                        <strong id="cartItemsCount">0</strong>
+                    </div>
+                    <div>
+                        <span>{{ __('الخصم') }}</span>
+                        <strong id="cartDiscount">0</strong>
+                    </div>
+                    <div>
+                        <span>{{ __('المجموع') }}</span>
+                        <strong id="cartTotal">0</strong>
+                    </div>
+                </div>
+
+                <div class="cart-actions">
+                    <button type="button" class="cart-clear-btn" id="cartClearBtn">{{ __('تفريغ السلة') }}</button>
+                    <button type="button" class="cart-checkout-btn" id="cartCheckoutBtn">
+                        <i class="fab fa-whatsapp"></i>
+                        {{ __('إتمام الطلب') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="unit-choice-modal" id="unitChoiceModal" aria-hidden="true">
+            <div class="unit-choice-card">
+                <button type="button" class="unit-choice-close" id="unitChoiceClose"
+                    aria-label="{{ __('إغلاق') }}">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="unit-choice-head">
+                    <div class="unit-choice-icon"><i class="fas fa-boxes-stacked"></i></div>
+                    <div>
+                        <div class="unit-choice-kicker">{{ __('اختيار طريقة الإضافة') }}</div>
+                        <h3 id="unitChoiceTitle">{{ __('إضافة المنتج للسلة') }}</h3>
+                        <p>{{ __('اختر نوع السعر المناسب قبل إضافة المنتج إلى السلة') }}</p>
+                    </div>
+                </div>
+                <div class="unit-choice-options" id="unitChoiceOptions"></div>
+                <div class="unit-choice-actions">
+                    <button type="button" class="cart-clear-btn" id="unitChoiceCancel">{{ __('إلغاء') }}</button>
+                </div>
+            </div>
+        </div>
+
+        @unless ($isDashboardPreview ?? false)
+            <div class="modal-overlay visitor-registration-modal" id="visitorRegistrationModal" aria-hidden="true">
+                <div class="visitor-registration-card glass">
+                    <div class="visitor-registration-head">
+                        <span>{{ __('أهلا بك في Ozman') }}</span>
+                        <h3>{{ __('سجل دخولك لتحصل على خصمك الأول') }}</h3>
+                    </div>
+
+                    <div class="visitor-type-picker" role="group" aria-label="{{ __('نوع التسجيل') }}">
+                        <button type="button" class="visitor-type-btn active" data-visitor-type="customer">
+                            <i class="fas fa-user"></i>
+                            <strong>{{ __('عميل') }}</strong>
+                        </button>
+                        <button type="button" class="visitor-type-btn" data-visitor-type="merchant">
+                            <i class="fas fa-store"></i>
+                            <strong>{{ __('صاحب متجر') }}</strong>
+                        </button>
+                    </div>
+
+                    <form class="visitor-registration-form" id="visitorRegistrationForm">
+                        <input type="hidden" name="type" id="visitorTypeInput" value="customer">
+
+                        <label class="customer-field">
+                            <span>{{ __('الاسم') }}</span>
+                            <input type="text" name="name" placeholder="{{ __('اكتب اسمك') }}" required>
+                        </label>
+
+                        <label class="customer-field">
+                            <span>{{ __('رقم الهاتف') }}</span>
+                            <input type="tel" name="phone" placeholder="05xxxxxxxx" required>
+                        </label>
+
+                        <div class="visitor-merchant-fields" id="visitorMerchantFields" hidden>
+                            <label class="customer-field">
+                                <span>{{ __('اسم المتجر') }}</span>
+                                <input type="text" name="shop_name" placeholder="{{ __('اسم المحل أو المتجر') }}">
+                            </label>
+
+                            <label class="customer-field">
+                                <span>{{ __('الملف الضريبي') }}</span>
+                                <input type="text" name="tax_file"
+                                    placeholder="{{ __('رقم أو اسم الملف الضريبي') }}">
+                            </label>
+
+                            <label class="customer-field">
+                                <span>{{ __('اللوكيشن الخاص بالمحل') }}</span>
+                                <input type="hidden" name="business_location" id="visitorBusinessLocation">
+                                <div class="visitor-location-row">
+                                    <button type="button" class="customer-map-btn"
+                                        id="detectVisitorBusinessLocationBtn">
+                                        <i class="fas fa-crosshairs"></i>
+                                        {{ __('حدد لوكيشن المحل') }}
+                                    </button>
+                                    <span
+                                        id="visitorBusinessLocationStatus">{{ __('اضغط لتحديد لوكيشن المحل من الخريطة') }}</span>
+                                </div>
+                                <iframe class="visitor-location-map" id="visitorBusinessMapFrame"
+                                    title="{{ __('لوكيشن المحل') }}" loading="lazy" hidden></iframe>
+                            </label>
+                        </div>
+
+                        <label class="customer-field">
+                            <span>{{ __('مكان السكن') }}</span>
+                            <textarea name="residence_address" rows="2" placeholder="{{ __('المدينة، الحي، أقرب علامة') }}" required></textarea>
+                        </label>
+
+                        <label class="customer-field visitor-customer-location-field" id="visitorCustomerLocationField">
+                            <span>{{ __('لوكيشن العميل') }}</span>
+                            <div class="visitor-location-row">
+                                <button type="button" class="customer-map-btn" id="detectVisitorCustomerLocationBtn">
+                                    <i class="fas fa-crosshairs"></i>
+                                    {{ __('حدد لوكيشنك') }}
+                                </button>
+                                <span
+                                    id="visitorCustomerLocationStatus">{{ __('اضغط لتحديد لوكيشنك من الخريطة') }}</span>
+                            </div>
+                            <iframe class="visitor-location-map" id="visitorCustomerMapFrame"
+                                title="{{ __('لوكيشن العميل') }}" loading="lazy" hidden></iframe>
+                        </label>
+
+                        <input type="hidden" name="latitude" id="visitorLatitude">
+                        <input type="hidden" name="longitude" id="visitorLongitude">
+                        <input type="hidden" name="map_link" id="visitorMapLink">
+
+                        <div class="visitor-registration-message" id="visitorRegistrationMessage" aria-live="polite">
+                        </div>
+
+                        <button type="submit" class="cart-checkout-btn visitor-submit-btn">
+                            <i class="fas fa-check"></i>
+                            {{ __('حفظ ومتابعة') }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @endunless
+
+        @unless ($isDashboardPreview ?? false)
+            <div class="modal-overlay reward-wheel-modal" id="rewardWheelModal" aria-hidden="true">
+                <div class="reward-wheel-card glass">
+                    <div class="reward-wheel-head">
+                        <span>{{ __('خصمك الأول') }}</span>
+                        <h3 id="rewardWheelTitle">
+                            {{ $customerSignupWheel['title'] ?? __('لف العجلة واحصل على خصمك الأول') }}</h3>
+                    </div>
+
+                    <div class="reward-wheel-stage">
+                        <div class="reward-wheel-pointer"></div>
+                        <button type="button" class="reward-wheel" id="rewardWheelSpinBtn"
+                            aria-label="{{ __('لف عجلة الخصم') }}">
+                            <div class="reward-wheel-labels" id="rewardWheelLabels"></div>
+                            <span class="reward-wheel-center">{{ __('لف') }}</span>
+                        </button>
+                    </div>
+
+                    <p class="reward-wheel-note">{{ __('اضغط على العجلة مرة واحدة لتعرف خصمك الأول.') }}</p>
                 </div>
             </div>
 
-            <div class="radial-container" style="position: relative;">
-                <!-- Floating Info/Header Panel when showing scattered products -->
-                <div class="products-scatter-header" id="productsScatterHeader"
-                    style="display: none; flex-direction: column; gap: 15px; width: 100%; position: absolute; top: -10px; left: 0; padding: 0 40px; z-index: 30; direction: rtl;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                        <h3 id="productsScatterTitle"
-                            style="padding: 12px 30px; border-radius: 20px; color: var(--primary-color); border: 1px solid var(--glass-border); background: rgba(0,0,0,0.85); margin: 0; font-size: 1.4rem; font-weight: 900; box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);">
-                            اسم القسم</h3>
-                        <button class="back-btn" id="backToDeptsBtn" style="direction: rtl;">
-                            <i class="fas fa-chevron-right" style="margin-left: 8px;"></i> عودة للأقسام
+            <div class="modal-overlay reward-result-modal" id="rewardResultModal" aria-hidden="true">
+                <div class="reward-result-card glass">
+                    <div class="reward-result-circle">
+                        <i class="fas fa-gift"></i>
+                        <img src="" alt="" class="reward-result-image" id="rewardResultImage" hidden>
+                        <span>{{ __('مبروك') }}</span>
+                        <strong id="rewardResultText">{{ __('حصلت على خصمك الأول') }}</strong>
+                    </div>
+
+                    <button type="button" class="cart-checkout-btn reward-result-btn" id="closeRewardResultBtn">
+                        <i class="fas fa-cart-shopping"></i>
+                        {{ __('متابعة التسوق') }}
+                    </button>
+                    <button type="button" class="cart-checkout-btn reward-result-btn" id="sendRewardGiftBtn" hidden>
+                        <i class="fab fa-whatsapp"></i>
+                        {{ __('أرسل الجائزة للمتجر لتثبيتها مع طلبك') }}
+                    </button>
+                </div>
+            </div>
+        @endunless
+
+        <div class="modal-overlay customer-login-modal" id="customerLoginModal" aria-hidden="true">
+            <div class="modal-content glass customer-login-card">
+                <div class="modal-header">
+                    <h3><i class="fas fa-user-check"></i> {{ __('تسجيل بيانات العميل') }}</h3>
+                    <span class="close-modal" id="closeCustomerLoginModal">&times;</span>
+                </div>
+
+                <form class="customer-login-form" id="customerLoginForm">
+                    <div class="customer-fields-grid">
+                        <label class="customer-field">
+                            <span>{{ __('اسم العميل') }}</span>
+                            <input type="text" id="customerName" name="name"
+                                placeholder="{{ __('اكتب اسمك') }}" required>
+                        </label>
+
+                        <label class="customer-field">
+                            <span>{{ __('رقم الهاتف') }}</span>
+                            <input type="tel" id="customerPhone" name="phone" placeholder="05xxxxxxxx"
+                                required>
+                        </label>
+
+                        <label class="customer-field">
+                            <span>{{ __('رقم الواتس اب') }}</span>
+                            <input type="tel" id="customerWhatsapp" name="whatsapp"
+                                placeholder="{{ __('رقم واتساب للتواصل') }}" required>
+                        </label>
+
+                        <label class="customer-field">
+                            <span>{{ __('العنوان / اللوكيشن') }}</span>
+                            <textarea id="customerAddress" name="address" rows="3"
+                                placeholder="{{ __('اكتب المدينة، الحي، أقرب علامة') }}"></textarea>
+                        </label>
+                    </div>
+
+                    <div class="customer-map-box">
+                        <div class="customer-map-head">
+                            <div>
+                                <strong>{{ __('تحديد الموقع على الخريطة') }}</strong>
+                                <span
+                                    id="customerLocationStatus">{{ __('اضغط على زر تحديد موقعي لاختيار موقعك الحالي.') }}</span>
+                            </div>
+                            <button type="button" class="customer-map-btn" id="detectCustomerLocationBtn">
+                                <i class="fas fa-crosshairs"></i>
+                                {{ __('حدد موقعي') }}
+                            </button>
+                        </div>
+                        <iframe id="customerMapFrame"
+                            src="https://www.google.com/maps?q=31.50655845,34.46089335&z=13&output=embed"
+                            width="100%" height="230" style="border:0;" loading="lazy" allowfullscreen></iframe>
+                        <input type="hidden" id="customerLatitude" name="latitude">
+                        <input type="hidden" id="customerLongitude" name="longitude">
+                        <input type="hidden" id="customerMapLink" name="map_link">
+                    </div>
+
+                    <div class="customer-login-actions">
+                        <button type="button" class="cart-clear-btn" id="saveCustomerOnlyBtn">
+                            <i class="fas fa-credit-card"></i>
+                            {{ __('الدفع الفوري') }}
+                        </button>
+                        <button type="submit" class="cart-checkout-btn">
+                            <i class="fab fa-whatsapp"></i>
+                            {{ __('إرسال الطلب') }}
                         </button>
                     </div>
-                    <!-- Product summary -->
-                    <div id="productsScatterDesc"
-                        style="display: none; width: max-content; max-width: 80%; padding: 10px 25px; border-radius: 15px; background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); font-size: 0.95rem; line-height: 1.5; box-shadow: 0 5px 15px rgba(0,0,0,0.2); animation: fadeInUp 0.4s ease; text-align: right;">
+                </form>
+            </div>
+        </div>
+
+        <div class="modal-overlay instant-payment-modal" id="instantPaymentModal" aria-hidden="true">
+            <div class="modal-content glass instant-payment-card">
+                <div class="modal-header">
+                    <h3><i class="fas fa-wallet"></i> {{ __('الدفع الفوري') }}</h3>
+                    <span class="close-modal" id="closeInstantPaymentModal">&times;</span>
+                </div>
+
+                <div class="instant-payment-summary">
+                    <div>
+                        <span>{{ __('إجمالي الطلب') }}</span>
+                        <strong id="instantPaymentTotal">0 {{ __('شيكل') }}</strong>
+                    </div>
+                    <div>
+                        <span>{{ __('عدد المنتجات') }}</span>
+                        <strong id="instantPaymentCount">0</strong>
                     </div>
                 </div>
 
-                <div class="watch-grid-wrapper" id="watchGridWrapper" style="width: 100%; height: 650px;">
-                    <div class="watch-grid-container" id="watchGridContainer">
-                        <div class="watch-grid-track" id="watchGridTrack">
-                            <!-- Items will be generated by JS -->
+                <form class="instant-payment-form" id="instantPaymentForm">
+                    <div class="shop-payment-details">
+                        <div class="shop-payment-head">
+                            <i class="fas fa-building-columns"></i>
+                            <div>
+                                <span>{{ __('حساب الدفع الخاص بالمتجر') }}</span>
+                                <strong>{{ $shopName }}</strong>
+                            </div>
+                        </div>
+
+                        @if ($hasShopPaymentDetails)
+                            <div class="shop-payment-grid">
+                                <div>
+                                    <span>{{ __('طريقة الدفع') }}</span>
+                                    <strong>{{ $shopPaymentDetails['method_label'] ?: '-' }}</strong>
+                                </div>
+                                <div>
+                                    <span>{{ __('البنك أو مزود الدفع') }}</span>
+                                    <strong>{{ $shopPaymentDetails['provider'] ?: '-' }}</strong>
+                                </div>
+                                <div>
+                                    <span>{{ __('اسم صاحب الحساب') }}</span>
+                                    <strong>{{ $shopPaymentDetails['account_holder'] ?: '-' }}</strong>
+                                </div>
+                                <div>
+                                    <span>{{ __('رقم الحساب') }}</span>
+                                    <strong
+                                        dir="ltr">{{ $shopPaymentDetails['account_number'] ?: '-' }}</strong>
+                                </div>
+                                <div>
+                                    <span>IBAN</span>
+                                    <strong dir="ltr">{{ $shopPaymentDetails['iban'] ?: '-' }}</strong>
+                                </div>
+                                <div>
+                                    <span>{{ __('رقم المحفظة') }}</span>
+                                    <strong dir="ltr">{{ $shopPaymentDetails['wallet_number'] ?: '-' }}</strong>
+                                </div>
+                                @if ($shopPaymentDetails['notes'])
+                                    <div class="shop-payment-notes">
+                                        <span>{{ __('ملاحظات الدفع') }}</span>
+                                        <strong>{{ $shopPaymentDetails['notes'] }}</strong>
+                                    </div>
+                                @endif
+                            </div>
+                        @else
+                            <div class="payment-paypal-note">
+                                <i class="fas fa-circle-info"></i>
+                                {{ __('لم يتم إضافة معلومات دفع لهذا المتجر بعد. سيتم إرسال الطلب للمتجر للتواصل معك.') }}
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="customer-login-actions">
+                        <button type="button" class="cart-clear-btn"
+                            id="backToCustomerDataBtn">{{ __('رجوع للبيانات') }}</button>
+                        <button type="submit" class="cart-checkout-btn">
+                            <i class="fas fa-lock"></i>
+                            {{ __('تأكيد الدفع') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            window.OZMAN_FRONT_DATA = @json($frontData);
+            window.OZMAN_FRONT_CONFIG = {
+                shopId: @json($shop?->id),
+                shopWhatsapp: @json(preg_replace('/\D+/', '', $shop?->whatsapp ?: $shop?->phone ?: '970599000000')),
+                customerLoginUrl: @json(route('customer.login')),
+                visitorRegistrationUrl: @json(route('visitor-registrations.store')),
+                hebrewTtsUrl: @json(route('tts.hebrew')),
+                orderStoreUrl: @json(route('front-orders.store')),
+                orderRewardUrlTemplate: @json(url('/front-orders/__ORDER__/reward')),
+                orderSpinRewardUrlTemplate: @json(url('/front-orders/__ORDER__/spin-reward')),
+                showVisitorRegistration: @json(!($isDashboardPreview ?? false)),
+                forceVisitorRegistration: {{ in_array(request('type'), ['customer', 'merchant'], true) ? 'true' : 'false' }},
+                initialVisitorType: @json(request('type') === 'merchant' ? 'merchant' : 'customer'),
+                locale: @json(app()->getLocale()),
+                labels: @json($frontLabels),
+                payment: @json($shopPaymentDetails),
+                rewardWheel: @json($customerSignupWheel),
+                purchaseRewardWheels: @json($purchaseRewardWheels ?? []),
+
+            };
+        </script>
+        <script src="{{ asset('script.js') }}?v={{ filemtime(public_path('script.js')) }}"></script>
+
+        <!-- Location Modal -->
+        <div class="modal-overlay" id="locationModal">
+            <div class="modal-content glass nearest-shops-modal">
+                <div class="modal-header">
+                    <h3><i class="fas fa-map-marker-alt"></i> {{ __('المتاجر الأقرب إليك') }}</h3>
+                    <span class="close-modal" id="closeLocationModal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="nearest-location-status" id="nearestLocationStatus">
+                        {{ __('اضغط على الزر لتحديد موقعك وعرض المتاجر من الأقرب للأبعد.') }}
+                    </div>
+                    <div class="nearest-gps-layout">
+                        <div class="nearest-map-card">
+                            <iframe id="nearestMapFrame"
+                                src="https://maps.google.com/maps?q=31.50655845,34.46089335&z=13&output=embed"
+                                title="{{ __('خريطة الوصول للمحل') }}" loading="lazy" allowfullscreen></iframe>
+                            <div class="nearest-route-overlay" id="nearestRouteOverlay" hidden>
+                                <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                                    <path class="nearest-route-shadow" d="M18 78 C28 48, 55 58, 82 22"></path>
+                                    <path class="nearest-route-line" d="M18 78 C28 48, 55 58, 82 22"></path>
+                                </svg>
+                                <span class="nearest-route-pin nearest-route-start">
+                                    <i class="fas fa-location-crosshairs"></i>
+                                    {{ __('موقعك') }}
+                                </span>
+                                <span class="nearest-route-pin nearest-route-end">
+                                    <i class="fas fa-store"></i>
+                                    {{ __('المحل') }}
+                                </span>
+                                <span class="nearest-route-badge"
+                                    id="nearestRouteBadge">{{ __('مسار تقريبي') }}</span>
+                            </div>
+                            <div class="nearest-map-info">
+                                <div>
+                                    <span>{{ __('المحل المختار') }}</span>
+                                    <strong id="nearestSelectedShopTitle">{{ __('اختر محلا من القائمة') }}</strong>
+                                    <small
+                                        id="nearestSelectedShopMeta">{{ __('سيظهر مسار GPS هنا بعد تحديد موقعك.') }}</small>
+                                </div>
+                                <a href="#" target="_blank" rel="noopener noreferrer" id="nearestGpsLink">
+                                    <i class="fas fa-location-arrow"></i>
+                                    {{ __('فتح GPS') }}
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="nearest-shops-list" id="nearestShopsList"></div>
+                    </div>
+                    <div class="location-actions">
+                        <button class="buy-btn" type="button" style="width: 100%; margin-top: 15px;"
+                            id="confirmLocationBtn">
+                            <i class="fas fa-crosshairs"></i>
+                            {{ __('حدد موقعي واعرض المتاجر') }}
+                        </button>
+                        <button class="buy-btn nearest-show-shop-btn" type="button" id="nearestShowShopBtn">
+                            <i class="fas fa-store"></i>
+                            {{ __('عرض أقسام المحل') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Gallery Modal -->
+        <div class="product-gallery-modal" id="productGalleryModal">
+            <div class="product-modal-card">
+                <span class="product-modal-close" id="closeProductModal">&times;</span>
+
+                <!-- Left Side: Interactive Gallery -->
+                <div class="product-gallery-container">
+                    <div class="main-gallery-view">
+                        <img id="modalMainImg" src="" alt="Product Main View">
+                    </div>
+                    <div class="thumbnails-row" id="modalThumbnailsRow">
+                        <!-- Thumbnails generated dynamically by JS -->
+                    </div>
+                </div>
+
+                <!-- Right Side: Details & Actions -->
+                <div class="product-modal-info">
+                    <div>
+                        <h2 class="product-modal-title" id="modalProductTitle">{{ __('اسم المنتج') }}</h2>
+                        <div class="product-modal-price" id="modalProductPrice">75 {{ __('شيكل') }}</div>
+                        <div class="product-packaging-prices" id="modalPackagingPrices" hidden></div>
+                        <p class="product-modal-description" id="modalProductDesc">
+                            {{ __('منتج مميز من متجر Ozman.') }}
+                        </p>
+                        <ul class="product-features-list">
+                            <!-- Will be generated by JS -->
+                        </ul>
+                    </div>
+
+                    <div class="product-modal-actions">
+                        <div class="qty-selector">
+                            <button class="qty-btn" id="qtyMinus"><i class="fas fa-minus"></i></button>
+                            <span class="qty-val" id="qtyVal">1</span>
+                            <button class="qty-btn" id="qtyPlus"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <div class="modal-action-buttons">
+                            <button class="modal-btn-cart" id="modalAddToCartBtn">
+                                <i class="fas fa-cart-plus"></i>
+                                {{ __('أضف إلى السلة') }}
+                            </button>
+                            <button class="modal-btn-whatsapp" id="modalWhatsappBtn">
+                                <i class="fab fa-whatsapp"></i> {{ __('اطلب عبر واتساب') }}
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
-    </main>
-
-    <nav class="bottom-nav">
-        <div class="nav-icons">
-            <div class="nav-btn" id="navHomeBtn" title="الرئيسية"><i class="fas fa-home"></i></div>
-            <div class="nav-btn" id="navSearchBtn" title="البحث"><i class="fas fa-search"></i></div>
-            <div class="nav-btn" id="navCartBtn" title="سلة المشتريات"><i class="fas fa-shopping-cart"></i></div>
-            <!-- Chatbot and WhatsApp actions -->
-            <div class="nav-btn" id="chatbotToggleBtn" title="المساعد الذكي" style="position: relative;">
-                <i class="fas fa-comments"></i>
-                <span
-                    style="position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; background: var(--primary-color); border-radius: 50%; box-shadow: 0 0 5px var(--primary-color);"></span>
-            </div>
-            <a href="https://wa.me/{{ preg_replace('/\D+/', '', $shop?->whatsapp ?: $shop?->phone ?: '970599000000') }}" target="_blank" class="nav-btn" id="whatsappQuickBtn"
-                title="تواصل مباشرة عبر واتساب"
-                style="color: #25d366; text-decoration: none; display: flex; align-items: center;">
-                <i class="fab fa-whatsapp"></i>
-            </a>
-        </div>
-        <div class="buy-btn">اطلب الآن</div>
-    </nav>
-
-    <script>
-        window.OZMAN_FRONT_DATA = @json($frontData);
-    </script>
-    <script src="{{ asset('script.js') }}"></script>
-
-    <!-- Location Modal -->
-    <div class="modal-overlay" id="locationModal">
-        <div class="modal-content glass">
-            <div class="modal-header">
-                <h3><i class="fas fa-map-marker-alt"></i> تحديد الموقع</h3>
-                <span class="close-modal" id="closeLocationModal">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div class="map-placeholder">
-                    <iframe
-                        src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d13606.50284483733!2d34.46089335!3d31.50655845!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2s!4v1716035123456!5m2!1sen!2s"
-                        width="100%" height="250" style="border:0; border-radius:15px;" allowfullscreen=""
-                        loading="lazy"></iframe>
-                </div>
-                <div class="location-actions">
-                    <button class="buy-btn" style="width: 100%; margin-top: 15px;" id="confirmLocationBtn">تأكيد الموقع</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Product Gallery Modal -->
-    <div class="product-gallery-modal" id="productGalleryModal">
-        <div class="product-modal-card">
-            <span class="product-modal-close" id="closeProductModal">&times;</span>
-
-            <!-- Left Side: Interactive Gallery -->
-            <div class="product-gallery-container">
-                <div class="main-gallery-view">
-                    <img id="modalMainImg" src="" alt="Product Main View">
-                </div>
-                <div class="thumbnails-row" id="modalThumbnailsRow">
-                    <!-- Thumbnails generated dynamically by JS -->
-                </div>
-            </div>
-
-            <!-- Right Side: Details & Actions -->
-            <div class="product-modal-info">
-                <div>
-                    <h2 class="product-modal-title" id="modalProductTitle">اسم المنتج</h2>
-                    <div class="product-modal-price" id="modalProductPrice">75 شيكل</div>
-                    <p class="product-modal-description" id="modalProductDesc">
-                        منتج مميز من متجر Ozman.
-                    </p>
-                    <ul class="product-features-list">
-                        <!-- Will be generated by JS -->
-                    </ul>
-                </div>
-
-                <div class="product-modal-actions">
-                    <div class="qty-selector">
-                        <button class="qty-btn" id="qtyMinus"><i class="fas fa-minus"></i></button>
-                        <span class="qty-val" id="qtyVal">1</span>
-                        <button class="qty-btn" id="qtyPlus"><i class="fas fa-plus"></i></button>
-                    </div>
-                    <div class="modal-action-buttons">
-                        <button class="modal-btn-cart" id="modalAddToCartBtn">أضف إلى السلة</button>
-                        <button class="modal-btn-whatsapp" id="modalWhatsappBtn">
-                            <i class="fab fa-whatsapp"></i> اطلب عبر واتساب
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Premium Glassmorphic Chatbot Widget -->
-    <div class="chatbot-widget active" id="chatbotWidget">
-        <div class="chatbot-header">
-            <button class="chatbot-close" id="closeChatbotBtn">
-                <i class="fas fa-chevron-right"></i> عودة
-            </button>
-            <div class="chatbot-info">
-                <div class="chatbot-avatar">
-                    <i class="fas fa-robot"></i>
-                    <span class="online-indicator"></span>
-                </div>
-                <h4>مساعد Ozman الذكي</h4>
-                <p>متصل الآن</p>
-            </div>
-            <!-- Blank div to balance flexbox layout for centered info -->
-            <div style="width: 55px;"></div>
         </div>
 
-        <div class="chatbot-messages" id="chatbotMessages">
-            <div class="chat-message bot">
-                أهلا بك في Ozman! أنا مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟
-            </div>
-            <!-- Quick Options / Smart Suggestion Tags -->
-            <div class="chat-options-container">
-                <button class="chat-option-btn" data-reply="جسم">منتجات العناية بالجسم</button>
-                <button class="chat-option-btn" data-reply="شعر">منتجات العناية بالشعر</button>
-                <button class="chat-option-btn" data-reply="وجه">منتجات العناية بالوجه</button>
-                <button class="chat-option-btn" data-reply="طلب">كيف أقوم بالطلب والتوصيل؟</button>
-                <button class="chat-option-btn" data-reply="دعم">التحدث مباشرة مع الدعم</button>
-            </div>
-        </div>
-
-        <div class="chatbot-input-area">
-            <button class="imessage-plus-btn"><i class="fas fa-plus"></i></button>
-            <div class="imessage-input-wrapper">
-                <input type="text" id="chatbotInput" placeholder="اكتب رسالتك" dir="rtl">
-                <button id="chatbotSendBtn" class="chatbot-send-btn">
-                    <i class="fas fa-arrow-up"></i>
+        <!-- Premium Glassmorphic Chatbot Widget -->
+        <div class="chatbot-widget" id="chatbotWidget">
+            <div class="chatbot-header">
+                <button class="chatbot-close" id="closeChatbotBtn">
+                    <i class="fas fa-chevron-right"></i> {{ __('عودة') }}
                 </button>
+                <div class="chatbot-info">
+                    <div class="chatbot-avatar">
+                        <i class="fas fa-robot"></i>
+                        <span class="online-indicator"></span>
+                    </div>
+                    <h4>{{ __('مساعد Ozman الذكي') }}</h4>
+                    <p>{{ __('متصل الآن') }}</p>
+                </div>
+                <!-- Blank div to balance flexbox layout for centered info -->
+                <div style="width: 55px;"></div>
+            </div>
+
+            <div class="chatbot-messages" id="chatbotMessages">
+                <div class="chat-message bot">
+                    {{ __('أهلا بك في Ozman! أنا مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟') }}
+                </div>
+                <!-- Quick Options / Smart Suggestion Tags -->
+                <div class="chat-options-container">
+                    <button class="chat-option-btn" data-reply="جسم">{{ __('منتجات العناية بالجسم') }}</button>
+                    <button class="chat-option-btn" data-reply="شعر">{{ __('منتجات العناية بالشعر') }}</button>
+                    <button class="chat-option-btn" data-reply="وجه">{{ __('منتجات العناية بالوجه') }}</button>
+                    <button class="chat-option-btn" data-reply="طلب">{{ __('كيف أقوم بالطلب والتوصيل؟') }}</button>
+                    <button class="chat-option-btn" data-reply="دعم">{{ __('التحدث مباشرة مع الدعم') }}</button>
+                </div>
+            </div>
+
+            <div class="chatbot-input-area">
+                <button class="imessage-plus-btn"><i class="fas fa-plus"></i></button>
+                <div class="imessage-input-wrapper">
+                    <input type="text" id="chatbotInput" placeholder="{{ __('اكتب رسالتك') }}"
+                        dir="{{ in_array(app()->getLocale(), ['ar', 'he'], true) ? 'rtl' : 'ltr' }}">
+                    <button id="chatbotSendBtn" class="chatbot-send-btn">
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
 </body>
 
 </html>
-

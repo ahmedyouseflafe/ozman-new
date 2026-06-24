@@ -507,6 +507,11 @@
 
 <body>
     @php
+        $currentUser = auth()->user();
+        $canCreateShop = $currentUser?->isSuperAdmin()
+            || ($currentUser?->isEmployee() && $currentUser->canAccessRouteName('shops.create'));
+        $canOpenOzmanShop = $currentUser?->isSuperAdmin();
+
         $shopItems = collect(
             $shops ?? [
                 [
@@ -584,11 +589,13 @@
                         <p>{{ $shopsTotal }} متجر داخل النظام مع متابعة الحالة وعدد المنتجات.</p>
                     </div>
                     <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-                    @if(auth()->user()?->isSuperAdmin())
+                    @if($canOpenOzmanShop)
                     <a href="{{ route('shops.ozman') }}" class="btn-primary">
                         <i class="ti ti-building-store" aria-hidden="true"></i>
                         متجر Ozman
                     </a>
+                    @endif
+                    @if($canCreateShop)
                     <a href="{{ route('shops.create') }}" class="btn-primary">
                         <i class="ti ti-plus" aria-hidden="true"></i>
                         متجر جديد

@@ -293,7 +293,7 @@
 
         table {
             width: 100%;
-            min-width: 1080px;
+            min-width: 1420px;
             border-collapse: collapse;
             font-size: 13px;
         }
@@ -540,6 +540,23 @@
         $outOfStockTotal = $outOfStockProductsCount ?? $productItems->filter(fn($product) => (int) data_get($product, 'quantity', 0) <= 0)->count();
         $averagePrice = $averageProductPrice ?? round($productItems->avg(fn($product) => (float) data_get($product, 'price', 0)) ?: 0);
         $categoryOptions = collect($categories ?? $productItems->pluck('category_name')->filter()->unique()->values());
+        $currentUser = auth()->user();
+        $currentUserAgentIds = $currentUser?->isAgent()
+            ? \App\Models\Agent::query()
+                ->where(function ($query) use ($currentUser) {
+                    $query->where('user_id', $currentUser->id);
+
+                    if ($currentUser->email) {
+                        $query->orWhere('email', $currentUser->email);
+                    }
+                })
+                ->pluck('id')
+                ->map(fn($id) => (int) $id)
+                ->all()
+            : [];
+        $canCreateProducts = ! $currentUser?->isDistributor();
+        $canManageProduct = fn($product) => ! $currentUser?->isDistributor()
+            && (! $currentUser?->isAgent() || in_array((int) data_get($product, 'agent_id'), $currentUserAgentIds, true));
     @endphp
 
     <div class="shell">
@@ -564,10 +581,12 @@
                         <h1>إدارة المنتجات</h1>
                         <p>{{ $productsTotal }} منتج في جميع المتاجر مع متابعة الأسعار والمخزون.</p>
                     </div>
-                    <a href="{{ route('products.create') }}" class="btn-primary">
-                        <i class="ti ti-plus" aria-hidden="true"></i>
-                        منتج جديد
-                    </a>
+                    @if($canCreateProducts)
+                        <a href="{{ route('products.create') }}" class="btn-primary">
+                            <i class="ti ti-plus" aria-hidden="true"></i>
+                            منتج جديد
+                        </a>
+                    @endif
                 </header>
 
                 @if(session('status'))
@@ -631,6 +650,10 @@
                                     <th>المتجر</th>
                                     <th>السعر</th>
                                     <th>سعر الخصم</th>
+                                    <th>سعر التاجر</th>
+                                    <th>سعر العبوة</th>
+                                    <th>سعر المشطاح</th>
+                                    <th>سعر الكرتونة</th>
                                     <th>الكمية</th>
                                     <th>التقييم</th>
                                     <th>مميز</th>
@@ -675,6 +698,34 @@
                                             @endif
                                         </td>
                                         <td>
+                                            @if(data_get($product, 'merchant_price'))
+                                                <span class="discount">{{ data_get($product, 'merchant_price') }}₪</span>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if(data_get($product, 'package_price'))
+                                                <span class="discount">{{ data_get($product, 'package_price') }}₪</span>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if(data_get($product, 'pallet_price'))
+                                                <span class="discount">{{ data_get($product, 'pallet_price') }}₪</span>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if(data_get($product, 'carton_price'))
+                                                <span class="discount">{{ data_get($product, 'carton_price') }}₪</span>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td>
                                             <span class="tag {{ $quantity > 0 ? 'tag-c' : 'tag-r' }}">{{ $quantity }}</span>
                                         </td>
                                         <td>
@@ -690,28 +741,24 @@
                                                 <a href="{{ route('products.show', $product) }}" class="icon-btn" aria-label="عرض">
                                                     <i class="ti ti-eye" aria-hidden="true"></i>
                                                 </a>
-                                                <a href="{{ route('products.edit', $product) }}" class="icon-btn" aria-label="تعديل">
-                                                    <i class="ti ti-edit" aria-hidden="true"></i>
-                                                </a>
-                                                <form action="{{ route('products.destroy', $product) }}" method="POST" onsubmit="return confirm('هل تريد حذف هذا المنتج؟')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="icon-btn" aria-label="حذف">
-                                                        <i class="ti ti-trash" aria-hidden="true"></i>
-                                                    </button>
-                                                </form>
-                                                <button type="button" class="icon-btn" aria-label="تعديل">
-                                                    <i class="ti ti-edit" aria-hidden="true"></i>
-                                                </button>
-                                                <button type="button" class="icon-btn" aria-label="حذف">
-                                                    <i class="ti ti-trash" aria-hidden="true"></i>
-                                                </button>
+                                                @if($canManageProduct($product))
+                                                    <a href="{{ route('products.edit', $product) }}" class="icon-btn" aria-label="تعديل">
+                                                        <i class="ti ti-edit" aria-hidden="true"></i>
+                                                    </a>
+                                                    <form action="{{ route('products.destroy', $product) }}" method="POST" onsubmit="return confirm('هل تريد حذف هذا المنتج؟')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="icon-btn" aria-label="حذف">
+                                                            <i class="ti ti-trash" aria-hidden="true"></i>
+                                                        </button>
+                                                    </form>
+                                                @endif
                                             </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="10">
+                                        <td colspan="14">
                                             <div class="empty-state">
                                                 <i class="ti ti-package-off" aria-hidden="true"></i>
                                                 لا توجد منتجات لعرضها حاليا

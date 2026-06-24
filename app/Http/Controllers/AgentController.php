@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Agent;
 use App\Models\Shop;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -16,7 +18,7 @@ class AgentController extends Controller
     {
         $agents = Agent::query()
             ->with('shop')
-            ->when(! $this->isSuperAdmin(), fn($query) => $this->scopeToAccessibleShops($query))
+            ->when(! $this->hasGlobalDashboardAccess(), fn($query) => $this->scopeToAccessibleShops($query))
             ->latest()
             ->get()
             ->map(function (Agent $agent) {
@@ -40,6 +42,7 @@ class AgentController extends Controller
     {
         return view('admin.agent.agents_create', [
             'shops' => $this->accessibleShops(),
+            'agentUsers' => $this->agentUsers(),
             'selectedShopId' => $request->integer('shop_id') ?: $this->firstAccessibleShopId(),
         ]);
     }
@@ -48,6 +51,7 @@ class AgentController extends Controller
     {
         $data = $this->validatedData($request);
         $this->normalizeShopId($data);
+        $this->syncLoginAccount($data);
         $data['is_active'] = $request->boolean('is_active');
 
         if ($request->hasFile('image')) {
@@ -76,6 +80,7 @@ class AgentController extends Controller
         return view('admin.agent.agents_edit', [
             'agent' => $agent,
             'shops' => $this->accessibleShops(),
+            'agentUsers' => $this->agentUsers(),
         ]);
     }
 
@@ -83,6 +88,7 @@ class AgentController extends Controller
     {
         $data = $this->validatedData($request);
         $this->normalizeShopId($data);
+        $this->syncLoginAccount($data);
         $data['is_active'] = $request->boolean('is_active');
 
         if ($request->hasFile('image')) {
@@ -112,6 +118,8 @@ class AgentController extends Controller
     {
         return $request->validate([
             'shop_id' => ['required', 'integer', Rule::exists('shops', 'id')],
+            'user_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('role', 'agent')],
+            'login_password' => ['nullable', 'string', 'min:6', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
             'image' => ['nullable', 'image', 'max:2048'],
             'phone' => ['nullable', 'string', 'max:255'],
@@ -121,6 +129,64 @@ class AgentController extends Controller
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
+    }
+
+    private function syncLoginAccount(array &$data): void
+    {
+        $password = $data['login_password'] ?? null;
+        unset($data['login_password']);
+
+        if (! filled($password)) {
+            return;
+        }
+
+        $email = $data['email'] ?? null;
+        if (! filled($email)) {
+            throw ValidationException::withMessages([
+                'email' => 'أدخل بريد الوكيل الإلكتروني لإنشاء حساب دخول.',
+            ]);
+        }
+
+        if (! empty($data['user_id'])) {
+            $user = User::query()
+                ->where('role', 'agent')
+                ->findOrFail($data['user_id']);
+
+            $user->forceFill([
+                'name' => $data['name'],
+                'phone' => $data['phone'] ?? $user->phone,
+                'password' => $password,
+                'is_active' => true,
+            ])->save();
+
+            return;
+        }
+
+        if (User::query()->where('email', $email)->exists()) {
+            throw ValidationException::withMessages([
+                'email' => 'هذا البريد مستخدم بحساب آخر. اختر الحساب من خانة حساب دخول الوكيل أو استخدم بريد مختلف.',
+            ]);
+        }
+
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $email,
+            'phone' => $data['phone'] ?? null,
+            'password' => $password,
+            'role' => 'agent',
+            'is_active' => true,
+        ]);
+
+        $data['user_id'] = $user->id;
+    }
+
+    private function agentUsers()
+    {
+        return User::query()
+            ->where('role', 'agent')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
     }
 
     private function storeUpload(Request $request): string

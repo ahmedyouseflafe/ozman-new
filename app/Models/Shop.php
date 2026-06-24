@@ -26,6 +26,13 @@ class Shop extends Model
         'country',
         'open_time',
         'close_time',
+        'payment_method',
+        'payment_provider',
+        'payment_account_holder',
+        'payment_account_number',
+        'payment_iban',
+        'payment_wallet_number',
+        'payment_notes',
         'is_active',
     ];
 

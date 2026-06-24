@@ -43,6 +43,14 @@ class AuthController extends Controller
             }
         }
 
+        if (Auth::user()->isAgent() || Auth::user()->isDistributor()) {
+            return redirect()->route('products');
+        }
+
+        if (Auth::user()->isMarketer()) {
+            return redirect()->route('reward-wheels.marketer.play');
+        }
+
         return redirect()->intended(route('dashboard'));
     }
 

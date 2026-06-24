@@ -156,6 +156,140 @@
             font-weight: 800;
         }
 
+        .public-link-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            max-width: min(560px, 100%);
+            padding: 8px;
+            border: 1px solid rgba(0, 229, 255, .22);
+            border-radius: 16px;
+            background: rgba(0, 0, 0, .38);
+        }
+
+        .public-link-box input {
+            flex: 1;
+            min-width: 0;
+            border: 0;
+            outline: 0;
+            background: transparent;
+            color: rgba(255, 255, 255, .86);
+            font: inherit;
+            font-size: 12px;
+            font-weight: 800;
+            direction: ltr;
+            text-align: left;
+        }
+
+        .copy-link-btn {
+            min-height: 34px;
+            border: 1px solid rgba(0, 229, 255, .3);
+            border-radius: 999px;
+            padding: 0 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--primary);
+            background: rgba(0, 229, 255, .08);
+            font: inherit;
+            font-size: 12px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all .25s ease;
+            white-space: nowrap;
+        }
+
+        .copy-link-btn:hover {
+            background: var(--primary);
+            color: #001014;
+        }
+
+        .shop-qr-card {
+            display: grid;
+            grid-template-columns: 180px minmax(0, 1fr);
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 22px;
+            padding: 20px;
+            border: 1px solid rgba(0, 229, 255, .34);
+            border-radius: 26px;
+            background:
+                radial-gradient(circle at 12% 50%, rgba(0, 229, 255, .12), transparent 28%),
+                linear-gradient(135deg, rgba(0, 229, 255, .05), rgba(112, 0, 255, .06)),
+                rgba(0, 0, 0, .52);
+            box-shadow: 0 16px 46px rgba(0, 0, 0, .28);
+        }
+
+        .shop-qr-image {
+            display: block;
+            width: 100%;
+            aspect-ratio: 1;
+            padding: 10px;
+            border-radius: 20px;
+            background: #fff;
+            box-shadow: 0 0 22px rgba(0, 229, 255, .18);
+        }
+
+        .shop-qr-content {
+            min-width: 0;
+        }
+
+        .shop-qr-title {
+            color: var(--primary);
+            font-size: 20px;
+            font-weight: 900;
+        }
+
+        .shop-qr-hint {
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .shop-qr-url {
+            margin-top: 12px;
+            padding: 10px 13px;
+            border: 1px solid rgba(255, 255, 255, .1);
+            border-radius: 14px;
+            background: rgba(0, 0, 0, .42);
+            color: rgba(255, 255, 255, .76);
+            font-size: 12px;
+            font-weight: 800;
+            direction: ltr;
+            text-align: left;
+            overflow-wrap: anywhere;
+        }
+
+        .shop-qr-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-top: 14px;
+        }
+
+        .shop-qr-action {
+            min-height: 36px;
+            padding: 0 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            border: 1px solid rgba(0, 229, 255, .34);
+            border-radius: 999px;
+            color: #001014;
+            background: var(--primary);
+            font-size: 12px;
+            font-weight: 900;
+            text-decoration: none;
+        }
+
+        .shop-qr-action.secondary {
+            color: var(--primary);
+            background: rgba(0, 229, 255, .08);
+        }
+
         .actions {
             display: flex;
             align-items: center;
@@ -446,6 +580,7 @@
             }
             .actions { justify-content: flex-start; }
             .btn { width: 100%; }
+            .shop-qr-card { grid-template-columns: 150px minmax(0, 1fr); }
             h1 { font-size: 30px; }
         }
 
@@ -456,6 +591,20 @@
                 grid-template-columns: 1fr;
             }
             .logo { width: 112px; height: 112px; }
+            .shop-qr-card {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            .shop-qr-image {
+                width: min(210px, 100%);
+                margin: 0 auto;
+            }
+            .shop-qr-actions {
+                justify-content: center;
+            }
+            .shop-qr-action {
+                flex: 1 1 130px;
+            }
         }
     </style>
 </head>
@@ -487,6 +636,13 @@
                                 <div class="kicker">ملف المتجر</div>
                                 <h1>{{ $shop->name }}</h1>
                                 <div class="slug">{{ $shop->slug }}</div>
+                                <div class="public-link-box">
+                                    <input type="text" id="publicShopUrl" value="{{ $publicShopUrl }}" readonly>
+                                    <button type="button" class="copy-link-btn" id="copyPublicShopUrl" data-copy-target="publicShopUrl">
+                                        <i class="ti ti-copy" aria-hidden="true"></i>
+                                        نسخ الرابط
+                                    </button>
+                                </div>
                                 <div style="margin-top:12px">
                                     <span class="tag {{ $shop->is_active ? 'tag-g' : 'tag-r' }}">
                                         <i class="ti {{ $shop->is_active ? 'ti-circle-check' : 'ti-circle-x' }}" aria-hidden="true"></i>
@@ -497,6 +653,10 @@
                         </div>
 
                         <div class="actions">
+                            <a href="{{ $publicShopUrl }}" target="_blank" rel="noopener" class="btn btn-primary">
+                                <i class="ti ti-external-link" aria-hidden="true"></i>
+                                فتح رابط المتجر
+                            </a>
                             <a href="{{ route('categories.create', ['shop_id' => $shop->id]) }}" class="btn btn-primary">
                                 <i class="ti ti-category-plus" aria-hidden="true"></i>
                                 إضافة قسم
@@ -551,6 +711,40 @@
                     </article>
                 </section>
 
+                <section class="shop-qr-card" aria-labelledby="shopQrTitle">
+                    <a href="{{ $publicShopUrl }}" target="_blank" rel="noopener">
+                        <img src="{{ $shopQrCodeDataUri }}"
+                            class="shop-qr-image"
+                            alt="QR Code لمتجر {{ $shop->name }}">
+                    </a>
+                    <div class="shop-qr-content">
+                        <h2 class="shop-qr-title" id="shopQrTitle">مشاركة متجر {{ $shop->name }}</h2>
+                        <p class="shop-qr-hint">امسح الكود بكاميرا الهاتف لفتح صفحة المتجر مباشرة، أو نزّله للطباعة والمشاركة.</p>
+                        <div class="shop-qr-url">{{ $publicShopUrl }}</div>
+                        <div class="shop-qr-actions">
+                            <button type="button"
+                                class="shop-qr-action secondary copy-link-btn"
+                                data-copy-target="publicShopUrl">
+                                <i class="ti ti-copy" aria-hidden="true"></i>
+                                نسخ الرابط
+                            </button>
+                            <a href="{{ $publicShopUrl }}"
+                                target="_blank"
+                                rel="noopener"
+                                class="shop-qr-action secondary">
+                                <i class="ti ti-external-link" aria-hidden="true"></i>
+                                فتح المتجر
+                            </a>
+                            <a href="{{ $shopQrCodeDataUri }}"
+                                download="{{ $shop->slug }}-qr.svg"
+                                class="shop-qr-action">
+                                <i class="ti ti-download" aria-hidden="true"></i>
+                                تنزيل QR
+                            </a>
+                        </div>
+                    </div>
+                </section>
+
                 <div class="layout">
                     <div>
                         <section class="panel">
@@ -579,6 +773,50 @@
                                     <div class="value">{{ optional($shop->created_at)->format('Y-m-d H:i') ?? '-' }}</div>
                                 </div>
                             </div>
+                        </section>
+
+                        <section class="panel">
+                            <div class="panel-head">
+                                <h2 class="panel-title">
+                                    <i class="ti ti-credit-card-pay" aria-hidden="true"></i>
+                                    معلومات الدفع
+                                </h2>
+                            </div>
+
+                            @if($shop->payment_method || $shop->payment_provider || $shop->payment_account_holder || $shop->payment_account_number || $shop->payment_iban || $shop->payment_wallet_number || $shop->payment_notes)
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="label">طريقة الدفع</div>
+                                        <div class="value">{{ $paymentMethodLabels[$shop->payment_method] ?? $shop->payment_method ?? '-' }}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="label">البنك أو مزود الدفع</div>
+                                        <div class="value">{{ $shop->payment_provider ?? '-' }}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="label">اسم صاحب الحساب</div>
+                                        <div class="value">{{ $shop->payment_account_holder ?? '-' }}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="label">رقم الحساب</div>
+                                        <div class="value" dir="ltr">{{ $shop->payment_account_number ?? '-' }}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="label">IBAN</div>
+                                        <div class="value" dir="ltr">{{ $shop->payment_iban ?? '-' }}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="label">رقم المحفظة</div>
+                                        <div class="value" dir="ltr">{{ $shop->payment_wallet_number ?? '-' }}</div>
+                                    </div>
+                                    <div class="info-item" style="grid-column:1 / -1">
+                                        <div class="label">ملاحظات الدفع</div>
+                                        <div class="value">{{ $shop->payment_notes ?? '-' }}</div>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="empty">لم يتم حفظ معلومات دفع لهذا المتجر بعد.</div>
+                            @endif
                         </section>
 
                         <section class="panel">
@@ -778,24 +1016,10 @@
                                 </h2>
                             </div>
 
-                            @php
-                                $socialLinks = [
-                                    ['label' => 'Facebook', 'icon' => 'ti-brand-facebook', 'value' => optional($shop->social)->facebook],
-                                    ['label' => 'Instagram', 'icon' => 'ti-brand-instagram', 'value' => optional($shop->social)->instagram],
-                                    ['label' => 'TikTok', 'icon' => 'ti-brand-tiktok', 'value' => optional($shop->social)->tiktok],
-                                    ['label' => 'Telegram', 'icon' => 'ti-brand-telegram', 'value' => optional($shop->social)->telegram],
-                                    ['label' => 'Snapchat', 'icon' => 'ti-brand-snapchat', 'value' => optional($shop->social)->snapchat],
-                                    ['label' => 'Twitter / X', 'icon' => 'ti-brand-x', 'value' => optional($shop->social)->twitter],
-                                    ['label' => 'YouTube', 'icon' => 'ti-brand-youtube', 'value' => optional($shop->social)->youtube],
-                                    ['label' => 'WhatsApp', 'icon' => 'ti-brand-whatsapp', 'value' => optional($shop->social)->whatsapp],
-                                ];
-                                $filledSocialLinks = collect($socialLinks)->filter(fn($link) => filled($link['value']));
-                            @endphp
-
-                            @if($filledSocialLinks->isNotEmpty())
+                            @if($socialLinks->isNotEmpty())
                                 <div class="social-grid">
-                                    @foreach($filledSocialLinks as $link)
-                                        <a class="social-link" href="{{ \Illuminate\Support\Str::startsWith($link['value'], ['http://', 'https://']) ? $link['value'] : '#' }}" target="_blank" rel="noopener">
+                                    @foreach($socialLinks as $link)
+                                        <a class="social-link" href="{{ $link['url'] }}" target="_blank" rel="noopener">
                                             <i class="ti {{ $link['icon'] }}" aria-hidden="true"></i>
                                             <span>{{ $link['label'] }}</span>
                                         </a>
@@ -810,6 +1034,30 @@
             </div>
         </main>
     </div>
+    <script>
+        document.querySelectorAll('[data-copy-target]').forEach((button) => {
+            button.addEventListener('click', async function () {
+                const target = document.getElementById(this.dataset.copyTarget);
+                if (!target) return;
+
+                const value = target.value;
+
+                try {
+                    await navigator.clipboard.writeText(value);
+                } catch (error) {
+                    target.select();
+                    document.execCommand('copy');
+                    target.blur();
+                }
+
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i> تم النسخ';
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                }, 1400);
+            });
+        });
+    </script>
 </body>
 
 </html>

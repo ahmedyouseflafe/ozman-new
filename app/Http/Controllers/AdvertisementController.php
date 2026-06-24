@@ -16,7 +16,7 @@ class AdvertisementController extends Controller
     {
         $ads = Advertisement::query()
             ->with('shop')
-            ->when(! $this->isSuperAdmin(), fn($query) => $this->scopeToAccessibleShops($query))
+            ->when(! $this->hasGlobalDashboardAccess(), fn($query) => $this->scopeToAccessibleShops($query))
             ->orderBy('sort_order')
             ->latest()
             ->get()

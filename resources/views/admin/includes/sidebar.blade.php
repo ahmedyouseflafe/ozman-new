@@ -165,11 +165,41 @@
 @endonce
 
 @php
-    $isSuperAdmin = auth()->user()?->isSuperAdmin();
-    $currentShop = request()->route('shop');
-    $previewShopId = is_object($currentShop)
-        ? $currentShop->getKey()
-        : (request()->integer('shop_id') ?: auth()->user()?->shops()->value('id'));
+    $currentUser = auth()->user();
+    $isSuperAdmin = $currentUser?->isSuperAdmin();
+    $isAgent = $currentUser?->isAgent();
+    $isDistributor = $currentUser?->isDistributor();
+    $isMarketer = $currentUser?->isMarketer();
+    $isEmployee = $currentUser?->isEmployee();
+    $isCatalogOnlyUser = $isAgent || $isDistributor;
+    $previewShopId = request()->integer('shop_id') ?: session('current_shop_id');
+    $canSee = fn(array $routes) => ! $isEmployee || $currentUser?->canAccessAnyRoute($routes);
+
+    foreach (request()->route()?->parameters() ?? [] as $parameter) {
+        if (! $parameter instanceof \Illuminate\Database\Eloquent\Model) {
+            continue;
+        }
+
+        $routeShopId = $parameter instanceof \App\Models\Shop
+            ? $parameter->getKey()
+            : $parameter->getAttribute('shop_id');
+
+        if ($routeShopId) {
+            $previewShopId = (int) $routeShopId;
+            break;
+        }
+    }
+
+    if (! $isSuperAdmin) {
+        $ownedPreviewShopIds = auth()->user()?->accessibleShopIds() ?? [];
+        if ($previewShopId && ! in_array((int) $previewShopId, $ownedPreviewShopIds, true)) {
+            $previewShopId = null;
+        }
+    }
+
+    if (! $previewShopId) {
+        $previewShopId = auth()->user()?->accessibleShopIds()[0] ?? null;
+    }
 @endphp
 
 <div class="sidebar admin-neon-sidebar">
@@ -184,15 +214,30 @@
     <nav class="admin-sidebar-nav">
         <div class="admin-sidebar-section">عام</div>
 
+        @if($canSee(['dashboard']))
         <a href="{{ route('dashboard') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
              <i class="ti ti-layout-dashboard" aria-hidden="true"></i>
              الرئيسية
         </a>
+        @endif
 
         <div class="admin-sidebar-section">المتجر</div>
 
-        @if($isSuperAdmin)
+        @if($isMarketer)
+        <a href="{{ route('reward-wheels.marketer.play') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('reward-wheels.marketer.play') ? 'active' : '' }}">
+             <i class="ti ti-disc" aria-hidden="true"></i>
+             عجلة الأسئلة
+        </a>
+        <a href="{{ route('reward-wheels.marketer.direct.play') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('reward-wheels.marketer.direct.play') ? 'active' : '' }}">
+             <i class="ti ti-bolt" aria-hidden="true"></i>
+             العجلة المباشرة
+        </a>
+        @else
+
+        @if(($isSuperAdmin || $isEmployee) && $canSee(['dashboard.main']))
         <a href="{{ route('dashboard.main') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('dashboard.main') ? 'active' : '' }}">
              <i class="ti ti-dashboard" aria-hidden="true"></i>
@@ -201,30 +246,39 @@
 
         @endif
 
+        @if(! $isCatalogOnlyUser && $canSee(['shops', 'shops.show', 'shops.create', 'shops.edit']))
         <a href="{{ route('shops') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('shops') || request()->routeIs('shops.*') ? 'active' : '' }}">
              <i class="ti ti-building-store" aria-hidden="true"></i>
              المتاجر
         </a>
+        @endif
 
+        @if($canSee(['products', 'products.show', 'products.create', 'products.edit']))
         <a href="{{ route('products') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('products') || request()->routeIs('products.create') || request()->routeIs('products.edit') || request()->routeIs('products.show') ? 'active' : '' }}">
              <i class="ti ti-package" aria-hidden="true"></i>
              المنتجات
         </a>
+        @endif
 
+        @if($canSee(['products.preview']))
         <a href="{{ route('products.preview', $previewShopId ? ['shop_id' => $previewShopId] : []) }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('products.preview') ? 'active' : '' }}">
              <i class="ti ti-eye" aria-hidden="true"></i>
              معاينة المتجر
         </a>
+        @endif
 
+        @if($canSee(['categories', 'categories.show', 'categories.create', 'categories.edit']))
         <a href="{{ route('categories') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('categories*') ? 'active' : '' }}">
              <i class="ti ti-category" aria-hidden="true"></i>
              الفئات
         </a>
+        @endif
 
+        @if(! $isCatalogOnlyUser && $canSee(['ads', 'ads.show', 'ads.create', 'ads.edit']))
         <div class="admin-sidebar-section">الإعلانات</div>
 
         <a href="{{ route('ads') }}"
@@ -232,8 +286,9 @@
              <i class="ti ti-speakerphone" aria-hidden="true"></i>
              الإعلانات
         </a>
+        @endif
 
-        @if($isSuperAdmin)
+        @if(($isSuperAdmin || $isEmployee) && $canSee(['screens', 'screens.show', 'screens.create', 'screens.edit']))
         <a href="{{ route('screens') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('screens*') ? 'active' : '' }}">
              <i class="ti ti-device-tv" aria-hidden="true"></i>
@@ -244,33 +299,93 @@
 
         @endif
 
-        @if($isSuperAdmin)
+        @if(($isSuperAdmin || $isEmployee) && $canSee(['users']))
         <a href="{{ route('users') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('users') ? 'active' : '' }}">
              <i class="ti ti-users" aria-hidden="true"></i>
              المستخدمون
         </a>
-
         @endif
 
+        @if(($isSuperAdmin || $isEmployee) && $canSee(['employees', 'employees.create', 'employees.edit', 'employees.permissions.edit']))
+        <a href="{{ route('employees') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('employees*') ? 'active' : '' }}">
+             <i class="ti ti-users-group" aria-hidden="true"></i>
+             الموظفون
+        </a>
+        @endif
+
+        @if($canSee(['visitor-registrations.index']))
+        <a href="{{ route('visitor-registrations.index') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('visitor-registrations.index') ? 'active' : '' }}">
+             <i class="ti ti-address-book" aria-hidden="true"></i>
+             تسجيلات الزوار
+        </a>
+        @endif
+
+        @if($canSee(['front-orders.index']))
+        <a href="{{ route('front-orders.index') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('front-orders.index') ? 'active' : '' }}">
+             <i class="ti ti-receipt-2" aria-hidden="true"></i>
+             طلبات الواجهة
+        </a>
+        @endif
+
+        @if($canSee(['reward-wheels.customer-signup.edit', 'reward-wheels.customer-signup.update']))
+        <a href="{{ route('reward-wheels.customer-signup.edit') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('reward-wheels.customer-signup.*') ? 'active' : '' }}">
+             <i class="ti ti-disc" aria-hidden="true"></i>
+             عجلات الربح
+        </a>
+        @endif
+
+        @if($canSee(['reward-wheels.purchase.index', 'reward-wheels.purchase.edit', 'reward-wheels.purchase.store']))
+        <a href="{{ route('reward-wheels.purchase.index') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('reward-wheels.purchase.*') ? 'active' : '' }}">
+             <i class="ti ti-shopping-cart-star" aria-hidden="true"></i>
+             عجلات الشراء
+        </a>
+        @endif
+
+        @if($canSee(['reward-wheels.marketer.edit', 'reward-wheels.marketer.update']))
+        <a href="{{ route('reward-wheels.marketer.edit') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('reward-wheels.marketer.edit') || request()->routeIs('reward-wheels.marketer.update') ? 'active' : '' }}">
+             <i class="ti ti-target-arrow" aria-hidden="true"></i>
+             عجلة أسئلة المسوقة
+        </a>
+        @endif
+
+        @if($canSee(['reward-wheels.marketer.direct.edit', 'reward-wheels.marketer.direct.update']))
+        <a href="{{ route('reward-wheels.marketer.direct.edit') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('reward-wheels.marketer.direct.*') ? 'active' : '' }}">
+             <i class="ti ti-bolt" aria-hidden="true"></i>
+             عجلة المسوقة المباشرة
+        </a>
+        @endif
+
+        @if(! $isCatalogOnlyUser && $canSee(['agents', 'agents.show', 'agents.create', 'agents.edit']))
         <a href="{{ route('agents') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('agents*') ? 'active' : '' }}">
              <i class="ti ti-user-star" aria-hidden="true"></i>
              الوكلاء
         </a>
+        @endif
 
+        @if(! $isCatalogOnlyUser && $canSee(['distributors', 'distributors.show', 'distributors.create', 'distributors.edit']))
         <a href="{{ route('distributors') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('distributors') ? 'active' : '' }}">
              <i class="ti ti-truck-delivery" aria-hidden="true"></i>
              الموزعون
         </a>
+        @endif
 
-        @if($isSuperAdmin)
+        @if(($isSuperAdmin || $isEmployee) && $canSee(['settings']))
         <a href="{{ route('settings') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('settings') ? 'active' : '' }}">
              <i class="ti ti-settings" aria-hidden="true"></i>
              الإعدادات
         </a>
+        @endif
         @endif
     </nav>
 

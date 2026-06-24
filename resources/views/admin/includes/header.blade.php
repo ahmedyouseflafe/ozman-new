@@ -359,10 +359,15 @@
     }
 
     $notificationIcons = [
+        'shop_created' => 'ti ti-building-store',
         'product_created' => 'ti ti-package',
+        'product_out_of_stock' => 'ti ti-package-off',
         'category_created' => 'ti ti-category',
         'advertisement_created' => 'ti ti-speakerphone',
         'campaign_created' => 'ti ti-ad',
+        'front_order_created' => 'ti ti-receipt-2',
+        'front_order_reward_won' => 'ti ti-gift',
+        'user_created' => 'ti ti-user-plus',
     ];
 @endphp
 
@@ -415,10 +420,15 @@
 
                     <div class="admin-notifications-filters">
                         <button type="button" class="admin-notifications-filter active" data-notification-filter="all">الكل</button>
+                        <button type="button" class="admin-notifications-filter" data-notification-filter="shop_created">متاجر</button>
                         <button type="button" class="admin-notifications-filter" data-notification-filter="product_created">منتجات</button>
+                        <button type="button" class="admin-notifications-filter" data-notification-filter="product_out_of_stock">منتهية</button>
                         <button type="button" class="admin-notifications-filter" data-notification-filter="category_created">فئات</button>
                         <button type="button" class="admin-notifications-filter" data-notification-filter="advertisement_created">إعلانات</button>
                         <button type="button" class="admin-notifications-filter" data-notification-filter="campaign_created">حملات</button>
+                        <button type="button" class="admin-notifications-filter" data-notification-filter="front_order_created">طلبات</button>
+                        <button type="button" class="admin-notifications-filter" data-notification-filter="front_order_reward_won">هدايا</button>
+                        <button type="button" class="admin-notifications-filter" data-notification-filter="user_created">مستخدمون</button>
                     </div>
 
                     <div class="admin-notifications-list">
