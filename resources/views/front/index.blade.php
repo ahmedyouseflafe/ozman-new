@@ -17,7 +17,7 @@
     </style>
 
 </head>
-{{-- 
+
 <body>
     @php
         $shopName = $shop?->name ?? 'Ozman';
@@ -982,6 +982,6 @@
                 </div>
             </div>
         </div>
-</body> --}}
+</body>
 
 </html>
