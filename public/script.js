@@ -2323,7 +2323,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             overlay.querySelector('#closeCampaignVoiceModal').addEventListener('click', close);
             overlay.querySelector('#continueCampaignVoiceModal').addEventListener('click', close);
-            overlay.querySelector('#replayCampaignVoice').addEventListener('click', () => {
+            const startVoicePlayback = () => {
                 voiceFinished = false;
                 minimumDisplayFinished = false;
                 if (autoAdvanceTimer) {
@@ -2333,22 +2333,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     minimumDisplayFinished = true;
                     maybeAutoClose();
                 }, isVideo ? 4500 : 2500);
-                Promise.resolve(speakCampaignTitle(title)).finally(() => {
+
+                return Promise.resolve(speakCampaignTitle(title)).finally(() => {
                     voiceFinished = true;
                     maybeAutoClose();
                 });
-            });
+            };
+
+            overlay.querySelector('#replayCampaignVoice').addEventListener('click', startVoicePlayback);
             overlay.style.display = 'flex';
+            startVoicePlayback();
             setTimeout(() => {
                 overlay.style.opacity = '1';
-                autoAdvanceTimer = setTimeout(() => {
-                    minimumDisplayFinished = true;
-                    maybeAutoClose();
-                }, isVideo ? 4500 : 2500);
-                Promise.resolve(speakCampaignTitle(title)).finally(() => {
-                    voiceFinished = true;
-                    maybeAutoClose();
-                });
             }, 20);
         }
 
