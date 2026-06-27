@@ -257,19 +257,22 @@ html[dir="ltr"] .display-screen {
 @media (max-width: 900px) {
     header,
     .sub-section-header {
-        grid-template-columns: 1fr;
-        align-items: stretch;
+        grid-template-columns: minmax(118px, 34vw) minmax(0, 1fr);
+        align-items: center;
         min-height: auto;
-        padding: 18px;
+        padding: 16px 14px;
+        gap: 12px;
     }
 
     .header-right-group {
         justify-content: flex-start;
+        gap: 10px;
+        min-width: 0;
     }
 
     .header-display-screen {
         width: 100%;
-        min-height: 180px;
+        min-height: clamp(150px, 42vw, 180px);
         margin-inline-start: 0;
     }
 
@@ -2434,7 +2437,8 @@ html[dir="ltr"] .display-screen {
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.18s ease-out, opacity 0.18s ease-out, filter 0.18s ease-out;
+    will-change: transform, opacity;
 }
 
 .v-card {
@@ -2700,19 +2704,20 @@ html[dir="ltr"] .display-screen {
 
 @media (max-width: 768px) {
     .logo-dropdown {
-        top: 50%;
-        right: calc(100% + 8px);
+        top: calc(100% + 54px);
+        right: 0;
+        left: auto;
         margin-top: 0;
-        width: 118px;
-        max-width: 118px;
+        width: min(160px, calc(100vw - 28px));
+        max-width: min(160px, calc(100vw - 28px));
         padding: 6px 0;
         border-radius: 12px;
-        transform: translateY(-50%);
+        transform: none;
         z-index: 3200;
     }
 
     .logo-dropdown.show {
-        animation: slideInRTL 0.24s ease;
+        animation: fadeIn 0.24s ease;
     }
 
     .dropdown-item {
@@ -2728,8 +2733,11 @@ html[dir="ltr"] .display-screen {
     }
 
     .sub-dropdown {
+        top: 0;
         right: calc(100% + 4px);
-        width: clamp(118px, calc(100vw - 240px), 160px);
+        margin-right: 0;
+        width: min(150px, calc(100vw - 206px));
+        min-width: 118px;
         max-height: min(280px, calc(100vh - 160px));
         overflow-y: auto;
         overscroll-behavior: contain;
@@ -3606,38 +3614,48 @@ html[dir="ltr"] .display-screen {
     header,
     .sub-section-header {
         width: 100%;
-        overflow: hidden;
+        overflow: visible;
     }
 
     .header-right-group {
-        width: 100%;
-        justify-content: space-between;
-        gap: 12px;
+        width: auto;
+        justify-content: flex-start;
+        gap: 8px;
     }
 
     .logo img {
-        width: 92px;
-        height: 92px;
+        width: clamp(70px, 21vw, 92px);
+        height: clamp(70px, 21vw, 92px);
     }
 
     .logo-container {
         min-width: 0;
-        align-items: flex-start;
+        align-items: center;
+        gap: 8px;
     }
 
     .logo-container > div[style*="display: flex"] {
-        max-width: calc(100vw - 72px);
+        max-width: 128px;
         flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px !important;
     }
 
     .location-btn {
-        padding: 5px 10px;
-        font-size: 0.76rem;
+        padding: 4px 8px;
+        font-size: 0.7rem;
+        gap: 5px;
+        white-space: nowrap;
     }
 
     .social-icons-vertical {
-        flex: 0 0 32px;
+        flex: 0 0 24px;
         align-items: center;
+        gap: 10px;
+    }
+
+    .social-icon {
+        font-size: 1.05rem;
     }
 
     .story-slider {

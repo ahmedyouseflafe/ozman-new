@@ -425,7 +425,10 @@ document.addEventListener('DOMContentLoaded', () => {
             container.hidden = false;
             track.innerHTML = '';
 
-            [...wheels, ...wheels, ...wheels].forEach((wheel, cloneIndex) => {
+            const totalCount = wheels.length;
+            const repeatCount = Math.max(3, Math.ceil(12 / totalCount));
+
+            Array.from({ length: repeatCount }, () => wheels).flat().forEach((wheel, cloneIndex) => {
                 const wheelIndex = cloneIndex % wheels.length;
                 const item = document.createElement('div');
                 item.className = 'purchase-wheel-item v-item';
@@ -444,19 +447,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const itemHeight = 270;
-            const totalCount = wheels.length;
             container.scrollTop = totalCount * itemHeight;
 
-            container.addEventListener('scroll', () => {
-                const currentScroll = container.scrollTop;
-                const maxScroll = (totalCount * 2) * itemHeight;
-
-                if (currentScroll >= maxScroll) {
-                    container.scrollTop = currentScroll - (totalCount * itemHeight);
-                } else if (currentScroll <= (totalCount * 0.5) * itemHeight) {
-                    container.scrollTop = currentScroll + (totalCount * itemHeight);
-                }
-
+            const updateWheelCarousel = () => {
                 const items = track.querySelectorAll('.v-item');
                 const centerY = container.offsetHeight / 2;
                 const containerRect = container.getBoundingClientRect();
@@ -471,9 +464,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.style.transform = `scale(${scale})`;
                     item.classList.toggle('active', dist < 72);
                 });
-            });
+            };
 
-            track.addEventListener('click', (event) => {
+            let wheelUpdateFrame = 0;
+            container.onscroll = () => {
+                const currentScroll = container.scrollTop;
+                const maxScroll = (totalCount * 2) * itemHeight;
+
+                if (currentScroll >= maxScroll) {
+                    container.scrollTop = currentScroll - (totalCount * itemHeight);
+                } else if (currentScroll <= (totalCount * 0.5) * itemHeight) {
+                    container.scrollTop = currentScroll + (totalCount * itemHeight);
+                }
+
+                if (wheelUpdateFrame) return;
+                wheelUpdateFrame = requestAnimationFrame(() => {
+                    wheelUpdateFrame = 0;
+                    updateWheelCarousel();
+                });
+            };
+
+            track.onclick = (event) => {
                 const button = event.target.closest('[data-purchase-wheel-index]');
                 if (!button) return;
 
@@ -483,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 window.ozmanOpenPurchaseRewardWheel?.(wheel);
-            });
+            };
 
             window.setTimeout(() => {
                 container.dispatchEvent(new Event('scroll'));
@@ -3156,7 +3167,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemHeight = isMain ? 180 : 120; // approximate height + gap
             const totalCount = data.length;
             if (totalCount === 0) return;
-            const repeatCount = isMain ? 3 : 5;
+            const repeatCount = isMain ? 3 : Math.max(5, Math.ceil(18 / totalCount));
 
             track.innerHTML = '';
 
@@ -3199,8 +3210,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const cycleSpan = Math.max(1, nextCycleStart - cycleStart);
 
                     container.scrollTop = cycleSpan * 2;
+                    let storeUpdateFrame = 0;
 
-                    container.addEventListener('scroll', () => {
+                    container.onscroll = () => {
                         const currentScroll = container.scrollTop;
 
                         if (currentScroll >= cycleSpan * 3) {
@@ -3209,8 +3221,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             container.scrollTop = currentScroll + cycleSpan;
                         }
 
-                        updateStoreCarousel();
-                    });
+                        if (storeUpdateFrame) return;
+                        storeUpdateFrame = requestAnimationFrame(() => {
+                            storeUpdateFrame = 0;
+                            updateStoreCarousel();
+                        });
+                    };
 
                     updateStoreCarousel();
                 });
@@ -3221,8 +3237,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Initial Scroll Position (Middle set)
             const middleOffset = totalCount * itemHeight;
             container.scrollTop = middleOffset;
+            let verticalUpdateFrame = 0;
 
-            container.addEventListener('scroll', () => {
+            container.onscroll = () => {
                 const currentScroll = container.scrollTop;
                 const maxScroll = (totalCount * 2) * itemHeight;
                 const minScroll = totalCount * itemHeight;
@@ -3233,6 +3250,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (currentScroll <= (totalCount * 0.5) * itemHeight) {
                     container.scrollTop = currentScroll + (totalCount * itemHeight);
                 }
+
+                if (verticalUpdateFrame) return;
+                verticalUpdateFrame = requestAnimationFrame(() => {
+                    verticalUpdateFrame = 0;
 
                 // Effect Logic (Scaling and Active State)
                 const items = track.querySelectorAll('.v-item');
@@ -3260,7 +3281,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     if (isMain) item.style.filter = `blur(${Math.min(5, (dist / 100) * 2)}px)`;
                 });
-            });
+                });
+            };
 
             // Trigger initial effects
             setTimeout(() => {
