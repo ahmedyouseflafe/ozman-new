@@ -26,6 +26,7 @@ Route::get('/front/shops/{shop}', [FrontController::class, 'index'])->name('fron
 Route::get('/stores/{shop:slug}', [FrontController::class, 'index'])->name('front.shop.slug');
 Route::view('/customer-login', 'front.customer_login')->name('customer.login');
 Route::get('/tts/hebrew', [TextToSpeechController::class, 'hebrew'])->name('tts.hebrew');
+Route::get('/tts/arabic', [TextToSpeechController::class, 'arabic'])->name('tts.arabic');
 Route::post('/visitor-registrations', [VisitorRegistrationController::class, 'store'])->name('visitor-registrations.store');
 Route::post('/front-orders', [FrontOrderController::class, 'store'])->name('front-orders.store');
 Route::post('/front-orders/{order}/spin-reward', [FrontOrderController::class, 'spinReward'])->name('front-orders.spinReward');

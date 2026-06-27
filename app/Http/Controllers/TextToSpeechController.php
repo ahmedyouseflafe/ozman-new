@@ -10,6 +10,16 @@ class TextToSpeechController extends Controller
 {
     public function hebrew(Request $request): Response
     {
+        return $this->googleTranslateTts($request, 'he');
+    }
+
+    public function arabic(Request $request): Response
+    {
+        return $this->googleTranslateTts($request, 'ar');
+    }
+
+    private function googleTranslateTts(Request $request, string $language): Response
+    {
         $validated = $request->validate([
             'text' => ['required', 'string', 'max:500'],
         ]);
@@ -19,7 +29,7 @@ class TextToSpeechController extends Controller
             ->get('https://translate.google.com/translate_tts', [
                 'ie' => 'UTF-8',
                 'client' => 'tw-ob',
-                'tl' => 'he',
+                'tl' => $language,
                 'q' => $validated['text'],
             ]);
 

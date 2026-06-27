@@ -811,6 +811,7 @@
                 customerLoginUrl: @json(route('customer.login')),
                 visitorRegistrationUrl: @json(route('visitor-registrations.store')),
                 hebrewTtsUrl: @json(route('tts.hebrew')),
+                arabicTtsUrl: @json(route('tts.arabic')),
                 orderStoreUrl: @json(route('front-orders.store')),
                 orderRewardUrlTemplate: @json(url('/front-orders/__ORDER__/reward')),
                 orderSpinRewardUrlTemplate: @json(url('/front-orders/__ORDER__/spin-reward')),

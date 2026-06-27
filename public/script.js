@@ -2084,7 +2084,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return 'ar';
         }
 
-        function speakHebrewWithRemoteVoice(text, onFallback = null) {
+        function speakWithRemoteVoice(text, ttsUrl, onFallback = null) {
             const cleanText = String(text || '').trim();
             if (!cleanText) return Promise.resolve();
 
@@ -2093,7 +2093,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const audio = new Audio();
             window.ozmanActiveTtsAudio?.pause?.();
             window.ozmanActiveTtsAudio = audio;
-            const localTtsUrl = window.OZMAN_FRONT_CONFIG?.hebrewTtsUrl || '/tts/hebrew';
+            const localTtsUrl = ttsUrl;
 
             return new Promise((resolve) => {
                 const playNext = () => {
@@ -2129,17 +2129,31 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        function speakHebrewWithRemoteVoice(text, onFallback = null) {
+            return speakWithRemoteVoice(text, window.OZMAN_FRONT_CONFIG?.hebrewTtsUrl || '/tts/hebrew', onFallback);
+        }
+
+        function speakArabicWithRemoteVoice(text, onFallback = null) {
+            return speakWithRemoteVoice(text, window.OZMAN_FRONT_CONFIG?.arabicTtsUrl || '/tts/arabic', onFallback);
+        }
+
         function hasHebrewText(text) {
             return /[\u0590-\u05ff]/.test(String(text || ''));
         }
 
+        function hasArabicText(text) {
+            return /[\u0600-\u06ff]/.test(String(text || ''));
+        }
+
         function speakCampaignTitle(title) {
-            if (!title || !('speechSynthesis' in window)) {
+            if (!title) {
                 return Promise.resolve();
             }
 
             if ((document.documentElement.lang || 'ar') === 'he' || hasHebrewText(title)) {
                 return speakHebrewWithRemoteVoice(campaignVoiceText(title), () => {
+                    if (!('speechSynthesis' in window)) return Promise.resolve();
+
                     return new Promise((resolve) => {
                         const utterance = new SpeechSynthesisUtterance(campaignVoiceText(title));
                         utterance.lang = 'he-IL';
@@ -2149,6 +2163,25 @@ document.addEventListener('DOMContentLoaded', () => {
                         window.speechSynthesis.speak(utterance);
                     });
                 });
+            }
+
+            if ((document.documentElement.lang || 'ar') === 'ar' || hasArabicText(title)) {
+                return speakArabicWithRemoteVoice(campaignVoiceText(title), () => {
+                    if (!('speechSynthesis' in window)) return Promise.resolve();
+
+                    return new Promise((resolve) => {
+                        const utterance = new SpeechSynthesisUtterance(campaignVoiceText(title));
+                        utterance.lang = 'ar';
+                        utterance.onend = resolve;
+                        utterance.onerror = resolve;
+                        window.speechSynthesis.cancel();
+                        window.speechSynthesis.speak(utterance);
+                    });
+                });
+            }
+
+            if (!('speechSynthesis' in window)) {
+                return Promise.resolve();
             }
 
             if (!window.speechSynthesis.getVoices().length) {
