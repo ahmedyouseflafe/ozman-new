@@ -821,6 +821,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function shopMapsUrl(shop) {
+            if (shop?.map_url && shop.map_url !== '#') {
+                return shop.map_url;
+            }
+
             const latitude = numericCoordinate(shop?.latitude);
             const longitude = numericCoordinate(shop?.longitude);
 
@@ -960,6 +964,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!panel || !title || !link || !shop) return;
 
             title.textContent = shop.title || 'المحل';
+            const label = panel.querySelector('[data-directions-label]');
+            const linkText = panel.querySelector('[data-directions-link-text]');
+            const subject = shop.display_label || 'المحل';
+            if (label) label.textContent = `الوصول إلى ${subject}`;
+            if (linkText) linkText.textContent = `انقر فوق الخارطة للوصول إلى ${subject} عبر GPS`;
             link.href = shopMapsUrl(shop);
             panel.hidden = false;
         }
@@ -1011,6 +1020,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 title: person.name || shop.title,
                 img: person.image || shop.img,
                 logo: person.image || shop.logo || shop.img,
+                display_label: person.display_label || (personType === 'distributor' ? 'الموزع' : 'الوكيل'),
+                address: person.address || '',
+                latitude: person.latitude ?? null,
+                longitude: person.longitude ?? null,
+                map_url: person.map_url || '#',
+                social_links: [],
             });
             renderDepartmentsForCenter(index, person);
         }

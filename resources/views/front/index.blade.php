@@ -349,12 +349,12 @@
                 <div class="radial-container" style="position: relative;">
                     <div class="shop-directions-panel" id="shopDirectionsPanel" hidden>
                         <div>
-                            <span>{{ __('الوصول إلى المحل') }}</span>
+                            <span data-directions-label>{{ __('الوصول إلى المحل') }}</span>
                             <strong id="shopDirectionsTitle">{{ __('اختر المحل لعرض الاتجاهات') }}</strong>
                         </div>
                         <a href="#" target="_blank" rel="noopener noreferrer" id="shopDirectionsLink">
                             <i class="fas fa-map-location-dot"></i>
-                            {{ __('انقر فوق الخارطة للوصول للمحل عبر GPS') }}
+                            <span data-directions-link-text>{{ __('انقر فوق الخارطة للوصول للمحل عبر GPS') }}</span>
                         </a>
                     </div>
 

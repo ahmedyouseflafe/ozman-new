@@ -465,11 +465,16 @@ class FrontController extends Controller
                 return [
                     'id' => $person->id,
                     'type' => $type,
+                    'display_label' => $type === 'distributor' ? 'الموزع' : 'الوكيل',
                     'name' => $person->name,
                     'image' => $person->image ? $this->imageUrl($person->image, 'images/logo.jpg') : $fallbackLogo,
                     'contact' => $person->phone ?: $person->whatsapp ?: $shop->name,
                     'shop_id' => $shop->id,
                     'shop_title' => $shop->name,
+                    'address' => $person->address,
+                    'latitude' => $person->latitude !== null ? (float) $person->latitude : null,
+                    'longitude' => $person->longitude !== null ? (float) $person->longitude : null,
+                    'map_url' => $this->personMapUrl($person),
                     'owned_shops' => $ownedShops,
                     'departments' => $mergedDepartments,
                     'products_db' => $mergedProductsDb,
@@ -477,6 +482,19 @@ class FrontController extends Controller
             })
             ->values()
             ->all();
+    }
+
+    private function personMapUrl($person): string
+    {
+        if ($person->latitude !== null && $person->longitude !== null) {
+            return 'https://www.google.com/maps/dir/?api=1&destination=' . $person->latitude . ',' . $person->longitude;
+        }
+
+        if (filled($person->address)) {
+            return 'https://www.google.com/maps/search/?api=1&query=' . urlencode($person->address);
+        }
+
+        return '#';
     }
 
     private function ownedShopChoicesForPerson($person, $availableShops): array
