@@ -3648,6 +3648,30 @@ html[dir="ltr"] .display-screen {
         white-space: nowrap;
     }
 
+    .language-switcher {
+        max-width: 78px;
+    }
+
+    .language-switcher-menu {
+        top: calc(100% + 6px);
+        inset-inline-start: 0;
+        inset-inline-end: auto;
+        min-width: 92px;
+        max-width: 104px;
+        padding: 5px;
+        border-radius: 11px;
+        z-index: 3400;
+    }
+
+    .language-switcher-menu a {
+        padding: 7px 8px;
+        border-radius: 8px;
+        font-size: 0.68rem;
+        line-height: 1.25;
+        text-align: center;
+        white-space: nowrap;
+    }
+
     .social-icons-vertical {
         flex: 0 0 24px;
         align-items: center;
