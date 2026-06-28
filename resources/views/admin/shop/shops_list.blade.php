@@ -610,6 +610,13 @@
 </head>
 
 <body>
+    @php
+        $currentUser = auth()->user();
+        $canCreateCategories = $currentUser?->canAccessRouteName('categories.create');
+        $canCreateAgents = $currentUser?->canAccessRouteName('agents.create');
+        $canCreateDistributors = $currentUser?->canAccessRouteName('distributors.create');
+        $canCreateAds = $currentUser?->canAccessRouteName('ads.create');
+    @endphp
     <div class="shell">
         @include('admin.includes.sidebar')
 
@@ -657,22 +664,30 @@
                                 <i class="ti ti-external-link" aria-hidden="true"></i>
                                 فتح رابط المتجر
                             </a>
+                            @if($canCreateCategories)
                             <a href="{{ route('categories.create', ['shop_id' => $shop->id]) }}" class="btn btn-primary">
                                 <i class="ti ti-category-plus" aria-hidden="true"></i>
                                 إضافة قسم
                             </a>
+                            @endif
+                            @if($canCreateAgents)
                             <a href="{{ route('agents.create', ['shop_id' => $shop->id]) }}" class="btn">
                                 <i class="ti ti-user-star" aria-hidden="true"></i>
                                 إضافة وكيل
                             </a>
+                            @endif
+                            @if($canCreateDistributors)
                             <a href="{{ route('distributors.create', ['shop_id' => $shop->id]) }}" class="btn">
                                 <i class="ti ti-truck-delivery" aria-hidden="true"></i>
                                 إضافة موزع
                             </a>
+                            @endif
+                            @if($canCreateAds)
                             <a href="{{ route('ads.create', ['shop_id' => $shop->id]) }}" class="btn">
                                 <i class="ti ti-speakerphone" aria-hidden="true"></i>
                                 إضافة إعلان
                             </a>
+                            @endif
                             <a href="{{ route('shops.edit', $shop) }}" class="btn">
                                 <i class="ti ti-edit" aria-hidden="true"></i>
                                 تعديل المتجر
@@ -825,10 +840,12 @@
                                     <i class="ti ti-user-star" aria-hidden="true"></i>
                                     وكلاء المتجر
                                 </h2>
+                                @if($canCreateAgents)
                                 <a href="{{ route('agents.create', ['shop_id' => $shop->id]) }}" class="btn">
                                     <i class="ti ti-plus" aria-hidden="true"></i>
                                     إضافة
                                 </a>
+                                @endif
                             </div>
 
                             @if($shop->agents->isNotEmpty())
@@ -857,10 +874,12 @@
                                     <i class="ti ti-truck-delivery" aria-hidden="true"></i>
                                     موزعو المتجر
                                 </h2>
+                                @if($canCreateDistributors)
                                 <a href="{{ route('distributors.create', ['shop_id' => $shop->id]) }}" class="btn">
                                     <i class="ti ti-plus" aria-hidden="true"></i>
                                     إضافة
                                 </a>
+                                @endif
                             </div>
 
                             @if($shop->distributors->isNotEmpty())
@@ -889,10 +908,12 @@
                                     <i class="ti ti-speakerphone" aria-hidden="true"></i>
                                     إعلانات المتجر
                                 </h2>
+                                @if($canCreateAds)
                                 <a href="{{ route('ads.create', ['shop_id' => $shop->id]) }}" class="btn">
                                     <i class="ti ti-plus" aria-hidden="true"></i>
                                     إضافة
                                 </a>
+                                @endif
                             </div>
 
                             @if($shop->advertisements->isNotEmpty())
@@ -982,10 +1003,12 @@
                                     <i class="ti ti-category" aria-hidden="true"></i>
                                     أقسام المتجر
                                 </h2>
+                                @if($canCreateCategories)
                                 <a href="{{ route('categories.create', ['shop_id' => $shop->id]) }}" class="btn">
                                     <i class="ti ti-plus" aria-hidden="true"></i>
                                     إضافة
                                 </a>
+                                @endif
                             </div>
 
                             @if($shop->categories->isNotEmpty())

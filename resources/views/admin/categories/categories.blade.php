@@ -544,6 +544,7 @@
 </head>
 
 <body>
+    @php($canCreateCategories = auth()->user()?->canAccessRouteName('categories.create'))
     <div class="shell">
         @include('admin.includes.sidebar')
 
@@ -570,10 +571,12 @@
                         <h1>الفئات</h1>
                         <p>تصنيف منتجات المتاجر وترتيب ظهورها داخل تجربة العرض.</p>
                     </div>
+                    @if($canCreateCategories)
                     <a href="{{ route('categories.create') }}" class="btn-primary">
                         <i class="ti ti-plus" aria-hidden="true"></i>
                         فئة جديدة
                     </a>
+                    @endif
                 </div>
 
                 @if(session('status'))

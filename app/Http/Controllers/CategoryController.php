@@ -166,11 +166,13 @@ class CategoryController extends Controller
 
     private function authorizeCategoryManagement(Category $category): void
     {
-        if (auth()->user()?->isDistributor()) {
+        $user = auth()->user();
+
+        if ($user?->isDistributor() && ! $user->canAccessRouteName(request()->route()?->getName())) {
             abort(403);
         }
 
-        if (! auth()->user()?->isAgent()) {
+        if (! $user?->isAgent()) {
             return;
         }
 

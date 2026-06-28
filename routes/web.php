@@ -89,6 +89,8 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::get('/agents/{agent}/edit', [AgentController::class, 'edit'])->name('agents.edit');
     Route::put('/agents/{agent}', [AgentController::class, 'update'])->name('agents.update');
     Route::delete('/agents/{agent}', [AgentController::class, 'destroy'])->name('agents.destroy');
+    Route::get('/agents/{agent}/permissions', [AgentController::class, 'editPermissions'])->name('agents.permissions.edit');
+    Route::put('/agents/{agent}/permissions', [AgentController::class, 'updatePermissions'])->name('agents.permissions.update');
     Route::get('/agents/{agent}', [AgentController::class, 'show'])->name('agents.show');
 
     Route::get('/categories', [CategoryController::class, 'index'])->name('categories');
@@ -105,6 +107,8 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::get('/distributors/{distributor}/edit', [DistributorController::class, 'edit'])->name('distributors.edit');
     Route::put('/distributors/{distributor}', [DistributorController::class, 'update'])->name('distributors.update');
     Route::delete('/distributors/{distributor}', [DistributorController::class, 'destroy'])->name('distributors.destroy');
+    Route::get('/distributors/{distributor}/permissions', [DistributorController::class, 'editPermissions'])->name('distributors.permissions.edit');
+    Route::put('/distributors/{distributor}/permissions', [DistributorController::class, 'updatePermissions'])->name('distributors.permissions.update');
     Route::get('/distributors/{distributor}', [DistributorController::class, 'show'])->name('distributors.show');
 
     Route::get('/products', [ProductController::class, 'index'])->name('products');

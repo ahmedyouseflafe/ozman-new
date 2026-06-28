@@ -44,6 +44,14 @@ class AuthController extends Controller
         }
 
         if (Auth::user()->isAgent() || Auth::user()->isDistributor()) {
+            $user = Auth::user();
+
+            foreach (['products', 'categories', 'dashboard.main', 'dashboard'] as $routeName) {
+                if ($user->canAccessRouteName($routeName)) {
+                    return redirect()->route($routeName);
+                }
+            }
+
             return redirect()->route('products');
         }
 

@@ -36,6 +36,11 @@
 </head>
 
 <body>
+    @php
+        $currentUser = auth()->user();
+        $canCreateProducts = $currentUser?->canAccessRouteName('products.create');
+        $canEditCategories = $currentUser?->canAccessRouteName('categories.edit');
+    @endphp
     <div class="shell">
         @include('admin.includes.sidebar')
 
@@ -92,14 +97,18 @@
                     </div>
 
                     <div class="actions">
-                        <a href="{{ route('products.create', ['shop_id' => $category->shop_id, 'category_id' => $category->id]) }}" class="btn btn-primary">
-                            <i class="ti ti-package-plus" aria-hidden="true"></i>
-                            إضافة منتج
-                        </a>
-                        <a href="{{ route('categories.edit', $category) }}" class="btn btn-primary">
-                            <i class="ti ti-edit" aria-hidden="true"></i>
-                            تعديل الفئة
-                        </a>
+                        @if($canCreateProducts)
+                            <a href="{{ route('products.create', ['shop_id' => $category->shop_id, 'category_id' => $category->id]) }}" class="btn btn-primary">
+                                <i class="ti ti-package-plus" aria-hidden="true"></i>
+                                إضافة منتج
+                            </a>
+                        @endif
+                        @if($canEditCategories)
+                            <a href="{{ route('categories.edit', $category) }}" class="btn btn-primary">
+                                <i class="ti ti-edit" aria-hidden="true"></i>
+                                تعديل الفئة
+                            </a>
+                        @endif
                         <a href="{{ route('categories') }}" class="btn">رجوع</a>
                     </div>
                 </section>

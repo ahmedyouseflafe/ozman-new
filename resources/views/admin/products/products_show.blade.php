@@ -210,7 +210,7 @@
                 ->map(fn($id) => (int) $id)
                 ->all()
             : [];
-        $canManageProducts = ! $currentUser?->isDistributor()
+        $canManageProducts = $currentUser?->canAccessRouteName('products.edit')
             && (! $currentUser?->isAgent() || in_array((int) $product->agent_id, $currentUserAgentIds, true));
     @endphp
 

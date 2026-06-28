@@ -509,7 +509,7 @@
     @php
         $currentUser = auth()->user();
         $canCreateShop = $currentUser?->isSuperAdmin()
-            || ($currentUser?->isEmployee() && $currentUser->canAccessRouteName('shops.create'));
+            || $currentUser?->canAccessRouteName('shops.create');
         $canOpenOzmanShop = $currentUser?->isSuperAdmin();
 
         $shopItems = collect(

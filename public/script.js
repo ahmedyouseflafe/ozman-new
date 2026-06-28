@@ -3055,7 +3055,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         track.style.transform = 'scale(0.8)';
 
                         setTimeout(() => {
-                            renderProductsScatter(prod.title);
+                            if (prod.kind === 'shop' && prod.shop_id) {
+                                const shopIndex = centersData.findIndex((shop) => String(shop.id || '') === String(prod.shop_id));
+                                if (shopIndex >= 0) {
+                                    selectCategory(shopIndex);
+                                }
+                            } else {
+                                renderProductsScatter(prod.title);
+                            }
                             track.style.opacity = '1';
                             track.style.transform = 'scale(1)';
                         }, 300);

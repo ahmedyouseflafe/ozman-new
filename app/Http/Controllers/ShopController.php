@@ -234,6 +234,9 @@ class ShopController extends Controller
 
     private function validatedData(Request $request, ?Shop $shop = null): array
     {
+        $authUser = Auth::user();
+        $usesCurrentUserAsOwner = ! $shop && $authUser && ($authUser->isAgent() || $authUser->isDistributor());
+
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => [
@@ -263,17 +266,23 @@ class ShopController extends Controller
             'logo' => ['nullable', 'image', 'max:2048'],
             'banner' => ['nullable', 'image', 'max:4096'],
             'owner_email' => [
-                $shop ? 'nullable' : 'required',
+                $shop || $usesCurrentUserAsOwner ? 'nullable' : 'required',
                 'email',
                 'max:255',
                 Rule::unique('users', 'email')->ignore($shop?->user_id),
             ],
-            'owner_password' => [$shop ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
+            'owner_password' => [$shop || $usesCurrentUserAsOwner ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
         ]);
     }
 
     private function resolveShopOwner(Request $request, array $data): User
     {
+        $user = Auth::user();
+
+        if ($user && ($user->isAgent() || $user->isDistributor())) {
+            return $user;
+        }
+
         return User::create([
             'name' => $data['name'],
             'email' => $request->input('owner_email'),

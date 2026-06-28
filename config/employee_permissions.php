@@ -68,10 +68,12 @@ return [
                 'agents.create' => ['label' => 'إضافة وكيل', 'routes' => ['agents.create', 'agents.store']],
                 'agents.edit' => ['label' => 'تعديل وكيل', 'routes' => ['agents.edit', 'agents.update']],
                 'agents.delete' => ['label' => 'حذف وكيل', 'routes' => ['agents.destroy']],
+                'agents.permissions' => ['label' => 'تعديل صلاحيات الوكلاء', 'routes' => ['agents.permissions.edit', 'agents.permissions.update']],
                 'distributors.view' => ['label' => 'استعراض الموزعين', 'routes' => ['distributors', 'distributors.show']],
                 'distributors.create' => ['label' => 'إضافة موزع', 'routes' => ['distributors.create', 'distributors.store']],
                 'distributors.edit' => ['label' => 'تعديل موزع', 'routes' => ['distributors.edit', 'distributors.update']],
                 'distributors.delete' => ['label' => 'حذف موزع', 'routes' => ['distributors.destroy']],
+                'distributors.permissions' => ['label' => 'تعديل صلاحيات الموزعين', 'routes' => ['distributors.permissions.edit', 'distributors.permissions.update']],
             ],
         ],
         'orders' => [

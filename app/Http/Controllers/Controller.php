@@ -28,7 +28,8 @@ abstract class Controller
         $user = Auth::user();
 
         return $user?->isSuperAdmin() === true
-            || ($user?->isEmployee() === true && $user->canAccessRouteName(request()->route()?->getName()));
+            || (($user?->isEmployee() === true || $user?->hasAssignedPermissions() === true)
+                && $user->canAccessRouteName(request()->route()?->getName()));
     }
 
     protected function ownedShopIds(): array

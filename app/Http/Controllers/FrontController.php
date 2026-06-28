@@ -262,7 +262,7 @@ class FrontController extends Controller
                 ->all();
         }
 
-        $centersData = $shops->map(function (Shop $shop) use (&$productsDb) {
+        $centersData = $shops->map(function (Shop $shop) use (&$productsDb, $shops) {
             $shopProductsDb = [];
             $shopDepartments = [];
 
@@ -284,8 +284,8 @@ class FrontController extends Controller
                 'img' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
                 'logo' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
                 'social_links' => $this->socialLinksPayload($shop),
-                'agents' => $this->contactPeoplePayload($shop->agents ?? collect(), $shop, 'agent', $shopProductsDb, $shopDepartments),
-                'distributors' => $this->contactPeoplePayload($shop->distributors ?? collect(), $shop, 'distributor', $shopProductsDb, $shopDepartments),
+                'agents' => $this->contactPeoplePayload($shop->agents ?? collect(), $shop, 'agent', $shopProductsDb, $shopDepartments, $shops),
+                'distributors' => $this->contactPeoplePayload($shop->distributors ?? collect(), $shop, 'distributor', $shopProductsDb, $shopDepartments, $shops),
                 'display_items' => $this->displayItemsPayload($shop->advertisements ?? collect()),
                 'departments' => $shopDepartments,
                 'products_db' => $shopProductsDb,
@@ -318,8 +318,8 @@ class FrontController extends Controller
                 'img' => $this->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
                 'logo' => $this->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
                 'social_links' => $this->socialLinksPayload($ozmanShop),
-                'agents' => $this->contactPeoplePayload($ozmanShop->agents ?? collect(), $ozmanShop, 'agent', $ozmanProductsDb, $ozmanDepartments),
-                'distributors' => $this->contactPeoplePayload($ozmanShop->distributors ?? collect(), $ozmanShop, 'distributor', $ozmanProductsDb, $ozmanDepartments),
+                'agents' => $this->contactPeoplePayload($ozmanShop->agents ?? collect(), $ozmanShop, 'agent', $ozmanProductsDb, $ozmanDepartments, $shops),
+                'distributors' => $this->contactPeoplePayload($ozmanShop->distributors ?? collect(), $ozmanShop, 'distributor', $ozmanProductsDb, $ozmanDepartments, $shops),
                 'display_items' => $this->displayItemsPayload($ozmanShop->advertisements ?? collect()),
                 'departments' => $ozmanDepartments,
                 'products_db' => $ozmanProductsDb,
@@ -439,24 +439,28 @@ class FrontController extends Controller
         ])->filter(fn($item) => filled($item['url']))->values()->all();
     }
 
-    private function contactPeoplePayload($people, Shop $shop, string $type, array $shopProductsDb = [], array $shopDepartments = []): array
+    private function contactPeoplePayload($people, Shop $shop, string $type, array $shopProductsDb = [], array $shopDepartments = [], $availableShops = null): array
     {
         $fallbackLogo = $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg');
+        $availableShops = collect($availableShops ?? []);
 
         return collect($people)
-            ->map(function ($person) use ($shop, $fallbackLogo, $type, $shopProductsDb, $shopDepartments) {
+            ->map(function ($person) use ($shop, $fallbackLogo, $type, $shopProductsDb, $shopDepartments, $availableShops) {
                 $personProductsDb = $type === 'agent'
                     ? $this->personProductsDb($person->products ?? collect(), $person->categories ?? collect())
                     : [];
                 $personDepartments = $type === 'agent'
                     ? $this->personDepartments($personProductsDb, $shop, $person->categories ?? collect())
                     : [];
+                $ownedShops = $this->ownedShopChoicesForPerson($person, $availableShops);
                 $mergedProductsDb = $type === 'agent'
                     ? $this->mergeProductsDb($shopProductsDb, $personProductsDb)
                     : $shopProductsDb;
-                $mergedDepartments = $type === 'agent'
-                    ? $this->mergeDepartments($shopDepartments, $personDepartments)
-                    : $shopDepartments;
+                $mergedDepartments = $ownedShops !== []
+                    ? $ownedShops
+                    : ($type === 'agent'
+                        ? $this->mergeDepartments($shopDepartments, $personDepartments)
+                        : $shopDepartments);
 
                 return [
                     'id' => $person->id,
@@ -466,10 +470,30 @@ class FrontController extends Controller
                     'contact' => $person->phone ?: $person->whatsapp ?: $shop->name,
                     'shop_id' => $shop->id,
                     'shop_title' => $shop->name,
+                    'owned_shops' => $ownedShops,
                     'departments' => $mergedDepartments,
                     'products_db' => $mergedProductsDb,
                 ];
             })
+            ->values()
+            ->all();
+    }
+
+    private function ownedShopChoicesForPerson($person, $availableShops): array
+    {
+        if (! $person->user_id) {
+            return [];
+        }
+
+        return collect($availableShops)
+            ->filter(fn(Shop $candidate) => (int) $candidate->user_id === (int) $person->user_id)
+            ->map(fn(Shop $candidate) => [
+                'title' => $candidate->name,
+                'img' => $this->imageUrl($candidate->logo ?: $candidate->banner, 'images/logo.jpg'),
+                'kind' => 'shop',
+                'shop_id' => $candidate->id,
+                'contact' => $candidate->address ?: $candidate->phone ?: $candidate->city ?: '',
+            ])
             ->values()
             ->all();
     }

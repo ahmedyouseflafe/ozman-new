@@ -88,9 +88,26 @@ class User extends Authenticatable
         return $this->role === 'employee';
     }
 
+    public function hasAssignedPermissions(): bool
+    {
+        if ($this->isEmployee()) {
+            return true;
+        }
+
+        if (! ($this->isAgent() || $this->isDistributor())) {
+            return false;
+        }
+
+        if ($this->relationLoaded('employeePermissions')) {
+            return $this->employeePermissions->isNotEmpty();
+        }
+
+        return $this->employeePermissions()->exists();
+    }
+
     public function permissionKeys(): array
     {
-        if (! $this->isEmployee()) {
+        if (! ($this->isEmployee() || $this->isAgent() || $this->isDistributor())) {
             return [];
         }
 
@@ -105,7 +122,7 @@ class User extends Authenticatable
             return true;
         }
 
-        if (! $this->isEmployee()) {
+        if (! $this->hasAssignedPermissions()) {
             return false;
         }
 
@@ -128,7 +145,7 @@ class User extends Authenticatable
             return true;
         }
 
-        if (! $this->isEmployee()) {
+        if (! $this->hasAssignedPermissions()) {
             return true;
         }
 
@@ -146,7 +163,7 @@ class User extends Authenticatable
             return true;
         }
 
-        if (! $this->isEmployee()) {
+        if (! $this->hasAssignedPermissions()) {
             return true;
         }
 

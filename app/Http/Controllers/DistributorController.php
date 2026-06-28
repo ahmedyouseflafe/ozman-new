@@ -61,7 +61,13 @@ class DistributorController extends Controller
             $data['image'] = $this->storeUpload($request);
         }
 
-        Distributor::create($data);
+        $distributor = Distributor::create($data);
+
+        if ($distributor->user_id) {
+            return redirect()
+                ->route('distributors.permissions.edit', $distributor)
+                ->with('status', 'تمت إضافة الموزع. اختر صلاحياته الآن.');
+        }
 
         return redirect()
             ->route('distributors')
@@ -120,6 +126,53 @@ class DistributorController extends Controller
             ->with('status', 'تم حذف الموزع بنجاح.');
     }
 
+    public function editPermissions(Distributor $distributor): View|RedirectResponse
+    {
+        $this->authorizeShopAccess($distributor);
+        $user = $distributor->user;
+
+        if (! $user) {
+            return redirect()
+                ->route('distributors.edit', $distributor)
+                ->withErrors(['user_id' => 'اربط الموزع بحساب دخول قبل تحديد الصلاحيات.']);
+        }
+
+        $user->load('employeePermissions');
+
+        return view('admin.employees.permissions', [
+            'employee' => $user,
+            'permissionGroups' => config('employee_permissions.groups', []),
+            'selectedPermissions' => $user->employeePermissions->pluck('permission')->all(),
+            'pageTitle' => 'صلاحيات الموزع',
+            'headerTitle' => 'صلاحيات الموزع',
+            'subjectLabel' => 'الموزع',
+            'description' => 'حدد الصفحات والعمليات التي يستطيع الموزع الوصول إليها داخل لوحة التحكم.',
+            'formAction' => route('distributors.permissions.update', $distributor),
+            'backUrl' => route('distributors'),
+        ]);
+    }
+
+    public function updatePermissions(Request $request, Distributor $distributor): RedirectResponse
+    {
+        $this->authorizeShopAccess($distributor);
+        $user = $distributor->user;
+        abort_unless($user, 404);
+
+        $data = $request->validate([
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['string', Rule::in($this->validPermissionKeys())],
+        ]);
+
+        $user->employeePermissions()->delete();
+        foreach (array_unique($data['permissions'] ?? []) as $permission) {
+            $user->employeePermissions()->create(['permission' => $permission]);
+        }
+
+        return redirect()
+            ->route('distributors')
+            ->with('status', 'تم حفظ صلاحيات الموزع بنجاح.');
+    }
+
     private function validatedData(Request $request): array
     {
         return $request->validate([
@@ -136,6 +189,14 @@ class DistributorController extends Controller
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
+    }
+
+    private function validPermissionKeys(): array
+    {
+        return collect(config('employee_permissions.groups', []))
+            ->flatMap(fn($group) => array_keys($group['permissions'] ?? []))
+            ->values()
+            ->all();
     }
 
     private function applyAgentShop(array &$data): void

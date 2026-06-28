@@ -554,8 +554,10 @@
                 ->map(fn($id) => (int) $id)
                 ->all()
             : [];
-        $canCreateProducts = ! $currentUser?->isDistributor();
-        $canManageProduct = fn($product) => ! $currentUser?->isDistributor()
+        $canCreateProducts = $currentUser?->canAccessRouteName('products.create');
+        $canEditProducts = $currentUser?->canAccessRouteName('products.edit');
+        $canDeleteProducts = $currentUser?->canAccessRouteName('products.destroy');
+        $canManageProduct = fn($product) => ($canEditProducts || $canDeleteProducts)
             && (! $currentUser?->isAgent() || in_array((int) data_get($product, 'agent_id'), $currentUserAgentIds, true));
     @endphp
 
@@ -741,10 +743,12 @@
                                                 <a href="{{ route('products.show', $product) }}" class="icon-btn" aria-label="عرض">
                                                     <i class="ti ti-eye" aria-hidden="true"></i>
                                                 </a>
-                                                @if($canManageProduct($product))
+                                                @if($canManageProduct($product) && $canEditProducts)
                                                     <a href="{{ route('products.edit', $product) }}" class="icon-btn" aria-label="تعديل">
                                                         <i class="ti ti-edit" aria-hidden="true"></i>
                                                     </a>
+                                                @endif
+                                                @if($canManageProduct($product) && $canDeleteProducts)
                                                     <form action="{{ route('products.destroy', $product) }}" method="POST" onsubmit="return confirm('هل تريد حذف هذا المنتج؟')">
                                                         @csrf
                                                         @method('DELETE')

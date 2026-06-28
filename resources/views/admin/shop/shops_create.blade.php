@@ -634,6 +634,8 @@
                     </div>
                 @endif
 
+                @php($usesCurrentUserAsShopOwner = auth()->user() && (auth()->user()->isAgent() || auth()->user()->isDistributor()))
+
                 <form class="form-shell" action="{{ route('shops.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
 
@@ -673,6 +675,7 @@
                         </div>
                     </section>
 
+                    @unless($usesCurrentUserAsShopOwner)
                     <section class="form-section">
                         <div class="section-head">
                             <div class="section-icon"><i class="ti ti-user-lock" aria-hidden="true"></i></div>
@@ -708,6 +711,7 @@
                             </div>
                         </div>
                     </section>
+                    @endunless
 
                     <section class="form-section">
                         <div class="section-head">

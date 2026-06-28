@@ -171,9 +171,11 @@
     $isDistributor = $currentUser?->isDistributor();
     $isMarketer = $currentUser?->isMarketer();
     $isEmployee = $currentUser?->isEmployee();
-    $isCatalogOnlyUser = $isAgent || $isDistributor;
+    $hasAssignedPermissions = $currentUser?->hasAssignedPermissions() ?? false;
+    $isPermissionManaged = $isEmployee || (($isAgent || $isDistributor) && $hasAssignedPermissions);
+    $isCatalogOnlyUser = ($isAgent || $isDistributor) && ! $hasAssignedPermissions;
     $previewShopId = request()->integer('shop_id') ?: session('current_shop_id');
-    $canSee = fn(array $routes) => ! $isEmployee || $currentUser?->canAccessAnyRoute($routes);
+    $canSee = fn(array $routes) => ! $isPermissionManaged || $currentUser?->canAccessAnyRoute($routes);
 
     foreach (request()->route()?->parameters() ?? [] as $parameter) {
         if (! $parameter instanceof \Illuminate\Database\Eloquent\Model) {
@@ -237,7 +239,7 @@
         </a>
         @else
 
-        @if(($isSuperAdmin || $isEmployee) && $canSee(['dashboard.main']))
+        @if(($isSuperAdmin || $isPermissionManaged) && $canSee(['dashboard.main']))
         <a href="{{ route('dashboard.main') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('dashboard.main') ? 'active' : '' }}">
              <i class="ti ti-dashboard" aria-hidden="true"></i>
@@ -288,7 +290,7 @@
         </a>
         @endif
 
-        @if(($isSuperAdmin || $isEmployee) && $canSee(['screens', 'screens.show', 'screens.create', 'screens.edit']))
+        @if(($isSuperAdmin || $isPermissionManaged) && $canSee(['screens', 'screens.show', 'screens.create', 'screens.edit']))
         <a href="{{ route('screens') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('screens*') ? 'active' : '' }}">
              <i class="ti ti-device-tv" aria-hidden="true"></i>
@@ -299,7 +301,7 @@
 
         @endif
 
-        @if(($isSuperAdmin || $isEmployee) && $canSee(['users']))
+        @if(($isSuperAdmin || $isPermissionManaged) && $canSee(['users']))
         <a href="{{ route('users') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('users') ? 'active' : '' }}">
              <i class="ti ti-users" aria-hidden="true"></i>
@@ -307,7 +309,7 @@
         </a>
         @endif
 
-        @if(($isSuperAdmin || $isEmployee) && $canSee(['employees', 'employees.create', 'employees.edit', 'employees.permissions.edit']))
+        @if(($isSuperAdmin || $isPermissionManaged) && $canSee(['employees', 'employees.create', 'employees.edit', 'employees.permissions.edit']))
         <a href="{{ route('employees') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('employees*') ? 'active' : '' }}">
              <i class="ti ti-users-group" aria-hidden="true"></i>
@@ -363,7 +365,7 @@
         </a>
         @endif
 
-        @if(! $isCatalogOnlyUser && $canSee(['agents', 'agents.show', 'agents.create', 'agents.edit']))
+        @if(! $isCatalogOnlyUser && $canSee(['agents', 'agents.show', 'agents.create', 'agents.edit', 'agents.permissions.edit']))
         <a href="{{ route('agents') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('agents*') ? 'active' : '' }}">
              <i class="ti ti-user-star" aria-hidden="true"></i>
@@ -371,15 +373,15 @@
         </a>
         @endif
 
-        @if(! $isCatalogOnlyUser && $canSee(['distributors', 'distributors.show', 'distributors.create', 'distributors.edit']))
+        @if(! $isCatalogOnlyUser && $canSee(['distributors', 'distributors.show', 'distributors.create', 'distributors.edit', 'distributors.permissions.edit']))
         <a href="{{ route('distributors') }}"
-             class="admin-sidebar-item nav-item {{ request()->routeIs('distributors') ? 'active' : '' }}">
+             class="admin-sidebar-item nav-item {{ request()->routeIs('distributors*') ? 'active' : '' }}">
              <i class="ti ti-truck-delivery" aria-hidden="true"></i>
              الموزعون
         </a>
         @endif
 
-        @if(($isSuperAdmin || $isEmployee) && $canSee(['settings']))
+        @if(($isSuperAdmin || $isPermissionManaged) && $canSee(['settings']))
         <a href="{{ route('settings') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('settings') ? 'active' : '' }}">
              <i class="ti ti-settings" aria-hidden="true"></i>

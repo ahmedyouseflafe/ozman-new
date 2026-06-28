@@ -243,7 +243,9 @@ class ProductController extends Controller
     {
         $user = auth()->user();
 
-        abort_if($user?->isDistributor(), 403);
+        if ($user?->isDistributor() && ! $user->canAccessRouteName(request()->route()?->getName())) {
+            abort(403);
+        }
 
         if (! $user?->isAgent()) {
             return;

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>صلاحيات الموظف - Ozman</title>
+    <title>{{ $pageTitle ?? 'صلاحيات المستخدم' }} - Ozman</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <style>
@@ -11,20 +11,26 @@
     </style>
 </head>
 <body>
+    @php
+        $headerTitle = $headerTitle ?? 'صلاحيات الموظف';
+        $description = $description ?? 'حدد الصفحات والعمليات التي يستطيع المستخدم الوصول إليها.';
+        $formAction = $formAction ?? route('employees.permissions.update', $employee);
+        $backUrl = $backUrl ?? route('employees');
+    @endphp
     @include('admin.includes.sidebar')
     <main class="main">
-        @include('admin.includes.header', ['title' => 'صلاحيات الموظف'])
+        @include('admin.includes.header', ['title' => $headerTitle])
         <div class="content">
-            <form method="POST" action="{{ route('employees.permissions.update', $employee) }}">
+            <form method="POST" action="{{ $formAction }}">
                 @csrf
                 @method('PUT')
 
                 <section class="hero">
                     <div>
-                        <h1>صلاحيات الموظف: {{ $employee->name }}</h1>
-                        <p>حدد الصفحات والعمليات التي يستطيع الموظف الوصول إليها.</p>
+                        <h1>{{ $headerTitle }}: {{ $employee->name }}</h1>
+                        <p>{{ $description }}</p>
                     </div>
-                    <a class="btn btn-outline" href="{{ route('employees') }}"><i class="ti ti-arrow-right"></i> رجوع</a>
+                    <a class="btn btn-outline" href="{{ $backUrl }}"><i class="ti ti-arrow-right"></i> رجوع</a>
                 </section>
 
                 @if($errors->any())
@@ -42,7 +48,7 @@
                 </div>
 
                 <section class="grid" id="permissionsGrid">
-                    @foreach($permissionGroups as $groupKey => $group)
+                    @foreach($permissionGroups as $group)
                         <article class="group" data-permission-group>
                             <div class="group-head">
                                 <h2>{{ $group['label'] }}</h2>
@@ -60,7 +66,7 @@
 
                 <div class="actions">
                     <button class="btn btn-green" type="submit"><i class="ti ti-device-floppy"></i> حفظ الصلاحيات</button>
-                    <a class="btn btn-outline" href="{{ route('employees') }}">إلغاء</a>
+                    <a class="btn btn-outline" href="{{ $backUrl }}">إلغاء</a>
                 </div>
             </form>
         </div>

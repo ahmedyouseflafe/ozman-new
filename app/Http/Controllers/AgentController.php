@@ -58,7 +58,13 @@ class AgentController extends Controller
             $data['image'] = $this->storeUpload($request);
         }
 
-        Agent::create($data);
+        $agent = Agent::create($data);
+
+        if ($agent->user_id) {
+            return redirect()
+                ->route('agents.permissions.edit', $agent)
+                ->with('status', 'تمت إضافة الوكيل. اختر صلاحياته الآن.');
+        }
 
         return redirect()
             ->route('agents')
@@ -114,6 +120,53 @@ class AgentController extends Controller
             ->with('status', 'تم حذف الوكيل بنجاح.');
     }
 
+    public function editPermissions(Agent $agent): View|RedirectResponse
+    {
+        $this->authorizeShopAccess($agent);
+        $user = $agent->user;
+
+        if (! $user) {
+            return redirect()
+                ->route('agents.edit', $agent)
+                ->withErrors(['user_id' => 'اربط الوكيل بحساب دخول قبل تحديد الصلاحيات.']);
+        }
+
+        $user->load('employeePermissions');
+
+        return view('admin.employees.permissions', [
+            'employee' => $user,
+            'permissionGroups' => config('employee_permissions.groups', []),
+            'selectedPermissions' => $user->employeePermissions->pluck('permission')->all(),
+            'pageTitle' => 'صلاحيات الوكيل',
+            'headerTitle' => 'صلاحيات الوكيل',
+            'subjectLabel' => 'الوكيل',
+            'description' => 'حدد الصفحات والعمليات التي يستطيع الوكيل الوصول إليها داخل لوحة التحكم.',
+            'formAction' => route('agents.permissions.update', $agent),
+            'backUrl' => route('agents'),
+        ]);
+    }
+
+    public function updatePermissions(Request $request, Agent $agent): RedirectResponse
+    {
+        $this->authorizeShopAccess($agent);
+        $user = $agent->user;
+        abort_unless($user, 404);
+
+        $data = $request->validate([
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['string', Rule::in($this->validPermissionKeys())],
+        ]);
+
+        $user->employeePermissions()->delete();
+        foreach (array_unique($data['permissions'] ?? []) as $permission) {
+            $user->employeePermissions()->create(['permission' => $permission]);
+        }
+
+        return redirect()
+            ->route('agents')
+            ->with('status', 'تم حفظ صلاحيات الوكيل بنجاح.');
+    }
+
     private function validatedData(Request $request): array
     {
         return $request->validate([
@@ -129,6 +182,14 @@ class AgentController extends Controller
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
+    }
+
+    private function validPermissionKeys(): array
+    {
+        return collect(config('employee_permissions.groups', []))
+            ->flatMap(fn($group) => array_keys($group['permissions'] ?? []))
+            ->values()
+            ->all();
     }
 
     private function syncLoginAccount(array &$data): void

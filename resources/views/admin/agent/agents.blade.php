@@ -705,6 +705,11 @@
                                                 <a href="{{ route('agents.edit', $agent) }}" class="action-btn" aria-label="تعديل">
                                                     <i class="ti ti-edit" aria-hidden="true"></i>
                                                 </a>
+                                                @if(data_get($agent, 'user_id'))
+                                                    <a href="{{ route('agents.permissions.edit', $agent) }}" class="action-btn" aria-label="صلاحيات">
+                                                        <i class="ti ti-lock" aria-hidden="true"></i>
+                                                    </a>
+                                                @endif
                                                 <form action="{{ route('agents.destroy', $agent) }}" method="POST" onsubmit="return confirm('هل تريد حذف هذا الوكيل؟')">
                                                     @csrf
                                                     @method('DELETE')

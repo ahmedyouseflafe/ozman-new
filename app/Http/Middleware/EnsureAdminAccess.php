@@ -35,7 +35,11 @@ class EnsureAdminAccess
         }
 
         if ($user->isAgent() || $user->isDistributor()) {
-            $this->authorizeAgentRoute($request);
+            if ($user->hasAssignedPermissions()) {
+                abort_unless($user->canAccessRouteName($request->route()?->getName()), 403);
+            } else {
+                $this->authorizeAgentRoute($request);
+            }
         }
 
         $ownedShopIds = $user->accessibleShopIds();
