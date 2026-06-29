@@ -93,5 +93,16 @@
   "المتصفح لا يدعم تحديد الموقع تلقائيا.": "Your browser does not support automatic location detection.",
   "لم نقدر نحدد الموقع. تأكد من السماح للموقع بالوصول للّوكيشن.": "We could not detect the location. Make sure location permission is allowed.",
   "تم تحميل الموقع المحفوظ مسبقا.": "Saved location loaded.",
-  "Ozman admin panel": "Ozman admin panel"
+  "Ozman admin panel": "Ozman admin panel",
+  "الموزعون": "Distributors",
+  "الوكلاء": "Agents",
+  "لا يوجد موزعون بعد": "No distributors yet",
+  "لا يوجد وكلاء بعد": "No agents yet",
+  "المحل": "Shop",
+  "الوكيل": "Agent",
+  "الموزع": "Distributor",
+  "أقسام": "departments",
+  "الوصول إلى :subject": "Directions to :subject",
+  "انقر فوق الخارطة للوصول إلى :subject عبر GPS": "Tap the map to navigate to :subject with GPS",
+  "عودة للمنتجات": "Back to products"
 }

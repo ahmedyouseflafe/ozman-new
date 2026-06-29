@@ -47,6 +47,17 @@
             'locationUnsupported' => __('المتصفح لا يدعم تحديد الموقع تلقائيا.'),
             'locationDenied' => __('لم نقدر نحدد الموقع. تأكد من السماح للموقع بالوصول للّوكيشن.'),
             'savedLocationLoaded' => __('تم تحميل الموقع المحفوظ مسبقا.'),
+            'shop' => __('المحل'),
+            'agent' => __('الوكيل'),
+            'distributor' => __('الموزع'),
+            'agents' => __('الوكلاء'),
+            'distributors' => __('الموزعون'),
+            'noAgents' => __('لا يوجد وكلاء بعد'),
+            'noDistributors' => __('لا يوجد موزعون بعد'),
+            'departments' => __('أقسام'),
+            'directionsTo' => __('الوصول إلى :subject'),
+            'directionsLinkTo' => __('انقر فوق الخارطة للوصول إلى :subject عبر GPS'),
+            'backToProducts' => __('عودة للمنتجات'),
         ];
         $paymentMethodLabels = [
             'bank_transfer' => __('تحويل بنكي'),
@@ -366,7 +377,7 @@
                                 style="padding: 12px 30px; border-radius: 20px; color: var(--primary-color); border: 1px solid var(--glass-border); background: rgba(0,0,0,0.85); margin: 0; font-size: 1.4rem; font-weight: 900; box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);">
                                 {{ __('اسم القسم') }}</h3>
                             <button class="back-btn" id="backToDeptsBtn" style="direction: rtl;">
-                                <i class="fas fa-chevron-right" style="margin-left: 8px;"></i>
+                                <i class="fas fa-chevron-right"></i>
                                 {{ __('عودة للأقسام') }}
                             </button>
                         </div>

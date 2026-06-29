@@ -2711,6 +2711,37 @@ html[dir="ltr"] .display-screen {
     transition: 0.3s;
 }
 
+html[dir="ltr"] .logo-dropdown {
+    right: auto;
+    left: 0;
+    direction: ltr;
+}
+
+html[dir="ltr"] .dropdown-item::after {
+    content: '\f105';
+}
+
+html[dir="ltr"] .sub-dropdown {
+    right: auto;
+    left: 100%;
+    margin-right: 0;
+    margin-left: 2px;
+}
+
+html[dir="ltr"] .agent-item {
+    text-align: left;
+}
+
+html[dir="ltr"] .agent-shop {
+    padding-right: 0;
+    padding-left: 42px;
+}
+
+html[dir="ltr"] .sub-item:hover {
+    padding-right: 20px;
+    padding-left: 25px;
+}
+
 /* Hover effects */
 .agent-item:hover {
     background: rgba(0, 229, 255, 0.1);
@@ -2812,6 +2843,27 @@ html[dir="ltr"] .display-screen {
         padding-right: 36px;
         font-size: 0.64rem;
         line-height: 1.25;
+    }
+
+    html[dir="ltr"] .logo-dropdown {
+        right: auto;
+        left: 0;
+    }
+
+    html[dir="ltr"] .sub-dropdown {
+        right: auto;
+        left: calc(100% + 4px);
+        margin-left: 0;
+    }
+
+    html[dir="ltr"] .sub-item:hover {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+    html[dir="ltr"] .agent-shop {
+        padding-right: 0;
+        padding-left: 36px;
     }
 }
 
@@ -3303,6 +3355,45 @@ html[dir="ltr"] .display-screen {
 
 .shop-directions-panel[hidden] {
     display: none;
+}
+
+.products-scatter-header {
+    top: 56px !important;
+    z-index: 27 !important;
+    pointer-events: none;
+}
+
+.products-scatter-header > div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    width: 100%;
+    min-width: 0;
+}
+
+#productsScatterTitle {
+    max-width: min(52%, 460px);
+    overflow-wrap: anywhere;
+    text-align: center;
+    pointer-events: auto;
+}
+
+.products-scatter-header .back-btn {
+    flex: 0 0 auto;
+    pointer-events: auto;
+}
+
+.products-scatter-header .back-btn i {
+    margin-inline-end: 8px;
+}
+
+html[dir="ltr"] .products-scatter-header {
+    direction: ltr !important;
+}
+
+html[dir="ltr"] .products-scatter-header .back-btn i {
+    transform: rotate(180deg);
 }
 
 /* Apple Watch Grid Styles */
@@ -3949,18 +4040,25 @@ html[dir="ltr"] .display-screen {
     .radial-section .products-scatter-header {
         width: 100% !important;
         left: 0 !important;
+        top: 120px !important;
         padding: 0 4px !important;
         transform: none;
     }
 
     .radial-section .products-scatter-header > div:first-child {
         gap: 8px;
+        justify-content: center;
+        flex-wrap: wrap;
     }
 
     .radial-section #productsScatterTitle,
     .radial-section .back-btn {
         padding: 7px 8px !important;
         font-size: 0.68rem !important;
+    }
+
+    .radial-section #productsScatterTitle {
+        max-width: min(70vw, 280px);
     }
 
     .shop-directions-panel {

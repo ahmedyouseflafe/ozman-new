@@ -131,6 +131,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return window.OZMAN_FRONT_CONFIG?.labels?.[key] || fallback;
         }
 
+        function frontLabelTemplate(key, fallback, replacements = {}) {
+            return Object.entries(replacements).reduce(
+                (text, [name, value]) => text.replaceAll(`:${name}`, value),
+                frontLabel(key, fallback)
+            );
+        }
+
         function loadCustomerProfile() {
             try {
                 const parsed = JSON.parse(localStorage.getItem(CUSTOMER_STORAGE_KEY) || '{}');
@@ -791,8 +798,8 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             dropdown.innerHTML = [
-                renderGroup('الموزعون', shop.distributors, 'border-cyan', 'لا يوجد موزعون بعد'),
-                renderGroup('الوكلاء', shop.agents, 'border-blue', 'لا يوجد وكلاء بعد'),
+                renderGroup(frontLabel('distributors', 'الموزعون'), shop.distributors, 'border-cyan', frontLabel('noDistributors', 'لا يوجد موزعون بعد')),
+                renderGroup(frontLabel('agents', 'الوكلاء'), shop.agents, 'border-blue', frontLabel('noAgents', 'لا يوجد وكلاء بعد')),
             ].join('');
 
             dropdown.querySelectorAll('[data-person-shop-id]').forEach((item) => {
@@ -965,12 +972,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const link = document.getElementById('shopDirectionsLink');
             if (!panel || !title || !link || !shop) return;
 
-            title.textContent = shop.title || 'المحل';
+            title.textContent = shop.title || frontLabel('shop', 'المحل');
             const label = panel.querySelector('[data-directions-label]');
             const linkText = panel.querySelector('[data-directions-link-text]');
-            const subject = shop.display_label || 'المحل';
-            if (label) label.textContent = `الوصول إلى ${subject}`;
-            if (linkText) linkText.textContent = `انقر فوق الخارطة للوصول إلى ${subject} عبر GPS`;
+            const subject = shop.display_label || frontLabel('shop', 'المحل');
+            if (label) label.textContent = frontLabelTemplate('directionsTo', 'الوصول إلى :subject', { subject });
+            if (linkText) linkText.textContent = frontLabelTemplate('directionsLinkTo', 'انقر فوق الخارطة للوصول إلى :subject عبر GPS', { subject });
             link.href = shopMapsUrl(shop);
             panel.hidden = false;
         }
@@ -1022,7 +1029,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 title: person.name || shop.title,
                 img: person.image || shop.img,
                 logo: person.image || shop.logo || shop.img,
-                display_label: person.display_label || (personType === 'distributor' ? 'الموزع' : 'الوكيل'),
+                display_label: person.display_label || (personType === 'distributor' ? frontLabel('distributor', 'الموزع') : frontLabel('agent', 'الوكيل')),
                 address: person.address || '',
                 latitude: person.latitude ?? null,
                 longitude: person.longitude ?? null,
@@ -2701,7 +2708,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 descEl.style.display = 'none';
             }
 
-            backBtn.innerHTML = '<i class="fas fa-chevron-right" style="margin-left: 8px;"></i> عودة للمنتجات';
+            backBtn.innerHTML = `<i class="fas fa-chevron-right"></i> ${escapeCartHtml(frontLabel('backToProducts', 'عودة للمنتجات'))}`;
 
             track.innerHTML = '';
             watchItemsElements = [];
@@ -3400,7 +3407,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const accuracyText = formatLocationAccuracy(location);
                     nearestSelectedShopMeta.textContent = [
                         shopDistanceLabel(shop, distance),
-                        shop.address || `${(shop.departments || []).length} أقسام`,
+                        shop.address || `${(shop.departments || []).length} ${frontLabel('departments', 'أقسام')}`,
                         accuracyText
                     ].filter(Boolean).join(' - ');
                 }
@@ -3434,7 +3441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <img src="${escapeCartHtml(shop.img || shop.logo || 'images/logo.jpg')}" alt="${escapeCartHtml(shop.title || 'المحل')}">
                         <span>
                             <strong>${escapeCartHtml(shop.title || 'المحل')}</strong>
-                            <span>${escapeCartHtml(shop.address || `${(shop.departments || []).length} أقسام`)}</span>
+                            <span>${escapeCartHtml(shop.address || `${(shop.departments || []).length} ${frontLabel('departments', 'أقسام')}`)}</span>
                         </span>
                         <em class="nearest-shop-distance">${escapeCartHtml(shopDistanceLabel(shop, distance))}</em>
                     </button>
@@ -4430,7 +4437,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     items.push({
                         type: 'shop',
                         title: shopName,
-                        meta: `${(shop.departments || []).length} أقسام`,
+                        meta: `${(shop.departments || []).length} ${frontLabel('departments', 'أقسام')}`,
                         img: shop.img,
                         index,
                         searchText: normalizeSearchText(shopName)
