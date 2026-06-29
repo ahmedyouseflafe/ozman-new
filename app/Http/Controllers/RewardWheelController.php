@@ -82,6 +82,7 @@ class RewardWheelController extends Controller
         $validated = $request->validate($this->wheelValidationRules() + [
             'min_order_total' => ['required', 'numeric', 'min:0'],
             'max_order_total' => ['nullable', 'numeric', 'gte:min_order_total'],
+            'win_quota_total' => ['required', 'integer', 'min:1', 'max:10000'],
         ]);
         $this->assertActiveSegmentsQuotaTotal($validated['segments'], 200, 'مجموع ظهور جوائز عجلة الشراء الفعالة يجب أن يساوي 200.');
 
@@ -106,12 +107,14 @@ class RewardWheelController extends Controller
                     'title' => $validated['title'],
                     'min_order_total' => $validated['min_order_total'],
                     'max_order_total' => $maxOrderTotal ?: null,
+                    'win_quota_total' => (int) $validated['win_quota_total'],
                     'is_active' => (bool) ($validated['is_active'] ?? false),
                     'spin_cycle' => null,
                 ]);
             } else {
                 $wheel->update([
                     'title' => $validated['title'],
+                    'win_quota_total' => (int) $validated['win_quota_total'],
                     'is_active' => (bool) ($validated['is_active'] ?? false),
                     'spin_cycle' => null,
                 ]);
@@ -172,6 +175,7 @@ class RewardWheelController extends Controller
         $validated = $request->validate($this->wheelValidationRules() + [
             'min_order_total' => ['required', 'numeric', 'min:0'],
             'max_order_total' => ['nullable', 'numeric', 'gte:min_order_total'],
+            'win_quota_total' => ['required', 'integer', 'min:1', 'max:10000'],
         ]);
         $this->assertActiveSegmentsQuotaTotal($validated['segments'], 200, 'مجموع ظهور جوائز عجلة الشراء الفعالة يجب أن يساوي 200.');
 
@@ -182,6 +186,7 @@ class RewardWheelController extends Controller
                 'title' => $validated['title'],
                 'min_order_total' => $validated['min_order_total'],
                 'max_order_total' => $maxOrderTotal ?: null,
+                'win_quota_total' => (int) $validated['win_quota_total'],
                 'is_active' => (bool) ($validated['is_active'] ?? false),
                 'spin_cycle' => null,
             ]);
@@ -583,7 +588,7 @@ class RewardWheelController extends Controller
             'segments.*.discount_type' => ['required', Rule::in(['percent', 'amount', 'free_shipping', 'gift'])],
             'segments.*.gift_image' => ['nullable', 'image', 'max:2048'],
             'segments.*.existing_gift_image' => ['nullable', 'string', 'max:255'],
-            'segments.*.win_quota' => ['nullable', 'integer', 'min:0', 'max:200'],
+            'segments.*.win_quota' => ['nullable', 'integer', 'min:0', 'max:10000'],
             'segments.*.color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'segments.*.is_active' => ['nullable', 'boolean'],
         ];
@@ -591,6 +596,11 @@ class RewardWheelController extends Controller
 
     private function assertActiveSegmentsQuotaTotal(array $segments, int $expectedTotal, string $message): void
     {
+        if ($expectedTotal === 200 && request()->filled('win_quota_total')) {
+            $expectedTotal = max(1, (int) request('win_quota_total'));
+            $message = 'مجموع ظهور جوائز عجلة الشراء الفعالة يجب أن يساوي إجمالي فرص العجلة.';
+        }
+
         $activeQuotaTotal = collect($segments)
             ->filter(fn($segment) => (bool) ($segment['is_active'] ?? false))
             ->sum(fn($segment) => (int) ($segment['win_quota'] ?? 0));

@@ -210,7 +210,7 @@ class FrontOrderController extends Controller
                 ->all();
 
             if ($cycle === []) {
-                $cycle = $this->buildSpinCycle($segments);
+                $cycle = $this->buildSpinCycle($segments, (int) ($lockedWheel->win_quota_total ?: 200));
             }
 
             $cycleIndex = random_int(0, count($cycle) - 1);
@@ -223,12 +223,13 @@ class FrontOrderController extends Controller
         });
     }
 
-    private function buildSpinCycle($segments): array
+    private function buildSpinCycle($segments, int $quotaTotal = 200): array
     {
         $cycle = [];
+        $quotaTotal = max(1, $quotaTotal);
 
         foreach ($segments as $segment) {
-            $quota = max(0, min(200, (int) ($segment->win_quota ?? 1)));
+            $quota = max(0, min($quotaTotal, (int) ($segment->win_quota ?? 1)));
 
             for ($index = 0; $index < $quota; $index++) {
                 $cycle[] = (int) $segment->id;

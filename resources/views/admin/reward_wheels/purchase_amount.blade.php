@@ -540,6 +540,8 @@
                                                 {{ number_format((float) $wheel->min_order_total, 2) }} إلى
                                                 {{ $wheel->max_order_total ? number_format((float) $wheel->max_order_total, 2) : 'بدون حد أعلى' }}
                                                 شيكل</div>
+                                            <div class="wheel-range">إجمالي فرص العجلة:
+                                                {{ number_format((int) ($wheel->win_quota_total ?? 200)) }}</div>
                                         </div>
                                         <div class="wheel-actions"><a class="btn small"
                                                 href="{{ route('reward-wheels.purchase.edit', $wheel) }}"><i
@@ -594,6 +596,7 @@
                                 enctype="multipart/form-data">@csrf @if ($editingWheel)
                                     @method('PUT')
                                 @endif
+                                @php $quotaTotal = (int) old('win_quota_total', $editingWheel?->win_quota_total ?? 200); @endphp
                                 <div class="form-grid"><label class="field full"><span>عنوان العجلة</span><input
                                             type="text" name="title"
                                             value="{{ old('title', $editingWheel?->title ?? 'لف العجلة واحصل على جائزتك') }}"
@@ -603,7 +606,11 @@
                                             required></label><label class="field"><span>إلى مبلغ</span><input
                                             type="number" name="max_order_total" min="0" step="0.01"
                                             value="{{ old('max_order_total', $editingWheel?->max_order_total) }}"
-                                            placeholder="اتركه فارغ بدون حد أعلى"></label><label class="switch"><input
+                                            placeholder="اتركه فارغ بدون حد أعلى"></label><label class="field"><span>إجمالي فرص العجلة</span><input
+                                            type="number" name="win_quota_total" min="1" max="10000" step="1"
+                                            data-wheel-quota-total
+                                            value="{{ $quotaTotal }}"
+                                            required></label><label class="switch"><input
                                             type="checkbox" name="is_active" value="1"
                                             @checked(old('is_active', $editingWheel?->is_active ?? true))><span>العجلة مفعلة</span></label></div>
                                 @php $segments=old('segments') ?: ($editingWheel?$editingWheel->segments->map(fn($segment)=>['label'=>$segment->label,'discount_value'=>$segment->discount_value,'discount_type'=>$segment->discount_type,'gift_image'=>$segment->gift_image,'existing_gift_image'=>$segment->gift_image,'win_quota'=>$segment->win_quota ?? 1,'color'=>$segment->color,'is_active'=>$segment->is_active])->values()->all():[['label'=>'خصم 5%','discount_value'=>5,'discount_type'=>'percent','win_quota'=>50,'color'=>'#00e5ff','is_active'=>true],['label'=>'خصم 10%','discount_value'=>10,'discount_type'=>'percent','win_quota'=>50,'color'=>'#7000ff','is_active'=>true],['label'=>'هدية','discount_value'=>null,'discount_type'=>'gift','win_quota'=>50,'color'=>'#25d366','is_active'=>true],['label'=>'توصيل مجاني','discount_value'=>null,'discount_type'=>'free_shipping','win_quota'=>50,'color'=>'#ffd60a','is_active'=>true]]); @endphp
@@ -625,9 +632,9 @@
                                                     <option value="free_shipping" @selected(old("segments.$index.discount_type", $segment['discount_type']) === 'free_shipping')>توصيل مجاني
                                                     </option>
                                                     <option value="gift" @selected(old("segments.$index.discount_type", $segment['discount_type']) === 'gift')>هدية</option>
-                                                </select></label><label class="field"><span>ظهور من 200</span><input
+                                                </select></label><label class="field"><span data-quota-label>ظهور من {{ $quotaTotal }}</span><input
                                                     type="number" data-name="win_quota"
-                                                    name="segments[{{ $index }}][win_quota]" min="0" max="200"
+                                                    name="segments[{{ $index }}][win_quota]" min="0" max="{{ $quotaTotal }}"
                                                     value="{{ old("segments.$index.win_quota", $segment['win_quota'] ?? 1) }}"></label><label
                                                 class="field segment-color"><span>اللون</span><input type="color"
                                                     data-name="color" name="segments[{{ $index }}][color]"
@@ -668,8 +675,8 @@
                         <option value="free_shipping">توصيل مجاني</option>
                         <option value="gift">هدية</option>
                     </select></label>
-                <label class="field"><span>ظهور من 200</span><input type="number" data-name="win_quota" min="0"
-                        max="200" value="1"></label>
+                <label class="field"><span data-quota-label>ظهور من {{ $quotaTotal }}</span><input type="number" data-name="win_quota" min="0"
+                        max="{{ $quotaTotal }}" value="1"></label>
                 <label class="field segment-color"><span>اللون</span><input type="color" data-name="color"
                         value="#00e5ff" required></label>
                 <label class="field file-picker"><span>صورة الهدية</span><input type="hidden"
@@ -686,6 +693,7 @@
             const segmentsList = document.getElementById('segmentsList');
             const segmentTemplate = document.getElementById('segmentTemplate');
             const addSegmentBtn = document.getElementById('addSegmentBtn');
+            const quotaTotalInput = document.querySelector('[data-wheel-quota-total]');
             const colors = ['#00e5ff', '#7000ff', '#25d366', '#ffd60a', '#ff3b30', '#ff8a00', '#ff4fd8', '#35c2ff'];
 
             function rows() {
@@ -697,6 +705,21 @@
                     row.querySelectorAll('[data-name]').forEach((field) => {
                         field.name = `segments[${index}][${field.dataset.name}]`;
                     });
+                });
+            }
+
+            function currentQuotaTotal() {
+                const value = Number.parseInt(quotaTotalInput?.value || '200', 10);
+                return Number.isFinite(value) && value > 0 ? value : 200;
+            }
+
+            function syncQuotaLabels() {
+                const total = currentQuotaTotal();
+                rows().forEach((row) => {
+                    const label = row.querySelector('[data-quota-label]');
+                    const input = row.querySelector('[data-name="win_quota"]');
+                    if (label) label.textContent = `ظهور من ${total}`;
+                    if (input) input.max = total;
                 });
             }
 
@@ -737,7 +760,9 @@
                 segmentsList.appendChild(clone);
                 bindSegmentRow(clone);
                 reindexSegments();
+                syncQuotaLabels();
             });
+            quotaTotalInput?.addEventListener('input', syncQuotaLabels);
             segmentsList?.addEventListener('click', (event) => {
                 const button = event.target.closest('[data-remove-segment]');
                 if (!button) return;
@@ -749,6 +774,7 @@
                 reindexSegments();
             });
             reindexSegments();
+            syncQuotaLabels();
         </script>
     </body>
 

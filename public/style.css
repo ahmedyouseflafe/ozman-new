@@ -933,11 +933,14 @@ html[dir="ltr"] .display-screen {
     color: #fff;
     font-family: inherit;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 8px;
     padding: 13px 15px;
     cursor: pointer;
+    text-align: right;
+    overflow: hidden;
     transition: transform .2s ease, border-color .2s ease, background .2s ease;
 }
 
@@ -947,15 +950,30 @@ html[dir="ltr"] .display-screen {
     background: rgba(0, 229, 255, .09);
 }
 
+.unit-choice-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    min-width: 0;
+}
+
 .unit-choice-label {
     display: flex;
     align-items: center;
     gap: 10px;
     font-weight: 900;
+    min-width: 0;
+}
+
+.unit-choice-label span {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .unit-choice-label i {
     color: var(--primary-color);
+    flex: 0 0 auto;
 }
 
 .unit-choice-price {
@@ -963,6 +981,16 @@ html[dir="ltr"] .display-screen {
     font-size: 1.05rem;
     font-weight: 900;
     white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.unit-choice-offer {
+    color: var(--primary-color);
+    font-size: .86rem;
+    font-weight: 900;
+    line-height: 1.65;
+    max-width: 100%;
+    overflow-wrap: anywhere;
 }
 
 .unit-choice-actions {

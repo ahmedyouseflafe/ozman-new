@@ -672,12 +672,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             optionsEl.innerHTML = options.map((option) => `
                 <button type="button" class="unit-choice-option" data-unit-key="${escapeCartHtml(option.key)}">
-                    <span class="unit-choice-label">
-                        <i class="fas ${escapeCartHtml(option.icon)}"></i>
-                        ${escapeCartHtml(option.label)}
+                    <span class="unit-choice-main">
+                        <span class="unit-choice-label">
+                            <i class="fas ${escapeCartHtml(option.icon)}"></i>
+                            <span>${escapeCartHtml(option.label)}</span>
+                        </span>
+                        <span class="unit-choice-price">${escapeCartHtml(option.price)}</span>
                     </span>
-                    <span class="unit-choice-price">${escapeCartHtml(option.price)}</span>
-                    ${option.campaign_offer ? `<span class="unit-choice-price" style="font-size:13px;color:var(--primary-color);">عرض: ${escapeCartHtml(campaignUnitChoiceText(option.campaign_offer))}</span>` : ''}
+                    ${option.campaign_offer ? `<span class="unit-choice-offer">عرض: ${escapeCartHtml(campaignUnitChoiceText(option.campaign_offer))}</span>` : ''}
                 </button>
             `).join('');
 

@@ -24,6 +24,7 @@ class RewardWheel extends Model
         'title',
         'min_order_total',
         'max_order_total',
+        'win_quota_total',
         'is_active',
         'spin_cycle',
     ];
@@ -31,6 +32,7 @@ class RewardWheel extends Model
     protected $casts = [
         'min_order_total' => 'decimal:2',
         'max_order_total' => 'decimal:2',
+        'win_quota_total' => 'integer',
         'is_active' => 'boolean',
         'spin_cycle' => 'array',
     ];
