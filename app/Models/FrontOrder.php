@@ -9,6 +9,9 @@ class FrontOrder extends Model
 {
     protected $fillable = [
         'shop_id',
+        'distributor_id',
+        'distributor_marketer_id',
+        'marketing_source',
         'reward_wheel_id',
         'order_number',
         'customer_name',
@@ -46,6 +49,16 @@ class FrontOrder extends Model
     public function shop(): BelongsTo
     {
         return $this->belongsTo(Shop::class);
+    }
+
+    public function distributor(): BelongsTo
+    {
+        return $this->belongsTo(Distributor::class);
+    }
+
+    public function distributorMarketer(): BelongsTo
+    {
+        return $this->belongsTo(DistributorMarketer::class);
     }
 
     public function rewardWheel(): BelongsTo

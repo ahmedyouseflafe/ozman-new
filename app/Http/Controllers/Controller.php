@@ -26,10 +26,23 @@ abstract class Controller
     protected function canAccessCurrentRoute(): bool
     {
         $user = Auth::user();
+        $routeName = request()->route()?->getName();
+
+        if ($user?->isMarketer()) {
+            if ($user->hasAssignedPermissions()) {
+                return $user->canAccessRouteName($routeName);
+            }
+
+            return $routeName && (
+                $routeName === 'dashboard'
+                || $routeName === 'front-orders.index'
+                || str_starts_with($routeName, 'reward-wheels.marketer.')
+            );
+        }
 
         return $user?->isSuperAdmin() === true
             || (($user?->isEmployee() === true || $user?->hasAssignedPermissions() === true)
-                && $user->canAccessRouteName(request()->route()?->getName()));
+                && $user->canAccessRouteName($routeName));
     }
 
     protected function ownedShopIds(): array

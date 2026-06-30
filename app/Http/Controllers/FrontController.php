@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Advertisement;
+use App\Models\Distributor;
+use App\Models\DistributorMarketer;
 use App\Models\MainScreen;
 use App\Models\Product;
 use App\Models\RewardWheel;
@@ -171,6 +173,107 @@ class FrontController extends Controller
         ]);
     }
 
+    public function distributor(Distributor $distributor): View
+    {
+        return $this->distributorStoreView($distributor);
+    }
+
+    public function marketer(DistributorMarketer $marketer): View
+    {
+        abort_unless($marketer->is_active, 404);
+
+        $marketer->load('distributor');
+
+        return $this->distributorStoreView($marketer->distributor, $marketer);
+    }
+
+    private function distributorStoreView(Distributor $distributor, ?DistributorMarketer $marketer = null): View
+    {
+        abort_unless($distributor->is_active, 404);
+
+        $distributor->load(['shop', 'user']);
+
+        $ozmanShop = Shop::query()
+            ->where('slug', 'ozman')
+            ->with($this->shopFrontRelations(includeProducts: true, ozmanCategoriesOnly: true))
+            ->first();
+
+        $shopIds = collect();
+
+        if ($distributor->user_id) {
+            $shopIds = Shop::query()
+                ->where('user_id', $distributor->user_id)
+                ->where('is_active', true)
+                ->pluck('id');
+        }
+
+        if ($distributor->shop_id) {
+            $shopIds->push($distributor->shop_id);
+        }
+
+        $shopIds = $shopIds
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        abort_if($shopIds->isEmpty(), 404);
+
+        $shops = Shop::query()
+            ->whereIn('id', $shopIds)
+            ->where('is_active', true)
+            ->with($this->shopFrontRelations())
+            ->latest()
+            ->get();
+
+        abort_if($shops->isEmpty(), 404);
+
+        $selectedShop = $shops->firstWhere('id', $distributor->shop_id) ?? $shops->first();
+        $shops = $shops
+            ->reject(fn(Shop $listedShop) => $listedShop->id === $selectedShop->id)
+            ->prepend($selectedShop)
+            ->values();
+
+        $ozmanCategories = $ozmanShop?->categories ?? collect();
+
+        return view('front.index', [
+            'ozmanShop' => $ozmanShop,
+            'shop' => $selectedShop,
+            'shops' => $shops,
+            'agents' => $ozmanShop?->agents ?? collect(),
+            'distributors' => $ozmanShop?->distributors ?? collect(),
+            'ozmanCategories' => $ozmanCategories,
+            'ozmanScreens' => MainScreen::query()->where('is_active', true)->latest()->get(),
+            'ozmanAdvertisements' => Advertisement::query()
+                ->where('is_active', true)
+                ->where(function ($query) use ($ozmanShop) {
+                    $query->whereNull('shop_id');
+
+                    if ($ozmanShop?->exists) {
+                        $query->orWhere('shop_id', $ozmanShop->id);
+                    }
+                })
+                ->orderBy('sort_order')
+                ->latest()
+                ->get(),
+            'frontData' => $this->frontData($shops, $ozmanCategories, $ozmanShop),
+            'customerSignupWheel' => $this->customerSignupWheelPayload(),
+            'purchaseRewardWheels' => $this->purchaseRewardWheelsPayload(),
+            'initialPersonContext' => [
+                'type' => 'distributor',
+                'id' => $distributor->id,
+                'shop_id' => $selectedShop->id,
+            ],
+            'marketingContext' => [
+                'source' => $marketer ? 'marketer' : 'distributor',
+                'distributor_id' => $distributor->id,
+                'distributor_name' => $distributor->name,
+                'marketer_id' => $marketer?->id,
+                'marketer_name' => $marketer?->name,
+                'tracking_code' => $marketer?->tracking_code,
+            ],
+        ]);
+    }
+
     public function dashboardPreview(Request $request): View
     {
         $selectedShop = $this->previewShop($request);
@@ -251,6 +354,51 @@ class FrontController extends Controller
             ->firstOrFail();
     }
 
+    private function shopFrontRelations(bool $includeProducts = false, bool $ozmanCategoriesOnly = false): array
+    {
+        $relations = [
+            'social',
+            'advertisements' => fn($query) => $query
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->latest(),
+            'agents' => fn($query) => $query
+                ->where('is_active', true)
+                ->with(['categories' => fn($categoryQuery) => $categoryQuery
+                    ->where('is_active', true)
+                    ->latest()
+                ])
+                ->with(['products' => fn($productQuery) => $productQuery
+                    ->where('is_active', true)
+                    ->with(['images', 'campaigns', 'category'])
+                    ->latest()
+                ])
+                ->latest(),
+            'distributors' => fn($query) => $query->where('is_active', true)->latest(),
+            'categories' => fn($query) => $query
+                ->where('is_active', true)
+                ->when($ozmanCategoriesOnly, fn($categoryQuery) => $categoryQuery->whereNull('agent_id'))
+                ->with(['products' => fn($productQuery) => $productQuery
+                    ->where('is_active', true)
+                    ->when($ozmanCategoriesOnly, fn($query) => $query->whereNull('agent_id'))
+                    ->with(['images', 'campaigns'])
+                    ->latest()
+                ])
+                ->latest(),
+        ];
+
+        if ($includeProducts) {
+            $relations['products'] = fn($query) => $query
+                ->where('is_active', true)
+                ->when($ozmanCategoriesOnly, fn($productQuery) => $productQuery->whereNull('agent_id'))
+                ->with(['images', 'campaigns', 'category'])
+                ->orderByDesc('is_featured')
+                ->latest();
+        }
+
+        return $relations;
+    }
+
     private function frontData($shops, $ozmanCategories, ?Shop $ozmanShop = null): array
     {
         $productsDb = [];
@@ -283,6 +431,7 @@ class FrontController extends Controller
                 'title' => $shop->name,
                 'img' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
                 'logo' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
+                'whatsapp_number' => $this->contactWhatsappNumber($shop->whatsapp ?: $shop->phone),
                 'social_links' => $this->socialLinksPayload($shop),
                 'agents' => $this->contactPeoplePayload($shop->agents ?? collect(), $shop, 'agent', $shopProductsDb, $shopDepartments, $shops),
                 'distributors' => $this->contactPeoplePayload($shop->distributors ?? collect(), $shop, 'distributor', $shopProductsDb, $shopDepartments, $shops),
@@ -317,6 +466,7 @@ class FrontController extends Controller
                 'title' => $ozmanShop->name,
                 'img' => $this->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
                 'logo' => $this->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
+                'whatsapp_number' => $this->contactWhatsappNumber($ozmanShop->whatsapp ?: $ozmanShop->phone),
                 'social_links' => $this->socialLinksPayload($ozmanShop),
                 'agents' => $this->contactPeoplePayload($ozmanShop->agents ?? collect(), $ozmanShop, 'agent', $ozmanProductsDb, $ozmanDepartments, $shops),
                 'distributors' => $this->contactPeoplePayload($ozmanShop->distributors ?? collect(), $ozmanShop, 'distributor', $ozmanProductsDb, $ozmanDepartments, $shops),
@@ -469,6 +619,7 @@ class FrontController extends Controller
                     'name' => $person->name,
                     'image' => $person->image ? $this->imageUrl($person->image, 'images/logo.jpg') : $fallbackLogo,
                     'contact' => $person->phone ?: $person->whatsapp ?: $shop->name,
+                    'whatsapp_number' => $this->contactWhatsappNumber($person->whatsapp ?: $person->phone ?: $shop->whatsapp ?: $shop->phone),
                     'shop_id' => $shop->id,
                     'shop_title' => $shop->name,
                     'address' => $person->address,
@@ -495,6 +646,13 @@ class FrontController extends Controller
         }
 
         return '#';
+    }
+
+    private function contactWhatsappNumber(?string $value): ?string
+    {
+        $number = preg_replace('/\D+/', '', (string) $value);
+
+        return $number !== '' ? $number : null;
     }
 
     private function ownedShopChoicesForPerson($person, $availableShops): array

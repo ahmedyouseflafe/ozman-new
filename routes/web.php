@@ -24,11 +24,14 @@ Route::get('/', [FrontController::class, 'index'])->name('home');
 Route::get('/market', [FrontController::class, 'index'])->name('front.home');
 Route::get('/front/shops/{shop}', [FrontController::class, 'index'])->name('front.shop');
 Route::get('/stores/{shop:slug}', [FrontController::class, 'index'])->name('front.shop.slug');
+Route::get('/distributor-stores/{distributor}', [FrontController::class, 'distributor'])->name('front.distributor');
+Route::get('/marketer-stores/{marketer:tracking_code}', [FrontController::class, 'marketer'])->name('front.marketer');
 Route::view('/customer-login', 'front.customer_login')->name('customer.login');
 Route::get('/tts/hebrew', [TextToSpeechController::class, 'hebrew'])->name('tts.hebrew');
 Route::get('/tts/arabic', [TextToSpeechController::class, 'arabic'])->name('tts.arabic');
 Route::post('/visitor-registrations', [VisitorRegistrationController::class, 'store'])->name('visitor-registrations.store');
 Route::post('/front-orders', [FrontOrderController::class, 'store'])->name('front-orders.store');
+Route::get('/front-orders/{order}/qr.svg', [FrontOrderController::class, 'qr'])->name('front-orders.qr');
 Route::post('/front-orders/{order}/spin-reward', [FrontOrderController::class, 'spinReward'])->name('front-orders.spinReward');
 Route::patch('/front-orders/{order}/reward', [FrontOrderController::class, 'reward'])->name('front-orders.reward');
 
@@ -107,8 +110,13 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::get('/distributors/{distributor}/edit', [DistributorController::class, 'edit'])->name('distributors.edit');
     Route::put('/distributors/{distributor}', [DistributorController::class, 'update'])->name('distributors.update');
     Route::delete('/distributors/{distributor}', [DistributorController::class, 'destroy'])->name('distributors.destroy');
+    Route::get('/distributor-marketers', [DistributorController::class, 'marketersIndex'])->name('distributors.marketers.index');
+    Route::post('/distributors/{distributor}/marketers', [DistributorController::class, 'storeMarketer'])->name('distributors.marketers.store');
     Route::get('/distributors/{distributor}/permissions', [DistributorController::class, 'editPermissions'])->name('distributors.permissions.edit');
     Route::put('/distributors/{distributor}/permissions', [DistributorController::class, 'updatePermissions'])->name('distributors.permissions.update');
+    Route::get('/distributor-marketers/{marketer}/permissions', [DistributorController::class, 'editMarketerPermissions'])->name('distributors.marketers.permissions.edit');
+    Route::put('/distributor-marketers/{marketer}/permissions', [DistributorController::class, 'updateMarketerPermissions'])->name('distributors.marketers.permissions.update');
+    Route::delete('/distributor-marketers/{marketer}', [DistributorController::class, 'destroyMarketer'])->name('distributors.marketers.destroy');
     Route::get('/distributors/{distributor}', [DistributorController::class, 'show'])->name('distributors.show');
 
     Route::get('/products', [ProductController::class, 'index'])->name('products');

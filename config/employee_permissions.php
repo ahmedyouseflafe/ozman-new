@@ -74,6 +74,8 @@ return [
                 'distributors.edit' => ['label' => 'تعديل موزع', 'routes' => ['distributors.edit', 'distributors.update']],
                 'distributors.delete' => ['label' => 'حذف موزع', 'routes' => ['distributors.destroy']],
                 'distributors.permissions' => ['label' => 'تعديل صلاحيات الموزعين', 'routes' => ['distributors.permissions.edit', 'distributors.permissions.update']],
+                'distributors.marketers' => ['label' => 'إدارة مسوقي الموزعين', 'routes' => ['distributors.marketers.index', 'distributors.marketers.store', 'distributors.marketers.destroy']],
+                'distributors.marketers.permissions' => ['label' => 'تعديل صلاحيات مسوقي الموزعين', 'routes' => ['distributors.marketers.permissions.edit', 'distributors.marketers.permissions.update']],
             ],
         ],
         'orders' => [
@@ -81,6 +83,7 @@ return [
             'permissions' => [
                 'visitor_registrations.view' => ['label' => 'استعراض تسجيلات الزوار', 'routes' => ['visitor-registrations.index']],
                 'front_orders.view' => ['label' => 'استعراض طلبات الواجهة', 'routes' => ['front-orders.index']],
+                'marketer_orders.view' => ['label' => 'عرض طلباتي من رابط المسوق فقط', 'routes' => ['front-orders.index']],
                 'front_orders.manage' => ['label' => 'إدارة جوائز الطلبات', 'routes' => ['front-orders.reward', 'front-orders.spinReward']],
             ],
         ],

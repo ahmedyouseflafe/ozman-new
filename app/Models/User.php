@@ -53,6 +53,11 @@ class User extends Authenticatable
         return $this->hasMany(Distributor::class);
     }
 
+    public function distributorMarketerProfiles()
+    {
+        return $this->hasMany(DistributorMarketer::class);
+    }
+
     public function employeePermissions()
     {
         return $this->hasMany(EmployeePermission::class);
@@ -94,7 +99,7 @@ class User extends Authenticatable
             return true;
         }
 
-        if (! ($this->isAgent() || $this->isDistributor())) {
+        if (! ($this->isAgent() || $this->isDistributor() || $this->isMarketer())) {
             return false;
         }
 
@@ -107,7 +112,7 @@ class User extends Authenticatable
 
     public function permissionKeys(): array
     {
-        if (! ($this->isEmployee() || $this->isAgent() || $this->isDistributor())) {
+        if (! ($this->isEmployee() || $this->isAgent() || $this->isDistributor() || $this->isMarketer())) {
             return [];
         }
 

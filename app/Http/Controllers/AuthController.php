@@ -56,6 +56,18 @@ class AuthController extends Controller
         }
 
         if (Auth::user()->isMarketer()) {
+            if (Auth::user()->hasAssignedPermissions()) {
+                foreach (['front-orders.index', 'reward-wheels.marketer.play', 'reward-wheels.marketer.direct.play', 'dashboard'] as $routeName) {
+                    if (Auth::user()->canAccessRouteName($routeName)) {
+                        return redirect()->route($routeName);
+                    }
+                }
+            }
+
+            if (Auth::user()->distributorMarketerProfiles()->exists()) {
+                return redirect()->route('front-orders.index');
+            }
+
             return redirect()->route('reward-wheels.marketer.play');
         }
 

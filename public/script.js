@@ -84,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const PENDING_PURCHASE_ORDER_STORAGE_KEY = 'ozman_pending_purchase_order';
         const LAST_REWARD_ORDER_STORAGE_KEY = 'ozman_last_reward_order';
         const LAST_REWARD_PAYLOAD_STORAGE_KEY = 'ozman_last_reward_payload';
+        let activeWhatsappNumber = (window.OZMAN_FRONT_CONFIG?.shopWhatsapp || '970599000000').replace(/\D+/g, '');
         let ozmanCart = loadCart();
         let cartToastTimer = null;
         let pendingSingleProduct = null;
@@ -113,7 +114,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function shopWhatsappNumber() {
-            return (window.OZMAN_FRONT_CONFIG?.shopWhatsapp || '970599000000').replace(/\D+/g, '');
+            return activeWhatsappNumber || (window.OZMAN_FRONT_CONFIG?.shopWhatsapp || '970599000000').replace(/\D+/g, '');
+        }
+
+        function updateWhatsappRecipient(target = {}) {
+            const fallback = (window.OZMAN_FRONT_CONFIG?.shopWhatsapp || '970599000000').replace(/\D+/g, '');
+            const nextNumber = String(target.whatsapp_number || fallback).replace(/\D+/g, '');
+            activeWhatsappNumber = nextNumber || fallback;
+
+            const quickBtn = document.getElementById('whatsappQuickBtn');
+            if (quickBtn) {
+                quickBtn.href = `https://wa.me/${shopWhatsappNumber()}`;
+            }
         }
 
         function openShopWhatsappMessage(message, popupWindow = null) {
@@ -1002,6 +1014,38 @@ document.addEventListener('DOMContentLoaded', () => {
             return null;
         }
 
+        function selectPersonContext(index, person, personType = 'distributor') {
+            if (index < 0 || !person) {
+                return false;
+            }
+
+            if (!person || !Array.isArray(person.departments) || !person.departments.length) {
+                selectCategory(index);
+                return true;
+            }
+
+            activeCenterIndex = index;
+            const shop = centersData[index];
+            activeProductsDb = person.products_db || {};
+            activePersonContext = person;
+            renderActiveShopHeader({
+                ...shop,
+                title: person.name || shop.title,
+                img: person.image || shop.img,
+                logo: person.image || shop.logo || shop.img,
+                whatsapp_number: person.whatsapp_number || shop.whatsapp_number || null,
+                display_label: person.display_label || (personType === 'distributor' ? frontLabel('distributor', 'الموزع') : frontLabel('agent', 'الوكيل')),
+                address: person.address || '',
+                latitude: person.latitude ?? null,
+                longitude: person.longitude ?? null,
+                map_url: person.map_url || '#',
+                social_links: [],
+            });
+            renderDepartmentsForCenter(index, person);
+
+            return true;
+        }
+
         function selectPersonItem(item) {
             const shopId = item.dataset.personShopId;
             const personId = item.dataset.personId;
@@ -1013,30 +1057,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            activeCenterIndex = index;
             const shop = centersData[index];
             const person = findPersonInShop(shop, personId, personType);
+            selectPersonContext(index, person, personType);
+        }
 
-            if (!person || !Array.isArray(person.departments) || !person.departments.length) {
-                selectCategory(index);
+        function applyInitialPersonContext() {
+            const context = window.OZMAN_FRONT_CONFIG?.initialPersonContext;
+            if (!context?.id || !context?.shop_id) {
                 return;
             }
 
-            activeProductsDb = person.products_db || {};
-            activePersonContext = person;
-            renderActiveShopHeader({
-                ...shop,
-                title: person.name || shop.title,
-                img: person.image || shop.img,
-                logo: person.image || shop.logo || shop.img,
-                display_label: person.display_label || (personType === 'distributor' ? frontLabel('distributor', 'الموزع') : frontLabel('agent', 'الوكيل')),
-                address: person.address || '',
-                latitude: person.latitude ?? null,
-                longitude: person.longitude ?? null,
-                map_url: person.map_url || '#',
-                social_links: [],
-            });
-            renderDepartmentsForCenter(index, person);
+            const index = centersData.findIndex((center) => String(center.id || '') === String(context.shop_id || ''));
+            if (index < 0) {
+                return;
+            }
+
+            const person = findPersonInShop(centersData[index], context.id, context.type || 'distributor');
+            if (selectPersonContext(index, person, context.type || 'distributor')) {
+                setTimeout(scrollToDepartments, 350);
+            }
         }
 
         document.addEventListener('click', (event) => {
@@ -1052,6 +1092,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function renderActiveShopHeader(shop) {
             if (!shop) return;
+            updateWhatsappRecipient(shop);
 
             const logo = document.getElementById('activeShopLogo');
             const socials = document.getElementById('activeShopSocials');
@@ -1298,10 +1339,31 @@ document.addEventListener('DOMContentLoaded', () => {
             return `مرحبا، أود طلب المنتجات التالية:\n${lines.join('\n')}\n\nالمجموع قبل الخصم: ${formatCartPrice(cartTotalValue())}${discountLine}\nالمجموع النهائي: ${formatCartPrice(cartFinalValue())}`;
         }
 
+        function marketingMessageLine() {
+            const context = window.OZMAN_FRONT_CONFIG?.marketingContext || {};
+
+            if (context.source === 'marketer' && context.marketer_name) {
+                return `مصدر الطلب: عبر المسوق ${context.marketer_name}`;
+            }
+
+            return '';
+        }
+
+        function orderQrImageUrl(order) {
+            const lookupUrl = order?.order_lookup_url || order?.order_qr_url || '';
+            if (!lookupUrl) return '';
+
+            return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(lookupUrl)}`;
+        }
+
         function customerOrderMessage(profile, order = null) {
+            const qrImageUrl = orderQrImageUrl(order);
             const customerLines = [
                 'مرحبا، أود تأكيد طلب جديد.',
                 order?.order_number ? `رقم الطلب: ${order.order_number}` : '',
+                qrImageUrl ? `صورة QR الطلب:\n${qrImageUrl}` : '',
+                order?.order_lookup_url ? `رابط الطلب في الداشبورد:\n${order.order_lookup_url}` : '',
+                marketingMessageLine(),
                 '',
                 'بيانات العميل:',
                 `الاسم: ${profile.name || '-'}`,
@@ -1414,6 +1476,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async function recordFrontOrder(profile, channel, paymentMethod = '') {
             const urls = window.OZMAN_FRONT_CONFIG || {};
+            const marketingContext = urls.marketingContext || {};
             const { subtotal, discount, total } = currentOrderTotals();
             const eligibleWheel = eligiblePurchaseRewardWheel(total);
 
@@ -1426,6 +1489,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify({
                     shop_id: urls.shopId || null,
+                    distributor_id: marketingContext.distributor_id || null,
+                    distributor_marketer_id: marketingContext.marketer_id || null,
+                    marketing_source: marketingContext.source || null,
                     reward_wheel_id: eligibleWheel?.id || null,
                     customer_name: profile.name || '',
                     customer_phone: profile.phone || '',
@@ -3121,6 +3187,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.addEventListener('DOMContentLoaded', () => {
             initRadial();
+            applyInitialPersonContext();
 
             // Ø±Ø¨Ø· Ø²Ø± Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„Ù„Ø£Ù‚Ø³Ø§Ù… Ø¨Ø­Ø¯Ø« Ø§Ù„Ù†Ù‚Ø±
             const backBtn = document.getElementById('backToDeptsBtn');

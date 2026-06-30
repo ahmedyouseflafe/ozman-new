@@ -172,7 +172,7 @@
     $isMarketer = $currentUser?->isMarketer();
     $isEmployee = $currentUser?->isEmployee();
     $hasAssignedPermissions = $currentUser?->hasAssignedPermissions() ?? false;
-    $isPermissionManaged = $isEmployee || (($isAgent || $isDistributor) && $hasAssignedPermissions);
+    $isPermissionManaged = $isEmployee || (($isAgent || $isDistributor || $isMarketer) && $hasAssignedPermissions);
     $isCatalogOnlyUser = ($isAgent || $isDistributor) && ! $hasAssignedPermissions;
     $previewShopId = request()->integer('shop_id') ?: session('current_shop_id');
     $canSee = fn(array $routes) => ! $isPermissionManaged || $currentUser?->canAccessAnyRoute($routes);
@@ -227,16 +227,27 @@
         <div class="admin-sidebar-section">المتجر</div>
 
         @if($isMarketer)
+        @if($canSee(['front-orders.index']))
+        <a href="{{ route('front-orders.index') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('front-orders.index') ? 'active' : '' }}">
+             <i class="ti ti-receipt-2" aria-hidden="true"></i>
+             طلباتي من الروابط
+        </a>
+        @endif
+        @if($canSee(['reward-wheels.marketer.play']))
         <a href="{{ route('reward-wheels.marketer.play') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('reward-wheels.marketer.play') ? 'active' : '' }}">
              <i class="ti ti-disc" aria-hidden="true"></i>
              عجلة الأسئلة
         </a>
+        @endif
+        @if($canSee(['reward-wheels.marketer.direct.play']))
         <a href="{{ route('reward-wheels.marketer.direct.play') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('reward-wheels.marketer.direct.play') ? 'active' : '' }}">
              <i class="ti ti-bolt" aria-hidden="true"></i>
              العجلة المباشرة
         </a>
+        @endif
         @else
 
         @if(($isSuperAdmin || $isPermissionManaged) && $canSee(['dashboard.main']))
@@ -378,6 +389,14 @@
              class="admin-sidebar-item nav-item {{ request()->routeIs('distributors*') ? 'active' : '' }}">
              <i class="ti ti-truck-delivery" aria-hidden="true"></i>
              الموزعون
+        </a>
+        @endif
+
+        @if(! $isCatalogOnlyUser && $canSee(['distributors.marketers.index', 'distributors.marketers.permissions.edit']))
+        <a href="{{ route('distributors.marketers.index') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('distributors.marketers.*') ? 'active' : '' }}">
+             <i class="ti ti-speakerphone" aria-hidden="true"></i>
+             مسوقو الموزعين
         </a>
         @endif
 

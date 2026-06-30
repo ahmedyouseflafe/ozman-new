@@ -3,11 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\AdminNotification;
+use App\Models\DistributorMarketer;
 use App\Models\FrontOrder;
 use App\Models\RewardWheel;
 use App\Models\RewardWheelSegment;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -18,6 +24,9 @@ class FrontOrderController extends Controller
     {
         $validated = $request->validate([
             'shop_id' => ['nullable', 'integer', 'exists:shops,id'],
+            'distributor_id' => ['nullable', 'integer', 'exists:distributors,id'],
+            'distributor_marketer_id' => ['nullable', 'integer', 'exists:distributor_marketers,id'],
+            'marketing_source' => ['nullable', 'string', 'max:40'],
             'reward_wheel_id' => ['nullable', 'integer', 'exists:reward_wheels,id'],
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_phone' => ['nullable', 'string', 'max:60'],
@@ -37,6 +46,17 @@ class FrontOrderController extends Controller
             'order_channel' => ['required', 'in:whatsapp,instant_payment'],
             'payment_method' => ['nullable', 'string', 'max:60'],
         ]);
+
+        if (! empty($validated['distributor_marketer_id'])) {
+            $marketer = DistributorMarketer::query()
+                ->whereKey($validated['distributor_marketer_id'])
+                ->where('is_active', true)
+                ->with('distributor')
+                ->firstOrFail();
+
+            $validated['distributor_id'] = $marketer->distributor_id;
+            $validated['marketing_source'] = 'marketer';
+        }
 
         $order = FrontOrder::create([
             ...$validated,
@@ -65,6 +85,21 @@ class FrontOrderController extends Controller
             'ok' => true,
             'order_id' => $order->id,
             'order_number' => $order->order_number,
+            'order_qr_url' => route('front-orders.qr', $order),
+            'order_lookup_url' => route('front-orders.index', ['search' => $order->order_number]),
+        ]);
+    }
+
+    public function qr(FrontOrder $order): Response
+    {
+        $qrCodeSvg = (new Writer(new ImageRenderer(
+            new RendererStyle(320, 2),
+            new SvgImageBackEnd()
+        )))->writeString(route('front-orders.index', ['search' => $order->order_number]));
+
+        return response($qrCodeSvg, 200, [
+            'Content-Type' => 'image/svg+xml',
+            'Cache-Control' => 'public, max-age=86400',
         ]);
     }
 
@@ -154,9 +189,22 @@ class FrontOrderController extends Controller
 
         $channel = $request->query('channel');
         $search = trim((string) $request->query('search', ''));
+        $user = $request->user();
+        $marketerIds = $user?->isMarketer()
+            ? $user->distributorMarketerProfiles()
+                ->where('is_active', true)
+                ->pluck('id')
+                ->map(fn($id) => (int) $id)
+                ->all()
+            : [];
+        $distributorIds = $user?->isDistributor()
+            ? $this->currentDistributorIds($request)
+            : [];
 
         $ordersQuery = FrontOrder::query()
-            ->with(['shop', 'rewardWheel'])
+            ->with(['shop', 'rewardWheel', 'distributor', 'distributorMarketer'])
+            ->when($user?->isMarketer(), fn($query) => $query->whereIn('distributor_marketer_id', $marketerIds))
+            ->when($user?->isDistributor(), fn($query) => $this->scopeToDistributorOrders($query, $distributorIds))
             ->when(in_array($channel, ['whatsapp', 'instant_payment'], true), fn($query) => $query->where('order_channel', $channel))
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
@@ -164,17 +212,24 @@ class FrontOrderController extends Controller
                         ->orWhere('customer_name', 'like', "%{$search}%")
                         ->orWhere('customer_phone', 'like', "%{$search}%")
                         ->orWhere('customer_whatsapp', 'like', "%{$search}%")
-                        ->orWhere('reward_label', 'like', "%{$search}%");
+                        ->orWhere('reward_label', 'like', "%{$search}%")
+                        ->orWhereHas('distributorMarketer', fn($marketerQuery) => $marketerQuery->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('distributor', fn($distributorQuery) => $distributorQuery->where('name', 'like', "%{$search}%"));
                 });
             })
             ->latest();
 
+        $statsQuery = FrontOrder::query()
+            ->when($user?->isMarketer(), fn($query) => $query->whereIn('distributor_marketer_id', $marketerIds))
+            ->when($user?->isDistributor(), fn($query) => $this->scopeToDistributorOrders($query, $distributorIds));
+
         return view('admin.front_orders.index', [
             'orders' => $ordersQuery->paginate(25)->withQueryString(),
-            'totalCount' => FrontOrder::count(),
-            'instantCount' => FrontOrder::where('order_channel', 'instant_payment')->count(),
-            'whatsappCount' => FrontOrder::where('order_channel', 'whatsapp')->count(),
-            'rewardedCount' => FrontOrder::whereNotNull('reward_label')->count(),
+            'totalCount' => (clone $statsQuery)->count(),
+            'instantCount' => (clone $statsQuery)->where('order_channel', 'instant_payment')->count(),
+            'whatsappCount' => (clone $statsQuery)->where('order_channel', 'whatsapp')->count(),
+            'rewardedCount' => (clone $statsQuery)->whereNotNull('reward_label')->count(),
+            'marketerCount' => (clone $statsQuery)->whereNotNull('distributor_marketer_id')->count(),
             'selectedChannel' => $channel,
             'search' => $search,
         ]);
@@ -187,6 +242,36 @@ class FrontOrderController extends Controller
         } while (FrontOrder::where('order_number', $number)->exists());
 
         return $number;
+    }
+
+    private function currentDistributorIds(Request $request): array
+    {
+        $user = $request->user();
+        if (! $user?->isDistributor()) {
+            return [];
+        }
+
+        $ids = $user->distributorProfiles()->pluck('id');
+
+        if ($user->email) {
+            $ids = $ids->merge($user->distributorProfiles()->getModel()::query()
+                ->where('email', $user->email)
+                ->pluck('id'));
+        }
+
+        return $ids->map(fn($id) => (int) $id)->unique()->values()->all();
+    }
+
+    private function scopeToDistributorOrders($query, array $distributorIds)
+    {
+        if ($distributorIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function ($query) use ($distributorIds) {
+            $query->whereIn('distributor_id', $distributorIds)
+                ->orWhereHas('distributorMarketer', fn($marketerQuery) => $marketerQuery->whereIn('distributor_id', $distributorIds));
+        });
     }
 
     private function nextSegmentForWheel(RewardWheel $wheel): RewardWheelSegment
@@ -292,6 +377,8 @@ class FrontOrderController extends Controller
                 'order_number' => $order->order_number,
                 'channel' => $order->order_channel,
                 'reward_label' => $order->reward_label,
+                'distributor_id' => $order->distributor_id,
+                'distributor_marketer_id' => $order->distributor_marketer_id,
             ],
         ]);
     }

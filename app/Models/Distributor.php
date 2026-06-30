@@ -44,4 +44,9 @@ class Distributor extends Model
     {
         return $this->belongsTo(Agent::class);
     }
+
+    public function marketers()
+    {
+        return $this->hasMany(DistributorMarketer::class);
+    }
 }

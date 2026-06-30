@@ -834,6 +834,8 @@
                 payment: @json($shopPaymentDetails),
                 rewardWheel: @json($customerSignupWheel),
                 purchaseRewardWheels: @json($purchaseRewardWheels ?? []),
+                initialPersonContext: @json($initialPersonContext ?? null),
+                marketingContext: @json($marketingContext ?? null),
 
             };
         </script>

@@ -4,11 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Agent;
 use App\Models\Distributor;
+use App\Models\DistributorMarketer;
 use App\Models\Shop;
 use App\Models\User;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -19,6 +26,7 @@ class DistributorController extends Controller
     {
         $distributors = Distributor::query()
             ->with(['shop', 'agent'])
+            ->when(auth()->user()?->isDistributor(), fn($query) => $query->whereIn('id', $this->currentDistributorIds()))
             ->when(! $this->hasGlobalDashboardAccess(), fn($query) => $this->scopeToAccessibleShops($query))
             ->latest()
             ->get()
@@ -36,6 +44,45 @@ class DistributorController extends Controller
             'activeDistributorsCount' => $distributors->where('is_active', true)->count(),
             'inactiveDistributorsCount' => $distributors->where('is_active', false)->count(),
             'linkedShopsCount' => $distributors->pluck('shop_id')->filter()->unique()->count(),
+        ]);
+    }
+
+    public function marketersIndex(Request $request): View
+    {
+        abort_unless($this->canAccessCurrentRoute(), 403);
+
+        $search = trim((string) $request->query('search', ''));
+        $status = $request->query('status');
+        $distributorId = $request->integer('distributor_id') ?: null;
+        $accessibleDistributors = $this->accessibleDistributors();
+
+        $marketersQuery = DistributorMarketer::query()
+            ->with(['distributor.shop', 'user'])
+            ->withCount('frontOrders')
+            ->when(! $this->hasGlobalDashboardAccess(), function ($query) use ($accessibleDistributors) {
+                $query->whereIn('distributor_id', $accessibleDistributors->pluck('id')->all());
+            })
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('whatsapp', 'like', "%{$search}%")
+                        ->orWhere('tracking_code', 'like', "%{$search}%")
+                        ->orWhereHas('distributor', fn($distributorQuery) => $distributorQuery->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->when($status === 'active', fn($query) => $query->where('is_active', true))
+            ->when($status === 'inactive', fn($query) => $query->where('is_active', false))
+            ->when($distributorId, fn($query) => $query->where('distributor_id', $distributorId))
+            ->latest();
+
+        return view('admin.distributors.marketers', [
+            'marketers' => $marketersQuery->paginate(20)->withQueryString(),
+            'distributors' => $accessibleDistributors,
+            'search' => $search,
+            'status' => $status,
+            'selectedDistributorId' => $distributorId,
         ]);
     }
 
@@ -76,16 +123,167 @@ class DistributorController extends Controller
 
     public function show(Distributor $distributor): View
     {
-        $this->authorizeShopAccess($distributor);
+        $this->authorizeDistributorAccess($distributor);
         $distributor->load('shop');
         $distributor->load('agent');
+        $distributor->load(['marketers' => fn($query) => $query->latest()]);
+        $publicDistributorUrl = route('front.distributor', $distributor);
+        $distributorQrCodeSvg = (new Writer(new ImageRenderer(
+            new RendererStyle(360, 2),
+            new SvgImageBackEnd()
+        )))->writeString($publicDistributorUrl);
+        $distributorQrCodeDataUri = 'data:image/svg+xml;base64,' . base64_encode($distributorQrCodeSvg);
+        $marketerShareLinks = $distributor->marketers
+            ->map(function (DistributorMarketer $marketer) {
+                $url = route('front.marketer', ['marketer' => $marketer->tracking_code]);
+                $qrCodeSvg = (new Writer(new ImageRenderer(
+                    new RendererStyle(220, 2),
+                    new SvgImageBackEnd()
+                )))->writeString($url);
 
-        return view('admin.distributors.distributors_show', compact('distributor'));
+                return [
+                    'marketer' => $marketer,
+                    'url' => $url,
+                    'qr' => 'data:image/svg+xml;base64,' . base64_encode($qrCodeSvg),
+                ];
+            });
+
+        return view('admin.distributors.distributors_show', compact(
+            'distributor',
+            'publicDistributorUrl',
+            'distributorQrCodeDataUri',
+            'marketerShareLinks'
+        ));
+    }
+
+    public function storeMarketer(Request $request, Distributor $distributor): RedirectResponse
+    {
+        $this->authorizeDistributorAccess($distributor);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:255'],
+            'whatsapp' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'login_password' => ['nullable', 'string', 'min:6', 'max:255'],
+        ]);
+
+        $password = $data['login_password'] ?? null;
+        unset($data['login_password']);
+
+        if (filled($password)) {
+            if (! filled($data['email'] ?? null)) {
+                throw ValidationException::withMessages([
+                    'email' => 'أدخل بريد المسوق الإلكتروني لإنشاء حساب دخول.',
+                ]);
+            }
+
+            $user = User::query()->where('email', $data['email'])->first();
+
+            if ($user && ! $user->isMarketer()) {
+                throw ValidationException::withMessages([
+                    'email' => 'هذا البريد مستخدم لحساب آخر. استخدم بريد مختلف للمسوق.',
+                ]);
+            }
+
+            if ($user) {
+                $user->forceFill([
+                    'name' => $data['name'],
+                    'phone' => $data['phone'] ?? $user->phone,
+                    'password' => Hash::make($password),
+                    'is_active' => true,
+                ])->save();
+            } else {
+                $user = User::create([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'phone' => $data['phone'] ?? null,
+                    'password' => Hash::make($password),
+                    'role' => 'marketer',
+                    'is_active' => true,
+                ]);
+            }
+
+            $data['user_id'] = $user->id;
+        }
+
+        $data['tracking_code'] = $this->uniqueMarketerCode($data['name']);
+        $data['is_active'] = $request->boolean('is_active', true);
+
+        $distributor->marketers()->create($data);
+
+        if ($request->input('return_to') === 'marketers_index') {
+            return redirect()
+                ->route('distributors.marketers.index')
+                ->with('status', 'تمت إضافة المسوق بنجاح.');
+        }
+
+        return redirect()
+            ->route('distributors.show', $distributor)
+            ->with('status', 'تمت إضافة المسوق بنجاح.');
+    }
+
+    public function destroyMarketer(DistributorMarketer $marketer): RedirectResponse
+    {
+        $marketer->load('distributor');
+        $this->authorizeDistributorAccess($marketer->distributor);
+        $distributor = $marketer->distributor;
+
+        $marketer->delete();
+
+        return redirect()
+            ->route('distributors.show', $distributor)
+            ->with('status', 'تم حذف المسوق بنجاح.');
+    }
+
+    public function editMarketerPermissions(DistributorMarketer $marketer): View|RedirectResponse
+    {
+        $marketer->load(['distributor', 'user.employeePermissions']);
+        $this->authorizeDistributorAccess($marketer->distributor);
+
+        if (! $marketer->user) {
+            return redirect()
+                ->route('distributors.marketers.index')
+                ->withErrors(['user_id' => 'اربط المسوق بحساب دخول قبل تحديد الصلاحيات.']);
+        }
+
+        return view('admin.employees.permissions', [
+            'employee' => $marketer->user,
+            'permissionGroups' => config('employee_permissions.groups', []),
+            'selectedPermissions' => $marketer->user->employeePermissions->pluck('permission')->all(),
+            'pageTitle' => 'صلاحيات مسوق الموزع',
+            'headerTitle' => 'صلاحيات مسوق الموزع',
+            'subjectLabel' => 'المسوق',
+            'description' => 'حدد الصفحات والعمليات التي يستطيع مسوق الموزع الوصول إليها داخل لوحة التحكم.',
+            'formAction' => route('distributors.marketers.permissions.update', $marketer),
+            'backUrl' => route('distributors.marketers.index'),
+        ]);
+    }
+
+    public function updateMarketerPermissions(Request $request, DistributorMarketer $marketer): RedirectResponse
+    {
+        $marketer->load(['distributor', 'user']);
+        $this->authorizeDistributorAccess($marketer->distributor);
+        abort_unless($marketer->user, 404);
+
+        $data = $request->validate([
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['string', Rule::in($this->validPermissionKeys())],
+        ]);
+
+        $marketer->user->employeePermissions()->delete();
+        foreach (array_unique($data['permissions'] ?? []) as $permission) {
+            $marketer->user->employeePermissions()->create(['permission' => $permission]);
+        }
+
+        return redirect()
+            ->route('distributors.marketers.index')
+            ->with('status', 'تم حفظ صلاحيات المسوق بنجاح.');
     }
 
     public function edit(Distributor $distributor): View
     {
-        $this->authorizeShopAccess($distributor);
+        $this->authorizeDistributorAccess($distributor);
 
         return view('admin.distributors.distributors_edit', [
             'distributor' => $distributor,
@@ -97,6 +295,8 @@ class DistributorController extends Controller
 
     public function update(Request $request, Distributor $distributor): RedirectResponse
     {
+        $this->authorizeDistributorAccess($distributor);
+
         $data = $this->validatedData($request);
         $this->applyAgentShop($data);
         $this->normalizeShopId($data);
@@ -117,7 +317,7 @@ class DistributorController extends Controller
 
     public function destroy(Distributor $distributor): RedirectResponse
     {
-        $this->authorizeShopAccess($distributor);
+        $this->authorizeDistributorAccess($distributor);
         $this->deleteUpload($distributor->image);
         $distributor->delete();
 
@@ -128,7 +328,7 @@ class DistributorController extends Controller
 
     public function editPermissions(Distributor $distributor): View|RedirectResponse
     {
-        $this->authorizeShopAccess($distributor);
+        $this->authorizeDistributorAccess($distributor);
         $user = $distributor->user;
 
         if (! $user) {
@@ -154,7 +354,7 @@ class DistributorController extends Controller
 
     public function updatePermissions(Request $request, Distributor $distributor): RedirectResponse
     {
-        $this->authorizeShopAccess($distributor);
+        $this->authorizeDistributorAccess($distributor);
         $user = $distributor->user;
         abort_unless($user, 404);
 
@@ -197,6 +397,18 @@ class DistributorController extends Controller
             ->flatMap(fn($group) => array_keys($group['permissions'] ?? []))
             ->values()
             ->all();
+    }
+
+    private function uniqueMarketerCode(string $name): string
+    {
+        $base = Str::slug($name);
+        $base = $base !== '' ? $base : 'marketer';
+
+        do {
+            $code = $base . '-' . Str::lower(Str::random(6));
+        } while (DistributorMarketer::query()->where('tracking_code', $code)->exists());
+
+        return $code;
     }
 
     private function applyAgentShop(array &$data): void
@@ -268,6 +480,53 @@ class DistributorController extends Controller
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
+    }
+
+    private function accessibleDistributors()
+    {
+        if (auth()->user()?->isDistributor()) {
+            $ids = $this->currentDistributorIds();
+
+            return Distributor::query()
+                ->with('shop')
+                ->whereIn('id', $ids)
+                ->orderBy('name')
+                ->get();
+        }
+
+        return $this->scopeToAccessibleShops(Distributor::query())
+            ->with('shop')
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function currentDistributorIds(): array
+    {
+        $user = auth()->user();
+        if (! $user?->isDistributor()) {
+            return [];
+        }
+
+        $ids = $user->distributorProfiles()->pluck('id');
+
+        if ($user->email) {
+            $ids = $ids->merge(Distributor::query()
+                ->where('email', $user->email)
+                ->pluck('id'));
+        }
+
+        return $ids->map(fn($id) => (int) $id)->unique()->values()->all();
+    }
+
+    private function authorizeDistributorAccess(Distributor $distributor): void
+    {
+        if (auth()->user()?->isDistributor()) {
+            abort_unless(in_array((int) $distributor->id, $this->currentDistributorIds(), true), 403);
+
+            return;
+        }
+
+        $this->authorizeShopAccess($distributor);
     }
 
     private function accessibleAgents()

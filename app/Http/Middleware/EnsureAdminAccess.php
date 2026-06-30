@@ -87,11 +87,19 @@ class EnsureAdminAccess
 
     private function authorizeMarketerRoute(Request $request): void
     {
+        $user = $request->user();
         $routeName = $request->route()?->getName();
+
+        if ($user?->hasAssignedPermissions()) {
+            abort_unless($user->canAccessRouteName($routeName), 403);
+
+            return;
+        }
 
         abort_unless(
             $routeName && (
                 $routeName === 'dashboard'
+                || $routeName === 'front-orders.index'
                 || str_starts_with($routeName, 'reward-wheels.marketer.')
             ),
             403

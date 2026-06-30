@@ -149,6 +149,15 @@
             color: var(--primary);
             padding: 0 18px;
             cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .qr-scan-btn {
+            border-color: rgba(37, 211, 102, .42);
+            background: rgba(37, 211, 102, .12);
+            color: var(--green);
         }
         .table-wrap {
             overflow-x: auto;
@@ -217,6 +226,94 @@
             font-weight: 900;
             text-decoration: none;
         }
+        .order-qr-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            color: var(--green);
+            font-size: 12px;
+            font-weight: 900;
+            text-decoration: none;
+        }
+        .qr-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(0, 0, 0, .72);
+            backdrop-filter: blur(10px);
+        }
+        .qr-modal.show { display: flex; }
+        .qr-card {
+            width: min(520px, 100%);
+            border: 1px solid rgba(0, 229, 255, .2);
+            border-radius: 24px;
+            background: linear-gradient(145deg, rgba(18,18,24,.96), rgba(6,6,10,.96));
+            box-shadow: 0 24px 70px rgba(0, 0, 0, .48);
+            padding: 20px;
+        }
+        .qr-card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .qr-card-title {
+            color: var(--primary);
+            font-size: 20px;
+            font-weight: 900;
+        }
+        .qr-close {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,.08);
+            color: #fff;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        .qr-video-wrap {
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,.1);
+            border-radius: 18px;
+            background: #000;
+            aspect-ratio: 1 / 1;
+        }
+        .qr-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+        .qr-help {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 800;
+        }
+        .qr-manual {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .qr-manual input {
+            min-width: 0;
+            height: 42px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: rgba(255,255,255,.055);
+            color: #fff;
+            padding: 0 14px;
+            font: inherit;
+            font-weight: 800;
+        }
         .empty {
             padding: 34px;
             text-align: center;
@@ -272,6 +369,11 @@
                         <div class="stat-val">{{ number_format($rewardedCount) }}</div>
                         <i class="ti ti-gift stat-icon"></i>
                     </div>
+                    <div class="stat-card" style="--card-color: var(--primary);">
+                        <div class="stat-label">طلبات عبر مسوقين</div>
+                        <div class="stat-val">{{ number_format($marketerCount) }}</div>
+                        <i class="ti ti-speakerphone stat-icon"></i>
+                    </div>
                 </div>
 
                 <section class="panel">
@@ -287,7 +389,10 @@
                                 <option value="whatsapp" @selected($selectedChannel === 'whatsapp')>واتساب</option>
                                 <option value="instant_payment" @selected($selectedChannel === 'instant_payment')>دفع فوري</option>
                             </select>
-                            <button class="filter-btn" type="submit">فلترة</button>
+                            <button class="filter-btn" type="submit"><i class="ti ti-filter"></i>فلترة</button>
+                            <button class="filter-btn qr-scan-btn" type="button" id="orderQrScanBtn" data-search-url="{{ route('front-orders.index') }}">
+                                <i class="ti ti-qrcode"></i>مسح QR
+                            </button>
                         </form>
                     </div>
 
@@ -298,6 +403,7 @@
                                     <th>رقم الطلب</th>
                                     <th>العميل</th>
                                     <th>المتجر</th>
+                                    <th>المصدر التسويقي</th>
                                     <th>المنتجات</th>
                                     <th>المبلغ</th>
                                     <th>طريقة الطلب</th>
@@ -313,6 +419,9 @@
                                         <td>
                                             <strong>{{ $order->order_number }}</strong>
                                             <div class="dim">#{{ $order->id }}</div>
+                                            <a class="order-qr-link" href="{{ route('front-orders.qr', $order) }}" target="_blank" rel="noopener">
+                                                <i class="ti ti-qrcode"></i> QR الطلب
+                                            </a>
                                         </td>
                                         <td>
                                             <strong>{{ $order->customer_name }}</strong>
@@ -320,6 +429,19 @@
                                             <div class="dim">واتساب: {{ $order->customer_whatsapp ?: '-' }}</div>
                                         </td>
                                         <td>{{ $order->shop?->name ?? 'عام' }}</td>
+                                        <td>
+                                            @if($order->distributorMarketer)
+                                                <span class="badge green">
+                                                    <i class="ti ti-speakerphone"></i>
+                                                    المسوق: {{ $order->distributorMarketer->name }}
+                                                </span>
+                                                <div class="dim">الموزع: {{ $order->distributor?->name ?? '-' }}</div>
+                                            @elseif($order->distributor)
+                                                <span class="badge">الموزع: {{ $order->distributor->name }}</span>
+                                            @else
+                                                <span class="dim">مباشر</span>
+                                            @endif
+                                        </td>
                                         <td>
                                             <div class="items-list">
                                                 @foreach(array_slice($order->items ?? [], 0, 4) as $item)
@@ -379,7 +501,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="10">
+                                        <td colspan="11">
                                             <div class="empty">لسه ما في طلبات مسجلة من الواجهة.</div>
                                         </td>
                                     </tr>
@@ -395,6 +517,149 @@
             </div>
         </main>
     </div>
+
+    <div class="qr-modal" id="orderQrModal" aria-hidden="true">
+        <div class="qr-card" role="dialog" aria-modal="true" aria-labelledby="orderQrTitle">
+            <div class="qr-card-head">
+                <div>
+                    <div class="qr-card-title" id="orderQrTitle">مسح QR الطلب</div>
+                    <div class="dim">وجّه الكاميرا على QR الطلب وسيتم فتحه مباشرة.</div>
+                </div>
+                <button class="qr-close" type="button" id="orderQrClose" aria-label="إغلاق">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            <div class="qr-video-wrap">
+                <video class="qr-video" id="orderQrVideo" muted playsinline></video>
+            </div>
+            <div class="qr-help" id="orderQrHelp">جاري تشغيل الكاميرا...</div>
+            <form class="qr-manual" id="orderQrManualForm">
+                <input type="text" id="orderQrManualInput" placeholder="أدخل رقم الطلب أو النص الموجود في QR" dir="ltr">
+                <button class="filter-btn qr-scan-btn" type="submit">فتح</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        (() => {
+            const scanBtn = document.getElementById('orderQrScanBtn');
+            const modal = document.getElementById('orderQrModal');
+            const closeBtn = document.getElementById('orderQrClose');
+            const video = document.getElementById('orderQrVideo');
+            const help = document.getElementById('orderQrHelp');
+            const manualForm = document.getElementById('orderQrManualForm');
+            const manualInput = document.getElementById('orderQrManualInput');
+
+            if (!scanBtn || !modal || !video) return;
+
+            let stream = null;
+            let detector = null;
+            let scanning = false;
+
+            const searchUrl = scanBtn.dataset.searchUrl || '{{ route('front-orders.index') }}';
+            const orderPattern = /ORD-\d{8}-[A-Z0-9]+/i;
+
+            function orderNumberFromScan(value) {
+                const text = String(value || '').trim();
+                if (!text) return '';
+
+                try {
+                    const url = new URL(text, window.location.origin);
+                    const searchValue = url.searchParams.get('search');
+                    const fromSearch = searchValue && searchValue.match(orderPattern);
+                    if (fromSearch) return fromSearch[0].toUpperCase();
+                } catch (error) {
+                    // Not a URL, continue with plain text parsing.
+                }
+
+                const match = text.match(orderPattern);
+                return match ? match[0].toUpperCase() : text;
+            }
+
+            function openOrder(value) {
+                const orderNumber = orderNumberFromScan(value);
+                if (!orderNumber) {
+                    help.textContent = 'لم يتم العثور على رقم طلب داخل QR.';
+                    return;
+                }
+
+                stopScanner();
+                window.location.href = `${searchUrl}?search=${encodeURIComponent(orderNumber)}`;
+            }
+
+            async function scanLoop() {
+                if (!scanning || !detector) return;
+
+                try {
+                    const codes = await detector.detect(video);
+                    if (codes.length > 0) {
+                        openOrder(codes[0].rawValue || '');
+                        return;
+                    }
+                } catch (error) {
+                    help.textContent = 'تعذر قراءة الكاميرا، جرّب إدخال رقم الطلب يدوياً.';
+                }
+
+                requestAnimationFrame(scanLoop);
+            }
+
+            async function startScanner() {
+                modal.classList.add('show');
+                modal.setAttribute('aria-hidden', 'false');
+                help.textContent = 'جاري تشغيل الكاميرا...';
+
+                if (!('BarcodeDetector' in window) || !navigator.mediaDevices?.getUserMedia) {
+                    help.textContent = 'المتصفح لا يدعم مسح QR بالكاميرا. استخدم الإدخال اليدوي.';
+                    manualInput?.focus();
+                    return;
+                }
+
+                try {
+                    detector = new BarcodeDetector({ formats: ['qr_code'] });
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: { ideal: 'environment' } },
+                        audio: false
+                    });
+                    video.srcObject = stream;
+                    await video.play();
+                    scanning = true;
+                    help.textContent = 'ضع QR داخل الكاميرا.';
+                    requestAnimationFrame(scanLoop);
+                } catch (error) {
+                    help.textContent = 'لم نقدر نشغل الكاميرا. تأكد من السماح للمتصفح أو أدخل رقم الطلب يدوياً.';
+                    manualInput?.focus();
+                }
+            }
+
+            function stopScanner() {
+                scanning = false;
+                if (stream) {
+                    stream.getTracks().forEach((track) => track.stop());
+                    stream = null;
+                }
+                video.srcObject = null;
+            }
+
+            function closeScanner() {
+                stopScanner();
+                modal.classList.remove('show');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+
+            scanBtn.addEventListener('click', startScanner);
+            closeBtn?.addEventListener('click', closeScanner);
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) closeScanner();
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && modal.classList.contains('show')) closeScanner();
+            });
+            manualForm?.addEventListener('submit', (event) => {
+                event.preventDefault();
+                openOrder(manualInput?.value || '');
+            });
+        })();
+    </script>
 </body>
 
 </html>
