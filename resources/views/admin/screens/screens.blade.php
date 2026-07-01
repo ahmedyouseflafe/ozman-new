@@ -667,6 +667,7 @@
                                 <tr>
                                     <th>الشاشة</th>
                                     <th>النوع</th>
+                                    <th>مكان العرض</th>
                                     <th>الملف / الرابط</th>
                                     <th>المدة</th>
                                     <th>الحالة</th>
@@ -684,6 +685,8 @@
                                             'youtube' => 'ti-brand-youtube',
                                         ];
                                         $typeClasses = ['image' => 'tag-c', 'video' => 'tag-p', 'youtube' => 'tag-r'];
+                                        $placement = data_get($screen, 'placement', 'top') ?: 'top';
+                                        $placementLabels = ['top' => 'الشاشة العلوية', 'bottom' => 'الشاشة السفلية'];
                                         $media = data_get($screen, 'media', data_get($screen, 'file', '-'));
                                         $isActive = (bool) data_get(
                                             $screen,
@@ -711,6 +714,11 @@
                                         <td>
                                             <span class="tag {{ $typeClasses[$type] ?? 'tag-c' }}">
                                                 {{ data_get($screen, 'type_label', $typeLabels[$type] ?? $type) }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="tag {{ $placement === 'bottom' ? 'tag-p' : 'tag-c' }}">
+                                                {{ data_get($screen, 'placement_label', $placementLabels[$placement] ?? $placement) }}
                                             </span>
                                         </td>
                                         <td dir="ltr">{{ $media }}</td>
@@ -750,7 +758,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6">
+                                        <td colspan="7">
                                             <div class="empty-state">
                                                 <i class="ti ti-device-tv-off" aria-hidden="true"></i>
                                                 لا توجد شاشات لعرضها حاليا

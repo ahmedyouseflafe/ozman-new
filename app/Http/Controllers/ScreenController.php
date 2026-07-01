@@ -7,6 +7,7 @@ use App\Models\MainScreen;
 use App\Models\Shop;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -24,6 +25,7 @@ class ScreenController extends Controller
             ->get()
             ->map(function (MainScreen $screen) {
                 $screen->type_label = $this->typeLabel($screen->type);
+                $screen->placement_label = $this->placementLabel($screen->placement ?? 'top');
                 $screen->status_label = $screen->is_active ? 'نشط' : 'معطل';
                 $screen->status_class = $screen->is_active ? 'tag-g' : 'tag-r';
 
@@ -43,7 +45,11 @@ class ScreenController extends Controller
     {
         abort_unless($this->canAccessCurrentRoute(), 403);
 
-        return view('admin.screens.screens_create');
+        abort_if($this->allowedPlacements() === [], 403);
+
+        return view('admin.screens.screens_create', [
+            'allowedPlacements' => $this->allowedPlacements(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -52,6 +58,8 @@ class ScreenController extends Controller
 
         $data = $this->validatedData($request);
         $data['duration'] = $data['duration'] ?? 10;
+        $data['placement'] = $data['placement'] ?? 'top';
+        $this->authorizePlacement($data['placement']);
         $data['is_active'] = $request->boolean('is_active');
         $data['media'] = $this->resolveMedia($request);
 
@@ -73,7 +81,12 @@ class ScreenController extends Controller
     {
         abort_unless($this->canAccessCurrentRoute(), 403);
 
-        return view('admin.screens.screens_edit', compact('screen'));
+        abort_if($this->allowedPlacements() === [], 403);
+
+        return view('admin.screens.screens_edit', [
+            'screen' => $screen,
+            'allowedPlacements' => $this->allowedPlacements(),
+        ]);
     }
 
     public function update(Request $request, MainScreen $screen): RedirectResponse
@@ -82,6 +95,8 @@ class ScreenController extends Controller
 
         $data = $this->validatedData($request, $screen);
         $data['duration'] = $data['duration'] ?? 10;
+        $data['placement'] = $data['placement'] ?? 'top';
+        $this->authorizePlacement($data['placement']);
         $data['is_active'] = $request->boolean('is_active');
 
         if ($this->shouldReplaceMedia($request, $screen)) {
@@ -160,6 +175,7 @@ class ScreenController extends Controller
                 'max:' . self::MAX_SCREEN_UPLOAD_KILOBYTES,
             ],
             'duration' => ['nullable', 'integer', 'min:1', 'max:3600'],
+            'placement' => ['nullable', Rule::in(['top', 'bottom'])],
         ]);
     }
 
@@ -203,5 +219,39 @@ class ScreenController extends Controller
             'youtube' => 'يوتيوب',
             default => $type,
         };
+    }
+
+    private function placementLabel(string $placement): string
+    {
+        return match ($placement) {
+            'bottom' => 'الشاشة السفلية',
+            default => 'الشاشة العلوية',
+        };
+    }
+
+    private function allowedPlacements(): array
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return [];
+        }
+
+        if ($user->isSuperAdmin() || ! $user->hasAssignedPermissions()) {
+            return ['top', 'bottom'];
+        }
+
+        return collect([
+            'top' => $user->hasEmployeePermission('screens.place_top'),
+            'bottom' => $user->hasEmployeePermission('screens.place_bottom'),
+        ])
+            ->filter()
+            ->keys()
+            ->all();
+    }
+
+    private function authorizePlacement(string $placement): void
+    {
+        abort_unless(in_array($placement, $this->allowedPlacements(), true), 403);
     }
 }

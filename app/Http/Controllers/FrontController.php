@@ -145,6 +145,9 @@ class FrontController extends Controller
             ->where('is_active', true)
             ->latest()
             ->get();
+        $ozmanBottomScreens = $ozmanScreens
+            ->filter(fn(MainScreen $screen) => ($screen->placement ?? 'top') === 'bottom')
+            ->values();
         $ozmanAdvertisements = Advertisement::query()
             ->where('is_active', true)
             ->where(function ($query) use ($ozmanShop) {
@@ -167,7 +170,7 @@ class FrontController extends Controller
             'ozmanCategories' => $ozmanCategories,
             'ozmanScreens' => $ozmanScreens,
             'ozmanAdvertisements' => $ozmanAdvertisements,
-            'frontData' => $this->frontData($frontShops, $ozmanCategories, $ozmanShop),
+            'frontData' => $this->frontData($frontShops, $ozmanCategories, $ozmanShop, $ozmanBottomScreens),
             'customerSignupWheel' => $this->customerSignupWheelPayload(),
             'purchaseRewardWheels' => $this->purchaseRewardWheelsPayload(),
         ]);
@@ -235,6 +238,14 @@ class FrontController extends Controller
 
         $ozmanCategories = $ozmanShop?->categories ?? collect();
 
+        $ozmanScreens = MainScreen::query()
+            ->where('is_active', true)
+            ->latest()
+            ->get();
+        $ozmanBottomScreens = $ozmanScreens
+            ->filter(fn(MainScreen $screen) => ($screen->placement ?? 'top') === 'bottom')
+            ->values();
+
         return view('front.index', [
             'ozmanShop' => $ozmanShop,
             'shop' => $selectedShop,
@@ -242,7 +253,7 @@ class FrontController extends Controller
             'agents' => $ozmanShop?->agents ?? collect(),
             'distributors' => $ozmanShop?->distributors ?? collect(),
             'ozmanCategories' => $ozmanCategories,
-            'ozmanScreens' => MainScreen::query()->where('is_active', true)->latest()->get(),
+            'ozmanScreens' => $ozmanScreens,
             'ozmanAdvertisements' => Advertisement::query()
                 ->where('is_active', true)
                 ->where(function ($query) use ($ozmanShop) {
@@ -255,7 +266,7 @@ class FrontController extends Controller
                 ->orderBy('sort_order')
                 ->latest()
                 ->get(),
-            'frontData' => $this->frontData($shops, $ozmanCategories, $ozmanShop),
+            'frontData' => $this->frontData($shops, $ozmanCategories, $ozmanShop, $ozmanBottomScreens),
             'customerSignupWheel' => $this->customerSignupWheelPayload(),
             'purchaseRewardWheels' => $this->purchaseRewardWheelsPayload(),
             'initialPersonContext' => [
@@ -321,7 +332,7 @@ class FrontController extends Controller
             'ozmanCategories' => $ozmanCategories,
             'ozmanScreens' => collect(),
             'ozmanAdvertisements' => collect(),
-            'frontData' => $this->frontData($shops, $ozmanCategories, null),
+            'frontData' => $this->frontData($shops, $ozmanCategories, null, collect()),
             'customerSignupWheel' => null,
             'purchaseRewardWheels' => [],
             'isDashboardPreview' => true,
@@ -399,8 +410,9 @@ class FrontController extends Controller
         return $relations;
     }
 
-    private function frontData($shops, $ozmanCategories, ?Shop $ozmanShop = null): array
+    private function frontData($shops, $ozmanCategories, ?Shop $ozmanShop = null, $ozmanBottomScreens = null): array
     {
+        $ozmanBottomScreens = collect($ozmanBottomScreens ?? []);
         $productsDb = [];
         foreach ($ozmanCategories as $category) {
             $categoryTitle = $category->localized('name');
@@ -410,7 +422,7 @@ class FrontController extends Controller
                 ->all();
         }
 
-        $centersData = $shops->map(function (Shop $shop) use (&$productsDb, $shops) {
+        $centersData = $shops->map(function (Shop $shop) use (&$productsDb, $shops, $ozmanShop, $ozmanBottomScreens) {
             $shopProductsDb = [];
             $shopDepartments = [];
 
@@ -426,6 +438,11 @@ class FrontController extends Controller
                     ];
                 })->values()->all();
 
+            $displayItems = $shop->advertisements ?? collect();
+            if ($ozmanShop?->exists && $shop->id === $ozmanShop->id) {
+                $displayItems = $ozmanBottomScreens->merge($displayItems);
+            }
+
             return [
                 'id' => $shop->id,
                 'title' => $shop->name,
@@ -435,7 +452,7 @@ class FrontController extends Controller
                 'social_links' => $this->socialLinksPayload($shop),
                 'agents' => $this->contactPeoplePayload($shop->agents ?? collect(), $shop, 'agent', $shopProductsDb, $shopDepartments, $shops),
                 'distributors' => $this->contactPeoplePayload($shop->distributors ?? collect(), $shop, 'distributor', $shopProductsDb, $shopDepartments, $shops),
-                'display_items' => $this->displayItemsPayload($shop->advertisements ?? collect()),
+                'display_items' => $this->displayItemsPayload($displayItems),
                 'departments' => $shopDepartments,
                 'products_db' => $shopProductsDb,
                 'address' => $shop->address,
@@ -470,7 +487,7 @@ class FrontController extends Controller
                 'social_links' => $this->socialLinksPayload($ozmanShop),
                 'agents' => $this->contactPeoplePayload($ozmanShop->agents ?? collect(), $ozmanShop, 'agent', $ozmanProductsDb, $ozmanDepartments, $shops),
                 'distributors' => $this->contactPeoplePayload($ozmanShop->distributors ?? collect(), $ozmanShop, 'distributor', $ozmanProductsDb, $ozmanDepartments, $shops),
-                'display_items' => $this->displayItemsPayload($ozmanShop->advertisements ?? collect()),
+                'display_items' => $this->displayItemsPayload($ozmanBottomScreens->merge($ozmanShop->advertisements ?? collect())),
                 'departments' => $ozmanDepartments,
                 'products_db' => $ozmanProductsDb,
                 'address' => $ozmanShop->address,

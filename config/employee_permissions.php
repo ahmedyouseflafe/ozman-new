@@ -59,6 +59,8 @@ return [
                 'screens.create' => ['label' => 'إضافة شاشة', 'routes' => ['screens.create', 'screens.store']],
                 'screens.edit' => ['label' => 'تعديل شاشة', 'routes' => ['screens.edit', 'screens.update']],
                 'screens.delete' => ['label' => 'حذف شاشة', 'routes' => ['screens.destroy']],
+                'screens.place_top' => ['label' => 'العرض في الشاشة العلوية', 'routes' => []],
+                'screens.place_bottom' => ['label' => 'العرض في الشاشة السفلية', 'routes' => []],
             ],
         ],
         'people' => [

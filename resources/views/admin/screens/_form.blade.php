@@ -1,4 +1,5 @@
 @php($isEdit = isset($screen))
+@php($allowedPlacements = $allowedPlacements ?? ['top', 'bottom'])
 
 <section class="form-section">
     <div class="section-head">
@@ -16,6 +17,18 @@
                 <option value="image" @selected(old('type', $screen->type ?? 'image') === 'image')>صورة</option>
                 <option value="video" @selected(old('type', $screen->type ?? '') === 'video')>فيديو</option>
                 <option value="youtube" @selected(old('type', $screen->type ?? '') === 'youtube')>يوتيوب</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="placement">مكان العرض</label>
+            <select id="placement" name="placement">
+                @if(in_array('top', $allowedPlacements, true))
+                    <option value="top" @selected(old('placement', $screen->placement ?? 'top') === 'top')>الشاشة العلوية</option>
+                @endif
+                @if(in_array('bottom', $allowedPlacements, true))
+                    <option value="bottom" @selected(old('placement', $screen->placement ?? 'top') === 'bottom')>الشاشة السفلية</option>
+                @endif
             </select>
         </div>
 

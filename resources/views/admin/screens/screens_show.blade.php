@@ -36,6 +36,7 @@
 
                     <div class="detail-grid">
                         <div class="detail-box"><span class="label">النوع</span><span class="value">{{ ['image' => 'صورة', 'video' => 'فيديو', 'youtube' => 'يوتيوب'][$screen->type] ?? $screen->type }}</span></div>
+                        <div class="detail-box"><span class="label">مكان العرض</span><span class="value">{{ ['top' => 'الشاشة العلوية', 'bottom' => 'الشاشة السفلية'][$screen->placement ?? 'top'] ?? 'الشاشة العلوية' }}</span></div>
                         <div class="detail-box"><span class="label">المدة</span><span class="value">{{ $screen->duration }} ثانية</span></div>
                         <div class="detail-box"><span class="label">الحالة</span><span class="value">{{ $screen->is_active ? 'نشط' : 'معطل' }}</span></div>
                         <div class="detail-box"><span class="label">تاريخ الإضافة</span><span class="value">{{ optional($screen->created_at)->format('Y-m-d H:i') }}</span></div>

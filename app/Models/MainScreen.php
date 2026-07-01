@@ -13,6 +13,7 @@ class MainScreen extends Model
         'title',
         'type',
         'media',
+        'placement',
         'duration',
         'is_active',
     ];

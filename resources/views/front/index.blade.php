@@ -155,11 +155,21 @@
 
             return $url;
         };
-        $ozmanDisplayItems = collect($ozmanScreens ?? [])
+        $topOzmanScreens = collect($ozmanScreens ?? [])
+            ->filter(fn($item) => ($item->placement ?? 'top') !== 'bottom')
+            ->values();
+        $bottomOzmanScreens = collect($ozmanScreens ?? [])
+            ->filter(fn($item) => ($item->placement ?? 'top') === 'bottom')
+            ->values();
+        $ozmanDisplayItems = $topOzmanScreens
             ->merge($ozmanAdvertisements ?? [])
             ->filter(fn($item) => filled($item->media))
             ->values();
-        $shopDisplayItems = collect($shop?->advertisements ?? [])
+        $shopDisplaySource = collect($shop?->advertisements ?? []);
+        if ($shop?->id && $ozmanShop?->id && (int) $shop->id === (int) $ozmanShop->id) {
+            $shopDisplaySource = $bottomOzmanScreens->merge($shopDisplaySource);
+        }
+        $shopDisplayItems = $shopDisplaySource
             ->filter(fn($item) => filled($item->media))
             ->values();
     @endphp
