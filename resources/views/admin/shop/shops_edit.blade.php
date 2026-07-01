@@ -699,7 +699,7 @@
                                 <div class="form-group">
                                     <label class="form-label" for="owner_password"><i class="ti ti-lock" aria-hidden="true"></i>كلمة مرور جديدة</label>
                                     <div class="field">
-                                        <input type="password" id="owner_password" name="owner_password" dir="ltr">
+                                        <input type="password" id="owner_password" name="owner_password" dir="ltr" autocomplete="new-password">
                                         <i class="ti ti-lock field-icon" aria-hidden="true"></i>
                                     </div>
                                 </div>
@@ -707,7 +707,7 @@
                                 <div class="form-group">
                                     <label class="form-label" for="owner_password_confirmation"><i class="ti ti-lock-check" aria-hidden="true"></i>تأكيد كلمة المرور</label>
                                     <div class="field">
-                                        <input type="password" id="owner_password_confirmation" name="owner_password_confirmation" dir="ltr">
+                                        <input type="password" id="owner_password_confirmation" name="owner_password_confirmation" dir="ltr" autocomplete="new-password">
                                         <i class="ti ti-lock-check field-icon" aria-hidden="true"></i>
                                     </div>
                                 </div>

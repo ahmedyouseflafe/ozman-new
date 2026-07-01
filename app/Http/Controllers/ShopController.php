@@ -236,6 +236,15 @@ class ShopController extends Controller
     {
         $authUser = Auth::user();
         $usesCurrentUserAsOwner = ! $shop && $authUser && ($authUser->isAgent() || $authUser->isDistributor());
+        $ownerPasswordRules = $shop || $usesCurrentUserAsOwner
+            ? ['nullable', 'string', 'min:6']
+            : ['required', 'string', 'min:6', 'confirmed'];
+
+        if ($shop && ! $request->filled('owner_password_confirmation')) {
+            $request->merge(['owner_password' => null]);
+        } elseif ($shop && $request->filled('owner_password')) {
+            $ownerPasswordRules[] = 'confirmed';
+        }
 
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -271,7 +280,8 @@ class ShopController extends Controller
                 'max:255',
                 Rule::unique('users', 'email')->ignore($shop?->user_id),
             ],
-            'owner_password' => [$shop || $usesCurrentUserAsOwner ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
+            'owner_password' => $ownerPasswordRules,
+            'owner_password_confirmation' => ['nullable', 'string', 'min:6'],
         ]);
     }
 
@@ -328,7 +338,11 @@ class ShopController extends Controller
             $ownerData['email'] = $request->input('owner_email');
         }
 
-        if ($request->filled('owner_password')) {
+        if (
+            $request->filled('owner_password')
+            && $request->filled('owner_password_confirmation')
+            && $request->input('owner_password') === $request->input('owner_password_confirmation')
+        ) {
             $ownerData['password'] = Hash::make($request->input('owner_password'));
         }
 
