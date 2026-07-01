@@ -55,7 +55,8 @@ return [
         'screens' => [
             'label' => 'الشاشات',
             'permissions' => [
-                'screens.view' => ['label' => 'استعراض الشاشات', 'routes' => ['screens', 'screens.show']],
+                'screens.view' => ['label' => 'استعراض الشاشات التابعة له', 'routes' => ['screens', 'screens.show']],
+                'screens.view_all' => ['label' => 'استعراض كل الشاشات', 'routes' => []],
                 'screens.create' => ['label' => 'إضافة شاشة', 'routes' => ['screens.create', 'screens.store']],
                 'screens.edit' => ['label' => 'تعديل شاشة', 'routes' => ['screens.edit', 'screens.update']],
                 'screens.delete' => ['label' => 'حذف شاشة', 'routes' => ['screens.destroy']],

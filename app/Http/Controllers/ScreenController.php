@@ -20,7 +20,7 @@ class ScreenController extends Controller
     {
         abort_unless($this->canAccessCurrentRoute(), 403);
 
-        $screens = MainScreen::query()
+        $screens = $this->visibleScreensQuery()
             ->latest()
             ->get()
             ->map(function (MainScreen $screen) {
@@ -60,6 +60,7 @@ class ScreenController extends Controller
         $data['duration'] = $data['duration'] ?? 10;
         $data['placement'] = $data['placement'] ?? 'top';
         $this->authorizePlacement($data['placement']);
+        $data['user_id'] = Auth::id();
         $data['is_active'] = $request->boolean('is_active');
         $data['media'] = $this->resolveMedia($request);
 
@@ -73,6 +74,7 @@ class ScreenController extends Controller
     public function show(MainScreen $screen): View
     {
         abort_unless($this->canAccessCurrentRoute(), 403);
+        $this->authorizeScreenVisibility($screen);
 
         return view('admin.screens.screens_show', compact('screen'));
     }
@@ -80,6 +82,7 @@ class ScreenController extends Controller
     public function edit(MainScreen $screen): View
     {
         abort_unless($this->canAccessCurrentRoute(), 403);
+        $this->authorizeScreenVisibility($screen);
 
         abort_if($this->allowedPlacements() === [], 403);
 
@@ -92,6 +95,7 @@ class ScreenController extends Controller
     public function update(Request $request, MainScreen $screen): RedirectResponse
     {
         abort_unless($this->canAccessCurrentRoute(), 403);
+        $this->authorizeScreenVisibility($screen);
 
         $data = $this->validatedData($request, $screen);
         $data['duration'] = $data['duration'] ?? 10;
@@ -116,6 +120,7 @@ class ScreenController extends Controller
     public function destroy(MainScreen $screen): RedirectResponse
     {
         abort_unless($this->canAccessCurrentRoute(), 403);
+        $this->authorizeScreenVisibility($screen);
 
         $this->deleteUpload($screen->media);
         $screen->delete();
@@ -253,5 +258,34 @@ class ScreenController extends Controller
     private function authorizePlacement(string $placement): void
     {
         abort_unless(in_array($placement, $this->allowedPlacements(), true), 403);
+    }
+
+    private function visibleScreensQuery()
+    {
+        $query = MainScreen::query();
+
+        if ($this->canViewAllScreens()) {
+            return $query;
+        }
+
+        return $query->where('user_id', Auth::id());
+    }
+
+    private function canViewAllScreens(): bool
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        return $user->isSuperAdmin()
+            || ! $user->hasAssignedPermissions()
+            || $user->hasEmployeePermission('screens.view_all');
+    }
+
+    private function authorizeScreenVisibility(MainScreen $screen): void
+    {
+        abort_unless($this->canViewAllScreens() || (int) $screen->user_id === (int) Auth::id(), 403);
     }
 }
