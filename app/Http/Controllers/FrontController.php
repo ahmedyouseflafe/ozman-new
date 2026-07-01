@@ -594,6 +594,19 @@ class FrontController extends Controller
                 ? $url
                 : 'https://' . ltrim($url, '/');
         };
+        $normalizeWhatsapp = function (?string $value): ?string {
+            if (! filled($value)) return null;
+
+            $value = trim($value);
+
+            if (preg_match('/^https?:\/\//i', $value)) {
+                return $value;
+            }
+
+            $digits = preg_replace('/\D+/', '', $value);
+
+            return $digits ? 'https://wa.me/' . $digits : null;
+        };
 
         return collect([
             ['title' => 'فيسبوك', 'icon' => 'fab fa-facebook-f', 'url' => $normalize($social->facebook)],
@@ -603,6 +616,7 @@ class FrontController extends Controller
             ['title' => 'تلجرام', 'icon' => 'fab fa-telegram', 'url' => $normalize($social->telegram)],
             ['title' => 'يوتيوب', 'icon' => 'fab fa-youtube', 'url' => $normalize($social->youtube)],
             ['title' => 'سناب شات', 'icon' => 'fab fa-snapchat', 'url' => $normalize($social->snapchat)],
+            ['title' => 'واتساب', 'icon' => 'fab fa-whatsapp', 'url' => $normalizeWhatsapp($social->whatsapp ?: $shop?->whatsapp)],
         ])->filter(fn($item) => filled($item['url']))->values()->all();
     }
 

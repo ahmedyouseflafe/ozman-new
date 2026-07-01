@@ -96,8 +96,22 @@
 
             return 'https://' . ltrim($url, '/');
         };
+        $normalizeWhatsappUrl = function (?string $value): ?string {
+            if (!filled($value)) {
+                return null;
+            }
 
-        $socialLinksFor = function ($targetShop) use ($normalizeSocialUrl) {
+            $value = trim($value);
+            if (preg_match('/^https?:\/\//i', $value)) {
+                return $value;
+            }
+
+            $digits = preg_replace('/\D+/', '', $value);
+
+            return $digits ? 'https://wa.me/' . $digits : null;
+        };
+
+        $socialLinksFor = function ($targetShop) use ($normalizeSocialUrl, $normalizeWhatsappUrl) {
             $social = optional($targetShop?->social);
 
             return collect([
@@ -119,6 +133,11 @@
                     'title' => __('سناب شات'),
                     'icon' => 'fab fa-snapchat',
                     'url' => $normalizeSocialUrl($social->snapchat),
+                ],
+                [
+                    'title' => __('واتساب'),
+                    'icon' => 'fab fa-whatsapp',
+                    'url' => $normalizeWhatsappUrl($social->whatsapp ?: $targetShop?->whatsapp),
                 ],
             ])
                 ->filter(fn($item) => filled($item['url']))
