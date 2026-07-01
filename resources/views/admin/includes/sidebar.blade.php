@@ -160,6 +160,63 @@
             .sidebar.admin-neon-sidebar {
                 display: none;
             }
+
+            body {
+                padding-bottom: 76px;
+            }
+
+            .admin-mobile-nav {
+                position: fixed;
+                right: 10px;
+                left: 10px;
+                bottom: 10px;
+                z-index: 60;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+                gap: 6px;
+                padding: 8px;
+                border: 1px solid rgba(0, 229, 255, .22);
+                border-radius: 22px;
+                background: rgba(0, 0, 0, .86);
+                backdrop-filter: blur(18px);
+                box-shadow: 0 -10px 34px rgba(0, 0, 0, .36), 0 0 18px rgba(0, 229, 255, .16);
+                font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+            }
+
+            .admin-mobile-nav-item {
+                min-height: 52px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 3px;
+                border: 1px solid transparent;
+                border-radius: 16px;
+                background: transparent;
+                color: rgba(255, 255, 255, .74);
+                text-decoration: none;
+                font: inherit;
+                font-size: 10px;
+                font-weight: 900;
+                cursor: pointer;
+            }
+
+            .admin-mobile-nav-item i {
+                font-size: 19px;
+                color: #00e5ff;
+            }
+
+            .admin-mobile-nav-item.active {
+                background: rgba(0, 229, 255, .15);
+                border-color: rgba(0, 229, 255, .32);
+                color: #00e5ff;
+            }
+        }
+
+        @media(min-width: 901px) {
+            .admin-mobile-nav {
+                display: none;
+            }
         }
     </style>
 @endonce
@@ -202,6 +259,24 @@
     if (! $previewShopId) {
         $previewShopId = auth()->user()?->accessibleShopIds()[0] ?? null;
     }
+
+    $previewDistributor = null;
+    if ($isDistributor) {
+        $previewDistributor = \App\Models\Distributor::query()
+            ->where(function ($query) use ($currentUser) {
+                $query->where('user_id', $currentUser?->id);
+
+                if ($currentUser?->email) {
+                    $query->orWhere('email', $currentUser->email);
+                }
+            })
+            ->where('is_active', true)
+            ->first();
+    }
+
+    $previewUrl = $previewDistributor
+        ? route('front.distributor', $previewDistributor)
+        : route('products.preview', $previewShopId ? ['shop_id' => $previewShopId] : []);
 @endphp
 
 <div class="sidebar admin-neon-sidebar">
@@ -276,7 +351,7 @@
         @endif
 
         @if($canSee(['products.preview']))
-        <a href="{{ route('products.preview', $previewShopId ? ['shop_id' => $previewShopId] : []) }}"
+        <a href="{{ $previewUrl }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('products.preview') ? 'active' : '' }}">
              <i class="ti ti-eye" aria-hidden="true"></i>
              معاينة المتجر
@@ -423,3 +498,48 @@
         النظام متصل وجاهز
     </div>
 </div>
+
+<nav class="admin-mobile-nav" aria-label="تنقل لوحة التحكم للجوال">
+    @if($canSee(['dashboard']))
+        <a href="{{ route('dashboard') }}" class="admin-mobile-nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+            <i class="ti ti-layout-dashboard" aria-hidden="true"></i>
+            الرئيسية
+        </a>
+    @endif
+
+    @if($canSee(['front-orders.index']))
+        <a href="{{ route('front-orders.index') }}" class="admin-mobile-nav-item {{ request()->routeIs('front-orders.index') ? 'active' : '' }}">
+            <i class="ti ti-receipt-2" aria-hidden="true"></i>
+            الطلبات
+        </a>
+    @endif
+
+    @if(! $isCatalogOnlyUser && $canSee(['distributors.marketers.index', 'distributors.marketers.permissions.edit']))
+        <a href="{{ route('distributors.marketers.index') }}" class="admin-mobile-nav-item {{ request()->routeIs('distributors.marketers.*') ? 'active' : '' }}">
+            <i class="ti ti-speakerphone" aria-hidden="true"></i>
+            المسوقون
+        </a>
+    @endif
+
+    @if($canSee(['products']))
+        <a href="{{ route('products') }}" class="admin-mobile-nav-item {{ request()->routeIs('products*') ? 'active' : '' }}">
+            <i class="ti ti-package" aria-hidden="true"></i>
+            المنتجات
+        </a>
+    @endif
+
+    @if($canSee(['products.preview']))
+        <a href="{{ $previewUrl }}" class="admin-mobile-nav-item {{ request()->routeIs('products.preview') ? 'active' : '' }}">
+            <i class="ti ti-eye" aria-hidden="true"></i>
+            معاينة
+        </a>
+    @endif
+
+    <form method="POST" action="{{ route('logout') }}" style="margin:0;">
+        @csrf
+        <button type="submit" class="admin-mobile-nav-item" style="width:100%;">
+            <i class="ti ti-logout" aria-hidden="true"></i>
+            خروج
+        </button>
+    </form>
+</nav>

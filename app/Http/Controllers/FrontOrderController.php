@@ -133,6 +133,29 @@ class FrontOrderController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function status(Request $request, FrontOrder $order)
+    {
+        abort_unless($this->canAccessCurrentRoute(), 403);
+        abort_unless($this->canAccessOrder($request, $order), 403);
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:' . implode(',', array_keys(FrontOrder::statusOptions()))],
+        ]);
+
+        $order->update(['status' => $validated['status']]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'status' => $order->status,
+                'label' => $order->statusLabel(),
+                'class' => $order->statusClass(),
+            ]);
+        }
+
+        return back()->with('status', 'تم تحديث حالة الطلب بنجاح.');
+    }
+
     public function spinReward(FrontOrder $order): JsonResponse
     {
         if ($order->reward_label) {
@@ -188,6 +211,7 @@ class FrontOrderController extends Controller
         abort_unless($this->canAccessCurrentRoute(), 403);
 
         $channel = $request->query('channel');
+        $orderStatus = $request->query('status');
         $search = trim((string) $request->query('search', ''));
         $user = $request->user();
         $marketerIds = $user?->isMarketer()
@@ -206,6 +230,7 @@ class FrontOrderController extends Controller
             ->when($user?->isMarketer(), fn($query) => $query->whereIn('distributor_marketer_id', $marketerIds))
             ->when($user?->isDistributor(), fn($query) => $this->scopeToDistributorOrders($query, $distributorIds))
             ->when(in_array($channel, ['whatsapp', 'instant_payment'], true), fn($query) => $query->where('order_channel', $channel))
+            ->when(array_key_exists((string) $orderStatus, FrontOrder::statusOptions()), fn($query) => $query->where('status', $orderStatus))
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('order_number', 'like', "%{$search}%")
@@ -222,6 +247,12 @@ class FrontOrderController extends Controller
         $statsQuery = FrontOrder::query()
             ->when($user?->isMarketer(), fn($query) => $query->whereIn('distributor_marketer_id', $marketerIds))
             ->when($user?->isDistributor(), fn($query) => $this->scopeToDistributorOrders($query, $distributorIds));
+        $distributorProfiles = $user?->isDistributor()
+            ? $user->distributorProfiles()
+                ->with('shop')
+                ->whereIn('id', $distributorIds)
+                ->get()
+            : collect();
 
         return view('admin.front_orders.index', [
             'orders' => $ordersQuery->paginate(25)->withQueryString(),
@@ -231,7 +262,10 @@ class FrontOrderController extends Controller
             'rewardedCount' => (clone $statsQuery)->whereNotNull('reward_label')->count(),
             'marketerCount' => (clone $statsQuery)->whereNotNull('distributor_marketer_id')->count(),
             'selectedChannel' => $channel,
+            'selectedStatus' => $orderStatus,
+            'statusOptions' => FrontOrder::statusOptions(),
             'search' => $search,
+            'distributorProfiles' => $distributorProfiles,
         ]);
     }
 
@@ -272,6 +306,35 @@ class FrontOrderController extends Controller
             $query->whereIn('distributor_id', $distributorIds)
                 ->orWhereHas('distributorMarketer', fn($marketerQuery) => $marketerQuery->whereIn('distributor_id', $distributorIds));
         });
+    }
+
+    private function canAccessOrder(Request $request, FrontOrder $order): bool
+    {
+        $user = $request->user();
+
+        if ($user?->isMarketer()) {
+            $marketerIds = $user->distributorMarketerProfiles()
+                ->where('is_active', true)
+                ->pluck('id')
+                ->map(fn($id) => (int) $id)
+                ->all();
+
+            return in_array((int) $order->distributor_marketer_id, $marketerIds, true);
+        }
+
+        if ($user?->isDistributor()) {
+            $distributorIds = $this->currentDistributorIds($request);
+            if (in_array((int) $order->distributor_id, $distributorIds, true)) {
+                return true;
+            }
+
+            $order->loadMissing('distributorMarketer');
+
+            return $order->distributorMarketer
+                && in_array((int) $order->distributorMarketer->distributor_id, $distributorIds, true);
+        }
+
+        return true;
     }
 
     private function nextSegmentForWheel(RewardWheel $wheel): RewardWheelSegment

@@ -48,21 +48,7 @@ Route::get('/display', [ScreenController::class, 'mainDisplay'])->name('display.
 Route::get('/display/shop/{shop}', [ScreenController::class, 'shopDisplay'])->name('display.shop');
 
 Route::middleware(['auth', 'admin.access'])->group(function () {
-    Route::get('/dashboard', function () {
-        if (auth()->user()?->isShopOwner() && auth()->user()->shops()->exists()) {
-            return redirect()->route('shops.show', auth()->user()->shops()->first());
-        }
-
-        if (auth()->user()?->isAgent() || auth()->user()?->isDistributor()) {
-            return redirect()->route('products');
-        }
-
-        if (auth()->user()?->isMarketer()) {
-            return redirect()->route('reward-wheels.marketer.play');
-        }
-
-        return view('admin.dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
 
     Route::get('/dashboard/main', function () {
         if (auth()->user()?->isShopOwner() && auth()->user()->shops()->exists()) {
@@ -185,6 +171,8 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
 
     Route::get('/front-orders', [FrontOrderController::class, 'index'])
         ->name('front-orders.index');
+    Route::patch('/front-orders/{order}/status', [FrontOrderController::class, 'status'])
+        ->name('front-orders.status');
 
     Route::get('/reward-wheels/customer-signup', [RewardWheelController::class, 'edit'])
         ->name('reward-wheels.customer-signup.edit');

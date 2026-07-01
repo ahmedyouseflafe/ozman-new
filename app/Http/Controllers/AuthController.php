@@ -35,43 +35,59 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        if (Auth::user()->isShopOwner()) {
-            $shop = Auth::user()->shops()->first();
+        return $this->redirectAfterLogin($request);
+    }
+
+    public function dashboard(Request $request): View|RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($user?->isShopOwner()) {
+            $shop = $user->shops()->first();
 
             if ($shop) {
                 return redirect()->route('shops.show', $shop);
             }
         }
 
-        if (Auth::user()->isAgent() || Auth::user()->isDistributor()) {
-            $user = Auth::user();
-
-            foreach (['products', 'categories', 'dashboard.main', 'dashboard'] as $routeName) {
+        if ($user?->isAgent() || $user?->isDistributor()) {
+            foreach (['front-orders.index', 'distributors.marketers.index', 'products', 'categories', 'dashboard.main'] as $routeName) {
                 if ($user->canAccessRouteName($routeName)) {
                     return redirect()->route($routeName);
                 }
             }
 
-            return redirect()->route('products');
+            return view('admin.dashboard');
         }
 
-        if (Auth::user()->isMarketer()) {
-            if (Auth::user()->hasAssignedPermissions()) {
-                foreach (['front-orders.index', 'reward-wheels.marketer.play', 'reward-wheels.marketer.direct.play', 'dashboard'] as $routeName) {
-                    if (Auth::user()->canAccessRouteName($routeName)) {
+        if ($user?->isMarketer()) {
+            if ($user->hasAssignedPermissions()) {
+                foreach (['front-orders.index', 'reward-wheels.marketer.play', 'reward-wheels.marketer.direct.play'] as $routeName) {
+                    if ($user->canAccessRouteName($routeName)) {
                         return redirect()->route($routeName);
                     }
                 }
+
+                return view('admin.dashboard');
             }
 
-            if (Auth::user()->distributorMarketerProfiles()->exists()) {
+            if ($user->distributorMarketerProfiles()->exists()) {
                 return redirect()->route('front-orders.index');
             }
 
             return redirect()->route('reward-wheels.marketer.play');
         }
 
-        return redirect()->intended(route('dashboard'));
+        return view('admin.dashboard');
+    }
+
+    private function redirectAfterLogin(Request $request): RedirectResponse
+    {
+        $dashboard = $this->dashboard($request);
+
+        return $dashboard instanceof RedirectResponse
+            ? $dashboard
+            : redirect()->intended(route('dashboard'));
     }
 
     public function logout(Request $request): RedirectResponse

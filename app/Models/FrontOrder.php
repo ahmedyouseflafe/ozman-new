@@ -66,6 +66,29 @@ class FrontOrder extends Model
         return $this->belongsTo(RewardWheel::class);
     }
 
+    public function statusLabel(): string
+    {
+        return self::statusOptions()[$this->status] ?? self::statusOptions()['new'];
+    }
+
+    public function statusClass(): string
+    {
+        return match ($this->status) {
+            'delivered' => 'green',
+            'not_delivered' => 'yellow',
+            default => '',
+        };
+    }
+
+    public static function statusOptions(): array
+    {
+        return [
+            'new' => 'جديد',
+            'not_delivered' => 'لم يتم التسليم',
+            'delivered' => 'تم التسليم',
+        ];
+    }
+
     public function channelLabel(): string
     {
         return $this->order_channel === 'instant_payment' ? 'دفع فوري' : 'طلب واتساب';

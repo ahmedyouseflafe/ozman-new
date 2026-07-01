@@ -79,12 +79,70 @@
             gap: 16px;
             margin-bottom: 22px;
         }
-        .stat-card, .panel {
+        .stat-card, .panel, .profile-panel {
             border: 1px solid var(--border);
             background: linear-gradient(145deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .025));
             backdrop-filter: blur(16px);
             border-radius: 24px;
             box-shadow: 0 18px 48px rgba(0, 0, 0, .34);
+        }
+        .profile-panel {
+            display: grid;
+            grid-template-columns: 104px minmax(0, 1fr);
+            gap: 18px;
+            align-items: center;
+            padding: 20px;
+            margin-bottom: 22px;
+        }
+        .profile-photo {
+            width: 104px;
+            height: 104px;
+            border-radius: 22px;
+            object-fit: cover;
+            border: 2px solid rgba(0, 229, 255, .72);
+            box-shadow: 0 0 24px rgba(0, 229, 255, .38);
+            background: rgba(0, 0, 0, .32);
+        }
+        .profile-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .profile-title {
+            color: var(--primary);
+            font-size: 26px;
+            font-weight: 900;
+            line-height: 1.2;
+            text-shadow: 0 0 18px rgba(0, 229, 255, .38);
+        }
+        .profile-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .profile-detail {
+            min-height: 68px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 16px;
+            background: rgba(0, 0, 0, .18);
+        }
+        .profile-detail span {
+            display: block;
+            color: var(--dim);
+            font-size: 11px;
+            font-weight: 900;
+            margin-bottom: 5px;
+        }
+        .profile-detail strong {
+            display: block;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 900;
+            overflow-wrap: anywhere;
         }
         .stat-card {
             min-height: 118px;
@@ -165,7 +223,7 @@
             border-radius: 22px;
             background: rgba(0, 0, 0, .22);
         }
-        table { width: 100%; min-width: 1240px; border-collapse: collapse; font-size: 13px; }
+        table { width: 100%; min-width: 1360px; border-collapse: collapse; font-size: 13px; }
         th, td {
             padding: 15px 16px;
             text-align: right;
@@ -197,6 +255,39 @@
         }
         .badge.green { border-color: rgba(37, 211, 102, .28); background: rgba(37, 211, 102, .1); color: var(--green); }
         .badge.yellow { border-color: rgba(255, 214, 10, .28); background: rgba(255, 214, 10, .1); color: var(--yellow); }
+        .status-form {
+            display: grid;
+            gap: 7px;
+            min-width: 150px;
+        }
+        .status-select {
+            width: 100%;
+            min-height: 38px;
+            border: 1px solid rgba(0, 229, 255, .22);
+            border-radius: 13px;
+            background: rgba(255, 255, 255, .055);
+            color: #fff;
+            padding: 0 10px;
+            font-family: inherit;
+            font-weight: 900;
+            outline: none;
+            cursor: pointer;
+        }
+        .status-select option { background: #111; color: #fff; }
+        .status-save {
+            min-height: 34px;
+            border-radius: 12px;
+            border: 1px solid rgba(37, 211, 102, .32);
+            background: rgba(37, 211, 102, .1);
+            color: var(--green);
+            font-family: inherit;
+            font-weight: 900;
+            cursor: pointer;
+        }
+        .status-save:disabled {
+            opacity: .62;
+            cursor: wait;
+        }
         .gift-cell {
             display: flex;
             align-items: center;
@@ -324,12 +415,103 @@
         .pagination-wrap nav { display: flex; justify-content: center; }
         @media(max-width: 1100px) {
             .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .profile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media(max-width: 900px) {
             .main { margin-right: 0; }
-            .content { padding: 22px 16px 38px; }
+            .content { padding: 16px 12px 26px; }
+            .page-head { margin-bottom: 14px; }
+            h1 { font-size: 27px; }
+            .page-head p { font-size: 12px; line-height: 1.7; }
             .page-head, .panel-head { align-items: flex-start; flex-direction: column; }
-            .stats-grid { grid-template-columns: 1fr; }
+            .stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+            .stat-card {
+                min-height: 86px;
+                padding: 13px;
+                border-radius: 18px;
+            }
+            .stat-label { font-size: 11px; }
+            .stat-val { margin-top: 8px; font-size: 26px; }
+            .stat-icon { font-size: 30px; left: 12px; bottom: 10px; }
+            .profile-panel {
+                grid-template-columns: 70px minmax(0, 1fr);
+                gap: 12px;
+                padding: 12px;
+                margin-bottom: 14px;
+                border-radius: 18px;
+            }
+            .profile-photo {
+                width: 70px;
+                height: 70px;
+                border-radius: 16px;
+            }
+            .profile-head {
+                margin-bottom: 9px;
+                gap: 8px;
+            }
+            .profile-title {
+                font-size: 18px;
+            }
+            .profile-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 7px;
+            }
+            .profile-detail {
+                min-height: auto;
+                padding: 7px 9px;
+                border-radius: 12px;
+            }
+            .profile-detail:nth-child(n + 5) {
+                display: none;
+            }
+            .profile-detail span {
+                font-size: 10px;
+                margin-bottom: 3px;
+            }
+            .profile-detail strong {
+                font-size: 11px;
+            }
+            .badge {
+                min-height: 25px;
+                padding: 4px 8px;
+                font-size: 10px;
+            }
+            .panel {
+                padding: 14px;
+                border-radius: 18px;
+            }
+            .panel-head {
+                gap: 10px;
+                padding-bottom: 12px;
+                margin-bottom: 12px;
+            }
+            .panel-title { font-size: 16px; }
+            .filter-row {
+                width: 100%;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .search-inp {
+                grid-column: 1 / -1;
+                width: 100%;
+            }
+            .search-inp, .filter-select, .filter-btn {
+                height: 40px;
+                font-size: 12px;
+            }
+            .status-form { min-width: 132px; }
+            table {
+                min-width: 1160px;
+                font-size: 12px;
+            }
+            th, td {
+                padding: 12px;
+            }
         }
     </style>
 </head>
@@ -347,6 +529,58 @@
                         <p>كل طلب من السلة أو الدفع الفوري مع الهدية التي ظهرت للعميل من عجلة الشراء.</p>
                     </div>
                 </div>
+
+                @if(($distributorProfiles ?? collect())->isNotEmpty())
+                    @foreach($distributorProfiles as $distributorProfile)
+                        <section class="profile-panel">
+                            <img
+                                class="profile-photo"
+                                src="{{ $distributorProfile->image ? asset($distributorProfile->image) : asset('images/logo.jpg') }}"
+                                alt="{{ $distributorProfile->name }}"
+                            >
+                            <div>
+                                <div class="profile-head">
+                                    <div>
+                                        <div class="page-kicker">بيانات الموزع</div>
+                                        <div class="profile-title">{{ $distributorProfile->name }}</div>
+                                    </div>
+                                    <span class="badge {{ $distributorProfile->is_active ? 'green' : 'yellow' }}">
+                                        <i class="ti {{ $distributorProfile->is_active ? 'ti-circle-check' : 'ti-alert-circle' }}"></i>
+                                        {{ $distributorProfile->is_active ? 'نشط' : 'غير نشط' }}
+                                    </span>
+                                </div>
+                                <div class="profile-grid">
+                                    <div class="profile-detail">
+                                        <span>المتجر</span>
+                                        <strong>{{ $distributorProfile->shop?->name ?? '-' }}</strong>
+                                    </div>
+                                    <div class="profile-detail">
+                                        <span>الهاتف</span>
+                                        <strong dir="ltr">{{ $distributorProfile->phone ?: '-' }}</strong>
+                                    </div>
+                                    <div class="profile-detail">
+                                        <span>واتساب</span>
+                                        <strong dir="ltr">{{ $distributorProfile->whatsapp ?: '-' }}</strong>
+                                    </div>
+                                    <div class="profile-detail">
+                                        <span>البريد</span>
+                                        <strong dir="ltr">{{ $distributorProfile->email ?: '-' }}</strong>
+                                    </div>
+                                    <div class="profile-detail">
+                                        <span>العنوان</span>
+                                        <strong>{{ $distributorProfile->address ?: '-' }}</strong>
+                                    </div>
+                                    <div class="profile-detail">
+                                        <span>الإحداثيات</span>
+                                        <strong dir="ltr">
+                                            {{ $distributorProfile->latitude && $distributorProfile->longitude ? $distributorProfile->latitude . ', ' . $distributorProfile->longitude : '-' }}
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    @endforeach
+                @endif
 
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -389,6 +623,12 @@
                                 <option value="whatsapp" @selected($selectedChannel === 'whatsapp')>واتساب</option>
                                 <option value="instant_payment" @selected($selectedChannel === 'instant_payment')>دفع فوري</option>
                             </select>
+                            <select class="filter-select" name="status">
+                                <option value="">كل الحالات</option>
+                                @foreach($statusOptions as $statusValue => $statusLabel)
+                                    <option value="{{ $statusValue }}" @selected($selectedStatus === $statusValue)>{{ $statusLabel }}</option>
+                                @endforeach
+                            </select>
                             <button class="filter-btn" type="submit"><i class="ti ti-filter"></i>فلترة</button>
                             <button class="filter-btn qr-scan-btn" type="button" id="orderQrScanBtn" data-search-url="{{ route('front-orders.index') }}">
                                 <i class="ti ti-qrcode"></i>مسح QR
@@ -408,6 +648,7 @@
                                     <th>المبلغ</th>
                                     <th>طريقة الطلب</th>
                                     <th>حالة الدفع</th>
+                                    <th>حالة الطلب</th>
                                     <th>الهدية</th>
                                     <th>الموقع</th>
                                     <th>التاريخ</th>
@@ -470,6 +711,19 @@
                                             <span class="badge">{{ $order->payment_status }}</span>
                                         </td>
                                         <td>
+                                            <form class="status-form" method="POST" action="{{ route('front-orders.status', $order) }}" data-status-form>
+                                                @csrf
+                                                @method('PATCH')
+                                                <span class="badge {{ $order->statusClass() }}" data-status-badge>{{ $order->statusLabel() }}</span>
+                                                <select class="status-select" name="status">
+                                                    @foreach($statusOptions as $statusValue => $statusLabel)
+                                                        <option value="{{ $statusValue }}" @selected($order->status === $statusValue)>{{ $statusLabel }}</option>
+                                                    @endforeach
+                                                </select>
+                                                <button class="status-save" type="submit" data-status-save>حفظ</button>
+                                            </form>
+                                        </td>
+                                        <td>
                                             @if($order->reward_label)
                                                 <div class="gift-cell">
                                                     @if($order->reward_gift_image)
@@ -501,7 +755,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="11">
+                                        <td colspan="12">
                                             <div class="empty">لسه ما في طلبات مسجلة من الواجهة.</div>
                                         </td>
                                     </tr>
@@ -517,6 +771,65 @@
             </div>
         </main>
     </div>
+
+    <script>
+        (() => {
+            const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+            document.querySelectorAll('[data-status-form]').forEach((form) => {
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+
+                    const button = form.querySelector('[data-status-save]');
+                    const badge = form.querySelector('[data-status-badge]');
+                    const select = form.querySelector('select[name="status"]');
+                    const originalText = button?.textContent || 'حفظ';
+
+                    if (button) {
+                        button.disabled = true;
+                        button.textContent = 'جاري...';
+                    }
+
+                    try {
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': token,
+                            },
+                            body: new FormData(form),
+                        });
+                        const result = await response.json().catch(() => ({}));
+
+                        if (!response.ok || !result.ok) {
+                            throw new Error(result.message || 'تعذر حفظ الحالة.');
+                        }
+
+                        if (badge) {
+                            badge.textContent = result.label || select?.selectedOptions?.[0]?.textContent || '';
+                            badge.className = `badge ${result.class || ''}`.trim();
+                        }
+
+                        if (button) {
+                            button.textContent = 'تم';
+                            setTimeout(() => {
+                                button.textContent = originalText;
+                                button.disabled = false;
+                            }, 800);
+                        }
+                    } catch (error) {
+                        if (button) {
+                            button.textContent = 'فشل';
+                            setTimeout(() => {
+                                button.textContent = originalText;
+                                button.disabled = false;
+                            }, 1200);
+                        }
+                    }
+                });
+            });
+        })();
+    </script>
 
     <div class="qr-modal" id="orderQrModal" aria-hidden="true">
         <div class="qr-card" role="dialog" aria-modal="true" aria-labelledby="orderQrTitle">

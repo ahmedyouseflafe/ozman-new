@@ -1340,13 +1340,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function marketingMessageLine() {
-            const context = window.OZMAN_FRONT_CONFIG?.marketingContext || {};
+            const context = currentMarketingContext();
 
             if (context.source === 'marketer' && context.marketer_name) {
                 return `مصدر الطلب: عبر المسوق ${context.marketer_name}`;
             }
 
+            if (context.source === 'distributor' && context.distributor_name) {
+                return `مصدر الطلب: عبر الموزع ${context.distributor_name}`;
+            }
+
             return '';
+        }
+
+        function currentMarketingContext() {
+            const configuredContext = window.OZMAN_FRONT_CONFIG?.marketingContext || {};
+            if (configuredContext.distributor_id || configuredContext.marketer_id) {
+                return configuredContext;
+            }
+
+            if (activePersonContext?.type === 'distributor' && activePersonContext?.id) {
+                return {
+                    source: 'distributor',
+                    distributor_id: activePersonContext.id,
+                    distributor_name: activePersonContext.name || ''
+                };
+            }
+
+            return configuredContext;
         }
 
         function orderQrImageUrl(order) {
@@ -1476,7 +1497,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async function recordFrontOrder(profile, channel, paymentMethod = '') {
             const urls = window.OZMAN_FRONT_CONFIG || {};
-            const marketingContext = urls.marketingContext || {};
+            const marketingContext = currentMarketingContext();
             const { subtotal, discount, total } = currentOrderTotals();
             const eligibleWheel = eligiblePurchaseRewardWheel(total);
 
