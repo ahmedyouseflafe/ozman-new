@@ -9,6 +9,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\FrontController;
 use App\Http\Controllers\FrontOrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\RaffleCardController;
 use App\Http\Controllers\RewardWheelController;
 use App\Http\Controllers\ScreenController;
 use App\Http\Controllers\SettingsController;
@@ -31,6 +32,7 @@ Route::get('/tts/hebrew', [TextToSpeechController::class, 'hebrew'])->name('tts.
 Route::get('/tts/arabic', [TextToSpeechController::class, 'arabic'])->name('tts.arabic');
 Route::post('/visitor-registrations', [VisitorRegistrationController::class, 'store'])->name('visitor-registrations.store');
 Route::post('/front-orders', [FrontOrderController::class, 'store'])->name('front-orders.store');
+Route::post('/raffle/check', [RaffleCardController::class, 'check'])->name('raffle.check');
 Route::get('/front-orders/{order}/qr.svg', [FrontOrderController::class, 'qr'])->name('front-orders.qr');
 Route::post('/front-orders/{order}/spin-reward', [FrontOrderController::class, 'spinReward'])->name('front-orders.spinReward');
 Route::patch('/front-orders/{order}/reward', [FrontOrderController::class, 'reward'])->name('front-orders.reward');
@@ -173,6 +175,17 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
         ->name('front-orders.index');
     Route::patch('/front-orders/{order}/status', [FrontOrderController::class, 'status'])
         ->name('front-orders.status');
+
+    Route::get('/raffle-cards', [RaffleCardController::class, 'index'])
+        ->name('raffle-cards.index');
+    Route::post('/raffle-cards', [RaffleCardController::class, 'store'])
+        ->name('raffle-cards.store');
+    Route::put('/raffle-cards/settings', [RaffleCardController::class, 'updateSettings'])
+        ->name('raffle-cards.settings');
+    Route::put('/raffle-cards/{card}', [RaffleCardController::class, 'update'])
+        ->name('raffle-cards.update');
+    Route::delete('/raffle-cards/{card}', [RaffleCardController::class, 'destroy'])
+        ->name('raffle-cards.destroy');
 
     Route::get('/reward-wheels/customer-signup', [RewardWheelController::class, 'edit'])
         ->name('reward-wheels.customer-signup.edit');

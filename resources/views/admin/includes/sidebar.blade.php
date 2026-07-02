@@ -419,6 +419,14 @@
         </a>
         @endif
 
+        @if($canSee(['raffle-cards.index']))
+        <a href="{{ route('raffle-cards.index') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('raffle-cards.*') ? 'active' : '' }}">
+             <i class="ti ti-ticket" aria-hidden="true"></i>
+             بطاقات السحب
+        </a>
+        @endif
+
         @if($canSee(['reward-wheels.customer-signup.edit', 'reward-wheels.customer-signup.update']))
         <a href="{{ route('reward-wheels.customer-signup.edit') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('reward-wheels.customer-signup.*') ? 'active' : '' }}">

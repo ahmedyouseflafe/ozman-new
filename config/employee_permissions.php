@@ -88,6 +88,10 @@ return [
                 'front_orders.view' => ['label' => 'استعراض طلبات الواجهة', 'routes' => ['front-orders.index', 'front-orders.status']],
                 'marketer_orders.view' => ['label' => 'عرض طلباتي من رابط المسوق فقط', 'routes' => ['front-orders.index']],
                 'front_orders.manage' => ['label' => 'إدارة جوائز الطلبات', 'routes' => ['front-orders.reward', 'front-orders.spinReward']],
+                'raffle_cards.view' => ['label' => 'استعراض بطاقات السحب', 'routes' => ['raffle-cards.index']],
+                'raffle_cards.create' => ['label' => 'إضافة بطاقة ربح', 'routes' => ['raffle-cards.store']],
+                'raffle_cards.edit' => ['label' => 'تعديل بطاقة ربح', 'routes' => ['raffle-cards.update', 'raffle-cards.settings']],
+                'raffle_cards.delete' => ['label' => 'حذف بطاقة ربح', 'routes' => ['raffle-cards.destroy']],
             ],
         ],
         'reward_wheels' => [

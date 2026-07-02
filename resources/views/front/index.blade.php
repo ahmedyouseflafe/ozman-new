@@ -450,6 +450,9 @@
                     <span
                         style="position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; background: var(--primary-color); border-radius: 50%; box-shadow: 0 0 5px var(--primary-color);"></span>
                 </div>
+                <div class="nav-btn" id="raffleCardOpenBtn" title="{{ __('بطاقات السحب') }}">
+                    <i class="fas fa-ticket"></i>
+                </div>
                 <a href="https://wa.me/{{ preg_replace('/\D+/', '', $shop?->whatsapp ?: $shop?->phone ?: '970599000000') }}"
                     target="_blank" class="nav-btn" id="whatsappQuickBtn"
                     title="{{ __('تواصل مباشرة عبر واتساب') }}"
@@ -843,6 +846,33 @@
             </div>
         </div>
 
+        <div class="modal-overlay raffle-card-modal" id="raffleCardModal" aria-hidden="true">
+            <div class="raffle-card-panel glass">
+                <button type="button" class="raffle-card-close" id="raffleCardCloseBtn"
+                    aria-label="{{ __('إغلاق') }}">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="raffle-card-head">
+                    <div class="raffle-card-icon"><i class="fas fa-ticket"></i></div>
+                    <div>
+                        <span>{{ __('بطاقات السحب') }}</span>
+                        <h3>{{ __('تحقق من رقم بطاقتك') }}</h3>
+                        <p>{{ __('أدخل رقم البطاقة المكون من 5 أرقام لمعرفة نتيجة السحب الفوري.') }}</p>
+                    </div>
+                </div>
+                <form class="raffle-card-form" id="raffleCardForm">
+                    <label for="raffleCardNumber">{{ __('رقم البطاقة') }}</label>
+                    <input type="text" inputmode="numeric" maxlength="5" pattern="\d{5}" id="raffleCardNumber"
+                        name="card_number" placeholder="00000" dir="ltr" required>
+                    <button type="submit" class="cart-checkout-btn">
+                        <i class="fas fa-magnifying-glass"></i>
+                        {{ __('تحقق من البطاقة') }}
+                    </button>
+                </form>
+                <div class="raffle-card-result" id="raffleCardResult" hidden></div>
+            </div>
+        </div>
+
         <script>
             window.OZMAN_FRONT_DATA = @json($frontData);
             window.OZMAN_FRONT_CONFIG = {
@@ -853,6 +883,9 @@
                 hebrewTtsUrl: @json(route('tts.hebrew')),
                 arabicTtsUrl: @json(route('tts.arabic')),
                 orderStoreUrl: @json(route('front-orders.store')),
+                raffleCheckUrl: @json(route('raffle.check')),
+                raffleWhatsapp: @json(preg_replace('/\D+/', '', ($raffleSettings['whatsapp'] ?? '') ?: ($shop?->whatsapp ?: $shop?->phone ?: '970599000000'))),
+                raffleSocialLinks: @json($ozmanSocialLinks->reject(fn($link) => ($link['icon'] ?? '') === 'fab fa-whatsapp')->values()),
                 orderRewardUrlTemplate: @json(url('/front-orders/__ORDER__/reward')),
                 orderSpinRewardUrlTemplate: @json(url('/front-orders/__ORDER__/spin-reward')),
                 showVisitorRegistration: @json(!($isDashboardPreview ?? false)),

@@ -11,6 +11,7 @@ use App\Models\RewardWheel;
 use App\Models\Shop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class FrontController extends Controller
@@ -173,6 +174,7 @@ class FrontController extends Controller
             'frontData' => $this->frontData($frontShops, $ozmanCategories, $ozmanShop, $ozmanBottomScreens),
             'customerSignupWheel' => $this->customerSignupWheelPayload(),
             'purchaseRewardWheels' => $this->purchaseRewardWheelsPayload(),
+            'raffleSettings' => $this->raffleSettings(),
         ]);
     }
 
@@ -269,6 +271,7 @@ class FrontController extends Controller
             'frontData' => $this->frontData($shops, $ozmanCategories, $ozmanShop, $ozmanBottomScreens),
             'customerSignupWheel' => $this->customerSignupWheelPayload(),
             'purchaseRewardWheels' => $this->purchaseRewardWheelsPayload(),
+            'raffleSettings' => $this->raffleSettings(),
             'initialPersonContext' => [
                 'type' => 'distributor',
                 'id' => $distributor->id,
@@ -335,6 +338,7 @@ class FrontController extends Controller
             'frontData' => $this->frontData($shops, $ozmanCategories, null, collect()),
             'customerSignupWheel' => null,
             'purchaseRewardWheels' => [],
+            'raffleSettings' => $this->raffleSettings(),
             'isDashboardPreview' => true,
         ]);
     }
@@ -813,6 +817,22 @@ class FrontController extends Controller
                 ->values()
                 ->all(),
         ];
+    }
+
+    private function raffleSettings(): array
+    {
+        $defaults = [
+            'whatsapp' => '',
+        ];
+
+        if (! Storage::disk('local')->exists('ozman_settings.json')) {
+            return $defaults;
+        }
+
+        $stored = json_decode(Storage::disk('local')->get('ozman_settings.json'), true);
+        $settings = is_array($stored) ? ($stored['raffle'] ?? []) : [];
+
+        return array_replace($defaults, is_array($settings) ? $settings : []);
     }
 
     private function purchaseRewardWheelsPayload(): array

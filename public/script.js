@@ -4483,6 +4483,144 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
+            const raffleCardOpenBtn = document.getElementById('raffleCardOpenBtn');
+            const raffleCardModal = document.getElementById('raffleCardModal');
+            const raffleCardCloseBtn = document.getElementById('raffleCardCloseBtn');
+            const raffleCardForm = document.getElementById('raffleCardForm');
+            const raffleCardNumber = document.getElementById('raffleCardNumber');
+            const raffleCardResult = document.getElementById('raffleCardResult');
+
+            function openRaffleCardModal() {
+                if (!raffleCardModal) return;
+                raffleCardModal.classList.add('show');
+                raffleCardModal.setAttribute('aria-hidden', 'false');
+                if (raffleCardResult) {
+                    raffleCardResult.hidden = true;
+                    raffleCardResult.className = 'raffle-card-result';
+                    raffleCardResult.innerHTML = '';
+                }
+                setTimeout(() => raffleCardNumber?.focus(), 80);
+            }
+
+            function closeRaffleCardModal() {
+                if (!raffleCardModal) return;
+                raffleCardModal.classList.remove('show');
+                raffleCardModal.setAttribute('aria-hidden', 'true');
+            }
+
+            function raffleWhatsappLink(payload = {}) {
+                const number = String(payload.whatsapp || window.OZMAN_FRONT_CONFIG?.raffleWhatsapp || shopWhatsappNumber()).replace(/\D+/g, '');
+                if (!number) return '';
+                const card = raffleCardNumber?.value || payload.card_number || '';
+                const prize = payload.prize_title || payload.message || '';
+                const message = payload.status === 'winner'
+                    ? `مرحبا، ربحت في بطاقة السحب رقم ${card}\nالجائزة: ${prize}`
+                    : `مرحبا، عندي استفسار بخصوص بطاقة السحب رقم ${card}`;
+
+                return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+            }
+
+            function renderRaffleResult(payload = {}, isError = false) {
+                if (!raffleCardResult) return;
+                const status = payload.status || (isError ? 'error' : 'live_draw');
+                const className = status === 'winner'
+                    ? 'success'
+                    : (status === 'used' || isError ? 'error' : 'warning');
+                const showWhatsapp = status === 'winner' || status === 'used' || isError;
+                const whatsapp = showWhatsapp ? raffleWhatsappLink(payload) : '';
+                const socialLinks = Array.isArray(window.OZMAN_FRONT_CONFIG?.raffleSocialLinks)
+                    ? window.OZMAN_FRONT_CONFIG.raffleSocialLinks
+                    : [];
+                const image = payload.prize_image
+                    ? `<img src="${escapeCartHtml(payload.prize_image)}" alt="${escapeCartHtml(payload.prize_title || 'الجائزة')}">`
+                    : '';
+                const winnerNote = status === 'winner'
+                    ? '<div class="raffle-claim-note"><i class="fas fa-ticket"></i> احتفظ بالبطاقة لكي تستطيع استلام الجائزة.</div>'
+                    : '';
+                const button = whatsapp
+                    ? `<a class="raffle-whatsapp-link" href="${escapeCartHtml(whatsapp)}" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp"></i> تواصل عبر واتساب</a>`
+                    : '';
+                const socials = status === 'live_draw' && socialLinks.length
+                    ? `<div class="raffle-social-follow">
+                        <strong>تابع صفحات أوزمان عشان بث السحب المباشر، يمكن تكون من الفائزين.</strong>
+                        <div class="raffle-social-links">
+                            ${socialLinks.map((link) => `
+                                <a href="${escapeCartHtml(link.url)}" target="_blank" rel="noopener noreferrer" title="${escapeCartHtml(link.title)}">
+                                    <i class="${escapeCartHtml(link.icon)}"></i>
+                                    <span>${escapeCartHtml(link.title)}</span>
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>`
+                    : '';
+
+                raffleCardResult.className = `raffle-card-result ${className}`;
+                raffleCardResult.innerHTML = `
+                    <h4>${escapeCartHtml(payload.title || 'نتيجة البطاقة')}</h4>
+                    ${image}
+                    <div>${escapeCartHtml(payload.message || 'حدث خطأ، حاول مرة أخرى.')}</div>
+                    ${winnerNote}
+                    ${socials}
+                    ${button}
+                `;
+                raffleCardResult.hidden = false;
+            }
+
+            if (raffleCardOpenBtn) {
+                raffleCardOpenBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    openRaffleCardModal();
+                });
+            }
+
+            raffleCardCloseBtn?.addEventListener('click', closeRaffleCardModal);
+            raffleCardModal?.addEventListener('click', (event) => {
+                if (event.target === raffleCardModal) closeRaffleCardModal();
+            });
+
+            raffleCardNumber?.addEventListener('input', () => {
+                raffleCardNumber.value = raffleCardNumber.value.replace(/\D+/g, '').slice(0, 5);
+            });
+
+            raffleCardForm?.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                if (!raffleCardForm.reportValidity()) return;
+
+                const submitButton = raffleCardForm.querySelector('button[type="submit"]');
+                const originalText = submitButton?.innerHTML;
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحقق...';
+                }
+
+                try {
+                    const response = await fetch(window.OZMAN_FRONT_CONFIG?.raffleCheckUrl || '/raffle/check', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken(),
+                        },
+                        body: JSON.stringify({
+                            card_number: raffleCardNumber.value,
+                            customer: loadCustomerProfile(),
+                        }),
+                    });
+                    const payload = await response.json().catch(() => ({}));
+                    renderRaffleResult(payload, !response.ok && response.status !== 409);
+                } catch (error) {
+                    renderRaffleResult({
+                        title: 'تعذر التحقق',
+                        message: 'راجع اتصالك وحاول مرة أخرى.',
+                    }, true);
+                } finally {
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalText;
+                    }
+                }
+            });
+
             document.addEventListener('click', (event) => {
                 if (!cartPanel || !cartPanel.classList.contains('active')) return;
                 if (!cartPanel.contains(event.target) && navCartBtn && !navCartBtn.contains(event.target)) {

@@ -51,7 +51,7 @@ class AuthController extends Controller
         }
 
         if ($user?->isAgent() || $user?->isDistributor()) {
-            foreach (['front-orders.index', 'distributors.marketers.index', 'products', 'categories', 'dashboard.main'] as $routeName) {
+            foreach (['front-orders.index', 'raffle-cards.index', 'distributors.marketers.index', 'products', 'categories', 'dashboard.main'] as $routeName) {
                 if ($user->canAccessRouteName($routeName)) {
                     return redirect()->route($routeName);
                 }
