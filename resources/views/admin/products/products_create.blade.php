@@ -436,6 +436,7 @@
                 @endif
 
                 <form class="form-shell" action="{{ route('products.store') }}" method="POST"
+                    data-product-autosave="product-create"
                     enctype="multipart/form-data">
                     @csrf
                     <section class="form-section">
@@ -772,6 +773,10 @@
             });
         }
 
+        function notifyCampaignsUpdated() {
+            document.dispatchEvent(new CustomEvent('product-campaigns-updated'));
+        }
+
         function campaignTemplate(index) {
             return `
                 <div class="campaign-card" data-campaign-card>
@@ -865,6 +870,7 @@
             campaignList.insertAdjacentHTML('beforeend', campaignTemplate(campaignIndex));
             campaignIndex++;
             refreshCampaignNumbers();
+            notifyCampaignsUpdated();
         });
 
         campaignList.addEventListener('click', (event) => {
@@ -878,10 +884,21 @@
 
             event.target.closest('[data-campaign-card]').remove();
             refreshCampaignNumbers();
+            notifyCampaignsUpdated();
         });
+
+        window.ensureProductCampaignCards = (maxIndex) => {
+            while (campaignIndex <= maxIndex) {
+                campaignList.insertAdjacentHTML('beforeend', campaignTemplate(campaignIndex));
+                campaignIndex++;
+            }
+
+            refreshCampaignNumbers();
+        };
 
         refreshCampaignNumbers();
     </script>
+    @include('admin.products.autosave')
     @include('admin.includes.auto_translate')
 </body>
 
