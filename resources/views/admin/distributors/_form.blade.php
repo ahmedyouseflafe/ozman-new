@@ -51,7 +51,12 @@
 
         <div class="form-group">
             <label class="form-label" for="login_password">كلمة مرور دخول الموزع</label>
-            <input type="password" id="login_password" name="login_password" autocomplete="new-password" placeholder="اتركها فارغة إذا لا تريد إنشاء/تغيير الحساب">
+            <div class="password-input-wrap">
+                <input type="password" id="login_password" name="login_password" autocomplete="new-password" placeholder="اتركها فارغة إذا لا تريد إنشاء/تغيير الحساب">
+                <button type="button" class="password-toggle" data-password-toggle="login_password" aria-label="إظهار كلمة المرور" aria-pressed="false">
+                    <i class="ti ti-eye" aria-hidden="true"></i>
+                </button>
+            </div>
         </div>
 
         <div class="form-group">
@@ -196,6 +201,7 @@
     const modalLongitude = document.getElementById('modalLongitude');
     const searchCoordinates = document.getElementById('searchCoordinates');
     const coordinateError = document.getElementById('coordinateError');
+    const passwordToggles = document.querySelectorAll('[data-password-toggle]');
 
     let distributorMap;
     let distributorMarker;
@@ -316,5 +322,25 @@
 
         locationSummary.innerHTML = `تم اختيار الموقع: <span class="map-status">${formatLocation(pickedLocation.lat, pickedLocation.lng)}</span>`;
         closeLocationModal();
+    });
+
+    passwordToggles.forEach((toggle) => {
+        const target = document.getElementById(toggle.dataset.passwordToggle);
+        const icon = toggle.querySelector('i');
+
+        if (!target) {
+            return;
+        }
+
+        toggle.addEventListener('click', function() {
+            const isVisible = target.type === 'text';
+            target.type = isVisible ? 'password' : 'text';
+            toggle.setAttribute('aria-label', isVisible ? 'إظهار كلمة المرور' : 'إخفاء كلمة المرور');
+            toggle.setAttribute('aria-pressed', String(!isVisible));
+
+            if (icon) {
+                icon.className = isVisible ? 'ti ti-eye' : 'ti ti-eye-off';
+            }
+        });
     });
 </script>

@@ -22,6 +22,10 @@
     select option { color:#111; }
     input:focus,select:focus { border-color:var(--primary); box-shadow:0 0 18px rgba(0,229,255,.22); }
     input[type="number"],input[dir="ltr"] { direction:ltr; text-align:left; }
+    .password-input-wrap { position:relative; }
+    .password-input-wrap input { padding-left:52px; }
+    .password-toggle { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:34px; height:34px; border-radius:50%; border:1px solid rgba(0,229,255,.35); background:rgba(0,0,0,.34); color:var(--primary); display:grid; place-items:center; cursor:pointer; font-size:18px; transition:all .2s ease; }
+    .password-toggle:hover,.password-toggle[aria-pressed="true"] { border-color:var(--primary); background:rgba(0,229,255,.12); box-shadow:0 0 16px rgba(0,229,255,.24); }
     .upload-box { position:relative; display:flex; align-items:center; gap:14px; min-height:94px; padding:16px; border:1px dashed rgba(0,229,255,.35); border-radius:20px; background:rgba(0,0,0,.22); cursor:pointer; }
     .upload-box input { position:absolute; inset:0; opacity:0; cursor:pointer; }
     .card-title { display:block; font-size:14px; font-weight:900; }
