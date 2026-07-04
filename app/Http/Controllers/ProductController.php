@@ -140,7 +140,15 @@ class ProductController extends Controller
         $wasInStock = (int) $product->quantity > 0;
 
         $data = $this->validatedData($request, $product);
-        unset($data['images'], $data['campaigns'], $data['existing_campaigns'], $data['delete_campaign_ids']);
+        unset(
+            $data['images'],
+            $data['campaigns'],
+            $data['existing_campaigns'],
+            $data['delete_campaign_ids'],
+            $data['delete_image_ids'],
+            $data['delete_main_image'],
+            $data['delete_video']
+        );
         $this->normalizeShopId($data);
         $this->applyAgentOwnership($data, $product);
         $this->authorizeCategoryForShop((int) $data['category_id'], (int) $data['shop_id']);
@@ -156,14 +164,21 @@ class ProductController extends Controller
         if ($request->hasFile('main_image')) {
             $this->deleteUpload($product->main_image);
             $data['main_image'] = $this->storeUpload($request, 'main_image', 'products/main');
+        } elseif ($request->boolean('delete_main_image')) {
+            $this->deleteUpload($product->main_image);
+            $data['main_image'] = null;
         }
 
         if ($request->hasFile('video')) {
             $this->deleteUpload($product->video);
             $data['video'] = $this->storeUpload($request, 'video', 'products/videos');
+        } elseif ($request->boolean('delete_video')) {
+            $this->deleteUpload($product->video);
+            $data['video'] = null;
         }
 
         $product->update($data);
+        $this->deleteGalleryImages($request, $product);
         $this->deleteCampaigns($request, $product);
         $this->updateCampaigns($request, $product);
         $this->storeGalleryImages($request, $product);
@@ -354,6 +369,10 @@ class ProductController extends Controller
             'video' => ['nullable', 'file', 'mimes:mp4,mov,avi,webm', 'max:20480'],
             'images' => ['nullable', 'array'],
             'images.*' => ['file', 'mimes:jpg,jpeg,png,webp,gif', 'max:1048576'],
+            'delete_main_image' => ['nullable', 'boolean'],
+            'delete_video' => ['nullable', 'boolean'],
+            'delete_image_ids' => ['nullable', 'array'],
+            'delete_image_ids.*' => ['integer'],
             'campaigns' => ['nullable', 'array'],
             'campaigns.*.title' => ['nullable', 'string', 'max:255'],
             'campaigns.*.title_en' => ['nullable', 'string', 'max:255'],
@@ -445,6 +464,25 @@ class ProductController extends Controller
                 'product_id' => $product->id,
                 'image' => 'storage/' . $path,
             ]);
+        }
+    }
+
+    private function deleteGalleryImages(Request $request, Product $product): void
+    {
+        $ids = collect($request->input('delete_image_ids', []))
+            ->map(fn($id) => (int) $id)
+            ->filter()
+            ->all();
+
+        if (empty($ids)) {
+            return;
+        }
+
+        $images = $product->images()->whereIn('id', $ids)->get();
+
+        foreach ($images as $image) {
+            $this->deleteUpload($image->image);
+            $image->delete();
         }
     }
 

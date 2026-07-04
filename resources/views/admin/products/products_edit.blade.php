@@ -46,7 +46,11 @@
         .card-title { display:block; font-size:14px; font-weight:900; }
         .card-sub { display:block; color:var(--dim); font-size:11px; font-weight:700; margin-top:4px; }
         .preview-grid { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
-        .preview-grid img { width:74px; height:74px; border-radius:16px; object-fit:cover; border:1px solid var(--border); }
+        .preview-item { position:relative; width:82px; display:grid; gap:6px; justify-items:center; }
+        .preview-item img, .preview-item video { width:74px; height:74px; border-radius:16px; object-fit:cover; border:1px solid var(--border); background:#08080c; }
+        .media-delete { display:inline-flex; align-items:center; justify-content:center; gap:5px; min-height:30px; padding:0 9px; border-radius:999px; border:1px solid rgba(255,59,48,.42); background:rgba(255,59,48,.1); color:#ff8a84; font-size:11px; font-weight:900; cursor:pointer; }
+        .media-delete input { width:14px; height:14px; accent-color:var(--danger); }
+        .media-delete:has(input:checked) { background:rgba(255,59,48,.2); border-color:var(--danger); color:#fff; }
         .switch-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:15px; }
         .switch-card { display:flex; align-items:center; justify-content:space-between; gap:16px; border:1px solid var(--border); border-radius:22px; background:rgba(0,0,0,.22); padding:16px; }
         .card-copy { display:flex; align-items:center; gap:13px; }
@@ -158,10 +162,31 @@
                         </div>
                         <div class="preview-grid">
                             @if($product->main_image)
-                                <img src="{{ asset($product->main_image) }}" alt="{{ $product->name }}">
+                                <div class="preview-item">
+                                    <img src="{{ asset($product->main_image) }}" alt="{{ $product->name }}">
+                                    <label class="media-delete">
+                                        <input type="checkbox" name="delete_main_image" value="1">
+                                        حذف الرئيسية
+                                    </label>
+                                </div>
+                            @endif
+                            @if($product->video)
+                                <div class="preview-item">
+                                    <video src="{{ asset($product->video) }}" muted></video>
+                                    <label class="media-delete">
+                                        <input type="checkbox" name="delete_video" value="1">
+                                        حذف الفيديو
+                                    </label>
+                                </div>
                             @endif
                             @foreach($product->images as $image)
-                                <img src="{{ asset($image->image) }}" alt="{{ $product->name }}">
+                                <div class="preview-item">
+                                    <img src="{{ asset($image->image) }}" alt="{{ $product->name }}">
+                                    <label class="media-delete">
+                                        <input type="checkbox" name="delete_image_ids[]" value="{{ $image->id }}">
+                                        حذف
+                                    </label>
+                                </div>
                             @endforeach
                         </div>
                     </section>
