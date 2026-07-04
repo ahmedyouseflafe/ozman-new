@@ -615,13 +615,14 @@
                 </div>
 
                 <div class="categories-grid" id="categoriesGrid">
-                    @forelse($categoriesList as $index => $category)
-                        @php
+                    <?php if ($categoriesList->isNotEmpty()): ?>
+                    <?php foreach ($categoriesList as $index => $category): ?>
+                        <?php
                             $accents = ['#00e5ff', '#00ffd5', '#7000ff', '#25d366', '#f1c40f', '#ff3b30'];
                             $icons = ['ti-category', 'ti-bottle', 'ti-droplet', 'ti-spray', 'ti-heart', 'ti-tag'];
                             $accent = $accents[$index % count($accents)];
                             $icon = data_get($category, 'icon', $icons[$index % count($icons)]);
-                        @endphp
+                        ?>
                         <div class="category-card" style="--card-accent: {{ $accent }}">
                             <div class="category-icon-wrap">
                                 <i class="ti {{ $icon }}" aria-hidden="true"></i>
@@ -643,20 +644,15 @@
                                         <i class="ti ti-trash" aria-hidden="true"></i>
                                     </button>
                                 </form>
-                                <button class="action-btn" aria-label="تعديل">
-                                    <i class="ti ti-edit" aria-hidden="true"></i>
-                                </button>
-                                <button class="action-btn" aria-label="حذف">
-                                    <i class="ti ti-trash" aria-hidden="true"></i>
-                                </button>
                             </div>
                         </div>
-                    @empty
+                    <?php endforeach; ?>
+                    <?php else: ?>
                         <div class="empty-state">
                             <i class="ti ti-category-off" aria-hidden="true"></i>
                             لا توجد فئات لعرضها
                         </div>
-                    @endforelse
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
