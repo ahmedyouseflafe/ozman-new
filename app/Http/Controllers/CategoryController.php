@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Shop;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -20,7 +21,10 @@ class CategoryController extends Controller
             ->with('shop')
             ->withCount('products')
             ->when(! $this->hasGlobalDashboardAccess(), fn($query) => $this->scopeToAccessibleShops($query))
-            ->when(auth()->user()?->isAgent(), fn($query) => $query->whereIn('agent_id', $this->currentUserAgentIds()))
+            ->when(
+                auth()->user()?->isAgent() && $this->categoryHasColumn('agent_id'),
+                fn($query) => $query->whereIn('agent_id', $this->currentUserAgentIds())
+            )
             ->latest()
             ->get()
             ->map(function (Category $category) {
@@ -52,7 +56,7 @@ class CategoryController extends Controller
         $data = $this->validatedData($request);
         $this->normalizeShopId($data);
         $this->applyAgentOwnership($data);
-        $data['name_translations'] = $this->localizedInput($request, 'name', $data['name']);
+        $this->applyOptionalCategoryColumns($request, $data);
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name']);
         $data['is_active'] = $request->boolean('is_active');
 
@@ -101,7 +105,7 @@ class CategoryController extends Controller
         $this->normalizeShopId($data);
         $this->authorizeCategoryManagement($category);
         $this->applyAgentOwnership($data, $category);
-        $data['name_translations'] = $this->localizedInput($request, 'name', $data['name']);
+        $this->applyOptionalCategoryColumns($request, $data);
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name'], $category);
         $data['is_active'] = $request->boolean('is_active');
 
@@ -157,7 +161,7 @@ class CategoryController extends Controller
 
     private function authorizeCategoryVisibility(Category $category): void
     {
-        if (! auth()->user()?->isAgent()) {
+        if (! auth()->user()?->isAgent() || ! $this->categoryHasColumn('agent_id')) {
             return;
         }
 
@@ -172,7 +176,7 @@ class CategoryController extends Controller
             abort(403);
         }
 
-        if (! $user?->isAgent()) {
+        if (! $user?->isAgent() || ! $this->categoryHasColumn('agent_id')) {
             return;
         }
 
@@ -183,7 +187,7 @@ class CategoryController extends Controller
     {
         $user = auth()->user();
 
-        if (! $user?->isAgent()) {
+        if (! $user?->isAgent() || ! $this->categoryHasColumn('agent_id')) {
             return;
         }
 
@@ -232,6 +236,26 @@ class CategoryController extends Controller
                 }
             })
             ->value('id');
+    }
+
+    private function applyOptionalCategoryColumns(Request $request, array &$data): void
+    {
+        if ($this->categoryHasColumn('name_translations')) {
+            $data['name_translations'] = $this->localizedInput($request, 'name', $data['name']);
+        } else {
+            unset($data['name_translations']);
+        }
+
+        if (! $this->categoryHasColumn('agent_id')) {
+            unset($data['agent_id']);
+        }
+    }
+
+    private function categoryHasColumn(string $column): bool
+    {
+        static $columns = [];
+
+        return $columns[$column] ??= Schema::hasColumn('categories', $column);
     }
 
     private function uniqueSlug(string $value, ?Category $category = null): string

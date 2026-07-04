@@ -534,6 +534,45 @@
             margin-top: 2px;
         }
 
+        .category-item {
+            display: grid;
+            gap: 8px;
+        }
+
+        .category-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .category-actions form {
+            display: inline-flex;
+        }
+
+        .mini-action {
+            min-height: 34px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .1);
+            background: rgba(255, 255, 255, .055);
+            color: #fff;
+            padding: 0 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 900;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .mini-action.danger {
+            color: #ff8a84;
+            border-color: rgba(255, 59, 48, .38);
+            background: rgba(255, 59, 48, .08);
+        }
+
         .map-box {
             min-height: 180px;
             border: 1px solid rgba(255, 255, 255, .08);
@@ -613,6 +652,8 @@
     @php
         $currentUser = auth()->user();
         $canCreateCategories = $currentUser?->canAccessRouteName('categories.create');
+        $canEditCategories = $currentUser?->canAccessRouteName('categories.edit');
+        $canDeleteCategories = $currentUser?->canAccessRouteName('categories.destroy');
         $canCreateAgents = $currentUser?->canAccessRouteName('agents.create');
         $canCreateDistributors = $currentUser?->canAccessRouteName('distributors.create');
         $canCreateAds = $currentUser?->canAccessRouteName('ads.create');
@@ -1014,16 +1055,38 @@
                             @if($shop->categories->isNotEmpty())
                                 <div class="category-grid">
                                     @foreach($shop->categories as $category)
-                                        <a href="{{ route('categories.show', $category) }}" class="category-card">
-                                            <i class="ti ti-category" aria-hidden="true"></i>
-                                            <span class="category-copy">
-                                                <span class="category-name">{{ $category->name }}</span>
-                                                <span class="category-sub">{{ $category->products_count }} منتج</span>
-                                            </span>
-                                            <span class="tag {{ $category->is_active ? 'tag-g' : 'tag-r' }}">
-                                                {{ $category->is_active ? 'نشط' : 'متوقف' }}
-                                            </span>
-                                        </a>
+                                        <div class="category-item">
+                                            <a href="{{ route('categories.show', $category) }}" class="category-card">
+                                                <i class="ti ti-category" aria-hidden="true"></i>
+                                                <span class="category-copy">
+                                                    <span class="category-name">{{ $category->name }}</span>
+                                                    <span class="category-sub">{{ $category->products_count }} منتج</span>
+                                                </span>
+                                                <span class="tag {{ $category->is_active ? 'tag-g' : 'tag-r' }}">
+                                                    {{ $category->is_active ? 'نشط' : 'متوقف' }}
+                                                </span>
+                                            </a>
+                                            @if($canEditCategories || $canDeleteCategories)
+                                                <div class="category-actions">
+                                                    @if($canEditCategories)
+                                                        <a href="{{ route('categories.edit', $category) }}" class="mini-action">
+                                                            <i class="ti ti-edit" aria-hidden="true"></i>
+                                                            تعديل
+                                                        </a>
+                                                    @endif
+                                                    @if($canDeleteCategories)
+                                                        <form action="{{ route('categories.destroy', $category) }}" method="POST" onsubmit="return confirm('هل تريد حذف هذه الفئة؟')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="mini-action danger">
+                                                                <i class="ti ti-trash" aria-hidden="true"></i>
+                                                                حذف
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                </div>
+                                            @endif
+                                        </div>
                                     @endforeach
                                 </div>
                             @else
