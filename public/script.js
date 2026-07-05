@@ -1737,95 +1737,94 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const wrapper = document.getElementById('watchGridWrapper');
             const width = wrapper?.clientWidth || window.innerWidth || 900;
-            const height = wrapper?.clientHeight || 650;
             const mobile = width < 720;
-            const itemSize = options.itemSize || (mobile ? 82 : count > 24 ? 82 : count > 14 ? 90 : 104);
+            let height = mobile ? 520 : (wrapper?.clientHeight || 650);
+            const edgePadding = mobile ? 10 : 28;
+            const gap = options.gap || (mobile ? 12 : 22);
+            const itemSize = options.itemSize || (
+                mobile
+                    ? (count > 16 ? 54 : count > 10 ? 60 : count > 6 ? 66 : 74)
+                    : (count > 28 ? 74 : count > 18 ? 84 : 100)
+            );
+            const labelWidth = Math.min(
+                mobile ? 112 : 170,
+                Math.max(itemSize * (options.footprintWidthScale || (mobile ? 1.55 : 1.75)), itemSize + 24)
+            );
+            const footprintWidth = Math.min(width - edgePadding * 2, labelWidth);
+            const footprintHeight = itemSize + (options.footprintHeightExtra || (mobile ? 42 : 58));
+            const colStep = footprintWidth + gap;
+            const rowStep = footprintHeight + gap;
+            const columns = Math.max(1, Math.floor((width - edgePadding * 2 + gap) / colStep));
+            const neededRows = Math.max(1, Math.ceil(count / columns));
+            const neededHeight = neededRows * rowStep + footprintHeight + edgePadding * 4;
+
+            if (mobile && wrapper && neededHeight > height) {
+                height = Math.ceil(neededHeight);
+                wrapper.style.setProperty('height', `${height}px`, 'important');
+                wrapper.closest('.radial-container')?.style.setProperty('height', `${height}px`, 'important');
+                wrapper.closest('.radial-section')?.style.setProperty('min-height', `${height + 80}px`, 'important');
+            } else if (mobile && wrapper) {
+                wrapper.style.setProperty('height', `${height}px`, 'important');
+                wrapper.closest('.radial-container')?.style.setProperty('height', `${height}px`, 'important');
+                wrapper.closest('.radial-section')?.style.setProperty('min-height', `${height + 80}px`, 'important');
+            }
+
+            const xLimit = Math.max(0, (width - footprintWidth) / 2 - edgePadding);
+            const yLimit = Math.max(0, (height - footprintHeight) / 2 - edgePadding);
             const positions = [];
-            const footprintWidth = itemSize * (options.footprintWidthScale || (mobile ? 1.65 : 1.82));
-            const footprintHeight = itemSize + (options.footprintHeightExtra || (mobile ? 58 : 68));
-            const maxX = Math.max(itemSize, width / 2 - footprintWidth);
-            const maxY = Math.max(itemSize, height / 2 - footprintHeight);
-            const ovalX = mobile ? .86 : 1.12;
-            const ovalY = mobile ? 1.05 : .86;
-            const ringGap = Math.max(footprintWidth, footprintHeight) * (options.ringGapScale || .72);
             const candidates = [];
 
             const overlaps = (candidate) => positions.some((pos) => {
-                return Math.abs(pos.x - candidate.x) < (pos.footprintWidth + candidate.footprintWidth) / 2
-                    && Math.abs(pos.y - candidate.y) < (pos.footprintHeight + candidate.footprintHeight) / 2;
+                return Math.abs(pos.x - candidate.x) < (pos.footprintWidth + candidate.footprintWidth) / 2 + gap
+                    && Math.abs(pos.y - candidate.y) < (pos.footprintHeight + candidate.footprintHeight) / 2 + gap;
             });
 
-            const pushCandidate = (x, y) => {
-                if (Math.abs(x) > maxX || Math.abs(y) > maxY) {
-                    return;
-                }
+            const addCandidate = (x, y, ring = 0) => {
+                if (Math.abs(x) > xLimit + 0.5 || Math.abs(y) > yLimit + 0.5) return;
 
+                const distance = Math.hypot(x / Math.max(xLimit, 1), y / Math.max(yLimit, 1));
                 candidates.push({
                     x,
                     y,
                     itemSize,
                     footprintWidth,
                     footprintHeight,
-                    sort: Math.random(),
+                    score: distance + ring * 0.06 + Math.abs(y) * 0.0008,
                 });
             };
 
-            if (count === 1) {
-                pushCandidate(0, 0);
-            }
+            addCandidate(0, 0, 0);
 
-            for (let radius = itemSize * 1.1; radius <= Math.max(maxX, maxY) + ringGap; radius += ringGap) {
-                const slots = Math.max(6, Math.floor((Math.PI * 2 * radius) / (Math.max(footprintWidth, footprintHeight) * .9)));
-                const offset = Math.random() * Math.PI * 2;
+            const rows = Math.max(1, Math.ceil(count / columns) + 6);
+            const startRow = -Math.floor(rows / 2);
 
-                for (let slot = 0; slot < slots; slot++) {
-                    const angle = offset + (slot / slots) * Math.PI * 2 + (Math.random() - .5) * .18;
-                    pushCandidate(
-                        Math.cos(angle) * radius * ovalX,
-                        Math.sin(angle) * radius * ovalY
-                    );
+            for (let row = 0; row < rows; row++) {
+                const y = (startRow + row) * rowStep;
+                const stagger = row % 2 === 0 ? 0 : colStep / 2;
+                const maxCol = Math.max(columns + 4, 7);
+                const startCol = -Math.floor(maxCol / 2);
+
+                for (let col = 0; col < maxCol; col++) {
+                    const x = (startCol + col) * colStep + stagger;
+                    addCandidate(x, y, Math.abs(startRow + row) + Math.abs(startCol + col));
                 }
             }
 
-            candidates.sort((a, b) => a.sort - b.sort);
+            candidates.sort((a, b) => a.score - b.score);
 
-            for (let i = 0; i < count; i++) {
-                const candidateIndex = candidates.findIndex((candidate) => !overlaps(candidate));
-
-                if (candidateIndex >= 0) {
-                    positions.push(candidates.splice(candidateIndex, 1)[0]);
-                    continue;
+            while (positions.length < count && candidates.length) {
+                const candidate = candidates.shift();
+                if (!overlaps(candidate)) {
+                    positions.push(candidate);
                 }
+            }
 
-                let bestCandidate = null;
-                let bestScore = -Infinity;
-
-                for (let attempt = 0; attempt < 600; attempt++) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const radius = Math.sqrt(Math.random());
-                    const candidate = {
-                        x: Math.cos(angle) * maxX * radius,
-                        y: Math.sin(angle) * maxY * radius,
-                        itemSize,
-                        footprintWidth,
-                        footprintHeight,
-                    };
-
-                    const score = positions.reduce((closest, pos) => {
-                        const dx = Math.abs(pos.x - candidate.x) / ((pos.footprintWidth + candidate.footprintWidth) / 2);
-                        const dy = Math.abs(pos.y - candidate.y) / ((pos.footprintHeight + candidate.footprintHeight) / 2);
-                        return Math.min(closest, Math.max(dx, dy));
-                    }, Infinity);
-
-                    if (score > bestScore) {
-                        bestCandidate = candidate;
-                        bestScore = score;
-                    }
-                }
-
-                positions.push(bestCandidate || {
-                    x: 0,
-                    y: 0,
+            const missingPositions = count - positions.length;
+            for (let row = 0; row < missingPositions; row++) {
+                const direction = row % 2 === 0 ? -1 : 1;
+                positions.push({
+                    x: direction * xLimit,
+                    y: Math.max(-yLimit, Math.min(yLimit, -yLimit + row * rowStep)),
                     itemSize,
                     footprintWidth,
                     footprintHeight,
