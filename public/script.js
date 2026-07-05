@@ -1746,6 +1746,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? (count > 16 ? 54 : count > 10 ? 60 : count > 6 ? 66 : 74)
                     : (count > 28 ? 74 : count > 18 ? 84 : 100)
             );
+            const topReserved = options.topReserved || 0;
+            const bottomReserved = options.bottomReserved || 0;
             const labelWidth = Math.min(
                 mobile ? 112 : 170,
                 Math.max(itemSize * (options.footprintWidthScale || (mobile ? 1.55 : 1.75)), itemSize + 24)
@@ -1756,7 +1758,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const rowStep = footprintHeight + gap;
             const columns = Math.max(1, Math.floor((width - edgePadding * 2 + gap) / colStep));
             const neededRows = Math.max(1, Math.ceil(count / columns));
-            const neededHeight = neededRows * rowStep + footprintHeight + edgePadding * 4;
+            const neededHeight = neededRows * rowStep + footprintHeight + edgePadding * 4 + topReserved + bottomReserved;
 
             if (mobile && wrapper && neededHeight > height) {
                 height = Math.ceil(neededHeight);
@@ -1770,7 +1772,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const xLimit = Math.max(0, (width - footprintWidth) / 2 - edgePadding);
-            const yLimit = Math.max(0, (height - footprintHeight) / 2 - edgePadding);
+            const yMin = -height / 2 + topReserved + footprintHeight / 2 + edgePadding;
+            const yMax = height / 2 - bottomReserved - footprintHeight / 2 - edgePadding;
             const positions = [];
             const candidates = [];
 
@@ -1780,9 +1783,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const addCandidate = (x, y, ring = 0) => {
-                if (Math.abs(x) > xLimit + 0.5 || Math.abs(y) > yLimit + 0.5) return;
+                if (Math.abs(x) > xLimit + 0.5 || y < yMin - 0.5 || y > yMax + 0.5) return;
 
-                const distance = Math.hypot(x / Math.max(xLimit, 1), y / Math.max(yLimit, 1));
+                const centerY = (yMin + yMax) / 2;
+                const distance = Math.hypot(x / Math.max(xLimit, 1), (y - centerY) / Math.max((yMax - yMin) / 2, 1));
                 candidates.push({
                     x,
                     y,
@@ -1824,7 +1828,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const direction = row % 2 === 0 ? -1 : 1;
                 positions.push({
                     x: direction * xLimit,
-                    y: Math.max(-yLimit, Math.min(yLimit, -yLimit + row * rowStep)),
+                    y: Math.max(yMin, Math.min(yMax, yMin + row * rowStep)),
                     itemSize,
                     footprintWidth,
                     footprintHeight,
@@ -1872,7 +1876,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const products = getProductsForDepartment(deptTitle);
             const targetCount = products.length;
 
-            const positions = scatterLayout(targetCount);
+            const positions = scatterLayout(targetCount, {
+                topReserved: window.innerWidth < 720 ? 118 : 92,
+            });
 
             positions.forEach((pos, i) => {
                 const prod = products[i];

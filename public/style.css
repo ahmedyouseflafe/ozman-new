@@ -3581,6 +3581,10 @@ html[dir="ltr"] .sub-item:hover {
     pointer-events: none;
 }
 
+.radial-section .products-scatter-header {
+    z-index: 120 !important;
+}
+
 .products-scatter-header > div:first-child {
     display: flex;
     align-items: center;
