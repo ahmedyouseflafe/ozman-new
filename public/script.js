@@ -3667,6 +3667,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const rewardResultImage = document.getElementById('rewardResultImage');
             const closeRewardResultBtn = document.getElementById('closeRewardResultBtn');
             const sendRewardGiftBtn = document.getElementById('sendRewardGiftBtn');
+            const rewardSocialFollow = document.getElementById('rewardSocialFollow');
+            const rewardSocialLinks = document.getElementById('rewardSocialLinks');
             let rewardWheelReady = false;
             let activeRewardWheel = null;
             let activeRewardStorageKey = REWARD_DISCOUNT_STORAGE_KEY;
@@ -3752,6 +3754,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 return reward?.label || 'خصمك الأول';
             }
 
+            function isTryAgainReward(reward) {
+                const label = rewardResultLabel(reward).replace(/[أإآ]/g, 'ا').toLowerCase();
+                return label.includes('حظا') && label.includes('اوفر');
+            }
+
+            function ozmanSocialLinks() {
+                return Array.isArray(window.OZMAN_FRONT_CONFIG?.raffleSocialLinks)
+                    ? window.OZMAN_FRONT_CONFIG.raffleSocialLinks
+                    : [];
+            }
+
+            function renderRewardSocialLinks() {
+                if (!rewardSocialLinks) return;
+
+                const links = ozmanSocialLinks();
+                rewardSocialLinks.innerHTML = links.length
+                    ? links.map((link) => `
+                        <a href="${escapeCartHtml(link.url || '#')}" target="_blank" rel="noopener noreferrer">
+                            <i class="${escapeCartHtml(link.icon || 'fas fa-share-nodes')}"></i>
+                            ${escapeCartHtml(link.title || 'Ozman')}
+                        </a>
+                    `).join('')
+                    : '<span>تابع حسابات Ozman الرسمية لمتابعة السحوبات المباشرة.</span>';
+            }
+
             function rewardOrderContext(reward) {
                 if (reward?.order_number || reward?.order_id) {
                     return {
@@ -3785,10 +3812,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             function showRewardResult(reward) {
                 let resultText = '';
+                const isTryAgain = isTryAgainReward(reward);
                 saveLastRewardPayload(reward || null);
 
                 if (rewardResultText) {
-                    resultText = `حصلت على ${rewardResultLabel(reward)}`;
+                    resultText = isTryAgain
+                        ? 'حظا أوفر في السحب الفوري'
+                        : `حصلت على ${rewardResultLabel(reward)}`;
                     rewardResultText.textContent = resultText;
                 }
                 if (rewardResultImage) {
@@ -3802,7 +3832,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 if (sendRewardGiftBtn) {
-                    sendRewardGiftBtn.hidden = !rewardCanSendGift(reward);
+                    sendRewardGiftBtn.hidden = isTryAgain || !rewardCanSendGift(reward);
+                }
+                if (closeRewardResultBtn) {
+                    closeRewardResultBtn.innerHTML = isTryAgain
+                        ? '<i class="fas fa-store"></i> متابعة الموقع'
+                        : '<i class="fas fa-cart-shopping"></i> متابعة التسوق';
+                }
+                if (rewardSocialFollow) {
+                    rewardSocialFollow.hidden = !isTryAgain;
+                    if (isTryAgain) renderRewardSocialLinks();
                 }
                 closeModal(rewardWheelModal);
                 openModal(rewardResultModal);

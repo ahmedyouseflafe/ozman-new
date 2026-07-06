@@ -84,7 +84,11 @@ class RewardWheelController extends Controller
             'max_order_total' => ['nullable', 'numeric', 'gte:min_order_total'],
             'win_quota_total' => ['required', 'integer', 'min:1', 'max:10000'],
         ]);
-        $this->assertActiveSegmentsQuotaTotal($validated['segments'], 200, 'مجموع ظهور جوائز عجلة الشراء الفعالة يجب أن يساوي 200.');
+        $this->assertActiveSegmentsQuotaTotal(
+            $validated['segments'],
+            (int) $validated['win_quota_total'],
+            'مجموع ظهور جوائز عجلة الشراء الفعالة يجب أن يساوي إجمالي فرص العجلة.'
+        );
 
         $created = false;
         $wheel = null;
@@ -177,7 +181,11 @@ class RewardWheelController extends Controller
             'max_order_total' => ['nullable', 'numeric', 'gte:min_order_total'],
             'win_quota_total' => ['required', 'integer', 'min:1', 'max:10000'],
         ]);
-        $this->assertActiveSegmentsQuotaTotal($validated['segments'], 200, 'مجموع ظهور جوائز عجلة الشراء الفعالة يجب أن يساوي 200.');
+        $this->assertActiveSegmentsQuotaTotal(
+            $validated['segments'],
+            (int) $validated['win_quota_total'],
+            'مجموع ظهور جوائز عجلة الشراء الفعالة يجب أن يساوي إجمالي فرص العجلة.'
+        );
 
         DB::transaction(function () use ($validated, $request, $wheel) {
             $maxOrderTotal = $validated['max_order_total'] ?? null;
@@ -596,11 +604,6 @@ class RewardWheelController extends Controller
 
     private function assertActiveSegmentsQuotaTotal(array $segments, int $expectedTotal, string $message): void
     {
-        if ($expectedTotal === 200 && request()->filled('win_quota_total')) {
-            $expectedTotal = max(1, (int) request('win_quota_total'));
-            $message = 'مجموع ظهور جوائز عجلة الشراء الفعالة يجب أن يساوي إجمالي فرص العجلة.';
-        }
-
         $activeQuotaTotal = collect($segments)
             ->filter(fn($segment) => (bool) ($segment['is_active'] ?? false))
             ->sum(fn($segment) => (int) ($segment['win_quota'] ?? 0));

@@ -692,6 +692,10 @@
                         <i class="fab fa-whatsapp"></i>
                         {{ __('أرسل الجائزة للمتجر لتثبيتها مع طلبك') }}
                     </button>
+                    <div class="reward-social-follow" id="rewardSocialFollow" hidden>
+                        <strong>{{ __('تابع صفحات Ozman وادخل السحب على جوائز البثوث المباشرة.') }}</strong>
+                        <div class="reward-social-links" id="rewardSocialLinks"></div>
+                    </div>
                 </div>
             </div>
         @endunless

@@ -1587,6 +1587,48 @@ html[dir="ltr"] .display-screen {
     width: min(320px, 100%);
 }
 
+.reward-social-follow {
+    width: min(420px, 100%);
+    margin-top: 2px;
+    padding: 16px;
+    border: 1px solid rgba(0, 229, 255, 0.22);
+    border-radius: 18px;
+    background: rgba(0, 229, 255, 0.06);
+    text-align: center;
+}
+
+.reward-social-follow strong {
+    display: block;
+    color: #fff;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    font-weight: 900;
+    margin-bottom: 12px;
+}
+
+.reward-social-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.reward-social-links a,
+.reward-social-links span {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 12px;
+    border: 1px solid rgba(0, 229, 255, 0.26);
+    border-radius: 999px;
+    background: rgba(0, 229, 255, 0.08);
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 900;
+}
+
 .customer-login-form {
     display: grid;
     gap: 18px;

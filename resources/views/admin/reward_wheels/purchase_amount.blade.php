@@ -195,6 +195,24 @@
             background: rgba(255, 59, 48, .08)
         }
 
+        .quota-status {
+            grid-column: 1/-1;
+            border: 1px solid rgba(255, 59, 48, .28);
+            color: #ff9d9d;
+            background: rgba(255, 59, 48, .08);
+            border-radius: 16px;
+            padding: 12px 14px;
+            font-size: 13px;
+            font-weight: 900;
+            text-align: center
+        }
+
+        .quota-status.is-valid {
+            border-color: rgba(37, 211, 102, .32);
+            color: var(--green);
+            background: rgba(37, 211, 102, .08)
+        }
+
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -612,7 +630,8 @@
                                             value="{{ $quotaTotal }}"
                                             required></label><label class="switch"><input
                                             type="checkbox" name="is_active" value="1"
-                                            @checked(old('is_active', $editingWheel?->is_active ?? true))><span>العجلة مفعلة</span></label></div>
+                                            @checked(old('is_active', $editingWheel?->is_active ?? true))><span>العجلة مفعلة</span></label>
+                                            <div class="quota-status" data-quota-status></div></div>
                                 @php $segments=old('segments') ?: ($editingWheel?$editingWheel->segments->map(fn($segment)=>['label'=>$segment->label,'discount_value'=>$segment->discount_value,'discount_type'=>$segment->discount_type,'gift_image'=>$segment->gift_image,'existing_gift_image'=>$segment->gift_image,'win_quota'=>$segment->win_quota ?? 1,'color'=>$segment->color,'is_active'=>$segment->is_active])->values()->all():[['label'=>'خصم 5%','discount_value'=>5,'discount_type'=>'percent','win_quota'=>50,'color'=>'#00e5ff','is_active'=>true],['label'=>'خصم 10%','discount_value'=>10,'discount_type'=>'percent','win_quota'=>50,'color'=>'#7000ff','is_active'=>true],['label'=>'هدية','discount_value'=>null,'discount_type'=>'gift','win_quota'=>50,'color'=>'#25d366','is_active'=>true],['label'=>'توصيل مجاني','discount_value'=>null,'discount_type'=>'free_shipping','win_quota'=>50,'color'=>'#ffd60a','is_active'=>true]]); @endphp
                                 <div class="segments-list" id="segmentsList">
                                     @foreach ($segments as $index => $segment)
@@ -694,10 +713,158 @@
             const segmentTemplate = document.getElementById('segmentTemplate');
             const addSegmentBtn = document.getElementById('addSegmentBtn');
             const quotaTotalInput = document.querySelector('[data-wheel-quota-total]');
+            const wheelForm = quotaTotalInput?.closest('form');
+            const quotaStatus = document.querySelector('[data-quota-status]');
             const colors = ['#00e5ff', '#7000ff', '#25d366', '#ffd60a', '#ff3b30', '#ff8a00', '#ff4fd8', '#35c2ff'];
+            const autosaveKey = `ozman:purchase-wheel-draft:${location.pathname}`;
+            const shouldClearAutosave = @json(session('status') !== null);
+
+            if (shouldClearAutosave) {
+                localStorage.removeItem(autosaveKey);
+            }
 
             function rows() {
                 return Array.from(segmentsList.querySelectorAll('[data-segment-row]'));
+            }
+
+            function readAutosave() {
+                try {
+                    const saved = JSON.parse(localStorage.getItem(autosaveKey) || 'null');
+                    if (!saved || Date.now() > (saved.expiresAt || 0)) {
+                        localStorage.removeItem(autosaveKey);
+                        return null;
+                    }
+                    return saved;
+                } catch (_) {
+                    localStorage.removeItem(autosaveKey);
+                    return null;
+                }
+            }
+
+            function dataUrlToFile(dataUrl, name, type) {
+                const [header, data] = dataUrl.split(',');
+                const mime = type || header.match(/data:(.*?);/)?.[1] || 'image/png';
+                const binary = atob(data || '');
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                return new File([bytes], name || 'gift-image.png', { type: mime });
+            }
+
+            function setInputFile(input, file) {
+                try {
+                    const transfer = new DataTransfer();
+                    transfer.items.add(file);
+                    input.files = transfer.files;
+                    return true;
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            function saveAutosave() {
+                if (shouldClearAutosave || !wheelForm) return;
+
+                const payload = {
+                    expiresAt: Date.now() + (1000 * 60 * 60 * 24 * 7),
+                    title: wheelForm.querySelector('[name="title"]')?.value || '',
+                    min_order_total: wheelForm.querySelector('[name="min_order_total"]')?.value || '',
+                    max_order_total: wheelForm.querySelector('[name="max_order_total"]')?.value || '',
+                    win_quota_total: quotaTotalInput?.value || '',
+                    is_active: wheelForm.querySelector('[name="is_active"]')?.checked || false,
+                    segments: rows().map((row) => {
+                        const segment = {};
+                        row.querySelectorAll('[data-name]').forEach((field) => {
+                            if (field.type === 'file') return;
+                            segment[field.dataset.name] = field.type === 'checkbox' ? field.checked : field.value;
+                        });
+
+                        const fileInput = row.querySelector('[data-name="gift_image"]');
+                        const file = fileInput?.files?.[0];
+                        const cachedImage = fileInput?.dataset.autosaveImage
+                            ? {
+                                name: fileInput.dataset.autosaveImageName || 'gift-image.png',
+                                type: fileInput.dataset.autosaveImageType || 'image/png',
+                                dataUrl: fileInput.dataset.autosaveImage,
+                            }
+                            : null;
+
+                        segment.gift_image_file = file ? {
+                            name: file.name,
+                            type: file.type,
+                            dataUrl: fileInput.dataset.autosaveImage || '',
+                        } : cachedImage;
+
+                        return segment;
+                    }),
+                };
+
+                try {
+                    localStorage.setItem(autosaveKey, JSON.stringify(payload));
+                } catch (_) {
+                    payload.segments = payload.segments.map((segment) => ({
+                        ...segment,
+                        gift_image_file: null,
+                    }));
+                    localStorage.setItem(autosaveKey, JSON.stringify(payload));
+                }
+            }
+
+            function restoreAutosave() {
+                if (shouldClearAutosave || !wheelForm) return;
+
+                const saved = readAutosave();
+                if (!saved) return;
+
+                const setValue = (selector, value) => {
+                    const input = wheelForm.querySelector(selector);
+                    if (input && value !== undefined && value !== null) input.value = value;
+                };
+
+                setValue('[name="title"]', saved.title);
+                setValue('[name="min_order_total"]', saved.min_order_total);
+                setValue('[name="max_order_total"]', saved.max_order_total);
+                if (quotaTotalInput && saved.win_quota_total) quotaTotalInput.value = saved.win_quota_total;
+
+                const activeInput = wheelForm.querySelector('[name="is_active"]');
+                if (activeInput) activeInput.checked = !!saved.is_active;
+
+                const savedSegments = Array.isArray(saved.segments) ? saved.segments : [];
+                const targetRows = Math.max(savedSegments.length, 2);
+
+                while (rows().length < targetRows) {
+                    segmentsList.appendChild(segmentTemplate.content.firstElementChild.cloneNode(true));
+                }
+
+                while (rows().length > targetRows) {
+                    rows().at(-1)?.remove();
+                }
+
+                rows().forEach((row, index) => {
+                    const segment = savedSegments[index];
+                    if (!segment) return;
+
+                    row.querySelectorAll('[data-name]').forEach((field) => {
+                        const value = segment[field.dataset.name];
+                        if (field.type === 'file') return;
+                        if (field.type === 'checkbox') {
+                            field.checked = !!value;
+                        } else if (value !== undefined && value !== null) {
+                            field.value = value;
+                        }
+                    });
+
+                    const fileInput = row.querySelector('[data-name="gift_image"]');
+                    const fileData = segment.gift_image_file;
+                    if (fileInput && fileData?.dataUrl) {
+                        fileInput.dataset.autosaveImage = fileData.dataUrl;
+                        fileInput.dataset.autosaveImageName = fileData.name || '';
+                        fileInput.dataset.autosaveImageType = fileData.type || '';
+
+                        const restored = setInputFile(fileInput, dataUrlToFile(fileData.dataUrl, fileData.name, fileData.type));
+                        const label = row.querySelector('.file-name');
+                        if (label) label.textContent = restored ? (fileData.name || 'تمت استعادة الصورة') : 'الصورة محفوظة مؤقتا';
+                    }
+                });
             }
 
             function reindexSegments() {
@@ -721,12 +888,65 @@
                     if (label) label.textContent = `ظهور من ${total}`;
                     if (input) input.max = total;
                 });
+                updateQuotaStatus();
+            }
+
+            function activeQuotaSum() {
+                return rows().reduce((sum, row) => {
+                    const active = row.querySelector('[data-name="is_active"]')?.checked;
+                    const quota = Number.parseInt(row.querySelector('[data-name="win_quota"]')?.value || '0', 10);
+                    return active ? sum + (Number.isFinite(quota) ? quota : 0) : sum;
+                }, 0);
+            }
+
+            function quotaState() {
+                const total = currentQuotaTotal();
+                const sum = activeQuotaSum();
+                return {
+                    total,
+                    sum,
+                    diff: total - sum,
+                    valid: sum === total,
+                };
+            }
+
+            function updateQuotaStatus() {
+                if (!quotaStatus) return;
+
+                const state = quotaState();
+                quotaStatus.classList.toggle('is-valid', state.valid);
+
+                if (state.valid) {
+                    quotaStatus.textContent = `مجموع فرص الجوائز الفعالة ${state.sum} من ${state.total} - صحيح.`;
+                } else if (state.diff > 0) {
+                    quotaStatus.textContent = `مجموع فرص الجوائز الفعالة ${state.sum} من ${state.total}. ناقص ${state.diff} فرصة.`;
+                } else {
+                    quotaStatus.textContent = `مجموع فرص الجوائز الفعالة ${state.sum} من ${state.total}. زائد ${Math.abs(state.diff)} فرصة.`;
+                }
             }
 
             function bindFilePicker(input) {
                 input.addEventListener('change', () => {
                     const label = input.closest('.file-picker')?.querySelector('.file-name');
                     if (label) label.textContent = input.files?.[0]?.name || 'اختيار صورة';
+
+                    const file = input.files?.[0];
+                    if (!file) {
+                        delete input.dataset.autosaveImage;
+                        delete input.dataset.autosaveImageName;
+                        delete input.dataset.autosaveImageType;
+                        saveAutosave();
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        input.dataset.autosaveImage = String(reader.result || '');
+                        input.dataset.autosaveImageName = file.name;
+                        input.dataset.autosaveImageType = file.type;
+                        saveAutosave();
+                    };
+                    reader.readAsDataURL(file);
                 });
             }
 
@@ -750,9 +970,19 @@
                 const typeSelect = row.querySelector('[data-name="discount_type"]');
                 if (fileInput) bindFilePicker(fileInput);
                 typeSelect?.addEventListener('change', () => syncGiftImageField(row));
+                row.querySelectorAll('[data-name="win_quota"], [data-name="is_active"]').forEach((field) => {
+                    field.addEventListener('input', updateQuotaStatus);
+                    field.addEventListener('change', updateQuotaStatus);
+                });
+                row.querySelectorAll('[data-name]').forEach((field) => {
+                    if (field.type === 'file') return;
+                    field.addEventListener('input', saveAutosave);
+                    field.addEventListener('change', saveAutosave);
+                });
                 syncGiftImageField(row);
             }
 
+            restoreAutosave();
             rows().forEach(bindSegmentRow);
             addSegmentBtn?.addEventListener('click', () => {
                 const clone = segmentTemplate.content.firstElementChild.cloneNode(true);
@@ -761,8 +991,14 @@
                 bindSegmentRow(clone);
                 reindexSegments();
                 syncQuotaLabels();
+                updateQuotaStatus();
+                saveAutosave();
             });
             quotaTotalInput?.addEventListener('input', syncQuotaLabels);
+            wheelForm?.querySelectorAll('[name="title"], [name="min_order_total"], [name="max_order_total"], [name="win_quota_total"], [name="is_active"]').forEach((field) => {
+                field.addEventListener('input', saveAutosave);
+                field.addEventListener('change', saveAutosave);
+            });
             segmentsList?.addEventListener('click', (event) => {
                 const button = event.target.closest('[data-remove-segment]');
                 if (!button) return;
@@ -772,9 +1008,20 @@
                 }
                 button.closest('[data-segment-row]').remove();
                 reindexSegments();
+                syncQuotaLabels();
+                saveAutosave();
+            });
+            wheelForm?.addEventListener('submit', (event) => {
+                const state = quotaState();
+                if (state.valid) return;
+
+                event.preventDefault();
+                updateQuotaStatus();
+                quotaStatus?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             });
             reindexSegments();
             syncQuotaLabels();
+            updateQuotaStatus();
         </script>
     </body>
 
