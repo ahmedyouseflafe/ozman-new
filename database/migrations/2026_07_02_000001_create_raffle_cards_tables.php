@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('raffle_cards', function (Blueprint $table) {
             $table->id();
-            $table->string('card_number', 5)->unique();
+            $table->string('card_number', 6)->unique();
             $table->string('prize_title');
             $table->string('prize_image')->nullable();
             $table->boolean('is_active')->default(true);
@@ -27,7 +27,7 @@ return new class extends Migration
 
         Schema::create('raffle_entries', function (Blueprint $table) {
             $table->id();
-            $table->string('card_number', 5)->unique();
+            $table->string('card_number', 6)->unique();
             $table->foreignId('raffle_card_id')->nullable()->constrained('raffle_cards')->nullOnDelete();
             $table->string('outcome', 30)->index();
             $table->string('customer_name')->nullable();

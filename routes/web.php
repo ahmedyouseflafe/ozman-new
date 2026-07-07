@@ -180,6 +180,8 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
         ->name('raffle-cards.index');
     Route::post('/raffle-cards', [RaffleCardController::class, 'store'])
         ->name('raffle-cards.store');
+    Route::post('/raffle-cards/live-draw/random', [RaffleCardController::class, 'randomLiveDraw'])
+        ->name('raffle-cards.live-draw.random');
     Route::put('/raffle-cards/settings', [RaffleCardController::class, 'updateSettings'])
         ->name('raffle-cards.settings');
     Route::put('/raffle-cards/{card}', [RaffleCardController::class, 'update'])

@@ -125,6 +125,33 @@ class RaffleCardController extends Controller
         return back()->with('status', 'تم حفظ رقم واتساب السحب بنجاح.');
     }
 
+    public function randomLiveDraw(): JsonResponse
+    {
+        abort_unless($this->canAccessCurrentRoute(), 403);
+
+        $entry = RaffleEntry::query()
+            ->where('outcome', RaffleEntry::OUTCOME_LIVE_DRAW)
+            ->inRandomOrder()
+            ->first();
+
+        if (! $entry) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'لا توجد بطاقات داخلة في سحب البثوث المباشرة حتى الآن.',
+            ], 404);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'title' => 'مبروك الفوز',
+            'card_number' => $entry->card_number,
+            'customer_name' => $entry->customer_name ?: '-',
+            'customer_phone' => $entry->customer_phone ?: '',
+            'customer_whatsapp' => $entry->customer_whatsapp ?: '',
+            'created_at' => optional($entry->created_at)->format('Y-m-d H:i'),
+        ]);
+    }
+
     public function check(Request $request): JsonResponse
     {
         $data = $request->validate([

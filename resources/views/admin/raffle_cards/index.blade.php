@@ -75,6 +75,18 @@
         .actions { display:flex; gap:8px; flex-wrap:wrap; }
         .edit-box { display:grid; grid-template-columns:95px 1fr 160px 90px auto; gap:8px; align-items:center; }
         .pagination { margin-top:14px; color:#fff; }
+        .live-draw-modal { position:fixed; inset:0; z-index:2000; display:none; align-items:center; justify-content:center; padding:22px; background:rgba(0,0,0,.78); backdrop-filter:blur(10px); }
+        .live-draw-modal.show { display:flex; }
+        .live-draw-card { width:min(620px, 100%); position:relative; overflow:hidden; border:1px solid rgba(0,229,255,.42); border-radius:34px; padding:34px; text-align:center; background:radial-gradient(circle at 50% 0%, rgba(0,229,255,.2), transparent 38%), linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.025)); box-shadow:0 0 60px rgba(0,229,255,.2), 0 22px 80px rgba(0,0,0,.55); }
+        .live-draw-close { position:absolute; top:18px; left:18px; width:42px; height:42px; border-radius:50%; border:1px solid var(--border); color:#fff; background:rgba(255,255,255,.08); cursor:pointer; font-size:20px; }
+        .live-draw-kicker { color:var(--primary); font-size:15px; font-weight:900; text-shadow:0 0 18px rgba(0,229,255,.55); }
+        .live-draw-title { margin-top:8px; font-size:34px; font-weight:900; color:#fff; }
+        .live-draw-number { direction:ltr; margin:26px auto 20px; width:min(390px,100%); min-height:118px; display:flex; align-items:center; justify-content:center; border-radius:28px; border:1px solid rgba(0,229,255,.5); background:rgba(0,0,0,.45); color:var(--primary); font-size:54px; font-weight:900; letter-spacing:8px; text-shadow:0 0 28px rgba(0,229,255,.72); box-shadow:inset 0 0 30px rgba(0,229,255,.12); }
+        .live-draw-number.spinning { animation:drawPulse .18s linear infinite; }
+        .live-draw-info { display:grid; gap:8px; color:var(--muted); font-weight:900; }
+        .live-draw-info strong { color:#fff; }
+        .live-draw-error { color:#ff91a0; font-weight:900; margin-top:18px; }
+        @keyframes drawPulse { 0%{ transform:scale(.985); opacity:.82; } 100%{ transform:scale(1.015); opacity:1; } }
         @media(max-width:1100px){ .grid,.form-grid{grid-template-columns:1fr;} .edit-box{grid-template-columns:1fr;} }
         @media(max-width:900px){ .main{margin-right:0;} .content{padding:20px 14px 90px;} .page-head{flex-direction:column; align-items:stretch;} h1{font-size:28px;} }
     </style>
@@ -240,6 +252,11 @@
             <section class="panel">
                 <div class="panel-head">
                     <div class="panel-title"><i class="ti ti-broadcast"></i> جوائز البثوث المباشرة</div>
+                    <button class="btn btn-primary" type="button" id="liveDrawPickBtn"
+                        data-url="{{ route('raffle-cards.live-draw.random') }}"
+                        data-token="{{ csrf_token() }}">
+                        <i class="ti ti-confetti"></i> اختيار فائز عشوائي
+                    </button>
                 </div>
                 <div class="table-wrap">
                     <table>
@@ -269,6 +286,16 @@
             </section>
         </div>
     </main>
+    <div class="live-draw-modal" id="liveDrawModal" aria-hidden="true">
+        <div class="live-draw-card">
+            <button class="live-draw-close" type="button" id="liveDrawCloseBtn" aria-label="إغلاق">&times;</button>
+            <div class="live-draw-kicker">Ozman Live Draw</div>
+            <div class="live-draw-title" id="liveDrawTitle">مبروك الفوز</div>
+            <div class="live-draw-number" id="liveDrawNumber">000000</div>
+            <div class="live-draw-info" id="liveDrawInfo"></div>
+            <div class="live-draw-error" id="liveDrawError" hidden></div>
+        </div>
+    </div>
     <script>
         document.querySelectorAll('[data-file-input]').forEach((input) => {
             input.addEventListener('change', () => {
@@ -277,6 +304,110 @@
                     label.textContent = input.files?.[0]?.name || 'اختر صورة الجائزة';
                 }
             });
+        });
+
+        const liveDrawPickBtn = document.getElementById('liveDrawPickBtn');
+        const liveDrawModal = document.getElementById('liveDrawModal');
+        const liveDrawCloseBtn = document.getElementById('liveDrawCloseBtn');
+        const liveDrawTitle = document.getElementById('liveDrawTitle');
+        const liveDrawNumber = document.getElementById('liveDrawNumber');
+        const liveDrawInfo = document.getElementById('liveDrawInfo');
+        const liveDrawError = document.getElementById('liveDrawError');
+
+        function escapeLiveDrawText(value) {
+            return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;',
+            }[char]));
+        }
+
+        function openLiveDrawModal() {
+            liveDrawModal?.classList.add('show');
+            liveDrawModal?.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeLiveDrawModal() {
+            liveDrawModal?.classList.remove('show');
+            liveDrawModal?.setAttribute('aria-hidden', 'true');
+        }
+
+        function randomSixDigits() {
+            return String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+        }
+
+        liveDrawPickBtn?.addEventListener('click', async () => {
+            openLiveDrawModal();
+            if (liveDrawTitle) liveDrawTitle.textContent = 'جاري اختيار الفائز...';
+            if (liveDrawInfo) liveDrawInfo.innerHTML = '';
+            if (liveDrawError) {
+                liveDrawError.hidden = true;
+                liveDrawError.textContent = '';
+            }
+            liveDrawNumber?.classList.add('spinning');
+
+            const spinTimer = window.setInterval(() => {
+                if (liveDrawNumber) liveDrawNumber.textContent = randomSixDigits();
+            }, 70);
+
+            liveDrawPickBtn.disabled = true;
+
+            try {
+                const response = await fetch(liveDrawPickBtn.dataset.url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': liveDrawPickBtn.dataset.token || '',
+                    },
+                    body: JSON.stringify({}),
+                });
+                const payload = await response.json().catch(() => ({}));
+
+                window.setTimeout(() => {
+                    window.clearInterval(spinTimer);
+                    liveDrawNumber?.classList.remove('spinning');
+
+                    if (!response.ok || !payload.ok) {
+                        if (liveDrawTitle) liveDrawTitle.textContent = 'لم يتم اختيار فائز';
+                        if (liveDrawNumber) liveDrawNumber.textContent = '------';
+                        if (liveDrawError) {
+                            liveDrawError.hidden = false;
+                            liveDrawError.textContent = payload.message || 'تعذر اختيار فائز الآن.';
+                        }
+                        return;
+                    }
+
+                    if (liveDrawTitle) liveDrawTitle.textContent = payload.title || 'مبروك الفوز';
+                    if (liveDrawNumber) liveDrawNumber.textContent = payload.card_number || '------';
+                    if (liveDrawInfo) {
+                        liveDrawInfo.innerHTML = `
+                            <div>الفائز: <strong>${escapeLiveDrawText(payload.customer_name || '-')}</strong></div>
+                            <div dir="ltr">${escapeLiveDrawText(payload.customer_whatsapp || payload.customer_phone || '-')}</div>
+                            <div>تاريخ التسجيل: <strong>${escapeLiveDrawText(payload.created_at || '-')}</strong></div>
+                        `;
+                    }
+                }, 1100);
+            } catch (error) {
+                window.clearInterval(spinTimer);
+                liveDrawNumber?.classList.remove('spinning');
+                if (liveDrawTitle) liveDrawTitle.textContent = 'تعذر اختيار الفائز';
+                if (liveDrawError) {
+                    liveDrawError.hidden = false;
+                    liveDrawError.textContent = 'راجع الاتصال وحاول مرة أخرى.';
+                }
+            } finally {
+                window.setTimeout(() => {
+                    liveDrawPickBtn.disabled = false;
+                }, 1200);
+            }
+        });
+
+        liveDrawCloseBtn?.addEventListener('click', closeLiveDrawModal);
+        liveDrawModal?.addEventListener('click', (event) => {
+            if (event.target === liveDrawModal) closeLiveDrawModal();
         });
     </script>
 </body>
