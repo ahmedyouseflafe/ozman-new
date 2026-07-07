@@ -861,13 +861,13 @@
                     <div>
                         <span>{{ __('بطاقات السحب') }}</span>
                         <h3>{{ __('تحقق من رقم بطاقتك') }}</h3>
-                        <p>{{ __('أدخل رقم البطاقة المكون من 5 أرقام لمعرفة نتيجة السحب الفوري.') }}</p>
+                        <p>{{ __('أدخل رقم البطاقة المكون من 6 أرقام لمعرفة نتيجة السحب الفوري.') }}</p>
                     </div>
                 </div>
                 <form class="raffle-card-form" id="raffleCardForm">
                     <label for="raffleCardNumber">{{ __('رقم البطاقة') }}</label>
-                    <input type="text" inputmode="numeric" maxlength="5" pattern="\d{5}" id="raffleCardNumber"
-                        name="card_number" placeholder="00000" dir="ltr" required>
+                    <input type="text" inputmode="numeric" maxlength="6" pattern="\d{6}" id="raffleCardNumber"
+                        name="card_number" placeholder="000000" dir="ltr" required>
                     <button type="submit" class="cart-checkout-btn">
                         <i class="fas fa-magnifying-glass"></i>
                         {{ __('تحقق من البطاقة') }}

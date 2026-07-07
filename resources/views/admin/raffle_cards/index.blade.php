@@ -134,7 +134,7 @@
                     @csrf
                     <div>
                         <label for="card_number">رقم البطاقة</label>
-                        <input id="card_number" name="card_number" value="{{ old('card_number') }}" maxlength="5" pattern="\d{5}" placeholder="00000" dir="ltr" required>
+                        <input id="card_number" name="card_number" value="{{ old('card_number') }}" maxlength="6" pattern="\d{6}" placeholder="000000" dir="ltr" required>
                     </div>
                     <div>
                         <label for="prize_title">الجائزة</label>
@@ -209,7 +209,7 @@
                                         <form action="{{ route('raffle-cards.update', $card) }}" method="POST" enctype="multipart/form-data" class="edit-box">
                                             @csrf
                                             @method('PUT')
-                                            <input name="card_number" value="{{ $card->card_number }}" maxlength="5" pattern="\d{5}" dir="ltr" required>
+                                            <input name="card_number" value="{{ $card->card_number }}" maxlength="6" pattern="\d{6}" dir="ltr" required>
                                             <input name="prize_title" value="{{ $card->prize_title }}" required>
                                             <label class="file-card" for="prize_image_{{ $card->id }}">
                                                 <span data-file-label>تغيير الصورة</span>

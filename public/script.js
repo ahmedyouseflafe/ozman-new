@@ -128,8 +128,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        function openShopWhatsappMessage(message, popupWindow = null) {
-            const url = `https://wa.me/${shopWhatsappNumber()}?text=${encodeURIComponent(message)}`;
+        function normalizeWhatsappNumber(value) {
+            return String(value || '').replace(/\D+/g, '');
+        }
+
+        function openShopWhatsappMessage(message, popupWindow = null, whatsappNumber = null) {
+            const targetNumber = normalizeWhatsappNumber(whatsappNumber) || shopWhatsappNumber();
+            const url = `https://wa.me/${targetNumber}?text=${encodeURIComponent(message)}`;
 
             if (popupWindow && !popupWindow.closed) {
                 popupWindow.location.href = url;
@@ -521,8 +526,36 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 100);
         }
 
+        function currentRecipientContext() {
+            const shop = centersData[activeCenterIndex] || {};
+            const marketing = currentMarketingContext();
+            const person = activePersonContext || null;
+            const isDistributor = person?.type === 'distributor' || Boolean(marketing.distributor_id);
+            const isAgent = person?.type === 'agent';
+            const recipientType = isDistributor ? 'distributor' : (isAgent ? 'agent' : 'shop');
+            const recipientId = person?.id || (recipientType === 'distributor' ? marketing.distributor_id : null) || shop.id || window.OZMAN_FRONT_CONFIG?.shopId || null;
+            const whatsapp = normalizeWhatsappNumber(person?.whatsapp_number || shop.whatsapp_number || shopWhatsappNumber());
+
+            return {
+                key: `${recipientType}:${recipientId || 'main'}:${whatsapp || 'default'}`,
+                recipient_type: recipientType,
+                recipient_id: recipientId,
+                recipient_name: person?.name || marketing.distributor_name || shop.title || '',
+                whatsapp_number: whatsapp,
+                shop_id: shop.id || window.OZMAN_FRONT_CONFIG?.shopId || null,
+                shop_name: shop.title || '',
+                distributor_id: marketing.distributor_id || (recipientType === 'distributor' ? recipientId : null),
+                distributor_marketer_id: marketing.marketer_id || null,
+                marketing_source: marketing.source || (recipientType === 'distributor' ? 'distributor' : null),
+                source: marketing.source || (recipientType === 'distributor' ? 'distributor' : null),
+                marketer_name: marketing.marketer_name || '',
+                distributor_name: marketing.distributor_name || (recipientType === 'distributor' ? (person?.name || '') : ''),
+            };
+        }
+
         function productCartKey(product) {
-            return `${product.name || ''}|${product.img || ''}|${product.unit_key || ''}`;
+            const recipientKey = product.order_context?.key || product.order_recipient_key || '';
+            return `${product.name || ''}|${product.img || ''}|${product.unit_key || ''}|${recipientKey}`;
         }
 
         function parseCartPrice(price) {
@@ -731,6 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 unit_label: product.unit_label || '',
                 unit_price: product.unit_price || '',
                 campaign_offer: campaignCartMeta(product),
+                order_context: product.order_context || currentRecipientContext(),
             };
         }
 
@@ -1252,7 +1286,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            product = productForCurrentVisitor(product);
+            product = productForCurrentVisitor({
+                ...product,
+                order_context: product.order_context || currentRecipientContext(),
+            });
             const key = productCartKey(product);
             const existing = ozmanCart.find(item => item.key === key);
             const amount = Math.max(Number.parseInt(qty, 10) || 1, 1);
@@ -1268,6 +1305,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     unit_key: product.unit_key || '',
                     unit_label: product.unit_label || '',
                     campaign_offer: product.campaign_offer || null,
+                    order_context: product.order_context || currentRecipientContext(),
                     qty: amount
                 });
             }
@@ -1339,8 +1377,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return `مرحبا، أود طلب المنتجات التالية:\n${lines.join('\n')}\n\nالمجموع قبل الخصم: ${formatCartPrice(cartTotalValue())}${discountLine}\nالمجموع النهائي: ${formatCartPrice(cartFinalValue())}`;
         }
 
-        function marketingMessageLine() {
-            const context = currentMarketingContext();
+        function marketingMessageLine(context = currentMarketingContext()) {
 
             if (context.source === 'marketer' && context.marketer_name) {
                 return `مصدر الطلب: عبر المسوق ${context.marketer_name}`;
@@ -1370,6 +1407,92 @@ document.addEventListener('DOMContentLoaded', () => {
             return configuredContext;
         }
 
+        function itemRecipientContext(item = null) {
+            const storedContext = item?.order_context && typeof item.order_context === 'object'
+                ? item.order_context
+                : {};
+            const fallback = currentRecipientContext();
+            const whatsapp = normalizeWhatsappNumber(storedContext.whatsapp_number || fallback.whatsapp_number || shopWhatsappNumber());
+            const recipientType = storedContext.recipient_type || fallback.recipient_type || 'shop';
+            const recipientId = storedContext.recipient_id || fallback.recipient_id || storedContext.shop_id || fallback.shop_id || 'main';
+
+            return {
+                ...fallback,
+                ...storedContext,
+                whatsapp_number: whatsapp,
+                recipient_type: recipientType,
+                recipient_id: recipientId,
+                key: storedContext.key || `${recipientType}:${recipientId}:${whatsapp || 'default'}`,
+            };
+        }
+
+        function orderGroupsForCurrentItems() {
+            const sourceItems = pendingSingleProduct ? [pendingSingleProduct] : ozmanCart;
+            const groups = new Map();
+
+            sourceItems.forEach((item) => {
+                const context = itemRecipientContext(item);
+                const key = context.key || `${context.recipient_type}:${context.recipient_id}:${context.whatsapp_number}`;
+                if (!groups.has(key)) {
+                    groups.set(key, {
+                        context,
+                        items: [],
+                    });
+                }
+
+                groups.get(key).items.push({
+                    ...item,
+                    order_context: context,
+                });
+            });
+
+            return Array.from(groups.values());
+        }
+
+        function itemsTotalValue(items = []) {
+            return items.reduce((sum, item) => sum + cartItemLineTotal(item), 0);
+        }
+
+        function itemsDiscountBreakdown(items = []) {
+            if (pendingSingleProduct) {
+                return { standard: 0, reward: 0, total: 0 };
+            }
+
+            const subtotal = itemsTotalValue(items);
+            const standard = items.length >= 2 ? Math.min(subtotal * 0.05, subtotal) : 0;
+            const reward = Math.min(rewardDiscountValue(subtotal), Math.max(subtotal - standard, 0));
+
+            return {
+                standard,
+                reward,
+                total: standard + reward,
+            };
+        }
+
+        function itemsDiscountMessageLine(items = [], prefix = '\n') {
+            const breakdown = itemsDiscountBreakdown(items);
+            const lines = [];
+
+            if (breakdown.standard > 0) {
+                lines.push(`خصم السلة 5%: ${formatCartPrice(breakdown.standard)}`);
+            }
+
+            if (breakdown.reward > 0) {
+                const reward = loadRewardDiscount();
+                lines.push(`خصم العجلة (${reward?.label || 'خصمك الأول'}): ${formatCartPrice(breakdown.reward)}`);
+            }
+
+            return lines.length ? `${prefix}${lines.join('\n')}` : '';
+        }
+
+        function itemsTotals(items = []) {
+            const subtotal = itemsTotalValue(items);
+            const discount = itemsDiscountBreakdown(items).total;
+            const total = Math.max(subtotal - discount, 0);
+
+            return { subtotal, discount, total };
+        }
+
         function orderQrImageUrl(order) {
             const lookupUrl = order?.order_lookup_url || order?.order_qr_url || '';
             if (!lookupUrl) return '';
@@ -1377,14 +1500,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(lookupUrl)}`;
         }
 
-        function customerOrderMessage(profile, order = null) {
+        function customerOrderMessage(profile, order = null, orderItems = null, orderContext = null) {
             const qrImageUrl = orderQrImageUrl(order);
+            const context = orderContext || itemRecipientContext(orderItems?.[0] || null);
             const customerLines = [
                 'مرحبا، أود تأكيد طلب جديد.',
                 order?.order_number ? `رقم الطلب: ${order.order_number}` : '',
                 qrImageUrl ? `صورة QR الطلب:\n${qrImageUrl}` : '',
                 order?.order_lookup_url ? `رابط الطلب في الداشبورد:\n${order.order_lookup_url}` : '',
-                marketingMessageLine(),
+                marketingMessageLine(context),
                 '',
                 'بيانات العميل:',
                 `الاسم: ${profile.name || '-'}`,
@@ -1394,15 +1518,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 `رابط الموقع: ${profile.mapLink || '-'}`
             ].filter((line) => line !== '');
 
-            const orderItems = pendingSingleProduct
-                ? [{
-                    name: pendingSingleProduct.name,
-                    price: pendingSingleProduct.price || '',
-                    qty: pendingSingleProduct.qty || 1
-                }]
-                : ozmanCart;
+            const messageItems = Array.isArray(orderItems)
+                ? orderItems
+                : (pendingSingleProduct
+                    ? [pendingSingleProduct]
+                    : ozmanCart);
 
-            const orderLines = orderItems.map((item, index) => {
+            const orderLines = messageItems.map((item, index) => {
                 const lineTotal = cartItemLineTotal(item);
                 const unitText = item.unit_label ? ` - النوع: ${item.unit_label}` : '';
                 const priceText = item.price ? ` - السعر: ${item.price}` : '';
@@ -1411,12 +1533,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return `${index + 1}. ${item.name}${unitText} - الكمية: ${item.qty}${priceText}${campaignText}${totalText}`;
             });
 
-            const subtotal = pendingSingleProduct
-                ? cartItemLineTotal(pendingSingleProduct)
-                : cartTotalValue();
-            const discount = pendingSingleProduct ? 0 : cartDiscountValue();
-            const total = Math.max(subtotal - discount, 0);
-            const discountLine = pendingSingleProduct ? '' : cartDiscountMessageLine();
+            const { subtotal, total } = itemsTotals(messageItems);
+            const discountLine = itemsDiscountMessageLine(messageItems);
 
             return `${customerLines.join('\n')}\n\nالمنتجات:\n${orderLines.join('\n') || '-'}\n\nالمجموع قبل الخصم: ${formatCartPrice(subtotal)}${discountLine}\nالمجموع النهائي: ${formatCartPrice(total)}`;
         }
@@ -1454,14 +1572,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return lines.length ? `\n\nبيانات حساب المتجر:\n${lines.join('\n')}` : '';
         }
 
-        function customerPaymentMessage(profile, method, order = null) {
-            return `${customerOrderMessage(profile, order)}\n\nطريقة الدفع المختارة: ${paymentMethodLabel(method)}${shopPaymentMessageDetails()}\nحالة الدفع: بانتظار تأكيد التحويل من المتجر.`;
+        function customerPaymentMessage(profile, method, order = null, orderItems = null, orderContext = null) {
+            return `${customerOrderMessage(profile, order, orderItems, orderContext)}\n\nطريقة الدفع المختارة: ${paymentMethodLabel(method)}${shopPaymentMessageDetails()}\nحالة الدفع: بانتظار تأكيد التحويل من المتجر.`;
         }
 
-        function currentOrderItems() {
-            const items = pendingSingleProduct
-                ? [pendingSingleProduct]
-                : ozmanCart;
+        function currentOrderItems(itemsOverride = null) {
+            const items = Array.isArray(itemsOverride)
+                ? itemsOverride
+                : (pendingSingleProduct
+                    ? [pendingSingleProduct]
+                    : ozmanCart);
 
                 return items.map((item) => ({
                     name: item.name || '',
@@ -1473,7 +1593,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }));
         }
 
-        function currentOrderTotals() {
+        function currentOrderTotals(itemsOverride = null) {
+            if (Array.isArray(itemsOverride)) {
+                return itemsTotals(itemsOverride);
+            }
+
             const subtotal = pendingSingleProduct
                 ? cartItemLineTotal(pendingSingleProduct)
                 : cartTotalValue();
@@ -1495,10 +1619,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return document.querySelector('meta[name="csrf-token"]')?.content || '';
         }
 
-        async function recordFrontOrder(profile, channel, paymentMethod = '') {
+        async function recordFrontOrder(profile, channel, paymentMethod = '', itemsOverride = null, orderContext = null) {
             const urls = window.OZMAN_FRONT_CONFIG || {};
-            const marketingContext = currentMarketingContext();
-            const { subtotal, discount, total } = currentOrderTotals();
+            const marketingContext = orderContext || currentMarketingContext();
+            const { subtotal, discount, total } = currentOrderTotals(itemsOverride);
             const eligibleWheel = eligiblePurchaseRewardWheel(total);
 
             const response = await fetch(urls.orderStoreUrl || '/front-orders', {
@@ -1509,10 +1633,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     'X-CSRF-TOKEN': csrfToken()
                 },
                 body: JSON.stringify({
-                    shop_id: urls.shopId || null,
+                    shop_id: marketingContext.shop_id || urls.shopId || null,
                     distributor_id: marketingContext.distributor_id || null,
-                    distributor_marketer_id: marketingContext.marketer_id || null,
-                    marketing_source: marketingContext.source || null,
+                    distributor_marketer_id: marketingContext.distributor_marketer_id || marketingContext.marketer_id || null,
+                    marketing_source: marketingContext.marketing_source || marketingContext.source || null,
                     reward_wheel_id: eligibleWheel?.id || null,
                     customer_name: profile.name || '',
                     customer_phone: profile.phone || '',
@@ -1521,7 +1645,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     latitude: profile.latitude || null,
                     longitude: profile.longitude || null,
                     map_link: profile.mapLink || '',
-                    items: currentOrderItems(),
+                    items: currentOrderItems(itemsOverride),
                     subtotal,
                     discount,
                     total,
@@ -1539,6 +1663,25 @@ document.addEventListener('DOMContentLoaded', () => {
             savePendingPurchaseOrder(result);
             saveLastRewardOrder(result);
             return result;
+        }
+
+        async function submitSplitFrontOrders(profile, channel, paymentMethod = '', popupWindows = []) {
+            const groups = orderGroupsForCurrentItems();
+            const orders = [];
+
+            for (let index = 0; index < groups.length; index += 1) {
+                const group = groups[index];
+                const order = await recordFrontOrder(profile, channel, paymentMethod, group.items, group.context);
+                orders.push(order);
+
+                const message = channel === 'instant_payment'
+                    ? customerPaymentMessage(profile, paymentMethod, order, group.items, group.context)
+                    : customerOrderMessage(profile, order, group.items, group.context);
+
+                openShopWhatsappMessage(message, popupWindows[index] || null, group.context.whatsapp_number);
+            }
+
+            return orders;
         }
 
         async function recordFrontOrderReward(reward) {
@@ -4187,7 +4330,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             function openCustomerLoginModal(product = null) {
                 if (!customerLoginModal) return;
-                pendingSingleProduct = product ? productForCurrentVisitor(product) : null;
+                pendingSingleProduct = product
+                    ? productForCurrentVisitor({
+                        ...product,
+                        order_context: product.order_context || currentRecipientContext(),
+                    })
+                    : null;
                 closeCartPanel();
                 fillCustomerForm();
                 customerLoginModal.classList.add('show');
@@ -4345,19 +4493,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     const profile = loadCustomerProfile();
                     const method = selectedPaymentMethod();
                     const rewardTotal = paymentTotalValue();
-                    const whatsappWindow = window.open('', '_blank');
+                    const orderGroups = orderGroupsForCurrentItems();
+                    const whatsappWindows = orderGroups.map(() => window.open('', '_blank'));
 
-                    const orderPromise = recordFrontOrder(profile, 'instant_payment', method);
+                    const orderPromise = submitSplitFrontOrders(profile, 'instant_payment', method, whatsappWindows);
                     trackPendingPurchaseOrderPromise(orderPromise);
 
                     try {
-                        const order = await orderPromise;
-                        openShopWhatsappMessage(customerPaymentMessage(profile, method, order), whatsappWindow);
+                        await orderPromise;
                         clearSubmittedOrderItems();
                         closeInstantPaymentModalPanel();
                         openPurchaseRewardWheelForTotal(rewardTotal);
                     } catch (error) {
-                        if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
+                        whatsappWindows.forEach((whatsappWindow) => {
+                            if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
+                        });
                         showCartToast(error.message || 'تعذر حفظ الطلب في الداشبورد.');
                     }
                 });
@@ -4380,19 +4530,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     const rewardTotal = pendingSingleProduct
                         ? cartItemLineTotal(pendingSingleProduct)
                         : cartFinalValue();
-                    const whatsappWindow = window.open('', '_blank');
+                    const orderGroups = orderGroupsForCurrentItems();
+                    const whatsappWindows = orderGroups.map(() => window.open('', '_blank'));
 
-                    const orderPromise = recordFrontOrder(profile, 'whatsapp', 'whatsapp');
+                    const orderPromise = submitSplitFrontOrders(profile, 'whatsapp', 'whatsapp', whatsappWindows);
                     trackPendingPurchaseOrderPromise(orderPromise);
 
                     try {
-                        const order = await orderPromise;
-                        openShopWhatsappMessage(customerOrderMessage(profile, order), whatsappWindow);
+                        await orderPromise;
                         clearSubmittedOrderItems();
                         closeCustomerLoginModalPanel();
                         openPurchaseRewardWheelForTotal(rewardTotal);
                     } catch (error) {
-                        if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
+                        whatsappWindows.forEach((whatsappWindow) => {
+                            if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
+                        });
                         showCartToast(error.message || 'تعذر حفظ الطلب في الداشبورد.');
                     }
                 });
@@ -4623,7 +4775,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             raffleCardNumber?.addEventListener('input', () => {
-                raffleCardNumber.value = raffleCardNumber.value.replace(/\D+/g, '').slice(0, 5);
+                raffleCardNumber.value = raffleCardNumber.value.replace(/\D+/g, '').slice(0, 6);
             });
 
             raffleCardForm?.addEventListener('submit', async (event) => {

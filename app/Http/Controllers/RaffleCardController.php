@@ -60,7 +60,7 @@ class RaffleCardController extends Controller
         abort_unless($this->canAccessCurrentRoute(), 403);
 
         $data = $request->validate([
-            'card_number' => ['required', 'digits:5', 'unique:raffle_cards,card_number'],
+            'card_number' => ['required', 'digits:6', 'unique:raffle_cards,card_number'],
             'prize_title' => ['required', 'string', 'max:255'],
             'prize_image' => ['nullable', 'image', 'max:4096'],
             'is_active' => ['nullable', 'boolean'],
@@ -83,7 +83,7 @@ class RaffleCardController extends Controller
         abort_unless($this->canAccessCurrentRoute(), 403);
 
         $data = $request->validate([
-            'card_number' => ['required', 'digits:5', Rule::unique('raffle_cards', 'card_number')->ignore($card->id)],
+            'card_number' => ['required', 'digits:6', Rule::unique('raffle_cards', 'card_number')->ignore($card->id)],
             'prize_title' => ['required', 'string', 'max:255'],
             'prize_image' => ['nullable', 'image', 'max:4096'],
             'is_active' => ['nullable', 'boolean'],
@@ -128,7 +128,7 @@ class RaffleCardController extends Controller
     public function check(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'card_number' => ['required', 'digits:5'],
+            'card_number' => ['required', 'digits:6'],
             'customer.name' => ['nullable', 'string', 'max:255'],
             'customer.phone' => ['nullable', 'string', 'max:60'],
             'customer.whatsapp' => ['nullable', 'string', 'max:60'],
