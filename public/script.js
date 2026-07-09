@@ -2956,44 +2956,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const targetCount = uniqueMediaItems.length;
 
-            const positions = [];
             const availableWidth = track.closest('.watch-grid-wrapper')?.clientWidth || window.innerWidth;
             const mobile = availableWidth < 720;
-            const spreadRadius = mobile
-                ? Math.max(45, Math.min(availableWidth * 0.32, 95))
-                : 250;
-            const minSpacing = mobile ? 70 : 160;
-
-            for (let i = 0; i < targetCount; i++) {
-                let x, y;
-                let overlap;
-                let attempts = 0;
-                let currentMinSpacing = minSpacing;
-                do {
-                    overlap = false;
-                    const r = Math.sqrt(Math.random()) * spreadRadius;
-                    const theta = Math.random() * 2 * Math.PI;
-                    x = r * Math.cos(theta);
-                    y = r * Math.sin(theta);
-
-                    for (let p of positions) {
-                        const dx = p.x - x;
-                        const dy = p.y - y;
-                        if (Math.sqrt(dx * dx + dy * dy) < currentMinSpacing) {
-                            overlap = true;
-                            break;
-                        }
-                    }
-                    attempts++;
-                    if (attempts > 50) {
-                        currentMinSpacing = minSpacing * 0.85;
-                    }
-                    if (attempts > 100) {
-                        currentMinSpacing = minSpacing * 0.7;
-                    }
-                } while (overlap && attempts < 200);
-                positions.push({ x, y });
-            }
+            const galleryThumbSize = mobile
+                ? Math.max(62, Math.min(82, Math.floor(availableWidth * 0.19)))
+                : 126;
+            const positions = scatterLayout(targetCount, {
+                itemSize: galleryThumbSize,
+                gap: mobile ? 18 : 34,
+                footprintWidthScale: mobile ? 1.16 : 1.12,
+                footprintHeightExtra: mobile ? 12 : 18,
+                topReserved: mobile ? 132 : 82,
+                bottomReserved: mobile ? 42 : 26,
+            });
 
             uniqueMediaItems.forEach((mediaItem, i) => {
                 const pos = positions[i];
@@ -3006,6 +2981,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 thumbEl.dataset.mediaType = mediaItem.type;
                 thumbEl.dataset.mediaTitle = mediaItem.title || '';
                 thumbEl.dataset.isCampaign = mediaItem.isCampaign ? 'true' : '';
+                thumbEl.dataset.origSize = pos.itemSize || galleryThumbSize;
+                thumbEl.style.setProperty('--scatter-item-size', `${pos.itemSize || galleryThumbSize}px`);
                 thumbEl.style.transform = `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px)) scale(0)`;
                 thumbEl.style.opacity = '0';
                 thumbEl.style.transition = 'all 0.85s cubic-bezier(0.175, 0.885, 0.32, 1.35)';
@@ -3096,9 +3073,10 @@ document.addEventListener('DOMContentLoaded', () => {
             track.addEventListener('click', (e) => {
                 if (e.target === track) {
                     track.querySelectorAll('.gallery-thumb-item').forEach(t => {
+                        const originalSize = `${t.dataset.origSize || 110}px`;
                         t.dataset.isLarge = "";
-                        t.style.setProperty('width', '110px', 'important');
-                        t.style.setProperty('height', '110px', 'important');
+                        t.style.setProperty('width', originalSize, 'important');
+                        t.style.setProperty('height', originalSize, 'important');
                         t.style.setProperty('transform', `translate(calc(-50% + ${t.dataset.origX}px), calc(-50% + ${t.dataset.origY}px)) scale(1)`, 'important');
                         t.style.setProperty('z-index', '5', 'important');
                         t.style.setProperty('border', '2px solid rgba(255, 255, 255, 0.3)', 'important');
@@ -3475,7 +3453,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.dataset.title = itemData.title;
                     item.dataset.desc = itemData.desc;
                 } else {
-                    item.innerHTML = `<img src="${itemData.img}" alt="${itemData.title}">`;
+                    item.innerHTML = `<img src="${itemData.img}" alt="${itemData.title}"><span class="side-shop-name">${escapeCartHtml(itemData.title || '')}</span>`;
                     item.onclick = () => selectCategory(index % totalCount);
                 }
                 track.appendChild(item);
