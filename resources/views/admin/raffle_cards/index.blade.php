@@ -59,6 +59,7 @@
         .btn-primary { color:#001014; background:linear-gradient(135deg, var(--primary), var(--accent)); box-shadow:0 0 22px rgba(0,229,255,.34); }
         .btn-soft { color:#fff; border:1px solid var(--border); background:rgba(255,255,255,.06); }
         .btn-danger { color:#ff91a0; border:1px solid rgba(255,77,104,.34); background:rgba(255,77,104,.08); }
+        .btn-danger:disabled { opacity:.45; cursor:not-allowed; }
         .status { margin-bottom:18px; padding:14px 18px; border:1px solid rgba(37,211,102,.35); background:rgba(37,211,102,.1); border-radius:18px; color:#8dffbd; font-weight:900; }
         .errors { margin-bottom:18px; padding:14px 18px; border:1px solid rgba(255,77,104,.35); background:rgba(255,77,104,.1); border-radius:18px; color:#ff9dac; font-weight:900; }
         .filters { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
@@ -73,8 +74,48 @@
         .prize { display:flex; align-items:center; gap:10px; }
         .prize img { width:48px; height:48px; border-radius:12px; object-fit:cover; border:1px solid rgba(0,229,255,.28); }
         .actions { display:flex; gap:8px; flex-wrap:wrap; }
+        .select-cell { width:58px; text-align:center; }
+        .select-cell input { width:20px; min-height:20px; accent-color:var(--primary); cursor:pointer; }
+        .live-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .live-actions .btn { min-height:42px; }
         .edit-box { display:grid; grid-template-columns:95px 1fr 160px 90px auto; gap:8px; align-items:center; }
         .pagination { margin-top:14px; color:#fff; }
+        .pagination nav { display:flex; flex-direction:column; gap:10px; align-items:flex-end; color:var(--muted); font-size:12px; font-weight:800; }
+        .pagination nav > div:first-child { display:none; }
+        .pagination nav > div:last-child { display:flex; flex-direction:column; gap:10px; align-items:flex-end; width:100%; }
+        .pagination nav p { color:var(--muted); font-size:12px; margin:0; }
+        .pagination nav span[aria-current="page"] span,
+        .pagination nav a,
+        .pagination nav span[aria-disabled="true"] span {
+            min-width:34px;
+            height:34px;
+            padding:0 10px;
+            display:inline-flex !important;
+            align-items:center;
+            justify-content:center;
+            border-radius:999px !important;
+            border:1px solid rgba(255,255,255,.1) !important;
+            background:rgba(255,255,255,.055) !important;
+            color:#fff !important;
+            font-size:12px !important;
+            font-weight:900 !important;
+            line-height:1 !important;
+            text-decoration:none;
+            box-shadow:none !important;
+        }
+        .pagination nav span[aria-current="page"] span {
+            color:#001014 !important;
+            background:linear-gradient(135deg, var(--primary), var(--accent)) !important;
+            border-color:transparent !important;
+            box-shadow:0 0 16px rgba(0,229,255,.28) !important;
+        }
+        .pagination nav span[aria-disabled="true"] span { opacity:.42; cursor:not-allowed; }
+        .pagination nav a:hover { border-color:rgba(0,229,255,.5) !important; box-shadow:0 0 14px rgba(0,229,255,.18) !important; }
+        .pagination nav svg { width:16px !important; height:16px !important; max-width:16px !important; max-height:16px !important; display:block !important; }
+        .pagination nav .hidden { display:flex !important; }
+        .pagination nav > div:last-child > div:last-child,
+        .pagination nav div[role="navigation"],
+        .pagination nav div[aria-label="Pagination Navigation"] { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; align-items:center; }
         .live-draw-modal { position:fixed; inset:0; z-index:2000; display:none; align-items:center; justify-content:center; padding:22px; background:rgba(0,0,0,.78); backdrop-filter:blur(10px); }
         .live-draw-modal.show { display:flex; }
         .live-draw-card { width:min(620px, 100%); position:relative; overflow:hidden; border:1px solid rgba(0,229,255,.42); border-radius:34px; padding:34px; text-align:center; background:radial-gradient(circle at 50% 0%, rgba(0,229,255,.2), transparent 38%), linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.025)); box-shadow:0 0 60px rgba(0,229,255,.2), 0 22px 80px rgba(0,0,0,.55); }
@@ -252,32 +293,56 @@
             <section class="panel">
                 <div class="panel-head">
                     <div class="panel-title"><i class="ti ti-broadcast"></i> جوائز البثوث المباشرة</div>
-                    <button class="btn btn-primary" type="button" id="liveDrawPickBtn"
-                        data-url="{{ route('raffle-cards.live-draw.random') }}"
-                        data-token="{{ csrf_token() }}">
-                        <i class="ti ti-confetti"></i> اختيار فائز عشوائي
-                    </button>
+                    <div class="live-actions">
+                        <button class="btn btn-danger" type="submit" form="liveEntriesBulkDeleteForm" id="deleteSelectedLiveEntriesBtn" disabled>
+                            <i class="ti ti-trash"></i> حذف المحدد
+                        </button>
+                        <button class="btn btn-primary" type="button" id="liveDrawPickBtn"
+                            data-url="{{ route('raffle-cards.live-draw.random') }}"
+                            data-token="{{ csrf_token() }}">
+                            <i class="ti ti-confetti"></i> اختيار فائز عشوائي
+                        </button>
+                    </div>
                 </div>
+                <form id="liveEntriesBulkDeleteForm" action="{{ route('raffle-cards.live-draw.bulk-destroy') }}" method="POST"
+                    onsubmit="return confirm('حذف الأرقام المحددة من سحب البث المباشر؟')">
+                    @csrf
+                    @method('DELETE')
+                </form>
                 <div class="table-wrap">
                     <table>
                         <thead>
                             <tr>
+                                <th class="select-cell">
+                                    <input type="checkbox" id="selectAllLiveEntries" title="تحديد الكل">
+                                </th>
                                 <th>رقم البطاقة</th>
                                 <th>العميل</th>
                                 <th>الهاتف/واتساب</th>
                                 <th>تاريخ التسجيل</th>
+                                <th>إجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($liveEntries as $entry)
                                 <tr>
+                                    <td class="select-cell">
+                                        <input type="checkbox" name="entries[]" value="{{ $entry->id }}" form="liveEntriesBulkDeleteForm" data-live-entry-checkbox>
+                                    </td>
                                     <td dir="ltr"><span class="tag">{{ $entry->card_number }}</span></td>
                                     <td>{{ $entry->customer_name ?: '-' }}</td>
                                     <td dir="ltr">{{ $entry->customer_whatsapp ?: $entry->customer_phone ?: '-' }}</td>
                                     <td>{{ optional($entry->created_at)->format('Y-m-d H:i') }}</td>
+                                    <td>
+                                        <form action="{{ route('raffle-cards.live-draw.destroy', $entry) }}" method="POST" onsubmit="return confirm('حذف هذا الرقم من سحب البث المباشر؟')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-danger" type="submit"><i class="ti ti-trash"></i> حذف</button>
+                                        </form>
+                                    </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4">لا توجد بطاقات بث مباشر مسجلة بعد.</td></tr>
+                                <tr><td colspan="6">لا توجد بطاقات بث مباشر مسجلة بعد.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -313,6 +378,31 @@
         const liveDrawNumber = document.getElementById('liveDrawNumber');
         const liveDrawInfo = document.getElementById('liveDrawInfo');
         const liveDrawError = document.getElementById('liveDrawError');
+        const selectAllLiveEntries = document.getElementById('selectAllLiveEntries');
+        const liveEntryCheckboxes = Array.from(document.querySelectorAll('[data-live-entry-checkbox]'));
+        const deleteSelectedLiveEntriesBtn = document.getElementById('deleteSelectedLiveEntriesBtn');
+
+        function syncLiveEntryBulkActions() {
+            const checkedCount = liveEntryCheckboxes.filter((checkbox) => checkbox.checked).length;
+            if (deleteSelectedLiveEntriesBtn) deleteSelectedLiveEntriesBtn.disabled = checkedCount === 0;
+            if (selectAllLiveEntries) {
+                selectAllLiveEntries.checked = checkedCount > 0 && checkedCount === liveEntryCheckboxes.length;
+                selectAllLiveEntries.indeterminate = checkedCount > 0 && checkedCount < liveEntryCheckboxes.length;
+            }
+        }
+
+        selectAllLiveEntries?.addEventListener('change', () => {
+            liveEntryCheckboxes.forEach((checkbox) => {
+                checkbox.checked = selectAllLiveEntries.checked;
+            });
+            syncLiveEntryBulkActions();
+        });
+
+        liveEntryCheckboxes.forEach((checkbox) => {
+            checkbox.addEventListener('change', syncLiveEntryBulkActions);
+        });
+
+        syncLiveEntryBulkActions();
 
         function escapeLiveDrawText(value) {
             return String(value ?? '').replace(/[&<>"']/g, (char) => ({

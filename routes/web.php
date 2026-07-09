@@ -184,6 +184,10 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
         ->name('raffle-cards.store');
     Route::post('/raffle-cards/live-draw/random', [RaffleCardController::class, 'randomLiveDraw'])
         ->name('raffle-cards.live-draw.random');
+    Route::delete('/raffle-cards/live-draw/bulk', [RaffleCardController::class, 'bulkDestroyLiveEntries'])
+        ->name('raffle-cards.live-draw.bulk-destroy');
+    Route::delete('/raffle-cards/live-draw/{entry}', [RaffleCardController::class, 'destroyLiveEntry'])
+        ->name('raffle-cards.live-draw.destroy');
     Route::put('/raffle-cards/settings', [RaffleCardController::class, 'updateSettings'])
         ->name('raffle-cards.settings');
     Route::put('/raffle-cards/{card}', [RaffleCardController::class, 'update'])

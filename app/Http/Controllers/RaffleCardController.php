@@ -152,6 +152,33 @@ class RaffleCardController extends Controller
         ]);
     }
 
+    public function destroyLiveEntry(RaffleEntry $entry): RedirectResponse
+    {
+        abort_unless($this->canAccessCurrentRoute(), 403);
+        abort_unless($entry->outcome === RaffleEntry::OUTCOME_LIVE_DRAW, 404);
+
+        $entry->delete();
+
+        return back()->with('status', 'تم حذف رقم سحب البث المباشر بنجاح.');
+    }
+
+    public function bulkDestroyLiveEntries(Request $request): RedirectResponse
+    {
+        abort_unless($this->canAccessCurrentRoute(), 403);
+
+        $data = $request->validate([
+            'entries' => ['required', 'array', 'min:1'],
+            'entries.*' => ['integer', 'exists:raffle_entries,id'],
+        ]);
+
+        $deleted = RaffleEntry::query()
+            ->where('outcome', RaffleEntry::OUTCOME_LIVE_DRAW)
+            ->whereIn('id', $data['entries'])
+            ->delete();
+
+        return back()->with('status', "تم حذف {$deleted} رقم من جوائز البث المباشر.");
+    }
+
     public function check(Request $request): JsonResponse
     {
         $data = $request->validate([

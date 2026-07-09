@@ -91,7 +91,7 @@ return [
                 'raffle_cards.view' => ['label' => 'استعراض بطاقات السحب', 'routes' => ['raffle-cards.index']],
                 'raffle_cards.create' => ['label' => 'إضافة بطاقة ربح', 'routes' => ['raffle-cards.store']],
                 'raffle_cards.edit' => ['label' => 'تعديل بطاقة ربح', 'routes' => ['raffle-cards.update', 'raffle-cards.settings']],
-                'raffle_cards.delete' => ['label' => 'حذف بطاقة ربح', 'routes' => ['raffle-cards.destroy']],
+                'raffle_cards.delete' => ['label' => 'حذف بطاقة ربح', 'routes' => ['raffle-cards.destroy', 'raffle-cards.live-draw.destroy', 'raffle-cards.live-draw.bulk-destroy']],
             ],
         ],
         'reward_wheels' => [
