@@ -104,6 +104,8 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::put('/distributors/{distributor}/permissions', [DistributorController::class, 'updatePermissions'])->name('distributors.permissions.update');
     Route::get('/distributor-marketers/{marketer}/permissions', [DistributorController::class, 'editMarketerPermissions'])->name('distributors.marketers.permissions.edit');
     Route::put('/distributor-marketers/{marketer}/permissions', [DistributorController::class, 'updateMarketerPermissions'])->name('distributors.marketers.permissions.update');
+    Route::put('/distributor-marketers/{marketer}', [DistributorController::class, 'updateMarketer'])->name('distributors.marketers.update');
+    Route::patch('/distributor-marketers/{marketer}/commission', [DistributorController::class, 'updateMarketerCommission'])->name('distributors.marketers.commission.update');
     Route::delete('/distributor-marketers/{marketer}', [DistributorController::class, 'destroyMarketer'])->name('distributors.marketers.destroy');
     Route::get('/distributors/{distributor}', [DistributorController::class, 'show'])->name('distributors.show');
 

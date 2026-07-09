@@ -16,11 +16,13 @@ class DistributorMarketer extends Model
         'phone',
         'whatsapp',
         'email',
+        'commission_rate',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'commission_rate' => 'decimal:2',
     ];
 
     public function distributor(): BelongsTo

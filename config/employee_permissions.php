@@ -77,7 +77,7 @@ return [
                 'distributors.edit' => ['label' => 'تعديل موزع', 'routes' => ['distributors.edit', 'distributors.update']],
                 'distributors.delete' => ['label' => 'حذف موزع', 'routes' => ['distributors.destroy']],
                 'distributors.permissions' => ['label' => 'تعديل صلاحيات الموزعين', 'routes' => ['distributors.permissions.edit', 'distributors.permissions.update']],
-                'distributors.marketers' => ['label' => 'إدارة مسوقي الموزعين', 'routes' => ['distributors.marketers.index', 'distributors.marketers.store', 'distributors.marketers.destroy']],
+                'distributors.marketers' => ['label' => 'إدارة مسوقي الموزعين', 'routes' => ['distributors.marketers.index', 'distributors.marketers.store', 'distributors.marketers.update', 'distributors.marketers.commission.update', 'distributors.marketers.destroy']],
                 'distributors.marketers.permissions' => ['label' => 'تعديل صلاحيات مسوقي الموزعين', 'routes' => ['distributors.marketers.permissions.edit', 'distributors.marketers.permissions.update']],
             ],
         ],

@@ -34,7 +34,7 @@
         .filters { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 10px; margin-bottom: 18px; }
         .create-form {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+            grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
             gap: 10px;
             margin-bottom: 18px;
             padding: 16px;
@@ -103,12 +103,24 @@
         .tag.red { color: #ff6878; border-color: rgba(255,104,120,.3); background: rgba(255,104,120,.08); }
         .actions {
             display: inline-grid;
-            grid-template-columns: repeat(3, 42px);
+            grid-template-columns: repeat(4, 42px);
             gap: 8px;
             justify-content: center;
             align-items: center;
         }
-        .actions form { display: contents; }
+        .actions > form { display: contents; }
+        .commission-form {
+            display: grid;
+            grid-template-columns: 92px 42px;
+            gap: 8px;
+            align-items: center;
+        }
+        .commission-form .input {
+            height: 40px;
+            min-width: 0;
+            padding: 0 8px;
+            text-align: center;
+        }
         .action-btn {
             width: 42px;
             height: 42px;
@@ -122,6 +134,78 @@
             opacity: .45;
             cursor: not-allowed;
             filter: grayscale(.25);
+        }
+        .modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(0,0,0,.72);
+            backdrop-filter: blur(12px);
+        }
+        .modal.show { display: flex; }
+        .modal-card {
+            width: min(720px, 100%);
+            max-height: 92vh;
+            overflow: auto;
+            border: 1px solid rgba(0,229,255,.22);
+            border-radius: 24px;
+            background: linear-gradient(145deg, rgba(20,20,26,.98), rgba(5,5,8,.98));
+            box-shadow: 0 24px 70px rgba(0,0,0,.5), 0 0 34px rgba(0,229,255,.12);
+            padding: 22px;
+        }
+        .modal-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+        }
+        .modal-title {
+            color: #00e5ff;
+            font-size: 22px;
+            font-weight: 900;
+        }
+        .modal-close {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,.12);
+            background: rgba(255,255,255,.07);
+            color: #fff;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        .edit-form {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .edit-form .full { grid-column: 1 / -1; }
+        .check-row {
+            min-height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border: 1px solid rgba(255,255,255,.1);
+            border-radius: 16px;
+            padding: 0 14px;
+            color: #fff;
+            font-weight: 900;
+            background: rgba(255,255,255,.055);
+        }
+        .modal-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-start;
+            gap: 10px;
+            margin-top: 6px;
         }
         .sr-only {
             position: absolute;
@@ -144,6 +228,8 @@
             .content { padding: 22px 16px; }
             .hero, .filters, .create-form { display: flex; flex-direction: column; align-items: stretch; }
             .stats { grid-template-columns: 1fr; }
+            .edit-form { grid-template-columns: 1fr; }
+            .modal-card { padding: 16px; border-radius: 18px; }
         }
     </style>
 </head>
@@ -202,6 +288,7 @@
                         <input class="input" type="tel" name="phone" value="{{ old('phone') }}" placeholder="الهاتف" dir="ltr">
                         <input class="input" type="tel" name="whatsapp" value="{{ old('whatsapp') }}" placeholder="واتساب" dir="ltr">
                         <input class="input" type="email" name="email" value="{{ old('email') }}" placeholder="البريد وحساب الدخول">
+                        <input class="input" type="number" name="commission_rate" value="{{ old('commission_rate', 0) }}" min="0" max="100" step="0.01" placeholder="نسبة الربح %" dir="ltr">
                         <input class="input" type="password" name="login_password" placeholder="كلمة مرور اختيارية">
                         <button class="btn btn-primary" type="submit"><i class="ti ti-plus"></i>إضافة</button>
                     </form>
@@ -233,7 +320,9 @@
                                 <th>التواصل</th>
                                 <th>كود الرابط</th>
                                 <th>حساب الدخول</th>
+                                <th>نسبة الربح</th>
                                 <th>الطلبات</th>
+                                <th>الأرباح</th>
                                 <th>الحالة</th>
                                 <th>إجراءات</th>
                             </tr>
@@ -261,12 +350,26 @@
                                             <span class="tag red">غير مربوط</span>
                                         @endif
                                     </td>
+                                    <td>
+                                        <form class="commission-form" method="POST" action="{{ route('distributors.marketers.commission.update', $marketer) }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input class="input" type="number" name="commission_rate" value="{{ number_format((float) $marketer->commission_rate, 2, '.', '') }}" min="0" max="100" step="0.01" dir="ltr" aria-label="نسبة الربح">
+                                            <button class="btn btn-primary action-btn" type="submit" title="حفظ النسبة" aria-label="حفظ النسبة"><i class="ti ti-device-floppy"></i></button>
+                                        </form>
+                                    </td>
                                     <td>{{ number_format($marketer->front_orders_count) }}</td>
+                                    <td>
+                                        <strong>{{ number_format((float) $marketer->commission_total, 2) }} شيكل</strong>
+                                    </td>
                                     <td>
                                         <span class="tag {{ $marketer->is_active ? 'green' : 'red' }}">{{ $marketer->is_active ? 'نشط' : 'غير نشط' }}</span>
                                     </td>
                                     <td>
                                         <div class="actions">
+                                            <button class="btn action-btn" type="button" data-edit-open="marketer-edit-{{ $marketer->id }}" title="تعديل" aria-label="تعديل">
+                                                <i class="ti ti-pencil"></i><span class="sr-only">تعديل</span>
+                                            </button>
                                             @if($marketer->user)
                                                 <a class="btn btn-primary action-btn" href="{{ route('distributors.marketers.permissions.edit', $marketer) }}" title="الصلاحيات" aria-label="الصلاحيات">
                                                     <i class="ti ti-shield-lock"></i><span class="sr-only">الصلاحيات</span>
@@ -285,11 +388,38 @@
                                                 <button class="btn btn-danger action-btn" type="submit" title="حذف" aria-label="حذف"><i class="ti ti-trash"></i><span class="sr-only">حذف</span></button>
                                             </form>
                                         </div>
+                                        <div class="modal" id="marketer-edit-{{ $marketer->id }}" aria-hidden="true">
+                                            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="marketer-edit-title-{{ $marketer->id }}">
+                                                <div class="modal-head">
+                                                    <div class="modal-title" id="marketer-edit-title-{{ $marketer->id }}">تعديل بيانات المسوق</div>
+                                                    <button class="modal-close" type="button" data-edit-close aria-label="إغلاق">×</button>
+                                                </div>
+                                                <form class="edit-form" method="POST" action="{{ route('distributors.marketers.update', $marketer) }}">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <input class="input" type="text" name="name" value="{{ old('name', $marketer->name) }}" placeholder="اسم المسوق" required>
+                                                    <input class="input" type="email" name="email" value="{{ old('email', $marketer->email) }}" placeholder="البريد وحساب الدخول">
+                                                    <input class="input" type="tel" name="phone" value="{{ old('phone', $marketer->phone) }}" placeholder="الهاتف" dir="ltr">
+                                                    <input class="input" type="tel" name="whatsapp" value="{{ old('whatsapp', $marketer->whatsapp) }}" placeholder="واتساب" dir="ltr">
+                                                    <input class="input" type="number" name="commission_rate" value="{{ old('commission_rate', number_format((float) $marketer->commission_rate, 2, '.', '')) }}" min="0" max="100" step="0.01" placeholder="نسبة الربح %" dir="ltr">
+                                                    <input class="input" type="password" name="login_password" placeholder="كلمة مرور جديدة - اتركها فارغة بدون تغيير">
+                                                    <label class="check-row full">
+                                                        <span>تفعيل المسوق</span>
+                                                        <input type="hidden" name="is_active" value="0">
+                                                        <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $marketer->is_active))>
+                                                    </label>
+                                                    <div class="modal-actions">
+                                                        <button class="btn btn-primary" type="submit"><i class="ti ti-device-floppy"></i>حفظ التعديلات</button>
+                                                        <button class="btn" type="button" data-edit-close>إلغاء</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9"><div class="empty">لا يوجد مسوقون مطابقون للفلاتر الحالية.</div></td>
+                                    <td colspan="11"><div class="empty">لا يوجد مسوقون مطابقون للفلاتر الحالية.</div></td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -316,6 +446,44 @@
             select.addEventListener('change', syncAction);
             form.addEventListener('submit', syncAction);
             syncAction();
+        })();
+
+        (() => {
+            const openModal = (modal) => {
+                if (!modal) return;
+                modal.classList.add('show');
+                modal.setAttribute('aria-hidden', 'false');
+                modal.querySelector('input, select, button')?.focus();
+            };
+
+            const closeModal = (modal) => {
+                if (!modal) return;
+                modal.classList.remove('show');
+                modal.setAttribute('aria-hidden', 'true');
+            };
+
+            document.querySelectorAll('[data-edit-open]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    openModal(document.getElementById(button.dataset.editOpen));
+                });
+            });
+
+            document.querySelectorAll('[data-edit-close]').forEach((button) => {
+                button.addEventListener('click', () => closeModal(button.closest('.modal')));
+            });
+
+            document.querySelectorAll('.modal').forEach((modal) => {
+                modal.addEventListener('click', (event) => {
+                    if (event.target === modal) {
+                        closeModal(modal);
+                    }
+                });
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key !== 'Escape') return;
+                document.querySelectorAll('.modal.show').forEach(closeModal);
+            });
         })();
     </script>
 </body>

@@ -12,6 +12,8 @@ class FrontOrder extends Model
         'distributor_id',
         'distributor_marketer_id',
         'marketing_source',
+        'marketer_commission_rate',
+        'marketer_commission_amount',
         'reward_wheel_id',
         'order_number',
         'customer_name',
@@ -42,6 +44,8 @@ class FrontOrder extends Model
         'subtotal' => 'decimal:2',
         'discount' => 'decimal:2',
         'total' => 'decimal:2',
+        'marketer_commission_rate' => 'decimal:2',
+        'marketer_commission_amount' => 'decimal:2',
         'reward_discount_value' => 'decimal:2',
         'reward_won_at' => 'datetime',
     ];

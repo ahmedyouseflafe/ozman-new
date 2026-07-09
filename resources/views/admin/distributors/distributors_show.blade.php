@@ -77,12 +77,13 @@
                         </div>
                     </div>
 
-                    <form method="POST" action="{{ route('distributors.marketers.store', $distributor) }}" style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:20px">
+                    <form method="POST" action="{{ route('distributors.marketers.store', $distributor) }}" style="display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; margin-bottom:20px">
                         @csrf
                         <input name="name" placeholder="اسم المسوق" required style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
                         <input name="phone" placeholder="الهاتف" dir="ltr" style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
                         <input name="whatsapp" placeholder="واتساب" dir="ltr" style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
                         <input name="email" placeholder="البريد الإلكتروني" dir="ltr" style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
+                        <input type="number" name="commission_rate" min="0" max="100" step="0.01" value="0" placeholder="نسبة الربح %" dir="ltr" style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
                         <input type="password" name="login_password" placeholder="كلمة مرور الدخول" style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
                         <label style="display:flex; align-items:center; gap:8px; color:#fff; font-weight:800">
                             <input type="checkbox" name="is_active" value="1" checked>
@@ -112,10 +113,13 @@
                                             <button class="btn" type="submit"><i class="ti ti-trash"></i>حذف</button>
                                         </form>
                                     </div>
-                                    <div class="value" style="margin-top:8px">
-                                        {{ $marketer->phone ?: '-' }} | {{ $marketer->whatsapp ?: '-' }} | {{ $marketer->email ?: '-' }}
-                                    </div>
-                                </div>
+                                     <div class="value" style="margin-top:8px">
+                                         {{ $marketer->phone ?: '-' }} | {{ $marketer->whatsapp ?: '-' }} | {{ $marketer->email ?: '-' }}
+                                     </div>
+                                     <div class="value" style="margin-top:8px; color:#00e5ff">
+                                         نسبة الربح: {{ number_format((float) $marketer->commission_rate, 2) }}%
+                                     </div>
+                                 </div>
                                 <a href="{{ $share['url'] }}" target="_blank" rel="noopener">
                                     <img src="{{ $share['qr'] }}" alt="QR Code للمسوق {{ $marketer->name }}" style="width:130px; height:130px; background:#fff; border-radius:16px; padding:10px">
                                 </a>

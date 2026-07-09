@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -59,6 +60,8 @@ class DistributorController extends Controller
         $marketersQuery = DistributorMarketer::query()
             ->with(['distributor.shop', 'user'])
             ->withCount('frontOrders')
+            ->withSum('frontOrders as stored_commission_total', 'marketer_commission_amount')
+            ->withSum('frontOrders as orders_total', 'total')
             ->when(! $this->hasGlobalDashboardAccess(), function ($query) use ($accessibleDistributors) {
                 $query->whereIn('distributor_id', $accessibleDistributors->pluck('id')->all());
             })
@@ -77,8 +80,15 @@ class DistributorController extends Controller
             ->when($distributorId, fn($query) => $query->where('distributor_id', $distributorId))
             ->latest();
 
+        $marketers = $marketersQuery->paginate(20)->withQueryString();
+        $marketers->getCollection()->each(function (DistributorMarketer $marketer) {
+            $rate = max((float) $marketer->commission_rate, 0);
+            $marketer->commission_total = (float) $marketer->frontOrders()
+                ->sum(DB::raw("COALESCE(marketer_commission_amount, total * {$rate} / 100, 0)"));
+        });
+
         return view('admin.distributors.marketers', [
-            'marketers' => $marketersQuery->paginate(20)->withQueryString(),
+            'marketers' => $marketers,
             'distributors' => $accessibleDistributors,
             'search' => $search,
             'status' => $status,
@@ -165,8 +175,11 @@ class DistributorController extends Controller
             'phone' => ['nullable', 'string', 'max:255'],
             'whatsapp' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
+            'commission_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'login_password' => ['nullable', 'string', 'min:6', 'max:255'],
         ]);
+
+        $data['commission_rate'] = $data['commission_rate'] ?? 0;
 
         $password = $data['login_password'] ?? null;
         unset($data['login_password']);
@@ -234,6 +247,105 @@ class DistributorController extends Controller
         return redirect()
             ->route('distributors.show', $distributor)
             ->with('status', 'تم حذف المسوق بنجاح.');
+    }
+
+    public function updateMarketer(Request $request, DistributorMarketer $marketer): RedirectResponse
+    {
+        $marketer->load(['distributor', 'user']);
+        $this->authorizeDistributorAccess($marketer->distributor);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:255'],
+            'whatsapp' => ['nullable', 'string', 'max:255'],
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($marketer->user_id),
+            ],
+            'commission_rate' => ['required', 'numeric', 'min:0', 'max:100'],
+            'login_password' => ['nullable', 'string', 'min:6', 'max:255'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $password = $data['login_password'] ?? null;
+        unset($data['login_password']);
+
+        $user = $marketer->user;
+
+        if (filled($password)) {
+            if (! filled($data['email'] ?? null)) {
+                throw ValidationException::withMessages([
+                    'email' => 'أدخل بريد المسوق الإلكتروني لتحديث أو إنشاء حساب الدخول.',
+                ]);
+            }
+
+            if (! $user) {
+                $user = User::query()->where('email', $data['email'])->first();
+
+                if ($user && ! $user->isMarketer()) {
+                    throw ValidationException::withMessages([
+                        'email' => 'هذا البريد مستخدم لحساب آخر. استخدم بريد مختلف للمسوق.',
+                    ]);
+                }
+            }
+
+            if ($user) {
+                $user->forceFill([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'phone' => $data['phone'] ?? $user->phone,
+                    'password' => Hash::make($password),
+                    'role' => 'marketer',
+                    'is_active' => true,
+                ])->save();
+            } else {
+                $user = User::create([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'phone' => $data['phone'] ?? null,
+                    'password' => Hash::make($password),
+                    'role' => 'marketer',
+                    'is_active' => true,
+                ]);
+            }
+
+            $data['user_id'] = $user->id;
+        } elseif ($user) {
+            $userData = [
+                'name' => $data['name'],
+                'phone' => $data['phone'] ?? $user->phone,
+                'is_active' => (bool) ($data['is_active'] ?? false),
+            ];
+
+            if (filled($data['email'] ?? null)) {
+                $userData['email'] = $data['email'];
+            }
+
+            $user->forceFill($userData)->save();
+        }
+
+        $data['is_active'] = (bool) ($data['is_active'] ?? false);
+        $marketer->update($data);
+
+        return back()->with('status', 'تم تحديث بيانات المسوق بنجاح.');
+    }
+
+    public function updateMarketerCommission(Request $request, DistributorMarketer $marketer): RedirectResponse
+    {
+        $marketer->load('distributor');
+        $this->authorizeDistributorAccess($marketer->distributor);
+
+        $data = $request->validate([
+            'commission_rate' => ['required', 'numeric', 'min:0', 'max:100'],
+        ]);
+
+        $marketer->update([
+            'commission_rate' => $data['commission_rate'],
+        ]);
+
+        return back()->with('status', 'تم تحديث نسبة ربح المسوق بنجاح.');
     }
 
     public function editMarketerPermissions(DistributorMarketer $marketer): View|RedirectResponse

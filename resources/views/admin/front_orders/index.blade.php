@@ -75,7 +75,7 @@
         }
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 16px;
             margin-bottom: 22px;
         }
@@ -223,7 +223,7 @@
             border-radius: 22px;
             background: rgba(0, 0, 0, .22);
         }
-        table { width: 100%; min-width: 1360px; border-collapse: collapse; font-size: 13px; }
+        table { width: 100%; min-width: 1480px; border-collapse: collapse; font-size: 13px; }
         th, td {
             padding: 15px 16px;
             text-align: right;
@@ -506,7 +506,7 @@
             }
             .status-form { min-width: 132px; }
             table {
-                min-width: 1160px;
+                min-width: 1280px;
                 font-size: 12px;
             }
             th, td {
@@ -517,6 +517,7 @@
 </head>
 
 <body>
+    @php($isMarketerView = auth()->user()?->isMarketer())
     <div class="shell">
         @include('admin.includes.sidebar')
         <main class="main">
@@ -598,15 +599,24 @@
                         <div class="stat-val">{{ number_format($instantCount) }}</div>
                         <i class="ti ti-bolt stat-icon"></i>
                     </div>
+                    @unless($isMarketerView)
                     <div class="stat-card" style="--card-color: var(--accent);">
                         <div class="stat-label">طلبات معها هدية</div>
+                        @unless($isMarketerView)
                         <div class="stat-val">{{ number_format($rewardedCount) }}</div>
                         <i class="ti ti-gift stat-icon"></i>
+                        @endunless
                     </div>
+                    @endunless
                     <div class="stat-card" style="--card-color: var(--primary);">
                         <div class="stat-label">طلبات عبر مسوقين</div>
                         <div class="stat-val">{{ number_format($marketerCount) }}</div>
                         <i class="ti ti-speakerphone stat-icon"></i>
+                    </div>
+                    <div class="stat-card" style="--card-color: var(--green);">
+                        <div class="stat-label">{{ $isMarketerView ? 'أرباحي' : 'أرباح المسوقين' }}</div>
+                        <div class="stat-val">{{ number_format((float) $marketerCommissionTotal, 2) }}</div>
+                        <i class="ti ti-coins stat-icon"></i>
                     </div>
                 </div>
 
@@ -617,7 +627,7 @@
                             سجل الطلبات
                         </div>
                         <form class="filter-row" method="GET" action="{{ route('front-orders.index') }}">
-                            <input class="search-inp" type="search" name="search" value="{{ $search }}" placeholder="بحث بالاسم، الهاتف، رقم الطلب أو الهدية">
+                            <input class="search-inp" type="search" name="search" value="{{ $search }}" placeholder="{{ $isMarketerView ? 'بحث بالاسم، الهاتف أو رقم الطلب' : 'بحث بالاسم، الهاتف، رقم الطلب أو الهدية' }}">
                             <select class="filter-select" name="channel">
                                 <option value="">كل الطرق</option>
                                 <option value="whatsapp" @selected($selectedChannel === 'whatsapp')>واتساب</option>
@@ -649,7 +659,9 @@
                                     <th>طريقة الطلب</th>
                                     <th>حالة الدفع</th>
                                     <th>حالة الطلب</th>
-                                    <th>الهدية</th>
+                                    @unless($isMarketerView)
+                                        <th>الهدية</th>
+                                    @endunless
                                     <th>الموقع</th>
                                     <th>التاريخ</th>
                                 </tr>
@@ -697,6 +709,11 @@
                                             <strong>{{ number_format((float) $order->total, 2) }} شيكل</strong>
                                             <div class="dim">قبل الخصم: {{ number_format((float) $order->subtotal, 2) }}</div>
                                             <div class="dim">الخصم: {{ number_format((float) $order->discount, 2) }}</div>
+                                            @if($order->distributorMarketer)
+                                                @php($commissionRate = $order->marketer_commission_rate !== null ? (float) $order->marketer_commission_rate : (float) $order->distributorMarketer->commission_rate)
+                                                @php($commissionAmount = $order->marketer_commission_amount !== null ? (float) $order->marketer_commission_amount : ((float) $order->total * $commissionRate / 100))
+                                                <div class="dim" style="color: var(--green); font-weight: 900;">عمولة المسوق: {{ number_format($commissionAmount, 2) }} شيكل ({{ number_format($commissionRate, 2) }}%)</div>
+                                            @endif
                                         </td>
                                         <td>
                                             <span class="badge {{ $order->order_channel === 'whatsapp' ? 'green' : 'yellow' }}">
@@ -711,6 +728,9 @@
                                             <span class="badge">{{ $order->payment_status }}</span>
                                         </td>
                                         <td>
+                                            @if($isMarketerView)
+                                                <span class="badge {{ $order->statusClass() }}" data-status-badge>{{ $order->statusLabel() }}</span>
+                                            @else
                                             <form class="status-form" method="POST" action="{{ route('front-orders.status', $order) }}" data-status-form>
                                                 @csrf
                                                 @method('PATCH')
@@ -722,7 +742,9 @@
                                                 </select>
                                                 <button class="status-save" type="submit" data-status-save>حفظ</button>
                                             </form>
+                                            @endif
                                         </td>
+                                        @unless($isMarketerView)
                                         <td>
                                             @if($order->reward_label)
                                                 <div class="gift-cell">
@@ -738,6 +760,7 @@
                                                 <span class="dim">لم يتم لف العجلة بعد</span>
                                             @endif
                                         </td>
+                                        @endunless
                                         <td>
                                             @if($order->map_link)
                                                 <a class="map-link" href="{{ $order->map_link }}" target="_blank" rel="noopener">فتح الخريطة</a>
@@ -755,7 +778,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="12">
+                                        <td colspan="{{ $isMarketerView ? 11 : 12 }}">
                                             <div class="empty">لسه ما في طلبات مسجلة من الواجهة.</div>
                                         </td>
                                     </tr>

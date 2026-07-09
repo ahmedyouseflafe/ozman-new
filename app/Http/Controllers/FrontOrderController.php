@@ -47,6 +47,8 @@ class FrontOrderController extends Controller
             'payment_method' => ['nullable', 'string', 'max:60'],
         ]);
 
+        $marketer = null;
+
         if (! empty($validated['distributor_marketer_id'])) {
             $marketer = DistributorMarketer::query()
                 ->whereKey($validated['distributor_marketer_id'])
@@ -58,12 +60,20 @@ class FrontOrderController extends Controller
             $validated['marketing_source'] = 'marketer';
         }
 
+        $total = (float) ($validated['total'] ?? 0);
+        $commissionRate = $marketer ? (float) $marketer->commission_rate : null;
+        $commissionAmount = $commissionRate !== null
+            ? round($total * max($commissionRate, 0) / 100, 2)
+            : null;
+
         $order = FrontOrder::create([
             ...$validated,
             'order_number' => $this->makeOrderNumber(),
             'subtotal' => $validated['subtotal'] ?? 0,
             'discount' => $validated['discount'] ?? 0,
-            'total' => $validated['total'] ?? 0,
+            'total' => $total,
+            'marketer_commission_rate' => $commissionRate,
+            'marketer_commission_amount' => $commissionAmount,
             'payment_status' => $validated['order_channel'] === 'instant_payment'
                 ? 'instant_payment_submitted'
                 : 'whatsapp_order',
@@ -135,6 +145,7 @@ class FrontOrderController extends Controller
 
     public function status(Request $request, FrontOrder $order)
     {
+        abort_if($request->user()?->isMarketer(), 403);
         abort_unless($this->canAccessCurrentRoute(), 403);
         abort_unless($this->canAccessOrder($request, $order), 403);
 
@@ -227,25 +238,29 @@ class FrontOrderController extends Controller
 
         $ordersQuery = FrontOrder::query()
             ->with(['shop', 'rewardWheel', 'distributor', 'distributorMarketer'])
-            ->when($user?->isMarketer(), fn($query) => $query->whereIn('distributor_marketer_id', $marketerIds))
+            ->when($user?->isMarketer(), fn($query) => $query->whereIn('front_orders.distributor_marketer_id', $marketerIds))
             ->when($user?->isDistributor(), fn($query) => $this->scopeToDistributorOrders($query, $distributorIds))
             ->when(in_array($channel, ['whatsapp', 'instant_payment'], true), fn($query) => $query->where('order_channel', $channel))
             ->when(array_key_exists((string) $orderStatus, FrontOrder::statusOptions()), fn($query) => $query->where('status', $orderStatus))
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($query) use ($search) {
+            ->when($search !== '', function ($query) use ($search, $user) {
+                $query->where(function ($query) use ($search, $user) {
                     $query->where('order_number', 'like', "%{$search}%")
                         ->orWhere('customer_name', 'like', "%{$search}%")
                         ->orWhere('customer_phone', 'like', "%{$search}%")
-                        ->orWhere('customer_whatsapp', 'like', "%{$search}%")
-                        ->orWhere('reward_label', 'like', "%{$search}%")
-                        ->orWhereHas('distributorMarketer', fn($marketerQuery) => $marketerQuery->where('name', 'like', "%{$search}%"))
+                        ->orWhere('customer_whatsapp', 'like', "%{$search}%");
+
+                    if (! $user?->isMarketer()) {
+                        $query->orWhere('reward_label', 'like', "%{$search}%");
+                    }
+
+                    $query->orWhereHas('distributorMarketer', fn($marketerQuery) => $marketerQuery->where('name', 'like', "%{$search}%"))
                         ->orWhereHas('distributor', fn($distributorQuery) => $distributorQuery->where('name', 'like', "%{$search}%"));
                 });
             })
             ->latest();
 
         $statsQuery = FrontOrder::query()
-            ->when($user?->isMarketer(), fn($query) => $query->whereIn('distributor_marketer_id', $marketerIds))
+            ->when($user?->isMarketer(), fn($query) => $query->whereIn('front_orders.distributor_marketer_id', $marketerIds))
             ->when($user?->isDistributor(), fn($query) => $this->scopeToDistributorOrders($query, $distributorIds));
         $distributorProfiles = $user?->isDistributor()
             ? $user->distributorProfiles()
@@ -253,6 +268,11 @@ class FrontOrderController extends Controller
                 ->whereIn('id', $distributorIds)
                 ->get()
             : collect();
+        $commissionStatsQuery = (clone $statsQuery)
+            ->leftJoin('distributor_marketers', 'front_orders.distributor_marketer_id', '=', 'distributor_marketers.id');
+        $marketerCommissionTotal = (float) $commissionStatsQuery->sum(DB::raw(
+            'COALESCE(front_orders.marketer_commission_amount, front_orders.total * distributor_marketers.commission_rate / 100, 0)'
+        ));
 
         return view('admin.front_orders.index', [
             'orders' => $ordersQuery->paginate(25)->withQueryString(),
@@ -261,6 +281,7 @@ class FrontOrderController extends Controller
             'whatsappCount' => (clone $statsQuery)->where('order_channel', 'whatsapp')->count(),
             'rewardedCount' => (clone $statsQuery)->whereNotNull('reward_label')->count(),
             'marketerCount' => (clone $statsQuery)->whereNotNull('distributor_marketer_id')->count(),
+            'marketerCommissionTotal' => $marketerCommissionTotal,
             'selectedChannel' => $channel,
             'selectedStatus' => $orderStatus,
             'statusOptions' => FrontOrder::statusOptions(),
@@ -303,7 +324,7 @@ class FrontOrderController extends Controller
         }
 
         return $query->where(function ($query) use ($distributorIds) {
-            $query->whereIn('distributor_id', $distributorIds)
+            $query->whereIn('front_orders.distributor_id', $distributorIds)
                 ->orWhereHas('distributorMarketer', fn($marketerQuery) => $marketerQuery->whereIn('distributor_id', $distributorIds));
         });
     }
