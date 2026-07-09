@@ -166,6 +166,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function saveCustomerProfile(profile) {
             localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(profile || {}));
+            if (hasSavedCustomerProfile(profile)) {
+                localStorage.setItem(VISITOR_REGISTRATION_STORAGE_KEY, '1');
+                localStorage.setItem(VISITOR_TYPE_STORAGE_KEY, 'customer');
+            }
+        }
+
+        function hasSavedCustomerProfile(profile = loadCustomerProfile()) {
+            const name = String(profile?.name || '').trim();
+            const phone = String(profile?.phone || '').trim();
+            const whatsapp = String(profile?.whatsapp || '').trim();
+
+            return Boolean(name && (phone || whatsapp));
         }
 
         function loadCustomerLocation() {
@@ -4060,6 +4072,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 setVisitorType(window.OZMAN_FRONT_CONFIG?.initialVisitorType || 'customer');
+
+                if ((window.OZMAN_FRONT_CONFIG?.initialVisitorType || 'customer') === 'customer' && hasSavedCustomerProfile()) {
+                    localStorage.setItem(VISITOR_REGISTRATION_STORAGE_KEY, '1');
+                    localStorage.setItem(VISITOR_TYPE_STORAGE_KEY, 'customer');
+                    hideVisitorRegistrationModal();
+                    return;
+                }
 
                 if (!window.OZMAN_FRONT_CONFIG?.forceVisitorRegistration && localStorage.getItem(VISITOR_REGISTRATION_STORAGE_KEY) === '1') {
                     hideVisitorRegistrationModal();

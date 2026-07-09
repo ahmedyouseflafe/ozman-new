@@ -72,6 +72,8 @@
 
     <script>
         const storageKey = 'ozman_customer_profile';
+        const visitorDoneKey = 'ozman_visitor_registration_done_v2';
+        const visitorTypeKey = 'ozman_visitor_type';
         const form = document.getElementById('standaloneCustomerForm');
         const mapFrame = document.getElementById('customerMapFrame');
         const statusText = document.getElementById('customerLocationStatus');
@@ -84,6 +86,14 @@
             longitude: document.getElementById('customerLongitude'),
             mapLink: document.getElementById('customerMapLink'),
         };
+
+        function saveStandaloneCustomerProfile(profile) {
+            localStorage.setItem(storageKey, JSON.stringify(profile || {}));
+            if (profile?.name && (profile?.phone || profile?.whatsapp)) {
+                localStorage.setItem(visitorDoneKey, '1');
+                localStorage.setItem(visitorTypeKey, 'customer');
+            }
+        }
 
         try {
             const profile = JSON.parse(localStorage.getItem(storageKey) || '{}');
@@ -110,7 +120,7 @@
                 fields.mapLink.value = `https://www.google.com/maps?q=${latitude},${longitude}`;
                 mapFrame.src = `https://www.google.com/maps?q=${latitude},${longitude}&z=16&output=embed`;
                 statusText.textContent = 'تم تحديد موقعك على الخريطة.';
-                localStorage.setItem(storageKey, JSON.stringify(Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, field.value.trim()]))));
+                saveStandaloneCustomerProfile(Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, field.value.trim()])));
             }, () => {
                 statusText.textContent = 'لم نقدر نحدد الموقع. تأكد من السماح للموقع بالوصول للّوكيشن.';
             }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
@@ -119,7 +129,7 @@
         form.addEventListener('submit', (event) => {
             event.preventDefault();
             const profile = Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, field.value.trim()]));
-            localStorage.setItem(storageKey, JSON.stringify(profile));
+            saveStandaloneCustomerProfile(profile);
             statusText.textContent = 'تم حفظ بياناتك. ارجع للموقع وكمل طلبك.';
         });
     </script>
