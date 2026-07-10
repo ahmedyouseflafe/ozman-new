@@ -183,8 +183,8 @@ class RaffleCardController extends Controller
     {
         $data = $request->validate([
             'card_number' => ['required', 'digits:6'],
-            'customer.name' => ['nullable', 'string', 'max:255'],
-            'customer.phone' => ['nullable', 'string', 'max:60'],
+            'customer.name' => ['required', 'string', 'max:255'],
+            'customer.phone' => ['nullable', 'required_without:customer.whatsapp', 'string', 'max:60'],
             'customer.whatsapp' => ['nullable', 'string', 'max:60'],
             'customer.address' => ['nullable', 'string', 'max:1000'],
         ]);

@@ -20,6 +20,7 @@ return [
             'permissions' => [
                 'shops.view' => ['label' => 'استعراض المتاجر', 'routes' => ['shops', 'shops.show', 'shops.ozman']],
                 'shops.create' => ['label' => 'إضافة متجر', 'routes' => ['shops.create', 'shops.store']],
+                'shops.marketer_create' => ['label' => 'إضافة محل مرتبط بالمسوق', 'routes' => ['shops', 'shops.create', 'shops.store']],
                 'shops.edit' => ['label' => 'تعديل متجر', 'routes' => ['shops.edit', 'shops.update']],
                 'shops.delete' => ['label' => 'حذف متجر', 'routes' => ['shops.destroy']],
             ],

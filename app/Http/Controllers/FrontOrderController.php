@@ -7,6 +7,7 @@ use App\Models\DistributorMarketer;
 use App\Models\FrontOrder;
 use App\Models\RewardWheel;
 use App\Models\RewardWheelSegment;
+use App\Models\Shop;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -58,6 +59,19 @@ class FrontOrderController extends Controller
 
             $validated['distributor_id'] = $marketer->distributor_id;
             $validated['marketing_source'] = 'marketer';
+        } elseif (! empty($validated['shop_id'])) {
+            $shopMarketer = Shop::query()
+                ->whereKey($validated['shop_id'])
+                ->with('distributorMarketer.distributor')
+                ->first()
+                ?->distributorMarketer;
+
+            if ($shopMarketer?->is_active && $shopMarketer->distributor?->is_active) {
+                $marketer = $shopMarketer;
+                $validated['distributor_marketer_id'] = $marketer->id;
+                $validated['distributor_id'] = $marketer->distributor_id;
+                $validated['marketing_source'] = 'marketer';
+            }
         }
 
         $total = (float) ($validated['total'] ?? 0);

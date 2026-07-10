@@ -22,6 +22,7 @@ class FrontController extends Controller
             ->where('slug', 'ozman')
             ->with([
                 'social',
+                'distributorMarketer.distributor',
                 'advertisements' => fn($query) => $query
                     ->where('is_active', true)
                     ->orderBy('sort_order')
@@ -63,6 +64,7 @@ class FrontController extends Controller
             ->where('slug', '!=', 'ozman')
             ->with([
                 'social',
+                'distributorMarketer.distributor',
                 'advertisements' => fn($query) => $query
                     ->where('is_active', true)
                     ->orderBy('sort_order')
@@ -97,6 +99,7 @@ class FrontController extends Controller
         $shop = $shop?->exists
             ? $shops->firstWhere('id', $shop->id) ?? $shop->load([
                 'social',
+                'distributorMarketer.distributor',
                 'advertisements' => fn($query) => $query
                     ->where('is_active', true)
                     ->orderBy('sort_order')
@@ -216,6 +219,15 @@ class FrontController extends Controller
             $shopIds->push($distributor->shop_id);
         }
 
+        $marketerShopIds = Shop::query()
+            ->where('is_active', true)
+            ->whereHas('distributorMarketer', fn($query) => $query
+                ->where('distributor_id', $distributor->id)
+                ->where('is_active', true))
+            ->pluck('id');
+
+        $shopIds = $shopIds->merge($marketerShopIds);
+
         $shopIds = $shopIds
             ->map(fn($id) => (int) $id)
             ->unique()
@@ -294,6 +306,7 @@ class FrontController extends Controller
 
         $shop = $selectedShop->load([
             'social',
+            'distributorMarketer.distributor',
             'advertisements' => fn($query) => $query
                 ->where('is_active', true)
                 ->orderBy('sort_order')
@@ -373,6 +386,7 @@ class FrontController extends Controller
     {
         $relations = [
             'social',
+            'distributorMarketer.distributor',
             'advertisements' => fn($query) => $query
                 ->where('is_active', true)
                 ->orderBy('sort_order')
@@ -447,12 +461,15 @@ class FrontController extends Controller
                 $displayItems = $ozmanBottomScreens->merge($displayItems);
             }
 
+            $shopOrderContext = $this->shopOrderContext($shop);
+
             return [
                 'id' => $shop->id,
                 'title' => $shop->name,
                 'img' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
                 'logo' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
-                'whatsapp_number' => $this->contactWhatsappNumber($shop->whatsapp ?: $shop->phone),
+                'whatsapp_number' => $shopOrderContext['whatsapp_number'],
+                'marketing_context' => $shopOrderContext['marketing_context'],
                 'social_links' => $this->socialLinksPayload($shop),
                 'agents' => $this->contactPeoplePayload($shop->agents ?? collect(), $shop, 'agent', $shopProductsDb, $shopDepartments, $shops),
                 'distributors' => $this->contactPeoplePayload($shop->distributors ?? collect(), $shop, 'distributor', $shopProductsDb, $shopDepartments, $shops),
@@ -488,6 +505,7 @@ class FrontController extends Controller
                 'img' => $this->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
                 'logo' => $this->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
                 'whatsapp_number' => $this->contactWhatsappNumber($ozmanShop->whatsapp ?: $ozmanShop->phone),
+                'marketing_context' => null,
                 'social_links' => $this->socialLinksPayload($ozmanShop),
                 'agents' => $this->contactPeoplePayload($ozmanShop->agents ?? collect(), $ozmanShop, 'agent', $ozmanProductsDb, $ozmanDepartments, $shops),
                 'distributors' => $this->contactPeoplePayload($ozmanShop->distributors ?? collect(), $ozmanShop, 'distributor', $ozmanProductsDb, $ozmanDepartments, $shops),
@@ -583,6 +601,32 @@ class FrontController extends Controller
         }
 
         return asset($path);
+    }
+
+    private function shopOrderContext(Shop $shop): array
+    {
+        $marketer = $shop->distributorMarketer;
+        $distributor = $marketer?->distributor;
+
+        if ($marketer?->is_active && $distributor?->is_active) {
+            return [
+                'whatsapp_number' => $this->contactWhatsappNumber($distributor->whatsapp ?: $distributor->phone),
+                'marketing_context' => [
+                    'source' => 'marketer',
+                    'distributor_id' => $distributor->id,
+                    'distributor_name' => $distributor->name,
+                    'marketer_id' => $marketer->id,
+                    'marketer_name' => $marketer->name,
+                    'tracking_code' => $marketer->tracking_code,
+                    'commission_rate' => $marketer->commission_rate,
+                ],
+            ];
+        }
+
+        return [
+            'whatsapp_number' => $this->contactWhatsappNumber($shop->whatsapp ?: $shop->phone),
+            'marketing_context' => null,
+        ];
     }
 
     private function socialLinksPayload(?Shop $shop): array

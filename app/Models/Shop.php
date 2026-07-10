@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Shop extends Model
 {
@@ -11,6 +12,7 @@ class Shop extends Model
 
     protected $fillable = [
         'user_id',
+        'distributor_marketer_id',
         'name',
         'slug',
         'description',
@@ -70,6 +72,11 @@ class Shop extends Model
     public function distributors()
     {
         return $this->hasMany(Distributor::class);
+    }
+
+    public function distributorMarketer(): BelongsTo
+    {
+        return $this->belongsTo(DistributorMarketer::class);
     }
 
     public function advertisements()

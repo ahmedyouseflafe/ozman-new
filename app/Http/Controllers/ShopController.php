@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Shop;
+use App\Models\DistributorMarketer;
 use App\Models\User;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -133,6 +134,12 @@ class ShopController extends Controller
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name']);
         $data['is_active'] = $request->boolean('is_active');
 
+        if (Auth::user()?->isMarketer()) {
+            $marketer = $this->currentMarketerProfile();
+            abort_unless($marketer, 403);
+            $data['distributor_marketer_id'] = $marketer->id;
+        }
+
         if ($request->hasFile('logo')) {
             $data['logo'] = $this->storeUpload($request, 'logo', 'shops/logos');
         }
@@ -222,6 +229,7 @@ class ShopController extends Controller
     public function destroy(Shop $shop): RedirectResponse
     {
         abort_unless($this->canAccessCurrentRoute(), 403);
+        $this->authorizeShopAccess($shop);
 
         $this->deleteUpload($shop->logo);
         $this->deleteUpload($shop->banner);
@@ -301,6 +309,27 @@ class ShopController extends Controller
             'role' => 'shop_owner',
             'is_active' => true,
         ]);
+    }
+
+    private function currentMarketerProfile(): ?DistributorMarketer
+    {
+        $user = Auth::user();
+
+        if (! $user?->isMarketer()) {
+            return null;
+        }
+
+        return DistributorMarketer::query()
+            ->where('is_active', true)
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+
+                if ($user->email) {
+                    $query->orWhere('email', $user->email);
+                }
+            })
+            ->oldest()
+            ->first();
     }
 
     private function updateShopOwner(Request $request, Shop $shop, array $data): void

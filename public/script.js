@@ -180,6 +180,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return Boolean(name && (phone || whatsapp));
         }
 
+        function hasCompletedCustomerRegistration() {
+            return localStorage.getItem(VISITOR_REGISTRATION_STORAGE_KEY) === '1'
+                && localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'customer'
+                && hasSavedCustomerProfile();
+        }
+
         function loadCustomerLocation() {
             try {
                 const parsed = JSON.parse(localStorage.getItem(CUSTOMER_LOCATION_STORAGE_KEY) || '{}');
@@ -1406,6 +1412,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const configuredContext = window.OZMAN_FRONT_CONFIG?.marketingContext || {};
             if (configuredContext.distributor_id || configuredContext.marketer_id) {
                 return configuredContext;
+            }
+
+            const shopContext = centersData[activeCenterIndex]?.marketing_context || {};
+            if (shopContext.distributor_id || shopContext.marketer_id) {
+                return shopContext;
             }
 
             if (activePersonContext?.type === 'distributor' && activePersonContext?.id) {
@@ -4065,6 +4076,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 setVisitorType(visitorTypeInput?.value || 'customer');
             }
 
+            function requireCustomerRegistration(message = 'سجل بياناتك أولاً قبل استخدام هذه الخاصية.') {
+                if (hasCompletedCustomerRegistration()) {
+                    return true;
+                }
+
+                localStorage.removeItem(VISITOR_REGISTRATION_STORAGE_KEY);
+                localStorage.setItem(VISITOR_TYPE_STORAGE_KEY, 'customer');
+                setVisitorType('customer');
+                showVisitorRegistrationModal();
+                showCartToast(message);
+
+                return false;
+            }
+
             function setupVisitorRegistrationModal() {
                 if (!visitorRegistrationModal || !window.OZMAN_FRONT_CONFIG?.showVisitorRegistration) {
                     hideVisitorRegistrationModal();
@@ -4080,7 +4105,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                if (!window.OZMAN_FRONT_CONFIG?.forceVisitorRegistration && localStorage.getItem(VISITOR_REGISTRATION_STORAGE_KEY) === '1') {
+                if (
+                    !window.OZMAN_FRONT_CONFIG?.forceVisitorRegistration
+                    && localStorage.getItem(VISITOR_REGISTRATION_STORAGE_KEY) === '1'
+                    && (
+                        localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant'
+                        || hasSavedCustomerProfile()
+                    )
+                ) {
                     hideVisitorRegistrationModal();
                     return;
                 }
@@ -4154,6 +4186,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         localStorage.setItem(VISITOR_REGISTRATION_STORAGE_KEY, '1');
                         localStorage.setItem(VISITOR_TYPE_STORAGE_KEY, registrationType);
                         if (registrationType === 'customer') {
+                            const formData = new FormData(visitorRegistrationForm);
+                            saveCustomerProfile({
+                                name: String(formData.get('name') || '').trim(),
+                                phone: String(formData.get('phone') || '').trim(),
+                                whatsapp: String(formData.get('phone') || '').trim(),
+                                address: String(formData.get('residence_address') || '').trim(),
+                                latitude: String(formData.get('latitude') || '').trim(),
+                                longitude: String(formData.get('longitude') || '').trim(),
+                                map_link: String(formData.get('map_link') || '').trim(),
+                            });
                             localStorage.removeItem(REWARD_DISCOUNT_STORAGE_KEY);
                         }
                         syncCartPricesForVisitor();
@@ -4762,6 +4804,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (raffleCardOpenBtn) {
                 raffleCardOpenBtn.addEventListener('click', (event) => {
                     event.stopPropagation();
+                    if (!requireCustomerRegistration('سجل دخولك أولاً قبل إدخال بطاقة السحب.')) {
+                        return;
+                    }
                     openRaffleCardModal();
                 });
             }
@@ -4777,6 +4822,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             raffleCardForm?.addEventListener('submit', async (event) => {
                 event.preventDefault();
+                if (!requireCustomerRegistration('سجل دخولك أولاً قبل التحقق من بطاقة السحب.')) {
+                    closeRaffleCardModal();
+                    return;
+                }
                 if (!raffleCardForm.reportValidity()) return;
 
                 const submitButton = raffleCardForm.querySelector('button[type="submit"]');

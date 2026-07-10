@@ -235,6 +235,24 @@ class User extends Authenticatable
             $shopIds = $shopIds->merge($distributorShopIds);
         }
 
+        if ($this->isMarketer()) {
+            $marketerIds = DistributorMarketer::query()
+                ->where(function ($query) {
+                    $query->where('user_id', $this->id);
+
+                    if ($this->email) {
+                        $query->orWhere('email', $this->email);
+                    }
+                })
+                ->pluck('id');
+
+            $marketerShopIds = Shop::query()
+                ->whereIn('distributor_marketer_id', $marketerIds)
+                ->pluck('id');
+
+            $shopIds = $shopIds->merge($marketerShopIds);
+        }
+
         return $shopIds
             ->map(fn($id) => (int) $id)
             ->unique()
