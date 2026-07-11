@@ -10,6 +10,10 @@ class VisitorRegistration extends Model
     use HasFactory;
 
     protected $fillable = [
+        'shop_id',
+        'distributor_id',
+        'distributor_marketer_id',
+        'marketing_source',
         'type',
         'name',
         'phone',
@@ -26,4 +30,19 @@ class VisitorRegistration extends Model
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
     ];
+
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class);
+    }
+
+    public function distributor()
+    {
+        return $this->belongsTo(Distributor::class);
+    }
+
+    public function distributorMarketer()
+    {
+        return $this->belongsTo(DistributorMarketer::class);
+    }
 }

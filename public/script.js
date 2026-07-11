@@ -4168,13 +4168,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     try {
                         const registrationType = visitorTypeInput?.value || 'customer';
+                        const formData = new FormData(visitorRegistrationForm);
+                        const marketing = currentMarketingContext();
+                        if (marketing?.marketer_id) {
+                            formData.set('distributor_marketer_id', marketing.marketer_id);
+                            formData.set('marketing_source', marketing.source || 'marketer');
+                        }
+                        if (marketing?.distributor_id) {
+                            formData.set('distributor_id', marketing.distributor_id);
+                        }
+
                         const response = await fetch(window.OZMAN_FRONT_CONFIG?.visitorRegistrationUrl || '/visitor-registrations', {
                             method: 'POST',
                             headers: {
                                 'Accept': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
                             },
-                            body: new FormData(visitorRegistrationForm)
+                            body: formData
                         });
 
                         const result = await response.json().catch(() => ({}));
@@ -4186,7 +4196,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         localStorage.setItem(VISITOR_REGISTRATION_STORAGE_KEY, '1');
                         localStorage.setItem(VISITOR_TYPE_STORAGE_KEY, registrationType);
                         if (registrationType === 'customer') {
-                            const formData = new FormData(visitorRegistrationForm);
                             saveCustomerProfile({
                                 name: String(formData.get('name') || '').trim(),
                                 phone: String(formData.get('phone') || '').trim(),
