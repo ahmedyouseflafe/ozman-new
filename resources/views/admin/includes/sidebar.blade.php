@@ -301,7 +301,7 @@
 
         <div class="admin-sidebar-section">المتجر</div>
 
-        @if($isMarketer)
+        @if($isMarketer && ! $hasAssignedPermissions)
         @if($canSee(['front-orders.index']))
         <a href="{{ route('front-orders.index') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('front-orders.index') ? 'active' : '' }}">
@@ -519,6 +519,13 @@
         <a href="{{ route('front-orders.index') }}" class="admin-mobile-nav-item {{ request()->routeIs('front-orders.index') ? 'active' : '' }}">
             <i class="ti ti-receipt-2" aria-hidden="true"></i>
             الطلبات
+        </a>
+    @endif
+
+    @if(! $isCatalogOnlyUser && $canSee(['shops', 'shops.show', 'shops.create', 'shops.edit']))
+        <a href="{{ route('shops') }}" class="admin-mobile-nav-item {{ request()->routeIs('shops') || request()->routeIs('shops.*') ? 'active' : '' }}">
+            <i class="ti ti-building-store" aria-hidden="true"></i>
+            المتاجر
         </a>
     @endif
 
