@@ -596,6 +596,7 @@
         $shopId = data_get($shop, 'id', 1);
         $shopName = data_get($shop, 'name', 'المتجر');
         $isActive = old('is_active', data_get($shop, 'is_active', true));
+        $showOzmanProducts = old('show_ozman_products', data_get($shop, 'show_ozman_products', false));
     @endphp
 
     <div class="shell">
@@ -1065,6 +1066,20 @@
                             </div>
                             <label class="switch" for="is_active">
                                 <input type="checkbox" id="is_active" name="is_active" value="1" @checked($isActive)>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="switch-card">
+                            <div class="card-copy">
+                                <span class="card-icon"><i class="ti ti-box-multiple" aria-hidden="true"></i></span>
+                                <span>
+                                    <span class="card-title">عرض منتجات Ozman</span>
+                                    <span class="card-sub">عند التفعيل ستظهر منتجات المتجر الأساسي داخل هذا المتجر.</span>
+                                </span>
+                            </div>
+                            <label class="switch" for="show_ozman_products">
+                                <input type="checkbox" id="show_ozman_products" name="show_ozman_products" value="1" @checked($showOzmanProducts)>
                                 <span class="slider"></span>
                             </label>
                         </div>

@@ -133,6 +133,7 @@ class ShopController extends Controller
         $data['user_id'] = $owner->id;
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name']);
         $data['is_active'] = $request->boolean('is_active');
+        $data['show_ozman_products'] = $request->boolean('show_ozman_products');
 
         if (Auth::user()?->isMarketer()) {
             $marketer = $this->currentMarketerProfile();
@@ -191,6 +192,7 @@ class ShopController extends Controller
         $data = $this->validatedData($request, $shop);
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name'], $shop);
         $data['is_active'] = $request->boolean('is_active');
+        $data['show_ozman_products'] = $request->boolean('show_ozman_products');
 
         if ($this->isSuperAdmin()) {
             $this->updateShopOwner($request, $shop, $data);

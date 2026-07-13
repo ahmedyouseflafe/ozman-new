@@ -1042,6 +1042,20 @@
                                 <span class="slider"></span>
                             </label>
                         </div>
+
+                        <div class="switch-card">
+                            <div class="card-copy">
+                                <span class="card-icon"><i class="ti ti-box-multiple" aria-hidden="true"></i></span>
+                                <span>
+                                    <span class="card-title">عرض منتجات Ozman</span>
+                                    <span class="card-sub">عند التفعيل ستظهر منتجات المتجر الأساسي داخل هذا المتجر.</span>
+                                </span>
+                            </div>
+                            <label class="switch" for="show_ozman_products">
+                                <input type="checkbox" id="show_ozman_products" name="show_ozman_products" value="1" @checked(old('show_ozman_products'))>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
                     </section>
 
                     <div class="form-actions">

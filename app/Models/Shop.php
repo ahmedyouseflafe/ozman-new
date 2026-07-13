@@ -36,10 +36,12 @@ class Shop extends Model
         'payment_wallet_number',
         'payment_notes',
         'is_active',
+        'show_ozman_products',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'show_ozman_products' => 'boolean',
     ];
 
     // العلاقات

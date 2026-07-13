@@ -440,7 +440,7 @@ class FrontController extends Controller
                 ->all();
         }
 
-        $centersData = $shops->map(function (Shop $shop) use (&$productsDb, $shops, $ozmanShop, $ozmanBottomScreens) {
+        $centersData = $shops->map(function (Shop $shop) use (&$productsDb, $shops, $ozmanShop, $ozmanBottomScreens, $ozmanCategories) {
             $shopProductsDb = [];
             $shopDepartments = [];
 
@@ -455,6 +455,34 @@ class FrontController extends Controller
                         'img' => $this->imageUrl($category->image, 'images/logo.jpg'),
                     ];
                 })->values()->all();
+
+            $showOzmanProducts = (bool) $shop->show_ozman_products
+                && ! ($ozmanShop?->exists && $shop->id === $ozmanShop->id);
+
+            if ($showOzmanProducts) {
+                foreach ($ozmanCategories as $category) {
+                    $categoryTitle = $category->localized('name');
+                    $products = $category->products
+                        ->map(fn($product) => $this->productPayload($product))
+                        ->values()
+                        ->all();
+
+                    if (isset($shopProductsDb[$categoryTitle])) {
+                        $shopProductsDb[$categoryTitle] = array_values(array_merge($shopProductsDb[$categoryTitle], $products));
+                        $productsDb[$categoryTitle] = $shopProductsDb[$categoryTitle];
+
+                        continue;
+                    }
+
+                    $productsDb[$categoryTitle] = $products;
+                    $shopProductsDb[$categoryTitle] = $products;
+                    $shopDepartments[] = [
+                        'title' => $categoryTitle,
+                        'img' => $this->imageUrl($category->image, 'images/logo.jpg'),
+                        'shared_source' => 'ozman',
+                    ];
+                }
+            }
 
             $displayItems = $shop->advertisements ?? collect();
             if ($ozmanShop?->exists && $shop->id === $ozmanShop->id) {
