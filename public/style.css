@@ -2657,9 +2657,10 @@ html[dir="ltr"] .display-screen {
 
 .side-shop-name {
     position: absolute;
-    inset-inline-end: calc(100% + 10px);
+    right: calc(100% + 10px);
+    left: auto;
     top: 50%;
-    transform: translateY(-50%) translateX(8px);
+    transform: translateY(-50%) translateX(-8px);
     max-width: 160px;
     padding: 7px 12px;
     border: 1px solid rgba(0, 229, 255, 0.28);
