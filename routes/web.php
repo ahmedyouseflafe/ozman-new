@@ -27,6 +27,8 @@ Route::get('/front/shops/{shop}', [FrontController::class, 'index'])->name('fron
 Route::get('/stores/{shop:slug}', [FrontController::class, 'index'])->name('front.shop.slug');
 Route::get('/distributor-stores/{distributor}', [FrontController::class, 'distributor'])->name('front.distributor');
 Route::get('/marketer-stores/{marketer:tracking_code}', [FrontController::class, 'marketer'])->name('front.marketer');
+Route::get('/marketer-wheel/{marketer:tracking_code}', [RewardWheelController::class, 'publicMarketerDirect'])->name('front.marketer.direct-wheel');
+Route::post('/marketer-wheel/{marketer:tracking_code}/spin', [RewardWheelController::class, 'publicMarketerDirectSpin'])->name('front.marketer.direct-wheel.spin');
 Route::view('/customer-login', 'front.customer_login')->name('customer.login');
 Route::get('/tts/hebrew', [TextToSpeechController::class, 'hebrew'])->name('tts.hebrew');
 Route::get('/tts/arabic', [TextToSpeechController::class, 'arabic'])->name('tts.arabic');

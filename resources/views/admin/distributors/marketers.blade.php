@@ -382,6 +382,9 @@
                                             <a class="btn action-btn" href="{{ route('front.marketer', ['marketer' => $marketer->tracking_code]) }}" target="_blank" rel="noopener" title="فتح الرابط" aria-label="فتح الرابط">
                                                 <i class="ti ti-external-link"></i><span class="sr-only">فتح الرابط</span>
                                             </a>
+                                            <a class="btn btn-primary action-btn" href="{{ route('front.marketer.direct-wheel', ['marketer' => $marketer->tracking_code]) }}" target="_blank" rel="noopener" title="رابط العجلة المباشرة" aria-label="رابط العجلة المباشرة">
+                                                <i class="ti ti-rotate-clockwise"></i><span class="sr-only">رابط العجلة المباشرة</span>
+                                            </a>
                                             <form method="POST" action="{{ route('distributors.marketers.destroy', $marketer) }}" onsubmit="return confirm('هل تريد حذف هذا المسوق؟')">
                                                 @csrf
                                                 @method('DELETE')

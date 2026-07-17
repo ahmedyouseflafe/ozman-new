@@ -146,15 +146,22 @@ class DistributorController extends Controller
         $marketerShareLinks = $distributor->marketers
             ->map(function (DistributorMarketer $marketer) {
                 $url = route('front.marketer', ['marketer' => $marketer->tracking_code]);
+                $wheelUrl = route('front.marketer.direct-wheel', ['marketer' => $marketer->tracking_code]);
                 $qrCodeSvg = (new Writer(new ImageRenderer(
                     new RendererStyle(220, 2),
                     new SvgImageBackEnd()
                 )))->writeString($url);
+                $wheelQrCodeSvg = (new Writer(new ImageRenderer(
+                    new RendererStyle(220, 2),
+                    new SvgImageBackEnd()
+                )))->writeString($wheelUrl);
 
                 return [
                     'marketer' => $marketer,
                     'url' => $url,
                     'qr' => 'data:image/svg+xml;base64,' . base64_encode($qrCodeSvg),
+                    'wheel_url' => $wheelUrl,
+                    'wheel_qr' => 'data:image/svg+xml;base64,' . base64_encode($wheelQrCodeSvg),
                 ];
             });
 

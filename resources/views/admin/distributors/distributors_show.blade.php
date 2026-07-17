@@ -107,6 +107,9 @@
                                         <input type="text" id="marketerUrl{{ $marketer->id }}" value="{{ $share['url'] }}" readonly style="flex:1; min-width:260px; background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
                                         <button type="button" class="btn copy-marketer-url" data-copy-target="marketerUrl{{ $marketer->id }}"><i class="ti ti-copy"></i>نسخ الرابط</button>
                                         <a href="{{ $share['url'] }}" target="_blank" rel="noopener" class="btn btn-primary"><i class="ti ti-external-link"></i>فتح الرابط</a>
+                                        <input type="text" id="marketerWheelUrl{{ $marketer->id }}" value="{{ $share['wheel_url'] }}" readonly style="flex:1; min-width:260px; background:#08080c; border:1px solid rgba(0,229,255,.22); border-radius:14px; color:#fff; padding:14px">
+                                        <button type="button" class="btn copy-marketer-url" data-copy-target="marketerWheelUrl{{ $marketer->id }}"><i class="ti ti-copy"></i>نسخ رابط العجلة</button>
+                                        <a href="{{ $share['wheel_url'] }}" target="_blank" rel="noopener" class="btn btn-primary"><i class="ti ti-rotate-clockwise"></i>فتح العجلة</a>
                                         <form method="POST" action="{{ route('distributors.marketers.destroy', $marketer) }}" onsubmit="return confirm('هل تريد حذف هذا المسوق؟')">
                                             @csrf
                                             @method('DELETE')
@@ -120,9 +123,14 @@
                                          نسبة الربح: {{ number_format((float) $marketer->commission_rate, 2) }}%
                                      </div>
                                  </div>
-                                <a href="{{ $share['url'] }}" target="_blank" rel="noopener">
-                                    <img src="{{ $share['qr'] }}" alt="QR Code للمسوق {{ $marketer->name }}" style="width:130px; height:130px; background:#fff; border-radius:16px; padding:10px">
-                                </a>
+                                <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end">
+                                    <a href="{{ $share['url'] }}" target="_blank" rel="noopener" title="QR رابط المتجر">
+                                        <img src="{{ $share['qr'] }}" alt="QR Code للمسوق {{ $marketer->name }}" style="width:130px; height:130px; background:#fff; border-radius:16px; padding:10px">
+                                    </a>
+                                    <a href="{{ $share['wheel_url'] }}" target="_blank" rel="noopener" title="QR العجلة المباشرة">
+                                        <img src="{{ $share['wheel_qr'] }}" alt="QR Code للعجلة المباشرة {{ $marketer->name }}" style="width:130px; height:130px; background:#fff; border-radius:16px; padding:10px; border:2px solid #00e5ff">
+                                    </a>
+                                </div>
                             </article>
                         @empty
                             <div class="detail-box">

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DistributorMarketer;
 use App\Models\RewardWheel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -453,6 +454,23 @@ class RewardWheelController extends Controller
     public function marketerDirectSpin(Request $request): JsonResponse
     {
         abort_unless(auth()->user()?->isMarketer() || $this->canAccessCurrentRoute(), 403);
+
+        return $this->spinMarketerWheel($request, $this->marketerDirectWheel()->load('segments'), false);
+    }
+
+    public function publicMarketerDirect(DistributorMarketer $marketer): View
+    {
+        abort_unless($marketer->is_active && $marketer->distributor?->is_active, 404);
+
+        return view('front.marketer_direct_wheel', [
+            'wheel' => $this->marketerDirectWheel()->load('segments'),
+            'marketer' => $marketer->loadMissing('distributor.shop'),
+        ]);
+    }
+
+    public function publicMarketerDirectSpin(Request $request, DistributorMarketer $marketer): JsonResponse
+    {
+        abort_unless($marketer->is_active && $marketer->distributor?->is_active, 404);
 
         return $this->spinMarketerWheel($request, $this->marketerDirectWheel()->load('segments'), false);
     }
