@@ -419,6 +419,22 @@
         </a>
         @endif
 
+        @if($canSee(['reward-wheels.marketer.play']))
+        <a href="{{ route('reward-wheels.marketer.play') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('reward-wheels.marketer.play') ? 'active' : '' }}">
+             <i class="ti ti-disc" aria-hidden="true"></i>
+             عجلة الأسئلة
+        </a>
+        @endif
+
+        @if($canSee(['reward-wheels.marketer.direct.play']))
+        <a href="{{ route('reward-wheels.marketer.direct.play') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('reward-wheels.marketer.direct.play') ? 'active' : '' }}">
+             <i class="ti ti-bolt" aria-hidden="true"></i>
+             العجلة المباشرة
+        </a>
+        @endif
+
         @if($canSee(['raffle-cards.index']))
         <a href="{{ route('raffle-cards.index') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('raffle-cards.*') ? 'active' : '' }}">
@@ -519,6 +535,20 @@
         <a href="{{ route('front-orders.index') }}" class="admin-mobile-nav-item {{ request()->routeIs('front-orders.index') ? 'active' : '' }}">
             <i class="ti ti-receipt-2" aria-hidden="true"></i>
             الطلبات
+        </a>
+    @endif
+
+    @if($canSee(['reward-wheels.marketer.play']))
+        <a href="{{ route('reward-wheels.marketer.play') }}" class="admin-mobile-nav-item {{ request()->routeIs('reward-wheels.marketer.play') ? 'active' : '' }}">
+            <i class="ti ti-disc" aria-hidden="true"></i>
+            الأسئلة
+        </a>
+    @endif
+
+    @if($canSee(['reward-wheels.marketer.direct.play']))
+        <a href="{{ route('reward-wheels.marketer.direct.play') }}" class="admin-mobile-nav-item {{ request()->routeIs('reward-wheels.marketer.direct.play') ? 'active' : '' }}">
+            <i class="ti ti-bolt" aria-hidden="true"></i>
+            المباشرة
         </a>
     @endif
 
