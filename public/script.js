@@ -4213,7 +4213,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         showCartToast(result?.message || 'تم حفظ بياناتك بنجاح.');
                         window.setTimeout(() => {
                             hideVisitorRegistrationModal();
-                            if (registrationType === 'customer') {
+                            const pendingRaffleCard = sessionStorage.getItem('ozman_pending_raffle_card');
+                            if (registrationType === 'customer' && pendingRaffleCard && typeof openRaffleCardModal === 'function') {
+                                sessionStorage.removeItem('ozman_pending_raffle_card');
+                                if (typeof raffleCardNumber !== 'undefined' && raffleCardNumber) {
+                                    raffleCardNumber.value = pendingRaffleCard;
+                                }
+                                openRaffleCardModal();
+                                window.setTimeout(() => raffleCardForm?.requestSubmit(), 300);
+                            } else if (registrationType === 'customer') {
                                 openRewardWheelModal();
                             }
                         }, 450);
@@ -4871,6 +4879,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             });
+
+            const raffleCardFromUrl = new URLSearchParams(window.location.search).get('raffle_card');
+            if (raffleCardFromUrl && /^\d{6}$/.test(raffleCardFromUrl)) {
+                if (raffleCardNumber) {
+                    raffleCardNumber.value = raffleCardFromUrl;
+                }
+
+                if (requireCustomerRegistration('سجل دخولك أولاً قبل التحقق من بطاقة السحب.')) {
+                    openRaffleCardModal();
+                    window.setTimeout(() => raffleCardForm?.requestSubmit(), 300);
+                } else {
+                    sessionStorage.setItem('ozman_pending_raffle_card', raffleCardFromUrl);
+                }
+            }
 
             document.addEventListener('click', (event) => {
                 if (!cartPanel || !cartPanel.classList.contains('active')) return;

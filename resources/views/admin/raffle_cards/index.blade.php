@@ -31,6 +31,8 @@
         .form-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; align-items:end; }
         label { display:block; color:rgba(255,255,255,.72); font-size:12px; font-weight:900; margin-bottom:8px; }
         input { width:100%; min-height:46px; border:1px solid var(--border); background:rgba(255,255,255,.055); border-radius:16px; color:#fff; padding:0 15px; outline:none; font-family:inherit; font-size:13px; font-weight:800; }
+        select { width:100%; min-height:46px; border:1px solid var(--border); background:rgba(255,255,255,.055); border-radius:16px; color:#fff; padding:0 15px; outline:none; font-family:inherit; font-size:13px; font-weight:800; }
+        select option { color:#111; }
         input[type=file] { padding:10px 15px; }
         .file-input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
         .file-card {
@@ -176,6 +178,50 @@
                         <input id="raffle_whatsapp" name="raffle_whatsapp" value="{{ old('raffle_whatsapp', $raffleWhatsapp) }}" placeholder="+97059xxxxxxx" dir="ltr">
                     </div>
                     <button class="btn btn-primary" type="submit"><i class="ti ti-device-floppy"></i> حفظ الرقم</button>
+                </form>
+            </section>
+
+            <section class="panel">
+                <div class="panel-head">
+                    <div>
+                        <div class="panel-title"><i class="ti ti-printer"></i> توليد بطاقات QR للطباعة</div>
+                        <p style="color:var(--muted); font-weight:800; margin-top:8px">اختر نطاق الأرقام وسيتم إنشاء صفحة A4 جاهزة للطباعة أو الحفظ PDF، وكل بطاقة تحمل QR خاص بها.</p>
+                    </div>
+                </div>
+                <form action="{{ route('raffle-cards.printable') }}" method="POST" target="_blank" class="form-grid">
+                    @csrf
+                    <div>
+                        <label for="from_number">من رقم</label>
+                        <input id="from_number" name="from_number" value="{{ old('from_number', '000001') }}" maxlength="6" pattern="\d{6}" placeholder="000001" dir="ltr" required>
+                    </div>
+                    <div>
+                        <label for="to_number">إلى رقم</label>
+                        <input id="to_number" name="to_number" value="{{ old('to_number', '000100') }}" maxlength="6" pattern="\d{6}" placeholder="000100" dir="ltr" required>
+                    </div>
+                    <div>
+                        <label for="cards_per_page">عدد البطاقات في الصفحة</label>
+                        <select id="cards_per_page" name="cards_per_page" required>
+                            <option value="8" @selected(old('cards_per_page', '8') === '8')>8 بطاقات</option>
+                            <option value="10" @selected(old('cards_per_page') === '10')>10 بطاقات</option>
+                            <option value="6" @selected(old('cards_per_page') === '6')>6 بطاقات</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="brand_text">اسم البراند على البطاقة</label>
+                        <input id="brand_text" name="brand_text" value="{{ old('brand_text', 'Ozman') }}" placeholder="Ozman">
+                    </div>
+                    <div style="grid-column:span 2">
+                        <label for="social_qr_1_url">QR السوشيال الأول</label>
+                        <input id="social_qr_1_url" name="social_qr_1_url" value="{{ old('social_qr_1_url', $defaultSocialQrLinks['first'] ?? '') }}" placeholder="https://instagram.com/..." dir="ltr">
+                    </div>
+                    <div style="grid-column:span 2">
+                        <label for="social_qr_2_url">QR السوشيال الثاني</label>
+                        <input id="social_qr_2_url" name="social_qr_2_url" value="{{ old('social_qr_2_url', $defaultSocialQrLinks['second'] ?? '') }}" placeholder="https://tiktok.com/..." dir="ltr">
+                    </div>
+                    <button class="btn btn-primary" type="submit" style="grid-column:1 / -1">
+                        <i class="ti ti-file-type-pdf"></i>
+                        توليد صفحة الطباعة / PDF
+                    </button>
                 </form>
             </section>
 

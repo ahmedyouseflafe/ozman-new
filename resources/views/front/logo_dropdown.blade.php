@@ -23,6 +23,9 @@
         @forelse($agents as $agent)
             <button type="button" class="sub-item agent-item" data-person-shop-id="{{ $agent->shop_id }}" data-person-id="{{ $agent->id }}" data-person-type="agent">
                 <div class="agent-main">
+
+
+                    
                     <div class="agent-logo-wrapper">
                         <img src="{{ $agent->image ? asset($agent->image) : $shopLogo }}" alt="{{ $agent->name }}" class="agent-img-logo border-blue">
                     </div>

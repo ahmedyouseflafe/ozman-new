@@ -90,7 +90,7 @@ return [
                 'marketer_orders.view' => ['label' => 'عرض طلباتي من رابط المسوق فقط', 'routes' => ['front-orders.index']],
                 'front_orders.manage' => ['label' => 'إدارة جوائز الطلبات', 'routes' => ['front-orders.reward', 'front-orders.spinReward']],
                 'raffle_cards.view' => ['label' => 'استعراض بطاقات السحب', 'routes' => ['raffle-cards.index']],
-                'raffle_cards.create' => ['label' => 'إضافة بطاقة ربح', 'routes' => ['raffle-cards.store']],
+                'raffle_cards.create' => ['label' => 'إضافة بطاقة ربح', 'routes' => ['raffle-cards.store', 'raffle-cards.printable']],
                 'raffle_cards.edit' => ['label' => 'تعديل بطاقة ربح', 'routes' => ['raffle-cards.update', 'raffle-cards.settings']],
                 'raffle_cards.delete' => ['label' => 'حذف بطاقة ربح', 'routes' => ['raffle-cards.destroy', 'raffle-cards.live-draw.destroy', 'raffle-cards.live-draw.bulk-destroy']],
             ],

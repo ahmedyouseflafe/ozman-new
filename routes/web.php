@@ -35,6 +35,7 @@ Route::get('/tts/arabic', [TextToSpeechController::class, 'arabic'])->name('tts.
 Route::post('/visitor-registrations', [VisitorRegistrationController::class, 'store'])->name('visitor-registrations.store');
 Route::post('/front-orders', [FrontOrderController::class, 'store'])->name('front-orders.store');
 Route::post('/raffle/check', [RaffleCardController::class, 'check'])->name('raffle.check');
+Route::get('/raffle-card/{cardNumber}', [RaffleCardController::class, 'openCard'])->name('front.raffle-card.open');
 Route::get('/front-orders/{order}/qr.svg', [FrontOrderController::class, 'qr'])->name('front-orders.qr');
 Route::post('/front-orders/{order}/spin-reward', [FrontOrderController::class, 'spinReward'])->name('front-orders.spinReward');
 Route::patch('/front-orders/{order}/reward', [FrontOrderController::class, 'reward'])->name('front-orders.reward');
@@ -184,6 +185,8 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
         ->name('raffle-cards.index');
     Route::post('/raffle-cards', [RaffleCardController::class, 'store'])
         ->name('raffle-cards.store');
+    Route::post('/raffle-cards/printable', [RaffleCardController::class, 'printable'])
+        ->name('raffle-cards.printable');
     Route::post('/raffle-cards/live-draw/random', [RaffleCardController::class, 'randomLiveDraw'])
         ->name('raffle-cards.live-draw.random');
     Route::delete('/raffle-cards/live-draw/bulk', [RaffleCardController::class, 'bulkDestroyLiveEntries'])

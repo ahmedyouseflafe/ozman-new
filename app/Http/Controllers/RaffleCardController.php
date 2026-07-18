@@ -2,13 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Shop;
 use App\Models\RaffleCard;
 use App\Models\RaffleEntry;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -49,9 +55,85 @@ class RaffleCardController extends Controller
             'search' => $search,
             'status' => $status,
             'raffleWhatsapp' => $settings['raffle']['whatsapp'] ?? '',
+            'defaultSocialQrLinks' => $this->defaultSocialQrLinks(),
             'totalCards' => RaffleCard::count(),
             'usedCards' => RaffleCard::whereNotNull('used_at')->count(),
             'liveEntriesCount' => RaffleEntry::where('outcome', RaffleEntry::OUTCOME_LIVE_DRAW)->count(),
+        ]);
+    }
+
+    public function openCard(string $cardNumber): RedirectResponse
+    {
+        abort_unless(preg_match('/^\d{6}$/', $cardNumber) === 1, 404);
+
+        return redirect()->route('home', ['raffle_card' => $cardNumber]);
+    }
+
+    public function printable(Request $request): View
+    {
+        abort_unless($this->canAccessCurrentRoute(), 403);
+
+        $data = $request->validate([
+            'from_number' => ['required', 'digits:6'],
+            'to_number' => ['required', 'digits:6'],
+            'cards_per_page' => ['required', 'integer', Rule::in([6, 8, 10])],
+            'social_qr_1_url' => ['nullable', 'url', 'max:1000'],
+            'social_qr_2_url' => ['nullable', 'url', 'max:1000'],
+            'brand_text' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $from = (int) $data['from_number'];
+        $to = (int) $data['to_number'];
+
+        if ($from > $to) {
+            throw ValidationException::withMessages([
+                'to_number' => 'رقم النهاية يجب أن يكون أكبر من أو يساوي رقم البداية.',
+            ]);
+        }
+
+        $count = $to - $from + 1;
+        if ($count > 1000) {
+            throw ValidationException::withMessages([
+                'to_number' => 'للحفاظ على سرعة المتصفح، ولد كل ملف بحد أقصى 1000 بطاقة.',
+            ]);
+        }
+
+        $writer = new Writer(new ImageRenderer(
+            new RendererStyle(260, 1),
+            new SvgImageBackEnd()
+        ));
+        $smallWriter = new Writer(new ImageRenderer(
+            new RendererStyle(160, 1),
+            new SvgImageBackEnd()
+        ));
+
+        $socialQr1 = filled($data['social_qr_1_url'] ?? null)
+            ? $this->qrDataUri($smallWriter, $data['social_qr_1_url'])
+            : null;
+        $socialQr2 = filled($data['social_qr_2_url'] ?? null)
+            ? $this->qrDataUri($smallWriter, $data['social_qr_2_url'])
+            : null;
+
+        $cards = collect(range($from, $to))
+            ->map(function (int $number) use ($writer) {
+                $cardNumber = str_pad((string) $number, 6, '0', STR_PAD_LEFT);
+                $url = route('front.raffle-card.open', ['cardNumber' => $cardNumber]);
+
+                return [
+                    'number' => $cardNumber,
+                    'url' => $url,
+                    'qr' => $this->qrDataUri($writer, $url),
+                ];
+            });
+
+        return view('admin.raffle_cards.printable', [
+            'cards' => $cards,
+            'cardsPerPage' => (int) $data['cards_per_page'],
+            'socialQr1' => $socialQr1,
+            'socialQr2' => $socialQr2,
+            'brandText' => $data['brand_text'] ?: 'Ozman',
+            'fromNumber' => $data['from_number'],
+            'toNumber' => $data['to_number'],
         ]);
     }
 
@@ -278,6 +360,29 @@ class RaffleCardController extends Controller
             'prize_image' => $card->prize_image ? asset($card->prize_image) : null,
             'whatsapp' => $whatsapp,
         ]);
+    }
+
+    private function qrDataUri(Writer $writer, string $value): string
+    {
+        return 'data:image/svg+xml;base64,' . base64_encode($writer->writeString($value));
+    }
+
+    private function defaultSocialQrLinks(): array
+    {
+        $shop = Shop::query()
+            ->with('social')
+            ->where(function ($query) {
+                $query->where('slug', 'ozman')
+                    ->orWhere('name', 'Ozman');
+            })
+            ->first();
+
+        $social = optional($shop?->social);
+
+        return [
+            'first' => $social->instagram ?: $social->facebook ?: '',
+            'second' => $social->tiktok ?: $social->youtube ?: '',
+        ];
     }
 
     private function settings(): array
