@@ -62,17 +62,22 @@
         .ticket {
             position: relative;
             display: grid;
-            grid-template-columns: 31% 26% 43%;
+            grid-template-columns: 23mm 22mm minmax(0, 1fr);
             align-items: center;
-            gap: 2.5mm;
+            gap: 2mm;
             min-height: 48mm;
-            padding: 4mm;
+            padding: 3.2mm;
             border: .35mm solid #d9d9d9;
             background: #fff;
             overflow: hidden;
             break-inside: avoid;
         }
-        .sheet.cards-10 .ticket { min-height: 49mm; padding: 3.2mm; }
+        .sheet.cards-10 .ticket {
+            min-height: 49mm;
+            grid-template-columns: 21mm 20mm minmax(0, 1fr);
+            gap: 1.6mm;
+            padding: 2.8mm;
+        }
         .cut-mark {
             position: absolute;
             width: 8mm;
@@ -92,14 +97,19 @@
         .cut-bl { bottom: 1mm; left: 1mm; transform: rotate(270deg); }
         .social-stack {
             display: grid;
-            gap: 3mm;
+            gap: 2.4mm;
             justify-items: center;
+            min-width: 0;
         }
         .social-qr {
-            width: 22mm;
-            height: 22mm;
+            width: 21mm;
+            height: 21mm;
             display: grid;
             place-items: center;
+        }
+        .sheet.cards-10 .social-qr {
+            width: 19mm;
+            height: 19mm;
         }
         .social-qr img,
         .main-qr img {
@@ -120,61 +130,63 @@
         }
         .follow-copy {
             display: grid;
-            gap: 7mm;
+            gap: 5mm;
             align-content: center;
             text-align: center;
             font-weight: 800;
-            font-size: 13pt;
+            font-size: 12pt;
             line-height: 1.45;
+            min-width: 0;
         }
-        .sheet.cards-10 .follow-copy { font-size: 11pt; gap: 5mm; }
+        .sheet.cards-10 .follow-copy { font-size: 10pt; gap: 4mm; }
         .main-side {
             display: grid;
             justify-items: center;
             align-content: center;
-            gap: 1.6mm;
+            gap: 1.3mm;
             text-align: center;
+            min-width: 0;
+            overflow: hidden;
         }
         .main-qr {
             position: relative;
-            width: 36mm;
-            height: 36mm;
+            width: 31mm;
+            height: 31mm;
         }
         .sheet.cards-10 .main-qr {
-            width: 32mm;
-            height: 32mm;
+            width: 28mm;
+            height: 28mm;
         }
         .brand-mark {
-            position: absolute;
-            inset: 50% auto auto 50%;
-            transform: translate(-50%, -50%);
-            min-width: 12mm;
-            min-height: 6mm;
-            padding: .5mm 1mm;
+            min-width: 10mm;
+            min-height: 4.5mm;
+            padding: .35mm 1mm;
             border-radius: 999px;
-            background: rgba(255,255,255,.9);
+            background: #fff;
             color: #111;
-            font-size: 6pt;
+            font-size: 5.5pt;
             font-weight: 900;
             display: grid;
             place-items: center;
-            box-shadow: 0 0 0 .25mm #fff;
+            border: .25mm solid #e8e8e8;
         }
         .scan-text {
-            font-size: 8pt;
+            font-size: 7.2pt;
             line-height: 1.25;
             font-weight: 700;
         }
         .card-number {
             direction: ltr;
-            font-size: 23pt;
-            letter-spacing: 2.4mm;
+            font-size: 19pt;
+            letter-spacing: 1.15mm;
             font-weight: 900;
             line-height: 1;
+            white-space: nowrap;
+            max-width: 100%;
         }
         .sheet.cards-10 .card-number {
-            font-size: 19pt;
-            letter-spacing: 1.8mm;
+            font-size: 16pt;
+            letter-spacing: .9mm;
         }
         @media print {
             @page {
@@ -237,8 +249,8 @@
                         <div class="main-side">
                             <div class="main-qr">
                                 <img src="{{ $card['qr'] }}" alt="QR بطاقة {{ $card['number'] }}">
-                                <span class="brand-mark">{{ $brandText }}</span>
                             </div>
+                            <span class="brand-mark">{{ $brandText }}</span>
                             <div class="scan-text">امسح وادخل على التطبيق<br>لإدخال الكود التسلسلي</div>
                             <div class="card-number">{{ $card['number'] }}</div>
                         </div>
