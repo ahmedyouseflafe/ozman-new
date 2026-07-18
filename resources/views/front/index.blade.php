@@ -861,18 +861,31 @@
                     <div>
                         <span>{{ __('بطاقات السحب') }}</span>
                         <h3>{{ __('تحقق من رقم بطاقتك') }}</h3>
-                        <p>{{ __('أدخل رقم البطاقة المكون من 6 أرقام لمعرفة نتيجة السحب الفوري.') }}</p>
+                        <p>{{ __('امسح QR الموجود على البطاقة لمعرفة نتيجة السحب الفوري.') }}</p>
                     </div>
                 </div>
                 <form class="raffle-card-form" id="raffleCardForm">
                     <label for="raffleCardNumber">{{ __('رقم البطاقة') }}</label>
-                    <input type="text" inputmode="numeric" maxlength="6" pattern="\d{6}" id="raffleCardNumber"
-                        name="card_number" placeholder="000000" dir="ltr" required>
-                    <button type="submit" class="cart-checkout-btn">
-                        <i class="fas fa-magnifying-glass"></i>
-                        {{ __('تحقق من البطاقة') }}
+                    <input type="text" inputmode="none" maxlength="6" pattern="\d{6}" id="raffleCardNumber"
+                        name="card_number" placeholder="امسح البطاقة" dir="ltr" readonly required>
+                    <button type="button" class="cart-checkout-btn raffle-scan-btn" id="raffleCardScanBtn">
+                        <i class="fas fa-qrcode"></i>
+                        {{ __('مسح البطاقة بالكاميرا') }}
                     </button>
                 </form>
+                <div class="raffle-scanner" id="raffleScanner" hidden>
+                    <div class="raffle-scanner-frame">
+                        <video id="raffleScannerVideo" playsinline muted></video>
+                        <span class="raffle-scan-corner corner-1"></span>
+                        <span class="raffle-scan-corner corner-2"></span>
+                        <span class="raffle-scan-corner corner-3"></span>
+                        <span class="raffle-scan-corner corner-4"></span>
+                    </div>
+                    <div class="raffle-scanner-actions">
+                        <span id="raffleScannerStatus">{{ __('وجه الكاميرا نحو QR البطاقة') }}</span>
+                        <button type="button" id="raffleScannerStopBtn">{{ __('إيقاف المسح') }}</button>
+                    </div>
+                </div>
                 <div class="raffle-card-result" id="raffleCardResult" hidden></div>
             </div>
         </div>

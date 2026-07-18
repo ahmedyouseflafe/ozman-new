@@ -2286,9 +2286,121 @@ html[dir="ltr"] .display-screen {
     outline: none;
 }
 
+.raffle-card-form input[readonly] {
+    cursor: default;
+    user-select: none;
+    caret-color: transparent;
+    color: rgba(255, 255, 255, .86);
+    background:
+        radial-gradient(circle at center, rgba(0, 229, 255, .08), transparent 58%),
+        rgba(255, 255, 255, .055);
+}
+
 .raffle-card-form input:focus {
     border-color: var(--primary-color);
     box-shadow: 0 0 18px rgba(0, 229, 255, .22);
+}
+
+.raffle-scan-btn {
+    min-height: 56px;
+}
+
+.raffle-scanner {
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid rgba(0, 229, 255, .25);
+    border-radius: 22px;
+    background: rgba(0, 0, 0, .38);
+}
+
+.raffle-scanner-frame {
+    position: relative;
+    overflow: hidden;
+    border-radius: 18px;
+    aspect-ratio: 1 / 1;
+    max-height: min(58vh, 420px);
+    background: #020607;
+    display: grid;
+    place-items: center;
+}
+
+.raffle-scanner-frame video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.raffle-scanner-frame::after {
+    content: '';
+    position: absolute;
+    inset: 14%;
+    border: 1px solid rgba(0, 229, 255, .65);
+    border-radius: 20px;
+    box-shadow: 0 0 0 999px rgba(0, 0, 0, .34), 0 0 22px rgba(0, 229, 255, .28);
+}
+
+.raffle-scan-corner {
+    position: absolute;
+    z-index: 2;
+    width: 34px;
+    height: 34px;
+    border-color: var(--primary-color);
+    filter: drop-shadow(0 0 8px rgba(0, 229, 255, .8));
+}
+
+.raffle-scan-corner.corner-1 {
+    top: 14%;
+    right: 14%;
+    border-top: 4px solid;
+    border-right: 4px solid;
+    border-radius: 0 14px 0 0;
+}
+
+.raffle-scan-corner.corner-2 {
+    top: 14%;
+    left: 14%;
+    border-top: 4px solid;
+    border-left: 4px solid;
+    border-radius: 14px 0 0 0;
+}
+
+.raffle-scan-corner.corner-3 {
+    bottom: 14%;
+    right: 14%;
+    border-bottom: 4px solid;
+    border-right: 4px solid;
+    border-radius: 0 0 14px 0;
+}
+
+.raffle-scan-corner.corner-4 {
+    bottom: 14%;
+    left: 14%;
+    border-bottom: 4px solid;
+    border-left: 4px solid;
+    border-radius: 0 0 0 14px;
+}
+
+.raffle-scanner-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 10px;
+    color: rgba(255, 255, 255, .76);
+    font-size: .86rem;
+    font-weight: 800;
+}
+
+.raffle-scanner-actions button {
+    border: 1px solid rgba(255, 77, 104, .42);
+    border-radius: 999px;
+    min-height: 38px;
+    padding: 0 14px;
+    color: #ff6b7f;
+    background: rgba(255, 77, 104, .1);
+    font: inherit;
+    cursor: pointer;
 }
 
 .raffle-card-result {

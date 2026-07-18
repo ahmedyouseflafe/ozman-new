@@ -4741,6 +4741,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const raffleCardForm = document.getElementById('raffleCardForm');
             const raffleCardNumber = document.getElementById('raffleCardNumber');
             const raffleCardResult = document.getElementById('raffleCardResult');
+            const raffleCardScanBtn = document.getElementById('raffleCardScanBtn');
+            const raffleScanner = document.getElementById('raffleScanner');
+            const raffleScannerVideo = document.getElementById('raffleScannerVideo');
+            const raffleScannerStopBtn = document.getElementById('raffleScannerStopBtn');
+            const raffleScannerStatus = document.getElementById('raffleScannerStatus');
+            let raffleScannerStream = null;
+            let raffleScannerFrame = null;
+            let raffleScannerDetector = null;
 
             function openRaffleCardModal() {
                 if (!raffleCardModal) return;
@@ -4751,13 +4759,131 @@ document.addEventListener('DOMContentLoaded', () => {
                     raffleCardResult.className = 'raffle-card-result';
                     raffleCardResult.innerHTML = '';
                 }
-                setTimeout(() => raffleCardNumber?.focus(), 80);
             }
 
             function closeRaffleCardModal() {
                 if (!raffleCardModal) return;
+                stopRaffleScanner();
                 raffleCardModal.classList.remove('show');
                 raffleCardModal.setAttribute('aria-hidden', 'true');
+            }
+
+            function setRaffleScannerStatus(message) {
+                if (raffleScannerStatus) {
+                    raffleScannerStatus.textContent = message;
+                }
+            }
+
+            function extractRaffleCardNumber(value = '') {
+                const text = String(value || '').trim();
+                if (!text) return '';
+
+                try {
+                    const url = new URL(text, window.location.origin);
+                    const fromQuery = url.searchParams.get('raffle_card');
+                    if (/^\d{6}$/.test(fromQuery || '')) return fromQuery;
+
+                    const pathMatch = url.pathname.match(/(?:raffle-card|raffle-cards)\/(\d{6})(?:\/)?$/);
+                    if (pathMatch) return pathMatch[1];
+                } catch (error) {
+                    // Continue with plain text parsing.
+                }
+
+                const plainMatch = text.match(/(^|\D)(\d{6})(\D|$)/);
+                return plainMatch ? plainMatch[2] : '';
+            }
+
+            function stopRaffleScanner() {
+                if (raffleScannerFrame) {
+                    cancelAnimationFrame(raffleScannerFrame);
+                    raffleScannerFrame = null;
+                }
+                if (raffleScannerStream) {
+                    raffleScannerStream.getTracks().forEach((track) => track.stop());
+                    raffleScannerStream = null;
+                }
+                if (raffleScannerVideo) {
+                    raffleScannerVideo.srcObject = null;
+                }
+                if (raffleScanner) {
+                    raffleScanner.hidden = true;
+                }
+                if (raffleCardScanBtn) {
+                    raffleCardScanBtn.disabled = false;
+                    raffleCardScanBtn.innerHTML = '<i class="fas fa-qrcode"></i> مسح البطاقة بالكاميرا';
+                }
+            }
+
+            async function submitScannedRaffleCard(cardNumber) {
+                if (!raffleCardNumber || !raffleCardForm) return;
+                raffleCardNumber.value = cardNumber;
+                stopRaffleScanner();
+                window.setTimeout(() => raffleCardForm.requestSubmit(), 120);
+            }
+
+            async function scanRaffleFrame() {
+                if (!raffleScannerDetector || !raffleScannerVideo || !raffleScannerStream) return;
+
+                try {
+                    if (raffleScannerVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+                        const codes = await raffleScannerDetector.detect(raffleScannerVideo);
+                        const rawValue = codes?.[0]?.rawValue || '';
+                        const cardNumber = extractRaffleCardNumber(rawValue);
+                        if (cardNumber) {
+                            setRaffleScannerStatus('تم قراءة البطاقة، جاري التحقق...');
+                            await submitScannedRaffleCard(cardNumber);
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    setRaffleScannerStatus('تعذر قراءة الصورة، قرّب البطاقة من الكاميرا.');
+                }
+
+                raffleScannerFrame = requestAnimationFrame(scanRaffleFrame);
+            }
+
+            async function startRaffleScanner() {
+                if (!requireCustomerRegistration('سجل دخولك أولاً قبل مسح بطاقة السحب.')) {
+                    closeRaffleCardModal();
+                    return;
+                }
+                if (!raffleScanner || !raffleScannerVideo) return;
+                if (!('BarcodeDetector' in window)) {
+                    renderRaffleResult({
+                        title: 'الكاميرا غير مدعومة',
+                        message: 'افتح الصفحة من Chrome أو Safari حديث على الجوال حتى يعمل مسح QR.',
+                    }, true);
+                    return;
+                }
+
+                try {
+                    raffleScanner.hidden = false;
+                    setRaffleScannerStatus('جاري تشغيل الكاميرا...');
+                    if (raffleCardScanBtn) {
+                        raffleCardScanBtn.disabled = true;
+                        raffleCardScanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المسح...';
+                    }
+
+                    raffleScannerDetector = new BarcodeDetector({ formats: ['qr_code'] });
+                    raffleScannerStream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: { ideal: 'environment' },
+                            width: { ideal: 1280 },
+                            height: { ideal: 1280 },
+                        },
+                        audio: false,
+                    });
+                    raffleScannerVideo.srcObject = raffleScannerStream;
+                    await raffleScannerVideo.play();
+                    setRaffleScannerStatus('وجه الكاميرا نحو QR البطاقة');
+                    scanRaffleFrame();
+                } catch (error) {
+                    stopRaffleScanner();
+                    renderRaffleResult({
+                        title: 'تعذر تشغيل الكاميرا',
+                        message: 'اسمح للموقع باستخدام الكاميرا ثم حاول مرة أخرى.',
+                    }, true);
+                }
             }
 
             function raffleWhatsappLink(payload = {}) {
@@ -4833,9 +4959,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (event.target === raffleCardModal) closeRaffleCardModal();
             });
 
-            raffleCardNumber?.addEventListener('input', () => {
-                raffleCardNumber.value = raffleCardNumber.value.replace(/\D+/g, '').slice(0, 6);
+            ['keydown', 'beforeinput', 'paste', 'drop'].forEach((eventName) => {
+                raffleCardNumber?.addEventListener(eventName, (event) => event.preventDefault());
             });
+
+            raffleCardScanBtn?.addEventListener('click', startRaffleScanner);
+            raffleScannerStopBtn?.addEventListener('click', stopRaffleScanner);
 
             raffleCardForm?.addEventListener('submit', async (event) => {
                 event.preventDefault();
@@ -4845,7 +4974,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (!raffleCardForm.reportValidity()) return;
 
-                const submitButton = raffleCardForm.querySelector('button[type="submit"]');
+                const submitButton = raffleCardForm.querySelector('button[type="submit"]') || raffleCardScanBtn;
                 const originalText = submitButton?.innerHTML;
                 if (submitButton) {
                     submitButton.disabled = true;
