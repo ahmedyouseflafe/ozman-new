@@ -861,13 +861,17 @@
                     <div>
                         <span>{{ __('بطاقات السحب') }}</span>
                         <h3>{{ __('تحقق من رقم بطاقتك') }}</h3>
-                        <p>{{ __('امسح QR الموجود على البطاقة لمعرفة نتيجة السحب الفوري.') }}</p>
+                        <p>{{ __('اكتب رقم البطاقة أو امسح QR الموجود عليها لمعرفة نتيجة السحب الفوري.') }}</p>
                     </div>
                 </div>
                 <form class="raffle-card-form" id="raffleCardForm">
                     <label for="raffleCardNumber">{{ __('رقم البطاقة') }}</label>
-                    <input type="text" inputmode="none" maxlength="6" pattern="\d{6}" id="raffleCardNumber"
-                        name="card_number" placeholder="امسح البطاقة" dir="ltr" readonly required>
+                    <input type="text" inputmode="numeric" maxlength="6" pattern="\d{6}" id="raffleCardNumber"
+                        name="card_number" placeholder="000000" dir="ltr" required>
+                    <button type="submit" class="cart-checkout-btn">
+                        <i class="fas fa-magnifying-glass"></i>
+                        {{ __('تحقق من البطاقة') }}
+                    </button>
                     <button type="button" class="cart-checkout-btn raffle-scan-btn" id="raffleCardScanBtn">
                         <i class="fas fa-qrcode"></i>
                         {{ __('مسح البطاقة بالكاميرا') }}

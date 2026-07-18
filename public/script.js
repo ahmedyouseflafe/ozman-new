@@ -4959,8 +4959,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (event.target === raffleCardModal) closeRaffleCardModal();
             });
 
-            ['keydown', 'beforeinput', 'paste', 'drop'].forEach((eventName) => {
-                raffleCardNumber?.addEventListener(eventName, (event) => event.preventDefault());
+            raffleCardNumber?.addEventListener('input', () => {
+                raffleCardNumber.value = raffleCardNumber.value.replace(/\D+/g, '').slice(0, 6);
             });
 
             raffleCardScanBtn?.addEventListener('click', startRaffleScanner);
