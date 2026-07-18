@@ -4356,7 +4356,7 @@ html[dir="ltr"] .products-scatter-header .back-btn i {
 
     .radial-section {
         display: grid;
-        grid-template-columns: 64px minmax(0, 1fr) 64px;
+        grid-template-columns: 58px minmax(0, 1fr) 92px;
         grid-template-areas: "purchase products categories";
         direction: ltr;
         gap: 2px;
@@ -4415,21 +4415,22 @@ html[dir="ltr"] .products-scatter-header .back-btn i {
     .radial-section .side-nav-vertical {
         grid-area: categories;
         direction: rtl;
-        width: 64px;
+        width: 92px;
         height: 520px;
         margin: 0;
-        overflow-x: hidden;
+        overflow-x: visible;
         overflow-y: auto;
         align-self: center;
         touch-action: pan-y;
         overscroll-behavior-y: contain;
         -webkit-overflow-scrolling: touch;
+        z-index: 26;
     }
 
     .radial-section .side-circles-list {
         align-items: center;
-        gap: 24px;
-        padding: 150px 0;
+        gap: 18px;
+        padding: 132px 0;
     }
 
     .radial-section .side-circle {
@@ -4438,20 +4439,40 @@ html[dir="ltr"] .products-scatter-header .back-btn i {
         flex: 0 0 54px;
         border-width: 2px;
         transition: transform 0.3s, opacity 0.3s;
+        margin-bottom: 30px;
     }
 
     .radial-section .side-shop-name {
-        inset-inline-end: calc(100% + 7px);
+        left: 50%;
+        right: auto;
+        top: calc(100% + 5px);
+        transform: translateX(-50%);
+        width: 88px;
         max-width: 88px;
-        padding: 4px 8px;
-        font-size: 0.62rem;
+        min-height: 24px;
+        padding: 4px 7px;
+        font-size: 0.58rem;
+        line-height: 1.2;
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        color: rgba(255, 255, 255, 0.86);
+        opacity: 0.86;
         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.34), 0 0 12px rgba(0, 229, 255, 0.14);
+    }
+
+    .radial-section .side-circle.active .side-shop-name {
+        opacity: 1;
+        color: var(--primary-color);
+        border-color: rgba(0, 229, 255, 0.62);
+        background: rgba(0, 0, 0, 0.86);
     }
 
     .radial-section .purchase-wheels-side {
         grid-area: purchase;
         direction: rtl;
-        width: 64px;
+        width: 58px;
         height: 520px;
         align-self: center;
     }
