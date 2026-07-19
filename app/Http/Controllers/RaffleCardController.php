@@ -92,7 +92,7 @@ class RaffleCardController extends Controller
         }
 
         $count = $to - $from + 1;
-        if ($count > 1000) {
+        if (false && $count > 1000) {
             throw ValidationException::withMessages([
                 'to_number' => 'للحفاظ على سرعة المتصفح، ولد كل ملف بحد أقصى 1000 بطاقة.',
             ]);
