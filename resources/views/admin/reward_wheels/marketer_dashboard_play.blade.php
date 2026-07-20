@@ -354,8 +354,7 @@
 
                                 <div class="step-dots" aria-label="اختيار السؤال">
                                     @for($i = 1; $i <= $questionsCount; $i++)
-                                        @php($questionCompleted = $completedQuestionIds->contains((int) $questions[$i - 1]->id))
-                                        <a class="step-dot {{ $i === $currentQuestionNumber ? 'is-current' : '' }} {{ $questionCompleted ? 'is-completed' : '' }}"
+                                        <a class="step-dot {{ $i === $currentQuestionNumber ? 'is-current' : '' }} {{ $completedQuestionIds->contains((int) $questions[$i - 1]->id) ? 'is-completed' : '' }}"
                                            href="{{ route('reward-wheels.marketer.play', ['question' => $i]) }}"
                                            aria-label="السؤال {{ $i }}">{{ $i }}</a>
                                     @endfor
