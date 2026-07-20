@@ -357,10 +357,19 @@ class ProductController extends Controller
             'description_he' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
             'discount_price' => ['nullable', 'numeric', 'min:0', 'lt:price'],
+            'customer_package_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'show_customer_package_price' => ['required', 'boolean'],
+            'customer_carton_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'customer_pallet_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'show_customer_carton_price' => ['required', 'boolean'],
+            'show_customer_pallet_price' => ['required', 'boolean'],
             'merchant_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'package_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'pallet_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'carton_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'show_package_price' => ['required', 'boolean'],
+            'show_carton_price' => ['required', 'boolean'],
+            'show_pallet_price' => ['required', 'boolean'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'sku' => ['nullable', 'string', 'max:255'],
             'barcode' => ['nullable', 'string', 'max:255'],
@@ -379,9 +388,11 @@ class ProductController extends Controller
             'campaigns.*.title_he' => ['nullable', 'string', 'max:255'],
             'campaigns.*.type' => ['nullable', Rule::in(['image', 'video'])],
             'campaigns.*.media' => ['nullable', 'file', 'max:1048576'],
-            'campaigns.*.offer_type' => ['nullable', Rule::in(['bundle_price', 'custom'])],
+            'campaigns.*.offer_type' => ['nullable', Rule::in(['bundle_price', 'range_price', 'custom'])],
             'campaigns.*.unit_key' => ['nullable', Rule::in(['package', 'pallet', 'carton'])],
             'campaigns.*.offer_quantity' => ['nullable', 'integer', 'min:1', 'max:999999'],
+            'campaigns.*.min_quantity' => ['nullable', 'integer', 'min:1', 'max:999999'],
+            'campaigns.*.max_quantity' => ['nullable', 'integer', 'min:1', 'max:999999', 'gte:campaigns.*.min_quantity'],
             'campaigns.*.offer_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'campaigns.*.offer_note' => ['nullable', 'string', 'max:500'],
             'campaigns.*.offer_note_en' => ['nullable', 'string', 'max:500'],
@@ -394,9 +405,11 @@ class ProductController extends Controller
             'existing_campaigns.*.title_he' => ['nullable', 'string', 'max:255'],
             'existing_campaigns.*.type' => ['nullable', Rule::in(['image', 'video'])],
             'existing_campaigns.*.media' => ['nullable', 'file', 'max:1048576'],
-            'existing_campaigns.*.offer_type' => ['nullable', Rule::in(['bundle_price', 'custom'])],
+            'existing_campaigns.*.offer_type' => ['nullable', Rule::in(['bundle_price', 'range_price', 'custom'])],
             'existing_campaigns.*.unit_key' => ['nullable', Rule::in(['package', 'pallet', 'carton'])],
             'existing_campaigns.*.offer_quantity' => ['nullable', 'integer', 'min:1', 'max:999999'],
+            'existing_campaigns.*.min_quantity' => ['nullable', 'integer', 'min:1', 'max:999999'],
+            'existing_campaigns.*.max_quantity' => ['nullable', 'integer', 'min:1', 'max:999999', 'gte:existing_campaigns.*.min_quantity'],
             'existing_campaigns.*.offer_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'existing_campaigns.*.offer_note' => ['nullable', 'string', 'max:500'],
             'existing_campaigns.*.offer_note_en' => ['nullable', 'string', 'max:500'],
@@ -499,6 +512,8 @@ class ProductController extends Controller
             $offerType = $campaign['offer_type'] ?? null;
             $unitKey = $campaign['unit_key'] ?? null;
             $offerQuantity = $campaign['offer_quantity'] ?? null;
+            $minQuantity = $campaign['min_quantity'] ?? null;
+            $maxQuantity = $campaign['max_quantity'] ?? null;
             $offerPrice = $campaign['offer_price'] ?? null;
             $offerNote = trim($campaign['offer_note'] ?? '');
             $offerNoteEn = trim($campaign['offer_note_en'] ?? '');
@@ -506,6 +521,8 @@ class ProductController extends Controller
             $startsAt = $campaign['starts_at'] ?? null;
             $endsAt = $campaign['ends_at'] ?? null;
             $hasOffer = filled($offerQuantity)
+                || filled($minQuantity)
+                || filled($maxQuantity)
                 || filled($offerPrice)
                 || $offerNote !== ''
                 || filled($startsAt)
@@ -551,6 +568,8 @@ class ProductController extends Controller
                 'offer_type' => $offerType ?: null,
                 'unit_key' => $unitKey ?: null,
                 'offer_quantity' => filled($offerQuantity) ? (int) $offerQuantity : null,
+                'min_quantity' => filled($minQuantity) ? (int) $minQuantity : null,
+                'max_quantity' => filled($maxQuantity) ? (int) $maxQuantity : null,
                 'offer_price' => filled($offerPrice) ? $offerPrice : null,
                 'offer_note' => $offerNote !== '' ? $offerNote : null,
                 'offer_note_translations' => array_filter([
@@ -634,6 +653,8 @@ class ProductController extends Controller
                 'offer_type' => $campaignData['offer_type'] ?? null,
                 'unit_key' => $unitKey ?: null,
                 'offer_quantity' => filled($campaignData['offer_quantity'] ?? null) ? (int) $campaignData['offer_quantity'] : null,
+                'min_quantity' => filled($campaignData['min_quantity'] ?? null) ? (int) $campaignData['min_quantity'] : null,
+                'max_quantity' => filled($campaignData['max_quantity'] ?? null) ? (int) $campaignData['max_quantity'] : null,
                 'offer_price' => filled($campaignData['offer_price'] ?? null) ? $campaignData['offer_price'] : null,
                 'offer_note' => $offerNote !== '' ? $offerNote : null,
                 'offer_note_translations' => array_filter([

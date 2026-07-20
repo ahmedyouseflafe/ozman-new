@@ -58,8 +58,9 @@ await send('Runtime.enable');
 await send('Emulation.setDeviceMetricsOverride', viewport);
 await send('Page.addScriptToEvaluateOnNewDocument', {
     source: `
-        localStorage.setItem('ozman_visitor_registration_done', '1');
+        localStorage.setItem('ozman_visitor_registration_done_v2', '1');
         localStorage.setItem('ozman_visitor_type', 'customer');
+        localStorage.setItem('ozman_customer_profile', JSON.stringify({ name: 'Mobile Audit', phone: '0590000000' }));
     `,
 });
 await send('Page.navigate', { url: pageUrl });
@@ -117,7 +118,14 @@ await screenshot('mobile-audit-home.png');
 
 const testedDepartment = await evaluate(`(() => {
     const department = Object.keys(activeProductsDb).find((key) => activeProductsDb[key]?.length);
-    if (department) renderProductsScatter(department);
+    if (department) {
+        const source = activeProductsDb[department][0];
+        activeProductsDb[department] = Array.from({ length: 12 }, (_, index) => ({
+            ...source,
+            name: (source.name || 'منتج') + ' اختبار جوال ' + (index + 1),
+        }));
+        renderProductsScatter(department);
+    }
     return department || null;
 })()`);
 await new Promise((resolve) => setTimeout(resolve, 900));
@@ -126,7 +134,15 @@ const renderedProductCount = await evaluate(`document.querySelectorAll('#watchGr
 const productLayout = await evaluate(`(() => {
     const wrapper = document.querySelector('#watchGridWrapper')?.getBoundingClientRect();
     const products = Array.from(document.querySelectorAll('#watchGridTrack .watch-item')).map((element) => {
-        const rect = element.getBoundingClientRect();
+        const rects = [element, ...element.querySelectorAll('*')].map((node) => node.getBoundingClientRect());
+        const rect = {
+            left: Math.min(...rects.map((value) => value.left)),
+            right: Math.max(...rects.map((value) => value.right)),
+            top: Math.min(...rects.map((value) => value.top)),
+            bottom: Math.max(...rects.map((value) => value.bottom)),
+        };
+        rect.width = rect.right - rect.left;
+        rect.height = rect.bottom - rect.top;
         return {
             left: Math.round(rect.left),
             right: Math.round(rect.right),
@@ -146,6 +162,37 @@ const productLayout = await evaluate(`(() => {
         products,
     };
 })()`);
+
+const testedCategories = await evaluate(`(() => {
+    const center = centersData[activeCenterIndex];
+    const source = center?.departments?.[0];
+    if (!center || !source) return false;
+    center.departments = Array.from({ length: 12 }, (_, index) => ({
+        ...source,
+        title: (source.title || 'فئة') + ' اختبار جوال ' + (index + 1),
+    }));
+    renderDepartmentsForCenter(activeCenterIndex);
+    document.querySelector('#watchGridWrapper').scrollTop = 0;
+    return true;
+})()`);
+await new Promise((resolve) => setTimeout(resolve, 500));
+const categoryLayout = await evaluate(`(() => Array.from(document.querySelectorAll('#watchGridTrack .watch-item')).map((element) => {
+    const rects = [element, ...element.querySelectorAll('*')].map((node) => node.getBoundingClientRect());
+    const left = Math.min(...rects.map((value) => value.left));
+    const right = Math.max(...rects.map((value) => value.right));
+    const top = Math.min(...rects.map((value) => value.top));
+    const bottom = Math.max(...rects.map((value) => value.bottom));
+    return { left: Math.round(left), right: Math.round(right), top: Math.round(top), bottom: Math.round(bottom) };
+}))()`);
+await evaluate(`document.querySelector('.radial-section')?.scrollIntoView({ block: 'start' })`);
+await new Promise((resolve) => setTimeout(resolve, 300));
+await screenshot('mobile-audit-categories.png');
+
+await evaluate(`(() => {
+    if (${JSON.stringify(testedDepartment)}) renderProductsScatter(${JSON.stringify(testedDepartment)});
+    document.querySelector('#watchGridWrapper').scrollTop = 0;
+})()`);
+await new Promise((resolve) => setTimeout(resolve, 500));
 
 const storeScroller = await evaluate(`(async () => {
     const container = document.querySelector('#sideVCarousel');
@@ -197,10 +244,35 @@ if (productLayout.wrapper) {
         if (
             product.left < productLayout.wrapper.left - 1
             || product.right > productLayout.wrapper.right + 1
-            || product.top < productLayout.wrapper.top - 1
-            || product.bottom > productLayout.wrapper.bottom + 1
         ) {
             failures.push(`product ${index} exceeds center column: ${JSON.stringify(product)}`);
+        }
+    }
+
+    for (let first = 0; first < productLayout.products.length; first += 1) {
+        for (let second = first + 1; second < productLayout.products.length; second += 1) {
+            const a = productLayout.products[first];
+            const b = productLayout.products[second];
+            const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+            const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+            if (overlapX > 2 && overlapY > 2) {
+                failures.push(`products ${first} and ${second} overlap by ${overlapX}x${overlapY}`);
+            }
+        }
+    }
+}
+
+if (testedCategories) {
+    for (let first = 0; first < categoryLayout.length; first += 1) {
+        const category = categoryLayout[first];
+        if (category.left < productLayout.wrapper.left - 1 || category.right > productLayout.wrapper.right + 1) {
+            failures.push(`category ${first} exceeds center column: ${JSON.stringify(category)}`);
+        }
+        for (let second = first + 1; second < categoryLayout.length; second += 1) {
+            const other = categoryLayout[second];
+            const overlapX = Math.min(category.right, other.right) - Math.max(category.left, other.left);
+            const overlapY = Math.min(category.bottom, other.bottom) - Math.max(category.top, other.top);
+            if (overlapX > 2 && overlapY > 2) failures.push(`categories ${first} and ${second} overlap by ${overlapX}x${overlapY}`);
         }
     }
 }
@@ -217,7 +289,7 @@ if (storeScroller) {
     }
 }
 
-console.log(JSON.stringify({ ...initial, productLayout, storeScroller, failures }, null, 2));
+console.log(JSON.stringify({ ...initial, productLayout, categoryLayout, storeScroller, failures }, null, 2));
 socket.close();
 
 if (failures.length) process.exitCode = 1;

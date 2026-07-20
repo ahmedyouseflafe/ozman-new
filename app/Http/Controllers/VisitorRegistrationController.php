@@ -51,12 +51,12 @@ class VisitorRegistrationController extends Controller
                 }
             }
 
-            $registration = VisitorRegistration::create($validated);
-
-            if (($validated['type'] ?? null) === 'merchant' && $marketer?->distributor?->is_active) {
-                $shop = $this->createOrUpdateMerchantShop($registration, $marketer);
-                $registration->update(['shop_id' => $shop->id]);
-            }
+            $registration = VisitorRegistration::create([
+                ...$validated,
+                'status' => ($validated['type'] ?? null) === 'merchant' ? 'pending' : 'approved',
+                'public_token' => Str::random(64),
+                'approved_at' => ($validated['type'] ?? null) === 'merchant' ? null : now(),
+            ]);
 
             return $registration;
         });
@@ -65,7 +65,39 @@ class VisitorRegistrationController extends Controller
             'message' => __('تم حفظ بيانات التسجيل بنجاح'),
             'registration_id' => $registration->id,
             'shop_id' => $registration->shop_id,
+            'type' => $registration->type,
+            'status' => $registration->status,
+            'registration_token' => $registration->public_token,
+            'whatsapp_message' => $registration->type === 'merchant' ? $this->merchantWhatsappMessage($registration) : null,
         ], 201);
+    }
+
+    public function status(string $token): JsonResponse
+    {
+        $registration = VisitorRegistration::query()
+            ->where('public_token', $token)
+            ->where('type', 'merchant')
+            ->firstOrFail();
+
+        return response()->json([
+            'status' => $registration->status,
+            'approved' => $registration->status === 'approved',
+        ]);
+    }
+
+    private function merchantWhatsappMessage(VisitorRegistration $registration): string
+    {
+        return implode("\n", [
+            'طلب اعتماد صاحب متجر جديد في Ozman',
+            'رقم الطلب: ' . $registration->id,
+            'الاسم: ' . $registration->name,
+            'الهاتف: ' . $registration->phone,
+            'اسم المتجر: ' . ($registration->shop_name ?: '-'),
+            'الملف الضريبي: ' . ($registration->tax_file ?: '-'),
+            'مكان السكن: ' . $registration->residence_address,
+            'موقع المحل: ' . ($registration->map_link ?: $registration->business_location ?: '-'),
+            'الحالة: قيد المراجعة',
+        ]);
     }
 
     private function createOrUpdateMerchantShop(VisitorRegistration $registration, DistributorMarketer $marketer): Shop

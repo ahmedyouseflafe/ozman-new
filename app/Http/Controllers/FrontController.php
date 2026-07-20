@@ -583,6 +583,8 @@ class FrontController extends Controller
                 'offer_type' => $campaign->offer_type,
                 'unit_key' => $campaign->unit_key,
                 'offer_quantity' => $campaign->offer_quantity,
+                'min_quantity' => $campaign->min_quantity,
+                'max_quantity' => $campaign->max_quantity,
                 'offer_price' => $campaign->offer_price !== null ? (float) $campaign->offer_price : null,
                 'offer_note' => $campaign->localized('offer_note'),
                 'starts_at' => $campaign->starts_at?->toDateString(),
@@ -594,14 +596,20 @@ class FrontController extends Controller
 
         $image = $this->imageUrl($product->main_image, 'images/1.jpg');
         $merchantPrice = $product->merchant_price !== null ? (float) $product->merchant_price : null;
-        $packagePrice = $product->package_price !== null ? (float) $product->package_price : null;
-        $palletPrice = $product->pallet_price !== null ? (float) $product->pallet_price : null;
-        $cartonPrice = $product->carton_price !== null ? (float) $product->carton_price : null;
+        $customerPackagePrice = $product->show_customer_package_price && $product->customer_package_price !== null ? (float) $product->customer_package_price : null;
+        $customerCartonPrice = $product->show_customer_carton_price && $product->customer_carton_price !== null ? (float) $product->customer_carton_price : null;
+        $customerPalletPrice = $product->show_customer_pallet_price && $product->customer_pallet_price !== null ? (float) $product->customer_pallet_price : null;
+        $packagePrice = $product->show_package_price && $product->package_price !== null ? (float) $product->package_price : null;
+        $palletPrice = $product->show_pallet_price && $product->pallet_price !== null ? (float) $product->pallet_price : null;
+        $cartonPrice = $product->show_carton_price && $product->carton_price !== null ? (float) $product->carton_price : null;
 
         return [
             'name' => $product->localized('name'),
             'price' => number_format((float) ($product->discount_price ?: $product->price), 2) . ' ₪',
             'customer_price' => number_format((float) ($product->discount_price ?: $product->price), 2) . ' ₪',
+            'customer_package_price' => $customerPackagePrice !== null ? number_format($customerPackagePrice, 2) . ' ₪' : null,
+            'customer_carton_price' => $customerCartonPrice !== null ? number_format($customerCartonPrice, 2) . ' ₪' : null,
+            'customer_pallet_price' => $customerPalletPrice !== null ? number_format($customerPalletPrice, 2) . ' ₪' : null,
             'merchant_price' => $merchantPrice !== null ? number_format($merchantPrice, 2) . ' ₪' : null,
             'package_price' => $packagePrice !== null ? number_format($packagePrice, 2) . ' ₪' : null,
             'pallet_price' => $palletPrice !== null ? number_format($palletPrice, 2) . ' ₪' : null,

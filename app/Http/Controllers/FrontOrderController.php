@@ -8,6 +8,7 @@ use App\Models\FrontOrder;
 use App\Models\RewardWheel;
 use App\Models\RewardWheelSegment;
 use App\Models\Shop;
+use App\Models\VisitorRegistration;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -46,7 +47,22 @@ class FrontOrderController extends Controller
             'total' => ['nullable', 'numeric', 'min:0'],
             'order_channel' => ['required', 'in:whatsapp,instant_payment'],
             'payment_method' => ['nullable', 'string', 'max:60'],
+            'visitor_type' => ['required', 'in:customer,merchant'],
+            'merchant_registration_token' => ['nullable', 'string', 'size:64', 'required_if:visitor_type,merchant'],
         ]);
+
+        if ($validated['visitor_type'] === 'merchant') {
+            $approvedMerchant = VisitorRegistration::query()
+                ->where('type', 'merchant')
+                ->where('status', 'approved')
+                ->where('public_token', $validated['merchant_registration_token'])
+                ->exists();
+
+            abort_unless($approvedMerchant, 403, 'طلب صاحب المتجر ما زال قيد المراجعة. تواصل معنا عبر واتساب لإكمال الاعتماد.');
+            $validated['reward_wheel_id'] = null;
+        }
+
+        unset($validated['visitor_type'], $validated['merchant_registration_token']);
 
         $marketer = null;
 

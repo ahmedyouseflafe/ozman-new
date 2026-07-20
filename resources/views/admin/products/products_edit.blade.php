@@ -27,6 +27,20 @@
         .section-head p { color:var(--dim); font-size:12px; font-weight:700; margin-top:4px; }
         .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:15px; }
         .form-group.full { grid-column:1 / -1; }
+        .pricing-sections { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+        .pricing-card { border:1px solid var(--border); border-radius:22px; padding:18px; background:rgba(0,0,0,.22); }
+        .pricing-card.customer { border-color:rgba(0,229,255,.24); background:linear-gradient(145deg,rgba(0,229,255,.07),rgba(0,0,0,.22)); }
+        .pricing-card.merchant { border-color:rgba(112,0,255,.3); background:linear-gradient(145deg,rgba(112,0,255,.09),rgba(0,0,0,.22)); }
+        .pricing-card.inventory { grid-column:1 / -1; }
+        .pricing-card-head { display:flex; align-items:center; gap:11px; margin-bottom:15px; }
+        .pricing-card-head i { width:36px; height:36px; border-radius:12px; display:grid; place-items:center; color:var(--primary); background:rgba(0,229,255,.09); border:1px solid rgba(0,229,255,.24); font-size:18px; }
+        .pricing-card.merchant .pricing-card-head i { color:#b992ff; background:rgba(112,0,255,.13); border-color:rgba(112,0,255,.32); }
+        .pricing-card-head h3 { font-size:14px; font-weight:900; }
+        .pricing-card-head p { color:var(--dim); font-size:10px; font-weight:700; margin-top:2px; }
+        .price-label-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+        .price-label-row .form-label { margin-bottom:0; }
+        .visibility-check { display:inline-flex; align-items:center; gap:6px; color:var(--muted); font-size:10px; font-weight:800; cursor:pointer; white-space:nowrap; }
+        .visibility-check input { width:16px; height:16px; padding:0; accent-color:var(--primary); }
         .form-label { display:flex; align-items:center; gap:7px; color:rgba(255,255,255,.72); font-size:12px; font-weight:900; margin-bottom:8px; }
         input, textarea, select { width:100%; border:1px solid var(--border); background:rgba(255,255,255,.055); border-radius:16px; color:#fff; padding:12px 14px; outline:none; font-family:inherit; font-size:13px; font-weight:700; }
         textarea { min-height:120px; resize:vertical; line-height:1.7; }
@@ -65,7 +79,7 @@
         .btn-primary { border:0; color:#001014; background:linear-gradient(135deg, var(--primary), var(--accent)); box-shadow:0 0 22px rgba(0,229,255,.34); }
         .alert { margin-bottom:18px; padding:16px; border:1px solid rgba(255,59,48,.35); background:rgba(255,59,48,.08); border-radius:18px; }
         .alert ul { margin:8px 20px 0; color:rgba(255,255,255,.78); font-size:13px; }
-        @media(max-width:900px) { .main{margin-right:0;} .content{padding:20px 16px 34px;} .form-grid,.upload-grid,.switch-grid{grid-template-columns:1fr;} .page-head,.form-actions,.switch-card,.campaign-head{flex-direction:column;align-items:stretch;} .btn{width:100%;} }
+        @media(max-width:900px) { .main{margin-right:0;} .content{padding:20px 16px 34px;} .form-grid,.upload-grid,.switch-grid,.pricing-sections{grid-template-columns:1fr;} .pricing-card.inventory{grid-column:auto;} .page-head,.form-actions,.switch-card,.campaign-head{flex-direction:column;align-items:stretch;} .btn{width:100%;} }
     </style>
 </head>
 
@@ -138,18 +152,36 @@
                     </section>
 
                     <section class="form-section">
-                        <div class="section-head"><div class="section-icon"><i class="ti ti-coin"></i></div><div><h2>السعر والمخزون</h2><p>الأسعار، الكمية، SKU، الباركود، والتقييم.</p></div></div>
-                        <div class="form-grid">
-                            <div class="form-group"><label class="form-label" for="price">السعر</label><input type="number" step="0.01" min="0" id="price" name="price" value="{{ old('price', $product->price) }}" required></div>
-                            <div class="form-group"><label class="form-label" for="discount_price">سعر الخصم</label><input type="number" step="0.01" min="0" id="discount_price" name="discount_price" value="{{ old('discount_price', $product->discount_price) }}"></div>
-                            <div class="form-group"><label class="form-label" for="merchant_price">سعر التاجر</label><input type="number" step="0.01" min="0" id="merchant_price" name="merchant_price" value="{{ old('merchant_price', $product->merchant_price) }}"></div>
-                            <div class="form-group"><label class="form-label" for="package_price">سعر العبوة</label><input type="number" step="0.01" min="0" id="package_price" name="package_price" value="{{ old('package_price', $product->package_price) }}"></div>
-                            <div class="form-group"><label class="form-label" for="pallet_price">سعر المشطاح</label><input type="number" step="0.01" min="0" id="pallet_price" name="pallet_price" value="{{ old('pallet_price', $product->pallet_price) }}"></div>
-                            <div class="form-group"><label class="form-label" for="carton_price">سعر الكرتونة</label><input type="number" step="0.01" min="0" id="carton_price" name="carton_price" value="{{ old('carton_price', $product->carton_price) }}"></div>
-                            <div class="form-group"><label class="form-label" for="quantity">الكمية</label><input type="number" min="0" id="quantity" name="quantity" value="{{ old('quantity', $product->quantity) }}"></div>
-                            <div class="form-group"><label class="form-label" for="rating">التقييم</label><input type="number" step="0.1" min="0" max="5" id="rating" name="rating" value="{{ old('rating', $product->rating) }}"></div>
-                            <div class="form-group"><label class="form-label" for="sku">SKU</label><input type="text" id="sku" name="sku" value="{{ old('sku', $product->sku) }}" dir="ltr"></div>
-                            <div class="form-group"><label class="form-label" for="barcode">Barcode</label><input type="text" id="barcode" name="barcode" value="{{ old('barcode', $product->barcode) }}" dir="ltr"></div>
+                        <div class="section-head"><div class="section-icon"><i class="ti ti-coin"></i></div><div><h2>الأسعار والمخزون</h2><p>أسعار منفصلة للعميل والتاجر، مع بيانات المخزون والتعريف.</p></div></div>
+                        <div class="pricing-sections">
+                            <div class="pricing-card customer">
+                                <div class="pricing-card-head"><i class="ti ti-user"></i><div><h3>أسعار العميل</h3><p>الأسعار التي تظهر للعميل في المتجر.</p></div></div>
+                                <div class="form-grid">
+                                    <div class="form-group"><label class="form-label" for="price">سعر العميل</label><input type="number" step="0.01" min="0" id="price" name="price" value="{{ old('price', $product->price) }}" required></div>
+                                    <div class="form-group"><label class="form-label" for="discount_price">سعر العميل بعد الخصم</label><input type="number" step="0.01" min="0" id="discount_price" name="discount_price" value="{{ old('discount_price', $product->discount_price) }}"></div>
+                                    <div class="form-group"><div class="price-label-row"><label class="form-label" for="customer_package_price">سعر العبوة للعميل</label><label class="visibility-check"><input type="hidden" name="show_customer_package_price" value="0"><input type="checkbox" name="show_customer_package_price" value="1" @checked((bool) old('show_customer_package_price', $product->show_customer_package_price))>إظهار في الصفحة</label></div><input type="number" step="0.01" min="0" id="customer_package_price" name="customer_package_price" value="{{ old('customer_package_price', $product->customer_package_price) }}"></div>
+                                    <div class="form-group"><div class="price-label-row"><label class="form-label" for="customer_carton_price">سعر الكرتونة للعميل</label><label class="visibility-check"><input type="hidden" name="show_customer_carton_price" value="0"><input type="checkbox" name="show_customer_carton_price" value="1" @checked((bool) old('show_customer_carton_price', $product->show_customer_carton_price))>إظهار في الصفحة</label></div><input type="number" step="0.01" min="0" id="customer_carton_price" name="customer_carton_price" value="{{ old('customer_carton_price', $product->customer_carton_price) }}"></div>
+                                    <div class="form-group"><div class="price-label-row"><label class="form-label" for="customer_pallet_price">سعر المشطاح للعميل</label><label class="visibility-check"><input type="hidden" name="show_customer_pallet_price" value="0"><input type="checkbox" name="show_customer_pallet_price" value="1" @checked((bool) old('show_customer_pallet_price', $product->show_customer_pallet_price))>إظهار في الصفحة</label></div><input type="number" step="0.01" min="0" id="customer_pallet_price" name="customer_pallet_price" value="{{ old('customer_pallet_price', $product->customer_pallet_price) }}"></div>
+                                </div>
+                            </div>
+                            <div class="pricing-card merchant">
+                                <div class="pricing-card-head"><i class="ti ti-building-store"></i><div><h3>أسعار التاجر</h3><p>أسعار البيع والكميات التجارية.</p></div></div>
+                                <div class="form-grid">
+                                    <div class="form-group"><label class="form-label" for="merchant_price">سعر التاجر</label><input type="number" step="0.01" min="0" id="merchant_price" name="merchant_price" value="{{ old('merchant_price', $product->merchant_price) }}"></div>
+                                    <div class="form-group"><div class="price-label-row"><label class="form-label" for="package_price">سعر العبوة</label><label class="visibility-check"><input type="hidden" name="show_package_price" value="0"><input type="checkbox" name="show_package_price" value="1" @checked((bool) old('show_package_price', $product->show_package_price))>إظهار في الصفحة</label></div><input type="number" step="0.01" min="0" id="package_price" name="package_price" value="{{ old('package_price', $product->package_price) }}"></div>
+                                    <div class="form-group"><div class="price-label-row"><label class="form-label" for="carton_price">سعر الكرتونة</label><label class="visibility-check"><input type="hidden" name="show_carton_price" value="0"><input type="checkbox" name="show_carton_price" value="1" @checked((bool) old('show_carton_price', $product->show_carton_price))>إظهار في الصفحة</label></div><input type="number" step="0.01" min="0" id="carton_price" name="carton_price" value="{{ old('carton_price', $product->carton_price) }}"></div>
+                                    <div class="form-group"><div class="price-label-row"><label class="form-label" for="pallet_price">سعر المشطاح</label><label class="visibility-check"><input type="hidden" name="show_pallet_price" value="0"><input type="checkbox" name="show_pallet_price" value="1" @checked((bool) old('show_pallet_price', $product->show_pallet_price))>إظهار في الصفحة</label></div><input type="number" step="0.01" min="0" id="pallet_price" name="pallet_price" value="{{ old('pallet_price', $product->pallet_price) }}"></div>
+                                </div>
+                            </div>
+                            <div class="pricing-card inventory">
+                                <div class="pricing-card-head"><i class="ti ti-box"></i><div><h3>المخزون والتعريف</h3><p>الكمية، التقييم، SKU والباركود.</p></div></div>
+                                <div class="form-grid">
+                                    <div class="form-group"><label class="form-label" for="quantity">الكمية</label><input type="number" min="0" id="quantity" name="quantity" value="{{ old('quantity', $product->quantity) }}"></div>
+                                    <div class="form-group"><label class="form-label" for="rating">التقييم</label><input type="number" step="0.1" min="0" max="5" id="rating" name="rating" value="{{ old('rating', $product->rating) }}"></div>
+                                    <div class="form-group"><label class="form-label" for="sku">SKU</label><input type="text" id="sku" name="sku" value="{{ old('sku', $product->sku) }}" dir="ltr"></div>
+                                    <div class="form-group"><label class="form-label" for="barcode">Barcode</label><input type="text" id="barcode" name="barcode" value="{{ old('barcode', $product->barcode) }}" dir="ltr"></div>
+                                </div>
+                            </div>
                         </div>
                     </section>
 
@@ -235,6 +267,7 @@
                                                 <label class="form-label">نوع العرض</label>
                                                 <select name="existing_campaigns[{{ $campaign->id }}][offer_type]">
                                                     <option value="bundle_price" @selected(old("existing_campaigns.{$campaign->id}.offer_type", $campaign->offer_type ?: 'bundle_price') === 'bundle_price')>عدد بسعر محدد</option>
+                                                    <option value="range_price" @selected(old("existing_campaigns.{$campaign->id}.offer_type", $campaign->offer_type) === 'range_price')>سعر حسب نطاق الكمية</option>
                                                     <option value="custom" @selected(old("existing_campaigns.{$campaign->id}.offer_type", $campaign->offer_type) === 'custom')>عرض مخصص</option>
                                                 </select>
                                             </div>
@@ -252,7 +285,15 @@
                                                 <input type="number" min="1" name="existing_campaigns[{{ $campaign->id }}][offer_quantity]" value="{{ old("existing_campaigns.{$campaign->id}.offer_quantity", $campaign->offer_quantity) }}" placeholder="مثال: 3">
                                             </div>
                                             <div class="form-group">
-                                                <label class="form-label">سعر العرض</label>
+                                                <label class="form-label">الكمية من</label>
+                                                <input type="number" min="1" name="existing_campaigns[{{ $campaign->id }}][min_quantity]" value="{{ old("existing_campaigns.{$campaign->id}.min_quantity", $campaign->min_quantity) }}" placeholder="مثال: 40">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">الكمية إلى</label>
+                                                <input type="number" min="1" name="existing_campaigns[{{ $campaign->id }}][max_quantity]" value="{{ old("existing_campaigns.{$campaign->id}.max_quantity", $campaign->max_quantity) }}" placeholder="مثال: 100">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">سعر الوحدة في العرض</label>
                                                 <input type="number" min="0" step="0.01" name="existing_campaigns[{{ $campaign->id }}][offer_price]" value="{{ old("existing_campaigns.{$campaign->id}.offer_price", $campaign->offer_price) }}" placeholder="مثال: 10">
                                             </div>
                                             <div class="form-group">
@@ -284,10 +325,12 @@
                                             </div>
                                         </div>
                                         <div class="campaign-media">
-                                            @if($campaign->offer_quantity || $campaign->offer_price || $campaign->offer_note)
+                                            @if($campaign->offer_quantity || $campaign->min_quantity || $campaign->max_quantity || $campaign->offer_price || $campaign->offer_note)
                                                 <div>
                                                     العرض:
-                                                    @if($campaign->offer_quantity && $campaign->offer_price)
+                                                    @if($campaign->offer_type === 'range_price' && $campaign->min_quantity && $campaign->max_quantity && $campaign->offer_price)
+                                                        من {{ $campaign->min_quantity }} إلى {{ $campaign->max_quantity }} بسعر {{ number_format((float) $campaign->offer_price, 2) }} للوحدة
+                                                    @elseif($campaign->offer_quantity && $campaign->offer_price)
                                                         {{ $campaign->offer_quantity }} بسعر {{ number_format((float) $campaign->offer_price, 2) }}
                                                     @endif
                                                     @if($campaign->offer_note)
@@ -347,6 +390,7 @@
                                             <label class="form-label">نوع العرض</label>
                                             <select name="campaigns[{{ $index }}][offer_type]">
                                                 <option value="bundle_price" @selected(data_get($campaign, 'offer_type', 'bundle_price') === 'bundle_price')>عدد بسعر محدد</option>
+                                                <option value="range_price" @selected(data_get($campaign, 'offer_type') === 'range_price')>سعر حسب نطاق الكمية</option>
                                                 <option value="custom" @selected(data_get($campaign, 'offer_type') === 'custom')>عرض مخصص</option>
                                             </select>
                                         </div>
@@ -364,7 +408,15 @@
                                             <input type="number" min="1" name="campaigns[{{ $index }}][offer_quantity]" value="{{ data_get($campaign, 'offer_quantity') }}" placeholder="مثال: 3">
                                         </div>
                                         <div class="form-group">
-                                            <label class="form-label">سعر العرض</label>
+                                            <label class="form-label">الكمية من</label>
+                                            <input type="number" min="1" name="campaigns[{{ $index }}][min_quantity]" value="{{ data_get($campaign, 'min_quantity') }}" placeholder="مثال: 40">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">الكمية إلى</label>
+                                            <input type="number" min="1" name="campaigns[{{ $index }}][max_quantity]" value="{{ data_get($campaign, 'max_quantity') }}" placeholder="مثال: 100">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">سعر الوحدة في العرض</label>
                                             <input type="number" min="0" step="0.01" name="campaigns[{{ $index }}][offer_price]" value="{{ data_get($campaign, 'offer_price') }}" placeholder="مثال: 10">
                                         </div>
                                         <div class="form-group">
@@ -462,6 +514,32 @@
             document.dispatchEvent(new CustomEvent('product-campaigns-updated'));
         }
 
+        function refreshOfferFields(scope = document) {
+            const cards = scope.matches?.('.campaign-card') ? [scope] : scope.querySelectorAll('.campaign-card');
+            cards.forEach((card) => {
+                const offerType = card.querySelector('select[name$="[offer_type]"]')?.value || 'bundle_price';
+                const quantityInput = card.querySelector('input[name$="[offer_quantity]"]');
+                const minInput = card.querySelector('input[name$="[min_quantity]"]');
+                const maxInput = card.querySelector('input[name$="[max_quantity]"]');
+                const showBundle = offerType === 'bundle_price';
+                const showRange = offerType === 'range_price';
+
+                if (quantityInput) {
+                    quantityInput.closest('.form-group').hidden = !showBundle;
+                    quantityInput.disabled = !showBundle;
+                }
+                [minInput, maxInput].forEach((input) => {
+                    if (!input) return;
+                    input.closest('.form-group').hidden = !showRange;
+                    input.disabled = !showRange;
+                });
+            });
+        }
+
+        document.addEventListener('change', (event) => {
+            if (event.target.matches('select[name$="[offer_type]"]')) refreshOfferFields(event.target.closest('.campaign-card'));
+        });
+
         function campaignTemplate(index) {
             return `
                 <div class="campaign-card" data-campaign-card>
@@ -493,6 +571,7 @@
                             <label class="form-label">نوع العرض</label>
                             <select name="campaigns[${index}][offer_type]">
                                 <option value="bundle_price">عدد بسعر محدد</option>
+                                <option value="range_price">سعر حسب نطاق الكمية</option>
                                 <option value="custom">عرض مخصص</option>
                             </select>
                         </div>
@@ -509,8 +588,10 @@
                             <label class="form-label">عدد القطع في العرض</label>
                             <input type="number" min="1" name="campaigns[${index}][offer_quantity]" placeholder="مثال: 3">
                         </div>
+                        <div class="form-group"><label class="form-label">الكمية من</label><input type="number" min="1" name="campaigns[${index}][min_quantity]" placeholder="مثال: 40"></div>
+                        <div class="form-group"><label class="form-label">الكمية إلى</label><input type="number" min="1" name="campaigns[${index}][max_quantity]" placeholder="مثال: 100"></div>
                         <div class="form-group">
-                            <label class="form-label">سعر العرض</label>
+                            <label class="form-label">سعر الوحدة في العرض</label>
                             <input type="number" min="0" step="0.01" name="campaigns[${index}][offer_price]" placeholder="مثال: 10">
                         </div>
                         <div class="form-group">
@@ -549,6 +630,7 @@
             campaignList.insertAdjacentHTML('beforeend', campaignTemplate(campaignIndex));
             campaignIndex++;
             refreshCampaignNumbers();
+            refreshOfferFields(campaignList.lastElementChild);
             notifyCampaignsUpdated();
         });
 
@@ -572,6 +654,7 @@
         };
 
         refreshCampaignNumbers();
+        refreshOfferFields();
     </script>
     @include('admin.products.autosave')
     @include('admin.includes.auto_translate')

@@ -644,6 +644,16 @@
                         <div class="visitor-registration-message" id="visitorRegistrationMessage" aria-live="polite">
                         </div>
 
+                        <div class="merchant-approval-notice" id="merchantApprovalNotice" hidden>
+                            <i class="fas fa-shield-check"></i>
+                            <span>{{ __('بعد حفظ البيانات سيتم فتح واتساب لإرسال طلبك. سنقوم بالتحقق من حساب صاحب المتجر، ولن تتمكن من الشراء حتى نقبل الطلب.') }}</span>
+                        </div>
+
+                        <a class="cart-checkout-btn" id="merchantApprovalWhatsapp" href="#" target="_blank" rel="noopener noreferrer" hidden>
+                            <i class="fab fa-whatsapp"></i>
+                            {{ __('فتح واتساب لاعتماد حساب صاحب المتجر') }}
+                        </a>
+
                         <button type="submit" class="cart-checkout-btn visitor-submit-btn">
                             <i class="fas fa-check"></i>
                             {{ __('حفظ ومتابعة') }}
@@ -901,6 +911,7 @@
                 shopWhatsapp: @json(preg_replace('/\D+/', '', $shop?->whatsapp ?: $shop?->phone ?: '970599000000')),
                 customerLoginUrl: @json(route('customer.login')),
                 visitorRegistrationUrl: @json(route('visitor-registrations.store')),
+                visitorRegistrationStatusUrlTemplate: @json(url('/visitor-registrations/status/__TOKEN__')),
                 hebrewTtsUrl: @json(route('tts.hebrew')),
                 arabicTtsUrl: @json(route('tts.arabic')),
                 orderStoreUrl: @json(route('front-orders.store')),

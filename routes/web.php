@@ -33,6 +33,9 @@ Route::view('/customer-login', 'front.customer_login')->name('customer.login');
 Route::get('/tts/hebrew', [TextToSpeechController::class, 'hebrew'])->name('tts.hebrew');
 Route::get('/tts/arabic', [TextToSpeechController::class, 'arabic'])->name('tts.arabic');
 Route::post('/visitor-registrations', [VisitorRegistrationController::class, 'store'])->name('visitor-registrations.store');
+Route::get('/visitor-registrations/status/{token}', [VisitorRegistrationController::class, 'status'])
+    ->middleware('throttle:30,1')
+    ->name('visitor-registrations.status');
 Route::post('/front-orders', [FrontOrderController::class, 'store'])->name('front-orders.store');
 Route::post('/raffle/check', [RaffleCardController::class, 'check'])->name('raffle.check');
 Route::get('/raffle-card/{cardNumber}', [RaffleCardController::class, 'openCard'])->name('front.raffle-card.open');
@@ -175,6 +178,8 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
 
     Route::get('/visitor-registrations', [VisitorRegistrationAdminController::class, 'index'])
         ->name('visitor-registrations.index');
+    Route::patch('/visitor-registrations/{registration}/status', [VisitorRegistrationAdminController::class, 'status'])
+        ->name('visitor-registrations.status.update');
 
     Route::get('/front-orders', [FrontOrderController::class, 'index'])
         ->name('front-orders.index');

@@ -19,6 +19,8 @@ class ProductCampaign extends Model
         'offer_type',
         'unit_key',
         'offer_quantity',
+        'min_quantity',
+        'max_quantity',
         'offer_price',
         'offer_note',
         'offer_note_translations',

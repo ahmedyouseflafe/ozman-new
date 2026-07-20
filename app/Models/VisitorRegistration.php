@@ -15,6 +15,10 @@ class VisitorRegistration extends Model
         'distributor_marketer_id',
         'marketing_source',
         'type',
+        'status',
+        'public_token',
+        'approved_at',
+        'approved_by',
         'name',
         'phone',
         'shop_name',
@@ -29,6 +33,7 @@ class VisitorRegistration extends Model
     protected $casts = [
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
+        'approved_at' => 'datetime',
     ];
 
     public function shop()

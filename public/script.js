@@ -78,6 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const REFRESH_LOCATION_REQUEST_KEY = 'ozman_refresh_location_request';
         const VISITOR_REGISTRATION_STORAGE_KEY = 'ozman_visitor_registration_done_v2';
         const VISITOR_TYPE_STORAGE_KEY = 'ozman_visitor_type';
+        const MERCHANT_REGISTRATION_TOKEN_KEY = 'ozman_merchant_registration_token';
+        const MERCHANT_APPROVAL_STATUS_KEY = 'ozman_merchant_approval_status';
+        const MERCHANT_APPROVAL_WHATSAPP_KEY = 'ozman_merchant_approval_whatsapp';
         const REWARD_DISCOUNT_STORAGE_KEY = 'ozman_customer_signup_reward';
         const PURCHASE_REWARD_STORAGE_PREFIX = 'ozman_purchase_reward_';
         const PURCHASE_UNLOCK_STORAGE_PREFIX = 'ozman_purchase_unlock_';
@@ -277,6 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function rewardWheelConfig() {
+            if (localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant') return null;
             const wheel = window.OZMAN_FRONT_CONFIG?.rewardWheel;
             const segments = Array.isArray(wheel?.segments) ? wheel.segments : [];
             if (!wheel || segments.length < 2) return null;
@@ -316,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function visitorCanUsePurchaseWheels() {
-            return currentVisitorType() !== 'merchant';
+            return localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) !== 'merchant';
         }
 
         function eligiblePurchaseRewardWheel(total) {
@@ -588,7 +592,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function currentVisitorType() {
-            return localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant' ? 'merchant' : 'customer';
+            return localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant'
+                && localStorage.getItem(MERCHANT_APPROVAL_STATUS_KEY) === 'approved'
+                ? 'merchant'
+                : 'customer';
         }
 
         function productDisplayPrice(product) {
@@ -604,7 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return product.customer_price || product.price || '';
         }
 
-        function activeBundleCampaign(product) {
+        function activePricingCampaign(product) {
             if (!product) {
                 return null;
             }
@@ -613,8 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const unitKey = product.unit_key || '';
             const validCampaigns = campaigns.filter((campaign) => {
                 return campaign
-                    && campaign.offer_type === 'bundle_price'
-                    && Number(campaign.offer_quantity) >= 1
+                    && ['bundle_price', 'range_price'].includes(campaign.offer_type)
                     && Number(campaign.offer_price) >= 0;
             });
 
@@ -624,17 +630,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function campaignCartMeta(product) {
-            const campaign = activeBundleCampaign(product);
+            const campaign = activePricingCampaign(product);
             if (!campaign) return null;
 
             const quantity = Number.parseInt(campaign.offer_quantity, 10);
+            const minQuantity = Number.parseInt(campaign.min_quantity, 10);
+            const maxQuantity = Number.parseInt(campaign.max_quantity, 10);
             const price = Number(campaign.offer_price);
 
-            if (!Number.isFinite(quantity) || quantity < 1 || !Number.isFinite(price)) {
+            if (!Number.isFinite(price)) {
                 return null;
             }
 
+            if (campaign.offer_type === 'range_price') {
+                if (!Number.isFinite(minQuantity) || minQuantity < 1 || !Number.isFinite(maxQuantity) || maxQuantity < minQuantity) return null;
+
+                return {
+                    type: 'range_price',
+                    min_quantity: minQuantity,
+                    max_quantity: maxQuantity,
+                    unit_price: price,
+                    label: campaign.title || campaign.offer_note || `من ${minQuantity} إلى ${maxQuantity} بسعر ${price.toFixed(2)} للوحدة`,
+                };
+            }
+
+            if (!Number.isFinite(quantity) || quantity < 1) return null;
+
             return {
+                type: 'bundle_price',
                 quantity,
                 price,
                 label: campaign.title || campaign.offer_note || `${quantity} بسعر ${price.toFixed(2)}`,
@@ -646,6 +669,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (campaignOffer.label) {
                 return campaignOffer.label;
+            }
+
+            if (campaignOffer.type === 'range_price') {
+                return `من ${campaignOffer.min_quantity} إلى ${campaignOffer.max_quantity} بسعر ${formatCartPrice(Number(campaignOffer.unit_price))} للوحدة`;
             }
 
             return `كل ${campaignOffer.quantity} بسعر ${formatCartPrice(Number(campaignOffer.price))}`;
@@ -662,6 +689,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const qty = Number(item.qty || 0);
             const unitPrice = parseCartPrice(item.price);
             const campaign = item.campaign_offer;
+
+            if (campaign?.type === 'range_price') {
+                const minimum = Number(campaign.min_quantity);
+                const maximum = Number(campaign.max_quantity);
+                const campaignUnitPrice = Number(campaign.unit_price);
+                if (qty >= minimum && qty <= maximum && Number.isFinite(campaignUnitPrice)) {
+                    return qty * campaignUnitPrice;
+                }
+                return unitPrice * qty;
+            }
 
             if (!campaign || !campaign.quantity || campaign.quantity < 1 || campaign.price === undefined) {
                 return unitPrice * qty;
@@ -685,11 +722,19 @@ document.addEventListener('DOMContentLoaded', () => {
         function productUnitOptions(product) {
             if (!product) return [];
 
-            return [
-                { key: 'package', label: 'العبوة', price: product.package_price, icon: 'fa-box' },
-                { key: 'pallet', label: 'المشطاح', price: product.pallet_price, icon: 'fa-boxes-stacked' },
-                { key: 'carton', label: 'الكرتونة', price: product.carton_price, icon: 'fa-cube' },
-            ]
+            const options = currentVisitorType() === 'merchant'
+                ? [
+                    { key: 'package', label: 'العبوة', price: product.package_price, icon: 'fa-box' },
+                    { key: 'pallet', label: 'المشطاح', price: product.pallet_price, icon: 'fa-boxes-stacked' },
+                    { key: 'carton', label: 'الكرتونة', price: product.carton_price, icon: 'fa-cube' },
+                ]
+                : [
+                    { key: 'package', label: 'العبوة', price: product.customer_package_price, icon: 'fa-box' },
+                    { key: 'pallet', label: 'المشطاح', price: product.customer_pallet_price, icon: 'fa-boxes-stacked' },
+                    { key: 'carton', label: 'الكرتونة', price: product.customer_carton_price, icon: 'fa-cube' },
+                ];
+
+            return options
                 .filter((option) => option.price)
                 .map((option) => ({
                     ...option,
@@ -1674,6 +1719,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     total,
                     order_channel: channel,
                     payment_method: paymentMethod || null
+                    ,visitor_type: localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant' ? 'merchant' : 'customer'
+                    ,merchant_registration_token: localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant'
+                        ? localStorage.getItem(MERCHANT_REGISTRATION_TOKEN_KEY)
+                        : null
                 })
             });
 
@@ -1904,6 +1953,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const wrapper = document.getElementById('watchGridWrapper');
             const width = wrapper?.clientWidth || window.innerWidth || 900;
             const mobile = width < 720;
+            const mobileGrid = mobile && getComputedStyle(document.getElementById('watchGridTrack')).display === 'grid';
+            if (mobileGrid) {
+                return Array.from({ length: count }, () => ({
+                    x: 0,
+                    y: 0,
+                    itemSize: 82,
+                    footprintWidth: 104,
+                    footprintHeight: 122,
+                }));
+            }
             let height = mobile ? 520 : (wrapper?.clientHeight || 650);
             const edgePadding = mobile ? 10 : 28;
             const gap = options.gap || (mobile ? 12 : 22);
@@ -2014,6 +2073,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const descEl = document.getElementById('productsScatterDesc');
 
             if (!track || !header || !titleEl) return;
+            track.classList.remove('is-departments-view');
+            track.classList.add('is-products-view');
 
             // Ø¥Ø®ÙØ§Ø¡ Ø§Ù„ÙˆØµÙ Ø§Ù„Ø³Ø±ÙŠØ¹ Ø¹Ù†Ø¯ Ø§Ø³ØªØ¹Ø±Ø§Ø¶ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª
             if (descEl) descEl.style.display = 'none';
@@ -3265,6 +3326,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const track = document.getElementById('watchGridTrack');
             const header = document.getElementById('productsScatterHeader');
             if (!track) return;
+            track.classList.remove('is-products-view');
+            track.classList.add('is-departments-view');
 
             // Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‡ÙŠØ¯Ø± Ø§Ù„Ø®Ø§Øµ Ø¨Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª Ø¹Ù†Ø¯ ØªØ¨Ø¯ÙŠÙ„ Ø§Ù„Ù…Ø±Ø§ÙƒØ²
             if (header) {
@@ -3788,6 +3851,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const visitorRegistrationModal = document.getElementById('visitorRegistrationModal');
             const visitorRegistrationForm = document.getElementById('visitorRegistrationForm');
             const visitorTypeInput = document.getElementById('visitorTypeInput');
+            const merchantApprovalWhatsapp = document.getElementById('merchantApprovalWhatsapp');
+            const merchantApprovalNotice = document.getElementById('merchantApprovalNotice');
             const visitorMerchantFields = document.getElementById('visitorMerchantFields');
             const visitorRegistrationMessage = document.getElementById('visitorRegistrationMessage');
             const visitorCustomerLocationField = document.getElementById('visitorCustomerLocationField');
@@ -3871,6 +3936,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             function openRewardWheelModal(wheel = rewardWheelConfig(), storageKey = REWARD_DISCOUNT_STORAGE_KEY) {
+                if (localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant') return;
                 if (!wheel || storedReward(storageKey)) return;
                 activeRewardStorageKey = storageKey;
                 setupRewardWheel(wheel);
@@ -4009,6 +4075,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     button.classList.toggle('active', button.dataset.visitorType === (isMerchant ? 'merchant' : 'customer'));
                 });
 
+                if (merchantApprovalWhatsapp) {
+                    const savedWhatsappUrl = localStorage.getItem(MERCHANT_APPROVAL_WHATSAPP_KEY);
+                    merchantApprovalWhatsapp.hidden = !isMerchant || !savedWhatsappUrl;
+                    if (isMerchant && savedWhatsappUrl) merchantApprovalWhatsapp.href = savedWhatsappUrl;
+                }
+                if (merchantApprovalNotice) merchantApprovalNotice.hidden = !isMerchant;
+                if (isMerchant) {
+                    closeModal(rewardWheelModal);
+                    resetAllPurchaseWheelSessions();
+                }
+                setupPurchaseWheelsVertical();
+                updatePurchaseWheelStates();
+
                 visitorMerchantFields?.querySelectorAll('input, textarea').forEach(field => {
                     if (field.type !== 'hidden') field.required = isMerchant;
                     if (!isMerchant) field.value = '';
@@ -4076,6 +4155,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 setVisitorType(visitorTypeInput?.value || 'customer');
             }
 
+            async function refreshMerchantApprovalStatus() {
+                const token = localStorage.getItem(MERCHANT_REGISTRATION_TOKEN_KEY);
+                if (!token) return 'none';
+
+                const template = window.OZMAN_FRONT_CONFIG?.visitorRegistrationStatusUrlTemplate;
+                if (!template) return localStorage.getItem(MERCHANT_APPROVAL_STATUS_KEY) || 'pending';
+
+                try {
+                    const response = await fetch(template.replace('__TOKEN__', encodeURIComponent(token)), {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (!response.ok) return localStorage.getItem(MERCHANT_APPROVAL_STATUS_KEY) || 'pending';
+                    const result = await response.json();
+                    const status = result?.status || 'pending';
+                    localStorage.setItem(MERCHANT_APPROVAL_STATUS_KEY, status);
+                    if (status === 'approved') {
+                        localStorage.setItem(VISITOR_TYPE_STORAGE_KEY, 'merchant');
+                        syncCartPricesForVisitor();
+                        renderCart();
+                        hideVisitorRegistrationModal();
+                        showCartToast('تم اعتماد حساب صاحب المتجر. يمكنك الآن الشراء بأسعار صاحب المتجر.');
+                    }
+                    return status;
+                } catch (error) {
+                    return localStorage.getItem(MERCHANT_APPROVAL_STATUS_KEY) || 'pending';
+                }
+            }
+
             function requireCustomerRegistration(message = 'سجل بياناتك أولاً قبل استخدام هذه الخاصية.') {
                 if (hasCompletedCustomerRegistration()) {
                     return true;
@@ -4090,13 +4197,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 return false;
             }
 
-            function setupVisitorRegistrationModal() {
+            async function setupVisitorRegistrationModal() {
                 if (!visitorRegistrationModal || !window.OZMAN_FRONT_CONFIG?.showVisitorRegistration) {
                     hideVisitorRegistrationModal();
                     return;
                 }
 
                 setVisitorType(window.OZMAN_FRONT_CONFIG?.initialVisitorType || 'customer');
+
+                if (localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant') {
+                    const approvalStatus = await refreshMerchantApprovalStatus();
+                    if (approvalStatus === 'pending') {
+                        setVisitorType('merchant');
+                        showVisitorRegistrationModal();
+                        setVisitorMessage('طلبك قيد المراجعة. تواصل معنا عبر واتساب لإكمال الاعتماد.');
+                        const savedWhatsappUrl = localStorage.getItem(MERCHANT_APPROVAL_WHATSAPP_KEY);
+                        if (merchantApprovalWhatsapp && savedWhatsappUrl) {
+                            merchantApprovalWhatsapp.href = savedWhatsappUrl;
+                            merchantApprovalWhatsapp.hidden = false;
+                        }
+                        return;
+                    }
+                    if (approvalStatus === 'rejected') {
+                        showVisitorRegistrationModal();
+                        setVisitorType('merchant');
+                        setVisitorMessage('تعذر اعتماد طلب صاحب المتجر. تواصل معنا عبر واتساب لمراجعة البيانات.', true);
+                        return;
+                    }
+                }
 
                 if ((window.OZMAN_FRONT_CONFIG?.initialVisitorType || 'customer') === 'customer' && hasSavedCustomerProfile()) {
                     localStorage.setItem(VISITOR_REGISTRATION_STORAGE_KEY, '1');
@@ -4160,6 +4288,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const submitButton = visitorRegistrationForm.querySelector('button[type="submit"]');
                     const previousButtonHtml = submitButton?.innerHTML;
+                    const merchantWhatsappWindow = visitorTypeInput?.value === 'merchant'
+                        ? window.open('about:blank', '_blank')
+                        : null;
                     if (submitButton) {
                         submitButton.disabled = true;
                         submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ';
@@ -4195,6 +4326,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         localStorage.setItem(VISITOR_REGISTRATION_STORAGE_KEY, '1');
                         localStorage.setItem(VISITOR_TYPE_STORAGE_KEY, registrationType);
+                        if (registrationType === 'merchant') {
+                            localStorage.setItem(MERCHANT_REGISTRATION_TOKEN_KEY, result.registration_token || '');
+                            localStorage.setItem(MERCHANT_APPROVAL_STATUS_KEY, result.status || 'pending');
+                            const whatsappNumber = String(window.OZMAN_FRONT_CONFIG?.shopWhatsapp || '').replace(/\D+/g, '');
+                            if (merchantApprovalWhatsapp && whatsappNumber) {
+                                const approvalWhatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(result.whatsapp_message || '')}`;
+                                merchantApprovalWhatsapp.href = approvalWhatsappUrl;
+                                merchantApprovalWhatsapp.hidden = false;
+                                localStorage.setItem(MERCHANT_APPROVAL_WHATSAPP_KEY, approvalWhatsappUrl);
+                                if (merchantWhatsappWindow && !merchantWhatsappWindow.closed) {
+                                    merchantWhatsappWindow.location.replace(approvalWhatsappUrl);
+                                } else {
+                                    window.location.href = approvalWhatsappUrl;
+                                }
+                            }
+                        }
                         if (registrationType === 'customer') {
                             saveCustomerProfile({
                                 name: String(formData.get('name') || '').trim(),
@@ -4211,6 +4358,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         renderCart();
                         setVisitorMessage(result?.message || 'تم حفظ بياناتك بنجاح.');
                         showCartToast(result?.message || 'تم حفظ بياناتك بنجاح.');
+                        if (registrationType === 'merchant') {
+                            setVisitorMessage('تم حفظ طلبك وفتح واتساب لإرسال البيانات. لن تتمكن من الشراء حتى نتحقق من حسابك ونقبل الطلب.');
+                            return;
+                        }
                         window.setTimeout(() => {
                             hideVisitorRegistrationModal();
                             const pendingRaffleCard = sessionStorage.getItem('ozman_pending_raffle_card');
@@ -4226,6 +4377,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }, 450);
                     } catch (error) {
+                        if (merchantWhatsappWindow && !merchantWhatsappWindow.closed) merchantWhatsappWindow.close();
                         setVisitorMessage(error.message || 'تعذر حفظ البيانات، حاول مرة ثانية.', true);
                     } finally {
                         if (submitButton) {
@@ -4237,6 +4389,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             setupRewardWheel();
+
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant') {
+                    refreshMerchantApprovalStatus();
+                }
+            });
 
             if (rewardWheelSpinBtn) {
                 rewardWheelSpinBtn.addEventListener('click', async () => {

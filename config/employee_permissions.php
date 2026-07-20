@@ -85,7 +85,7 @@ return [
         'orders' => [
             'label' => 'الطلبات والتسجيلات',
             'permissions' => [
-                'visitor_registrations.view' => ['label' => 'استعراض تسجيلات الزوار', 'routes' => ['visitor-registrations.index']],
+                'visitor_registrations.view' => ['label' => 'استعراض وإدارة تسجيلات الزوار', 'routes' => ['visitor-registrations.index', 'visitor-registrations.status.update']],
                 'front_orders.view' => ['label' => 'استعراض طلبات الواجهة', 'routes' => ['front-orders.index', 'front-orders.status']],
                 'marketer_orders.view' => ['label' => 'عرض طلباتي من رابط المسوق فقط', 'routes' => ['front-orders.index']],
                 'front_orders.manage' => ['label' => 'إدارة جوائز الطلبات', 'routes' => ['front-orders.reward', 'front-orders.spinReward']],

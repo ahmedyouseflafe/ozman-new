@@ -307,6 +307,12 @@
             background: rgba(255, 214, 10, .1);
         }
 
+        .tag-g { color: var(--green); background: rgba(37,211,102,.1); }
+        .tag-r { color: #ff7169; background: rgba(255,59,48,.1); }
+        .approval-actions { display:flex; gap:7px; flex-wrap:wrap; min-width:170px; }
+        .approval-btn { border:1px solid currentColor; border-radius:999px; padding:7px 11px; background:transparent; color:var(--green); font:inherit; font-size:11px; font-weight:900; cursor:pointer; }
+        .approval-btn.reject { color:#ff7169; }
+
         .map-link {
             display: inline-flex;
             align-items: center;
@@ -467,6 +473,8 @@
                                     <th>بيانات المتجر</th>
                                     <th>مكان السكن</th>
                                     <th>لوكيشن المحل</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراء</th>
                                     <th>تاريخ التسجيل</th>
                                 </tr>
                             </thead>
@@ -509,12 +517,39 @@
                                             @endif
                                         </td>
                                         <td>
+                                            @if($registration->type !== 'merchant' || $registration->status === 'approved')
+                                                <span class="tag tag-g">مقبول</span>
+                                            @elseif($registration->status === 'rejected')
+                                                <span class="tag tag-r">مرفوض</span>
+                                            @else
+                                                <span class="tag tag-y">قيد المراجعة</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($registration->type === 'merchant')
+                                                <div class="approval-actions">
+                                                    <form method="POST" action="{{ route('visitor-registrations.status.update', $registration) }}">
+                                                        @csrf @method('PATCH')
+                                                        <input type="hidden" name="status" value="approved">
+                                                        <button class="approval-btn" type="submit">قبول</button>
+                                                    </form>
+                                                    <form method="POST" action="{{ route('visitor-registrations.status.update', $registration) }}">
+                                                        @csrf @method('PATCH')
+                                                        <input type="hidden" name="status" value="rejected">
+                                                        <button class="approval-btn reject" type="submit">رفض</button>
+                                                    </form>
+                                                </div>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td>
                                             {{ $registration->created_at?->format('Y-m-d H:i') }}
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6">
+                                        <td colspan="8">
                                             <div class="empty-state">
                                                 <i class="ti ti-address-book-off"></i>
                                                 لا توجد تسجيلات حتى الآن
