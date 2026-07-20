@@ -117,6 +117,9 @@
         }
         .step-dot:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-2px); }
         .step-dot.is-current { background: var(--primary); color: #001014; box-shadow: 0 0 14px rgba(0,229,255,.62); }
+        .step-dot.is-completed { border-color: var(--green); color: var(--green); background: rgba(37,211,102,.1); }
+        .step-dot.is-completed::after { content: '✓'; margin-right: 3px; font-size: 10px; }
+        .step-dot.is-current.is-completed { background: var(--primary); color: #001014; }
         .question-title {
             font-size: 24px;
             line-height: 1.45;
@@ -329,6 +332,10 @@
                         <section class="panel question-card">
                             @if(! $wheel->is_active)
                                 <div class="notice inactive">العجلة غير مفعلة حالياً.</div>
+                            @elseif($allQuestionsCompleted && ! $isUnlocked)
+                                <div class="notice success">
+                                    تم ربح جميع الأسئلة بنجاح. يمكنك استخدام زر «البدء من جديد» لإعادة الجولة.
+                                </div>
                             @elseif(! $isUnlocked)
                                 <div class="question-top">
                                     <div>
@@ -347,7 +354,8 @@
 
                                 <div class="step-dots" aria-label="اختيار السؤال">
                                     @for($i = 1; $i <= $questionsCount; $i++)
-                                        <a class="step-dot {{ $i === $currentQuestionNumber ? 'is-current' : '' }}"
+                                        @php($questionCompleted = $completedQuestionIds->contains((int) $questions[$i - 1]->id))
+                                        <a class="step-dot {{ $i === $currentQuestionNumber ? 'is-current' : '' }} {{ $questionCompleted ? 'is-completed' : '' }}"
                                            href="{{ route('reward-wheels.marketer.play', ['question' => $i]) }}"
                                            aria-label="السؤال {{ $i }}">{{ $i }}</a>
                                     @endfor
@@ -509,6 +517,11 @@
                 }
 
                 spinBtn.disabled = false;
+                if (spinPayload.next_question_url) {
+                    window.setTimeout(() => {
+                        window.location.href = spinPayload.next_question_url;
+                    }, 2200);
+                }
             }, 4100);
         });
     </script>

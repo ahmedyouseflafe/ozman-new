@@ -276,6 +276,13 @@ class RewardWheelController extends Controller
         $activeQuestions = $wheel->questions->where('is_active', true)->values();
         $isUnlocked = $activeQuestions->isEmpty() || $request->session()->get($this->marketerUnlockSessionKey($wheel)) === $wheel->updated_at?->timestamp;
         $currentQuestionIndex = (int) $request->session()->get($this->marketerQuestionSessionKey($wheel), 0);
+        $completedQuestionIds = collect($request->session()->get($this->marketerCompletedQuestionsSessionKey($wheel), []))
+            ->map(fn($id) => (int) $id)
+            ->filter(fn($id) => $activeQuestions->contains('id', $id))
+            ->unique()
+            ->values();
+        $allQuestionsCompleted = $activeQuestions->isNotEmpty()
+            && $completedQuestionIds->count() === $activeQuestions->count();
 
         if ($activeQuestions->isNotEmpty() && $request->filled('question')) {
             $currentQuestionIndex = max(0, min($activeQuestions->count() - 1, $request->integer('question') - 1));
@@ -287,6 +294,14 @@ class RewardWheelController extends Controller
             $request->session()->put($this->marketerQuestionSessionKey($wheel), $currentQuestionIndex);
         }
 
+        if (! $isUnlocked && ! $allQuestionsCompleted && $activeQuestions->isNotEmpty()
+            && $completedQuestionIds->contains((int) $activeQuestions[$currentQuestionIndex]->id)) {
+            $currentQuestionIndex = (int) $activeQuestions->search(
+                fn($question) => ! $completedQuestionIds->contains((int) $question->id)
+            );
+            $request->session()->put($this->marketerQuestionSessionKey($wheel), $currentQuestionIndex);
+        }
+
         return view('admin.reward_wheels.marketer_dashboard_play', [
             'wheel' => $wheel,
             'questions' => $activeQuestions,
@@ -294,6 +309,8 @@ class RewardWheelController extends Controller
             'currentQuestionNumber' => $activeQuestions->isEmpty() ? 0 : $currentQuestionIndex + 1,
             'questionsCount' => $activeQuestions->count(),
             'isUnlocked' => $isUnlocked,
+            'completedQuestionIds' => $completedQuestionIds,
+            'allQuestionsCompleted' => $allQuestionsCompleted,
         ]);
     }
 
@@ -347,7 +364,8 @@ class RewardWheelController extends Controller
         }
 
         $request->session()->put($this->marketerUnlockSessionKey($wheel), $wheel->updated_at?->timestamp);
-        $request->session()->forget($this->marketerQuestionSessionKey($wheel));
+        $currentIndex = max(0, $questions->search(fn($item) => $item->id === $question->id));
+        $request->session()->put($this->marketerQuestionSessionKey($wheel), $currentIndex);
 
         return redirect()
             ->route('reward-wheels.marketer.play')
@@ -392,6 +410,7 @@ class RewardWheelController extends Controller
         $wheel = $this->marketerDashboardWheel();
         $request->session()->forget($this->marketerUnlockSessionKey($wheel));
         $request->session()->put($this->marketerQuestionSessionKey($wheel), 0);
+        $request->session()->forget($this->marketerCompletedQuestionsSessionKey($wheel));
 
         return redirect()
             ->route('reward-wheels.marketer.play')
@@ -402,7 +421,7 @@ class RewardWheelController extends Controller
     {
         abort_unless(auth()->user()?->isMarketer() || $this->canAccessCurrentRoute(), 403);
 
-        return $this->spinMarketerWheel($request, $this->marketerDashboardWheel()->load('segments'), true);
+        return $this->spinMarketerWheel($request, $this->marketerDashboardWheel()->load(['segments', 'questions']), true);
     }
 
     public function marketerDirectEdit(): View
@@ -505,9 +524,47 @@ class RewardWheelController extends Controller
         $segment = $segments->firstWhere('id', $segmentId) ?? $segments->first();
         $selectedIndex = max(0, $segments->search(fn($item) => $item->id === $segment->id));
 
+        $nextQuestionUrl = null;
+        $completedQuestionId = null;
+        if ($requiresUnlock) {
+            $questions = $wheel->questions->where('is_active', true)->values();
+            if ($questions->isNotEmpty()) {
+                $currentIndex = (int) $request->session()->get($this->marketerQuestionSessionKey($wheel), 0);
+                $currentIndex = max(0, min($questions->count() - 1, $currentIndex));
+                $completedQuestionId = (int) $questions[$currentIndex]->id;
+                $completedIds = collect($request->session()->get($this->marketerCompletedQuestionsSessionKey($wheel), []))
+                    ->push($completedQuestionId)
+                    ->map(fn($id) => (int) $id)
+                    ->unique()
+                    ->values()
+                    ->all();
+                $request->session()->put($this->marketerCompletedQuestionsSessionKey($wheel), $completedIds);
+
+                $nextIndex = null;
+                for ($offset = 1; $offset <= $questions->count(); $offset++) {
+                    $candidateIndex = ($currentIndex + $offset) % $questions->count();
+                    if (! in_array((int) $questions[$candidateIndex]->id, $completedIds, true)) {
+                        $nextIndex = $candidateIndex;
+                        break;
+                    }
+                }
+
+                if ($nextIndex !== null) {
+                    $request->session()->put($this->marketerQuestionSessionKey($wheel), $nextIndex);
+                    $nextQuestionUrl = route('reward-wheels.marketer.play', ['question' => $nextIndex + 1]);
+                } else {
+                    $nextQuestionUrl = route('reward-wheels.marketer.play');
+                }
+            }
+
+            $request->session()->forget($this->marketerUnlockSessionKey($wheel));
+        }
+
         return response()->json([
             'selected_index' => $selectedIndex,
             'remaining_spins' => count($cycle),
+            'completed_question_id' => $completedQuestionId,
+            'next_question_url' => $nextQuestionUrl,
             'segment' => [
                 'label' => $segment->label,
                 'discount_type' => $segment->discount_type,
@@ -715,6 +772,11 @@ class RewardWheelController extends Controller
     private function marketerQuestionSessionKey(RewardWheel $wheel): string
     {
         return 'reward_wheels.marketer.question.' . auth()->id() . '.' . $wheel->getKey();
+    }
+
+    private function marketerCompletedQuestionsSessionKey(RewardWheel $wheel): string
+    {
+        return 'reward_wheels.marketer.completed_questions.' . auth()->id() . '.' . $wheel->getKey() . '.' . $wheel->updated_at?->timestamp;
     }
 
     private function marketerSpinCycleSessionKey(RewardWheel $wheel): string
