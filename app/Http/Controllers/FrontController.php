@@ -605,6 +605,7 @@ class FrontController extends Controller
         $merchantDefaultPrice = $packagePrice ?? $cartonPrice ?? $palletPrice;
 
         return [
+            'id' => $product->id,
             'name' => $product->localized('name'),
             'price' => $customerDefaultPrice !== null ? number_format($customerDefaultPrice, 2) . ' ₪' : null,
             'customer_price' => $customerDefaultPrice !== null ? number_format($customerDefaultPrice, 2) . ' ₪' : null,

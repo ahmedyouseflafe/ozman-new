@@ -577,7 +577,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function productCartKey(product) {
             const recipientKey = product.order_context?.key || product.order_recipient_key || '';
-            return `${product.name || ''}|${product.img || ''}|${product.unit_key || ''}|${recipientKey}`;
+            const productKey = product.id || product.product_id || `${product.name || ''}|${product.img || ''}`;
+            return `${productKey}|${product.unit_key || ''}|${recipientKey}`;
         }
 
         function parseCartPrice(price) {
@@ -831,8 +832,13 @@ document.addEventListener('DOMContentLoaded', () => {
             let changed = false;
 
             ozmanCart.forEach((item) => {
-                const product = findProductByName(item.name);
+                const product = findProductForCartItem(item);
                 if (!product) return;
+
+                if (Number(item.product_id || 0) !== Number(product.id || 0)) {
+                    item.product_id = product.id || null;
+                    changed = true;
+                }
 
                 const unitOption = item.unit_key
                     ? productUnitOptions(product).find((option) => option.key === item.unit_key)
@@ -853,6 +859,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     : campaignCartMeta(product);
                 if (JSON.stringify(item.campaign_offer || null) !== JSON.stringify(campaignOffer || null)) {
                     item.campaign_offer = campaignOffer || null;
+                    changed = true;
+                }
+
+                const refreshedKey = productCartKey({
+                    ...item,
+                    id: product.id,
+                    order_context: item.order_context,
+                });
+                if (item.key !== refreshedKey) {
+                    item.key = refreshedKey;
                     changed = true;
                 }
             });
@@ -1358,6 +1374,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 ozmanCart.push({
                     key,
+                    product_id: product.id || null,
                     name: product.name,
                     price: product.price || '',
                     img: product.img || '',
@@ -1923,6 +1940,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             return carouselProductsDb[productName] || null;
+        }
+
+        function findProductForCartItem(item) {
+            const wantedId = Number(item?.product_id || 0);
+            let nameMatch = null;
+
+            for (const dept in activeProductsDb) {
+                for (const product of activeProductsDb[dept] || []) {
+                    if (wantedId && Number(product.id) === wantedId) return product;
+                    if (!nameMatch && product.name === item?.name && (!item?.img || product.img === item.img)) {
+                        nameMatch = product;
+                    }
+                }
+            }
+
+            return nameMatch || findProductByName(item?.name);
         }
 
         function getProductsForDepartment(deptTitle) {
