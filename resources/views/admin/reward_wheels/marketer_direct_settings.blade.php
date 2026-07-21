@@ -126,8 +126,8 @@
 
                             <section class="stat-card">
                                 <span>مجموع فرص الجوائز الفعالة</span>
-                                <strong>{{ $activeQuota }}/20</strong>
-                                <p>لازم مجموع الظهور للجوائز الفعالة يساوي 20.</p>
+                                <strong>{{ $activeQuota }}</strong>
+                                <p>الأرقام أوزان نسبية؛ كلما زاد الرقم زادت فرصة ظهور الجائزة.</p>
                             </section>
                         </aside>
 
@@ -204,6 +204,12 @@
 
     <script>
         const segmentsRows = document.getElementById('segmentsRows');
+        const wheelForm = segmentsRows?.closest('form');
+        const draftKey = 'ozman:marketer-direct-wheel-draft';
+        const clearDraft = @json(session('status') !== null);
+        let restoringDraft = false;
+
+        if (clearDraft) localStorage.removeItem(draftKey);
 
         function reindexSegments() {
             Array.from(segmentsRows?.children || []).forEach((row, index) => {
@@ -219,8 +225,13 @@
         function bindRemove(scope) {
             scope.querySelectorAll('.remove-row').forEach((button) => {
                 button.onclick = () => {
+                    if (segmentsRows.children.length <= 1) {
+                        alert('يجب أن تبقى جائزة واحدة على الأقل.');
+                        return;
+                    }
                     button.closest('.row-card')?.remove();
                     reindexSegments();
+                    saveDraft();
                 };
             });
         }
@@ -260,6 +271,63 @@
             bindRemove(segmentsRows);
             bindGiftUploads(segmentsRows);
             reindexSegments();
+            saveDraft();
+        }
+
+        function segmentDraft(row) {
+            const data = {};
+            row.querySelectorAll('[name]').forEach((field) => {
+                if (field.type === 'file') return;
+                const key = field.name.match(/\[([^\]]+)\]$/)?.[1];
+                if (!key) return;
+                data[key] = field.type === 'checkbox' ? field.checked : field.value;
+            });
+            return data;
+        }
+
+        function saveDraft() {
+            if (restoringDraft || !wheelForm) return;
+            localStorage.setItem(draftKey, JSON.stringify({
+                title: wheelForm.querySelector('[name="title"]')?.value || '',
+                is_active: wheelForm.querySelector('[name="is_active"]')?.checked || false,
+                segments: Array.from(segmentsRows.children).map(segmentDraft),
+            }));
+        }
+
+        function restoreDraft() {
+            if (clearDraft) return;
+
+            let draft = null;
+            try {
+                draft = JSON.parse(localStorage.getItem(draftKey) || 'null');
+            } catch (_) {
+                localStorage.removeItem(draftKey);
+            }
+            if (!draft || !Array.isArray(draft.segments) || !draft.segments.length) return;
+
+            restoringDraft = true;
+            while (segmentsRows.children.length < draft.segments.length) addSegmentRow();
+            while (segmentsRows.children.length > draft.segments.length) segmentsRows.lastElementChild?.remove();
+
+            Array.from(segmentsRows.children).forEach((row, index) => {
+                const segment = draft.segments[index] || {};
+                row.querySelectorAll('[name]').forEach((field) => {
+                    if (field.type === 'file') return;
+                    const key = field.name.match(/\[([^\]]+)\]$/)?.[1];
+                    if (!key || !(key in segment)) return;
+                    if (field.type === 'checkbox') field.checked = Boolean(segment[key]);
+                    else field.value = segment[key] ?? '';
+                });
+            });
+
+            const title = wheelForm.querySelector('[name="title"]');
+            const active = wheelForm.querySelector('[name="is_active"]');
+            if (title) title.value = draft.title || title.value;
+            if (active) active.checked = Boolean(draft.is_active);
+            reindexSegments();
+            bindRemove(segmentsRows);
+            bindGiftUploads(segmentsRows);
+            restoringDraft = false;
         }
 
         document.getElementById('addSegment')?.addEventListener('click', addSegmentRow);
@@ -270,9 +338,12 @@
         });
 
         document.querySelector('form')?.addEventListener('submit', reindexSegments);
+        wheelForm?.addEventListener('input', saveDraft);
+        wheelForm?.addEventListener('change', saveDraft);
 
         bindRemove(document);
         bindGiftUploads(document);
+        restoreDraft();
     </script>
 </body>
 </html>
