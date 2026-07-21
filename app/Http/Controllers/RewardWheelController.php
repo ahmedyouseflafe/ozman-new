@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DistributorMarketer;
 use App\Models\RewardWheel;
+use App\Models\RewardWheelSegment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -266,6 +267,29 @@ class RewardWheelController extends Controller
             ->with('status', 'تم حفظ عجلة المسوقة وأسئلتها بنجاح.');
     }
 
+    public function marketerSegmentDestroy(RewardWheelSegment $segment): JsonResponse
+    {
+        abort_unless(
+            auth()->user()?->isSuperAdmin()
+                || auth()->user()?->canAccessRouteName('reward-wheels.marketer.edit'),
+            403
+        );
+
+        $wheel = $this->marketerDashboardWheel();
+        abort_unless((int) $segment->reward_wheel_id === (int) $wheel->getKey(), 404);
+
+        if ($wheel->segments()->count() <= 1) {
+            return response()->json([
+                'message' => 'يجب أن تبقى شريحة واحدة على الأقل.',
+            ], 422);
+        }
+
+        $segment->delete();
+        $wheel->update(['spin_cycle' => null]);
+
+        return response()->json(['deleted' => true]);
+    }
+
     public function marketerPlay(Request $request): View
     {
         abort_unless(auth()->user()?->isMarketer() || $this->canAccessCurrentRoute(), 403);
@@ -455,6 +479,29 @@ class RewardWheelController extends Controller
         return redirect()
             ->route('reward-wheels.marketer.direct.edit')
             ->with('status', 'تم حفظ العجلة المباشرة بنجاح.');
+    }
+
+    public function marketerDirectSegmentDestroy(RewardWheelSegment $segment): JsonResponse
+    {
+        abort_unless(
+            auth()->user()?->isSuperAdmin()
+                || auth()->user()?->canAccessRouteName('reward-wheels.marketer.direct.edit'),
+            403
+        );
+
+        $wheel = $this->marketerDirectWheel();
+        abort_unless((int) $segment->reward_wheel_id === (int) $wheel->getKey(), 404);
+
+        if ($wheel->segments()->count() <= 1) {
+            return response()->json([
+                'message' => 'يجب أن تبقى جائزة واحدة على الأقل.',
+            ], 422);
+        }
+
+        $segment->delete();
+        $wheel->update(['spin_cycle' => null]);
+
+        return response()->json(['deleted' => true]);
     }
 
     public function marketerDirectPlay(): View
@@ -663,6 +710,7 @@ class RewardWheelController extends Controller
             'is_active' => ['nullable', 'boolean'],
             'segments' => ['required', 'array', 'min:1'],
             'segments.*.label' => ['required', 'string', 'max:255'],
+            'segments.*.id' => ['nullable', 'integer'],
             'segments.*.discount_value' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'segments.*.discount_type' => ['required', Rule::in(['percent', 'amount', 'free_shipping', 'gift'])],
             'segments.*.gift_image' => ['nullable', 'image', 'max:2048'],

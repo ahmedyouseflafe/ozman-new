@@ -152,7 +152,8 @@
                                 <h2 class="panel-title"><i class="ti ti-disc" aria-hidden="true"></i> شرائح الجوائز</h2>
                                 <div class="rows" id="segmentsRows">
                                     @foreach(old('segments', $wheel->segments->toArray()) as $index => $segment)
-                                        <div class="row-card segment-row">
+                                        <div class="row-card segment-row" data-segment-id="{{ data_get($segment, 'id') }}">
+                                            <input type="hidden" name="segments[{{ $index }}][id]" value="{{ data_get($segment, 'id') }}">
                                             <div class="row-grid">
                                                 <div class="field">
                                                     <label>اسم الشريحة</label>
@@ -211,6 +212,8 @@
     <script>
         const questionsRows = document.getElementById('questionsRows');
         const segmentsRows = document.getElementById('segmentsRows');
+        const segmentDeleteUrl = @json(route('reward-wheels.marketer.segments.destroy', ['segment' => '__SEGMENT__']));
+        const csrfToken = @json(csrf_token());
 
         function reindexRows(container, prefix) {
             Array.from(container?.children || []).forEach((row, index) => {
@@ -222,9 +225,37 @@
 
         function bindRemove(scope) {
             scope.querySelectorAll('.remove-row').forEach((button) => {
-                button.onclick = () => {
+                button.onclick = async () => {
                     const row = button.closest('.row-card');
                     const container = row?.parentElement;
+
+                    if (container === segmentsRows) {
+                        if (segmentsRows.children.length <= 1) {
+                            alert('يجب أن تبقى شريحة واحدة على الأقل.');
+                            return;
+                        }
+
+                        const segmentId = row?.dataset.segmentId;
+                        if (segmentId) {
+                            button.disabled = true;
+                            try {
+                                const response = await fetch(segmentDeleteUrl.replace('__SEGMENT__', segmentId), {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'X-CSRF-TOKEN': csrfToken,
+                                    },
+                                });
+                                const result = await response.json().catch(() => ({}));
+                                if (!response.ok) throw new Error(result.message || 'تعذر حذف الشريحة.');
+                            } catch (error) {
+                                button.disabled = false;
+                                alert(error.message || 'تعذر حذف الشريحة.');
+                                return;
+                            }
+                        }
+                    }
+
                     row?.remove();
 
                     if (container === questionsRows) reindexRows(questionsRows, 'questions');

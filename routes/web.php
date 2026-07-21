@@ -223,6 +223,8 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
         ->name('reward-wheels.marketer.edit');
     Route::put('/reward-wheels/marketer/settings', [RewardWheelController::class, 'marketerUpdate'])
         ->name('reward-wheels.marketer.update');
+    Route::delete('/reward-wheels/marketer/segments/{segment}', [RewardWheelController::class, 'marketerSegmentDestroy'])
+        ->name('reward-wheels.marketer.segments.destroy');
     Route::get('/reward-wheels/marketer/play', [RewardWheelController::class, 'marketerPlay'])
         ->name('reward-wheels.marketer.play');
     Route::post('/reward-wheels/marketer/unlock', [RewardWheelController::class, 'marketerUnlock'])
@@ -235,6 +237,8 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
         ->name('reward-wheels.marketer.direct.edit');
     Route::put('/reward-wheels/marketer/direct/settings', [RewardWheelController::class, 'marketerDirectUpdate'])
         ->name('reward-wheels.marketer.direct.update');
+    Route::delete('/reward-wheels/marketer/direct/segments/{segment}', [RewardWheelController::class, 'marketerDirectSegmentDestroy'])
+        ->name('reward-wheels.marketer.direct.segments.destroy');
     Route::get('/reward-wheels/marketer/direct/play', [RewardWheelController::class, 'marketerDirectPlay'])
         ->name('reward-wheels.marketer.direct.play');
     Route::post('/reward-wheels/marketer/direct/spin', [RewardWheelController::class, 'marketerDirectSpin'])

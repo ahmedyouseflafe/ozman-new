@@ -138,7 +138,8 @@
                             </h2>
                             <div class="rows" id="segmentsRows">
                                 @foreach($segmentsDraft as $index => $segment)
-                                    <div class="row-card segment-row">
+                                    <div class="row-card segment-row" data-segment-id="{{ data_get($segment, 'id') }}">
+                                        <input type="hidden" name="segments[{{ $index }}][id]" value="{{ data_get($segment, 'id') }}">
                                         <div class="segment-head">
                                             <span class="segment-index"><b>{{ $index + 1 }}</b> جائزة</span>
                                             <label class="check">
@@ -206,6 +207,8 @@
         const segmentsRows = document.getElementById('segmentsRows');
         const wheelForm = segmentsRows?.closest('form');
         const draftKey = 'ozman:marketer-direct-wheel-draft';
+        const segmentDeleteUrl = @json(route('reward-wheels.marketer.direct.segments.destroy', ['segment' => '__SEGMENT__']));
+        const csrfToken = @json(csrf_token());
         const clearDraft = @json(session('status') !== null);
         let restoringDraft = false;
 
@@ -224,12 +227,34 @@
 
         function bindRemove(scope) {
             scope.querySelectorAll('.remove-row').forEach((button) => {
-                button.onclick = () => {
+                button.onclick = async () => {
                     if (segmentsRows.children.length <= 1) {
                         alert('يجب أن تبقى جائزة واحدة على الأقل.');
                         return;
                     }
-                    button.closest('.row-card')?.remove();
+
+                    const row = button.closest('.row-card');
+                    const segmentId = row?.dataset.segmentId;
+                    if (segmentId) {
+                        button.disabled = true;
+                        try {
+                            const response = await fetch(segmentDeleteUrl.replace('__SEGMENT__', segmentId), {
+                                method: 'DELETE',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken,
+                                },
+                            });
+                            const result = await response.json().catch(() => ({}));
+                            if (!response.ok) throw new Error(result.message || 'تعذر حذف الجائزة.');
+                        } catch (error) {
+                            button.disabled = false;
+                            alert(error.message || 'تعذر حذف الجائزة.');
+                            return;
+                        }
+                    }
+
+                    row?.remove();
                     reindexSegments();
                     saveDraft();
                 };
