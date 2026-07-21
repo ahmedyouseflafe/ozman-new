@@ -609,7 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function activePricingCampaign(product) {
-            if (!product) {
+            if (!product || currentVisitorType() === 'merchant') {
                 return null;
             }
 
@@ -685,7 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
         function cartItemLineTotal(item) {
             const qty = Number(item.qty || 0);
             const unitPrice = parseCartPrice(item.price);
-            const campaign = item.campaign_offer;
+            const campaign = currentVisitorType() === 'merchant' ? null : item.campaign_offer;
 
             if (campaign?.type === 'range_price') {
                 const minimum = Number(campaign.min_quantity);
@@ -708,6 +708,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function cartItemCampaignSavings(item) {
+            if (currentVisitorType() === 'merchant') {
+                return 0;
+            }
+
             const qty = Number(item.qty || 0);
             const unitPrice = parseCartPrice(item.price);
             const regularTotal = unitPrice * qty;
@@ -1277,7 +1281,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function cartDiscountEligible() {
-            return ozmanCart.length >= 2;
+            return currentVisitorType() !== 'merchant' && ozmanCart.length >= 2;
         }
 
         function standardCartDiscountValue() {
@@ -1285,6 +1289,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function rewardDiscountValue(subtotal = cartTotalValue()) {
+            if (currentVisitorType() === 'merchant') return 0;
+
             const reward = loadRewardDiscount();
             if (!reward || subtotal <= 0) return 0;
 
@@ -1875,16 +1881,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (promoBox && promoText) {
-                const eligible = cartDiscountEligible();
-                const reward = loadRewardDiscount();
-                promoBox.hidden = false;
-                promoBox.classList.toggle('active', eligible || Boolean(reward));
-                if (reward && rewardDiscountValue() > 0) {
-                    promoText.textContent = `تم تفعيل خصم العجلة: ${reward.label}`;
+                if (currentVisitorType() === 'merchant') {
+                    promoBox.hidden = true;
                 } else {
-                    promoText.textContent = eligible
-                        ? frontLabel('discountApplied', 'تم تفعيل خصم 5% على المبلغ الإجمالي')
-                        : frontLabel('addAnotherForDiscount', 'أضف منتج آخر إلى السلة واحصل على خصم 5% من المبلغ الإجمالي');
+                    const eligible = cartDiscountEligible();
+                    const reward = loadRewardDiscount();
+                    promoBox.hidden = false;
+                    promoBox.classList.toggle('active', eligible || Boolean(reward));
+                    if (reward && rewardDiscountValue() > 0) {
+                        promoText.textContent = `تم تفعيل خصم العجلة: ${reward.label}`;
+                    } else {
+                        promoText.textContent = eligible
+                            ? frontLabel('discountApplied', 'تم تفعيل خصم 5% على المبلغ الإجمالي')
+                            : frontLabel('addAnotherForDiscount', 'أضف منتج آخر إلى السلة واحصل على خصم 5% من المبلغ الإجمالي');
+                    }
                 }
             }
 
