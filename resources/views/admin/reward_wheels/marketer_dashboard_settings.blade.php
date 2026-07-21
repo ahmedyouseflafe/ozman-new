@@ -171,7 +171,7 @@
                                                     <input type="number" min="0" name="segments[{{ $index }}][discount_value]" value="{{ data_get($segment, 'discount_value') }}">
                                                 </div>
                                                 <div class="field">
-                                                    <label>ظهور من 20</label>
+                                                    <label>عدد فرص الظهور</label>
                                                     <input type="number" min="0" max="20" name="segments[{{ $index }}][win_quota]" value="{{ data_get($segment, 'win_quota', 1) }}">
                                                 </div>
                                                 <div class="field">
@@ -212,9 +212,24 @@
         const questionsRows = document.getElementById('questionsRows');
         const segmentsRows = document.getElementById('segmentsRows');
 
+        function reindexRows(container, prefix) {
+            Array.from(container?.children || []).forEach((row, index) => {
+                row.querySelectorAll('[name]').forEach((field) => {
+                    field.name = field.name.replace(new RegExp(`^${prefix}\\[\\d+\\]`), `${prefix}[${index}]`);
+                });
+            });
+        }
+
         function bindRemove(scope) {
             scope.querySelectorAll('.remove-row').forEach((button) => {
-                button.onclick = () => button.closest('.row-card')?.remove();
+                button.onclick = () => {
+                    const row = button.closest('.row-card');
+                    const container = row?.parentElement;
+                    row?.remove();
+
+                    if (container === questionsRows) reindexRows(questionsRows, 'questions');
+                    if (container === segmentsRows) reindexRows(segmentsRows, 'segments');
+                };
             });
         }
 
@@ -283,6 +298,7 @@
                 </div>`);
             bindRemove(questionsRows);
             bindQuestionOptions(questionsRows);
+            reindexRows(questionsRows, 'questions');
         });
 
         document.getElementById('addSegment')?.addEventListener('click', () => {
@@ -293,7 +309,7 @@
                         <div class="field"><label>اسم الشريحة</label><input name="segments[${index}][label]" required></div>
                         <div class="field"><label>نوع الجائزة</label><select class="discount-type-select" name="segments[${index}][discount_type]" required><option value="percent">نسبة خصم</option><option value="amount">مبلغ ثابت</option><option value="free_shipping">توصيل مجاني</option><option value="gift">هدية</option></select></div>
                         <div class="field"><label>القيمة</label><input type="number" min="0" name="segments[${index}][discount_value]"></div>
-                        <div class="field"><label>ظهور من 20</label><input type="number" min="0" max="20" name="segments[${index}][win_quota]" value="1"></div>
+                        <div class="field"><label>عدد فرص الظهور</label><input type="number" min="0" max="20" name="segments[${index}][win_quota]" value="1"></div>
                         <div class="field"><label>اللون</label><input type="color" name="segments[${index}][color]" value="#00e5ff" required></div>
                     </div>
                     <div class="field gift-upload"><label>صورة الهدية</label><input type="file" name="segments[${index}][gift_image]" accept="image/*"></div>
@@ -302,6 +318,12 @@
                 </div>`);
             bindRemove(segmentsRows);
             bindGiftUploads(segmentsRows);
+            reindexRows(segmentsRows, 'segments');
+        });
+
+        document.querySelector('form')?.addEventListener('submit', () => {
+            reindexRows(questionsRows, 'questions');
+            reindexRows(segmentsRows, 'segments');
         });
 
         bindRemove(document);

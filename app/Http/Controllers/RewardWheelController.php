@@ -249,8 +249,6 @@ class RewardWheelController extends Controller
             'segments.*.win_quota' => ['nullable', 'integer', 'min:0', 'max:20'],
         ]));
 
-        $this->assertActiveSegmentsQuotaTotal($validated['segments'], 20, 'مجموع ظهور الجوائز الفعالة يجب أن يساوي 20.');
-
         DB::transaction(function () use ($validated, $request) {
             $wheel = $this->marketerDashboardWheel();
             $wheel->update([
@@ -442,8 +440,6 @@ class RewardWheelController extends Controller
         $validated = $request->validate(array_merge($this->wheelValidationRules(), [
             'segments.*.win_quota' => ['nullable', 'integer', 'min:0', 'max:20'],
         ]));
-
-        $this->assertActiveSegmentsQuotaTotal($validated['segments'], 20, 'مجموع ظهور الجوائز الفعالة يجب أن يساوي 20.');
 
         DB::transaction(function () use ($validated, $request) {
             $wheel = $this->marketerDirectWheel();

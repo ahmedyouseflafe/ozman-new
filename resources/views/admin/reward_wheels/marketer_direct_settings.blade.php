@@ -161,7 +161,7 @@
                                                 </select>
                                             </div>
                                             <div class="field">
-                                                <label>ظهور من 20</label>
+                                                <label>عدد فرص الظهور</label>
                                                 <input type="number" min="0" max="20" name="segments[{{ $index }}][win_quota]" value="{{ data_get($segment, 'win_quota', 1) }}">
                                             </div>
                                         </div>
@@ -205,9 +205,23 @@
     <script>
         const segmentsRows = document.getElementById('segmentsRows');
 
+        function reindexSegments() {
+            Array.from(segmentsRows?.children || []).forEach((row, index) => {
+                row.querySelectorAll('[name]').forEach((field) => {
+                    field.name = field.name.replace(/^segments\[\d+\]/, `segments[${index}]`);
+                });
+
+                const badge = row.querySelector('.segment-index b');
+                if (badge) badge.textContent = index + 1;
+            });
+        }
+
         function bindRemove(scope) {
             scope.querySelectorAll('.remove-row').forEach((button) => {
-                button.onclick = () => button.closest('.row-card')?.remove();
+                button.onclick = () => {
+                    button.closest('.row-card')?.remove();
+                    reindexSegments();
+                };
             });
         }
 
@@ -234,7 +248,7 @@
                     <div class="row-grid">
                         <div class="field"><label>اسم الجائزة</label><input name="segments[${index}][label]" required></div>
                         <div class="field"><label>النوع</label><select class="discount-type-select" name="segments[${index}][discount_type]" required><option value="percent">نسبة خصم</option><option value="amount">مبلغ ثابت</option><option value="free_shipping">توصيل مجاني</option><option value="gift">هدية</option></select></div>
-                        <div class="field"><label>ظهور من 20</label><input type="number" min="0" max="20" name="segments[${index}][win_quota]" value="1"></div>
+                        <div class="field"><label>عدد فرص الظهور</label><input type="number" min="0" max="20" name="segments[${index}][win_quota]" value="1"></div>
                     </div>
                     <div class="row-grid secondary">
                         <div class="field"><label>القيمة</label><input type="number" min="0" name="segments[${index}][discount_value]"></div>
@@ -245,16 +259,17 @@
                 </div>`);
             bindRemove(segmentsRows);
             bindGiftUploads(segmentsRows);
+            reindexSegments();
         }
 
         document.getElementById('addSegment')?.addEventListener('click', addSegmentRow);
         document.getElementById('addSegmentBottom')?.addEventListener('click', addSegmentRow);
 
         segmentsRows?.addEventListener('click', () => {
-            segmentsRows.querySelectorAll('.segment-index b').forEach((badge, index) => {
-                badge.textContent = index + 1;
-            });
+            reindexSegments();
         });
+
+        document.querySelector('form')?.addEventListener('submit', reindexSegments);
 
         bindRemove(document);
         bindGiftUploads(document);
