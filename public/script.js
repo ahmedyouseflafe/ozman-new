@@ -604,11 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return product.unit_price;
             }
 
-            if (currentVisitorType() === 'merchant' && product.merchant_price) {
-                return product.merchant_price;
-            }
-
-            return product.customer_price || product.price || '';
+            return productUnitOptions(product)[0]?.price || '';
         }
 
         function activePricingCampaign(product) {

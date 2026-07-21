@@ -54,6 +54,7 @@ class ProductController extends Controller
         $this->authorizeProductManagement();
 
         $data = $this->validatedData($request);
+        $this->syncLegacyPrices($data);
         unset($data['images'], $data['campaigns']);
         $this->normalizeShopId($data);
         $this->applyAgentOwnership($data);
@@ -140,6 +141,7 @@ class ProductController extends Controller
         $wasInStock = (int) $product->quantity > 0;
 
         $data = $this->validatedData($request, $product);
+        $this->syncLegacyPrices($data, $product);
         unset(
             $data['images'],
             $data['campaigns'],
@@ -355,8 +357,8 @@ class ProductController extends Controller
             'description' => ['nullable', 'string'],
             'description_en' => ['nullable', 'string'],
             'description_he' => ['nullable', 'string'],
-            'price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
-            'discount_price' => ['nullable', 'numeric', 'min:0', 'lt:price'],
+            'price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'discount_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'customer_package_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'show_customer_package_price' => ['required', 'boolean'],
             'customer_carton_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
@@ -419,6 +421,23 @@ class ProductController extends Controller
             'delete_campaign_ids' => ['nullable', 'array'],
             'delete_campaign_ids.*' => ['integer'],
         ]);
+    }
+
+    private function syncLegacyPrices(array &$data, ?Product $product = null): void
+    {
+        $data['price'] = $data['customer_package_price']
+            ?? $data['customer_carton_price']
+            ?? $data['customer_pallet_price']
+            ?? $data['package_price']
+            ?? $data['carton_price']
+            ?? $data['pallet_price']
+            ?? $product?->price
+            ?? 0;
+        $data['merchant_price'] = $data['package_price']
+            ?? $data['carton_price']
+            ?? $data['pallet_price']
+            ?? null;
+        $data['discount_price'] = null;
     }
 
     private function uniqueSlug(string $value, ?Product $product = null): string
