@@ -1,0 +1,1 @@
+import{t as e}from"./extension.chunk.js";var t=e();export{t};

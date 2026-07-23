@@ -1,0 +1,1 @@
+var e=function(e){return e.Desktop=`desktop`,e.Extension=`extension`,e.WebVault=`webvault`,e}({});export{e as t};
