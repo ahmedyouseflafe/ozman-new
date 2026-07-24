@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Shop;
+use App\Models\Distributor;
 use App\Models\DistributorMarketer;
 use App\Models\User;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
@@ -135,10 +136,17 @@ class ShopController extends Controller
         $data['is_active'] = $request->boolean('is_active');
         $data['show_ozman_products'] = $request->boolean('show_ozman_products');
 
+        if (Auth::user()?->isDistributor()) {
+            $distributor = $this->currentDistributorProfile();
+            abort_unless($distributor, 403);
+            $data['distributor_id'] = $distributor->id;
+        }
+
         if (Auth::user()?->isMarketer()) {
             $marketer = $this->currentMarketerProfile();
             abort_unless($marketer, 403);
             $data['distributor_marketer_id'] = $marketer->id;
+            $data['distributor_id'] = $marketer->distributor_id;
         }
 
         if ($request->hasFile('logo')) {
@@ -245,7 +253,7 @@ class ShopController extends Controller
     private function validatedData(Request $request, ?Shop $shop = null): array
     {
         $authUser = Auth::user();
-        $usesCurrentUserAsOwner = ! $shop && $authUser && ($authUser->isAgent() || $authUser->isDistributor());
+        $usesCurrentUserAsOwner = ! $shop && $authUser?->isAgent();
         $ownerPasswordRules = $shop || $usesCurrentUserAsOwner
             ? ['nullable', 'string', 'min:6']
             : ['required', 'string', 'min:6', 'confirmed'];
@@ -299,7 +307,7 @@ class ShopController extends Controller
     {
         $user = Auth::user();
 
-        if ($user && ($user->isAgent() || $user->isDistributor())) {
+        if ($user?->isAgent()) {
             return $user;
         }
 
@@ -322,6 +330,27 @@ class ShopController extends Controller
         }
 
         return DistributorMarketer::query()
+            ->where('is_active', true)
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+
+                if ($user->email) {
+                    $query->orWhere('email', $user->email);
+                }
+            })
+            ->oldest()
+            ->first();
+    }
+
+    private function currentDistributorProfile(): ?Distributor
+    {
+        $user = Auth::user();
+
+        if (! $user?->isDistributor()) {
+            return null;
+        }
+
+        return Distributor::query()
             ->where('is_active', true)
             ->where(function ($query) use ($user) {
                 $query->where('user_id', $user->id);

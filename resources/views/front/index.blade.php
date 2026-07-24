@@ -191,6 +191,24 @@
         $shopDisplayItems = $shopDisplaySource
             ->filter(fn($item) => filled($item->media))
             ->values();
+        $authenticatedMerchantShop = auth()->user()?->isShopOwner()
+            ? auth()->user()->shops()->where('is_active', true)->with(['distributor', 'distributorMarketer.distributor'])->first()
+            : null;
+        $authenticatedMerchantDistributor = $authenticatedMerchantShop?->distributor
+            ?: $authenticatedMerchantShop?->distributorMarketer?->distributor;
+        $authenticatedMerchantWhatsapp = preg_replace('/\D+/', '', $authenticatedMerchantDistributor?->whatsapp ?: $authenticatedMerchantDistributor?->phone ?: '');
+        $authenticatedMerchantPayload = $authenticatedMerchantShop ? [
+            'authenticated' => true,
+            'shop_id' => $authenticatedMerchantShop->id,
+            'shop_name' => $authenticatedMerchantShop->name,
+            'distributor_id' => $authenticatedMerchantDistributor?->id,
+            'distributor_name' => $authenticatedMerchantDistributor?->name,
+            'whatsapp_number' => $authenticatedMerchantWhatsapp,
+            'customer_name' => auth()->user()?->name ?: $authenticatedMerchantShop->name,
+            'customer_phone' => auth()->user()?->phone ?: $authenticatedMerchantShop->phone,
+            'customer_whatsapp' => $authenticatedMerchantShop->whatsapp ?: $authenticatedMerchantShop->phone,
+            'customer_address' => $authenticatedMerchantShop->address,
+        ] : null;
     @endphp
 
     @unless ($isDashboardPreview ?? false)
@@ -459,6 +477,20 @@
                     style="color: #25d366; text-decoration: none; display: flex; align-items: center;">
                     <i class="fab fa-whatsapp"></i>
                 </a>
+                @if($authenticatedMerchantShop)
+                    <form method="POST" action="{{ route('logout') }}" style="display:flex">
+                        @csrf
+                        <button type="submit" class="nav-btn" title="{{ __('تسجيل خروج صاحب المتجر') }}" style="border:0;background:none;color:#00e5ff">
+                            <i class="fas fa-store-circle-xmark"></i>
+                        </button>
+                    </form>
+                @else
+                    <a href="{{ route('merchant.login', ['redirect' => request()->getRequestUri()]) }}"
+                        class="nav-btn" title="{{ __('دخول صاحب المتجر') }}"
+                        style="color:#00e5ff;text-decoration:none;display:flex;align-items:center">
+                        <i class="fas fa-store"></i>
+                    </a>
+                @endif
             </div>
             <div class="buy-btn" id="customerLoginOpenBtn">{{ __('اطلب الآن') }}</div>
         </nav>
@@ -920,7 +952,7 @@
                 raffleSocialLinks: @json($ozmanSocialLinks->reject(fn($link) => ($link['icon'] ?? '') === 'fab fa-whatsapp')->values()),
                 orderRewardUrlTemplate: @json(url('/front-orders/__ORDER__/reward')),
                 orderSpinRewardUrlTemplate: @json(url('/front-orders/__ORDER__/spin-reward')),
-                showVisitorRegistration: @json(!($isDashboardPreview ?? false)),
+                showVisitorRegistration: @json(!($isDashboardPreview ?? false) && !$authenticatedMerchantShop),
                 forceVisitorRegistration: {{ in_array(request('type'), ['customer', 'merchant'], true) ? 'true' : 'false' }},
                 initialVisitorType: @json(request('type') === 'merchant' ? 'merchant' : 'customer'),
                 locale: @json(app()->getLocale()),
@@ -930,6 +962,7 @@
                 purchaseRewardWheels: @json($purchaseRewardWheels ?? []),
                 initialPersonContext: @json($initialPersonContext ?? null),
                 marketingContext: @json($marketingContext ?? null),
+                merchantAccount: @json($authenticatedMerchantPayload),
 
             };
         </script>

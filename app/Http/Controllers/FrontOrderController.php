@@ -24,6 +24,21 @@ class FrontOrderController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
+        $authenticatedShop = $request->user()?->isShopOwner()
+            ? $request->user()->shops()
+                ->whereKey((int) $request->session()->get('merchant_shop_id'))
+                ->where('is_active', true)
+                ->with(['distributor', 'distributorMarketer.distributor'])
+                ->first()
+            : null;
+
+        if (! $authenticatedShop && $request->user()?->isShopOwner()) {
+            $authenticatedShop = $request->user()->shops()
+                ->where('is_active', true)
+                ->with(['distributor', 'distributorMarketer.distributor'])
+                ->first();
+        }
+
         $validated = $request->validate([
             'shop_id' => ['nullable', 'integer', 'exists:shops,id'],
             'distributor_id' => ['nullable', 'integer', 'exists:distributors,id'],
@@ -48,10 +63,23 @@ class FrontOrderController extends Controller
             'order_channel' => ['required', 'in:whatsapp,instant_payment'],
             'payment_method' => ['nullable', 'string', 'max:60'],
             'visitor_type' => ['required', 'in:customer,merchant'],
-            'merchant_registration_token' => ['nullable', 'string', 'size:64', 'required_if:visitor_type,merchant'],
+            'merchant_registration_token' => ['nullable', 'string', 'size:64'],
         ]);
 
-        if ($validated['visitor_type'] === 'merchant') {
+        if ($authenticatedShop) {
+            $linkedDistributor = $authenticatedShop->distributor
+                ?: $authenticatedShop->distributorMarketer?->distributor;
+
+            abort_unless($linkedDistributor?->is_active, 403, 'حساب المتجر غير مرتبط بموزع فعال.');
+
+            $validated['shop_id'] = $authenticatedShop->id;
+            $validated['distributor_id'] = $linkedDistributor->id;
+            $validated['distributor_marketer_id'] = $authenticatedShop->distributor_marketer_id;
+            $validated['marketing_source'] = 'merchant_account';
+            $validated['reward_wheel_id'] = null;
+        } elseif ($validated['visitor_type'] === 'merchant') {
+            abort_unless(filled($validated['merchant_registration_token'] ?? null), 403, 'يجب تسجيل الدخول بحساب المتجر أو اعتماد طلب التسجيل.');
+
             $approvedMerchant = VisitorRegistration::query()
                 ->where('type', 'merchant')
                 ->where('status', 'approved')
@@ -66,7 +94,11 @@ class FrontOrderController extends Controller
 
         $marketer = null;
 
-        if (! empty($validated['distributor_marketer_id'])) {
+        if ($authenticatedShop) {
+            $marketer = $authenticatedShop->distributorMarketer?->is_active
+                ? $authenticatedShop->distributorMarketer
+                : null;
+        } elseif (! empty($validated['distributor_marketer_id'])) {
             $marketer = DistributorMarketer::query()
                 ->whereKey($validated['distributor_marketer_id'])
                 ->where('is_active', true)

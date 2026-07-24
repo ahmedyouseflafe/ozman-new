@@ -46,6 +46,10 @@ Route::patch('/front-orders/{order}/reward', [FrontOrderController::class, 'rewa
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.store');
+    Route::get('/merchant-login', [AuthController::class, 'showMerchantLogin'])->name('merchant.login');
+    Route::post('/merchant-login', [AuthController::class, 'merchantLogin'])
+        ->middleware('throttle:10,1')
+        ->name('merchant.login.store');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])

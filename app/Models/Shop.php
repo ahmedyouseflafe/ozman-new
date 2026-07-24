@@ -12,6 +12,7 @@ class Shop extends Model
 
     protected $fillable = [
         'user_id',
+        'distributor_id',
         'distributor_marketer_id',
         'name',
         'slug',
@@ -49,6 +50,11 @@ class Shop extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function distributor(): BelongsTo
+    {
+        return $this->belongsTo(Distributor::class);
     }
 
    public function social()

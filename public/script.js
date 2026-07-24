@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function rewardWheelConfig() {
-            if (localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant') return null;
+            if (currentVisitorType() === 'merchant') return null;
             const wheel = window.OZMAN_FRONT_CONFIG?.rewardWheel;
             const segments = Array.isArray(wheel?.segments) ? wheel.segments : [];
             if (!wheel || segments.length < 2) return null;
@@ -320,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function visitorCanUsePurchaseWheels() {
-            return localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) !== 'merchant';
+            return currentVisitorType() !== 'merchant';
         }
 
         function eligiblePurchaseRewardWheel(total) {
@@ -593,6 +593,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function currentVisitorType() {
+            if (window.OZMAN_FRONT_CONFIG?.merchantAccount?.authenticated) {
+                return 'merchant';
+            }
+
             return localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant'
                 && localStorage.getItem(MERCHANT_APPROVAL_STATUS_KEY) === 'approved'
                 ? 'merchant'
@@ -1473,6 +1477,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function currentMarketingContext() {
+            const merchantAccount = window.OZMAN_FRONT_CONFIG?.merchantAccount;
+            if (merchantAccount?.authenticated && merchantAccount?.distributor_id) {
+                return {
+                    source: 'merchant_account',
+                    marketing_source: 'merchant_account',
+                    shop_id: merchantAccount.shop_id,
+                    distributor_id: merchantAccount.distributor_id,
+                    distributor_name: merchantAccount.distributor_name || '',
+                    whatsapp_number: normalizeWhatsappNumber(merchantAccount.whatsapp_number || ''),
+                };
+            }
+
             const configuredContext = window.OZMAN_FRONT_CONFIG?.marketingContext || {};
             if (configuredContext.distributor_id || configuredContext.marketer_id) {
                 return configuredContext;
@@ -1515,6 +1531,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function orderGroupsForCurrentItems() {
             const sourceItems = pendingSingleProduct ? [pendingSingleProduct] : ozmanCart;
+            const merchantContext = currentMarketingContext();
+
+            if (merchantContext.source === 'merchant_account') {
+                return [{
+                    context: merchantContext,
+                    items: sourceItems.map((item) => ({
+                        ...item,
+                        order_context: merchantContext,
+                    })),
+                }];
+            }
+
             const groups = new Map();
 
             sourceItems.forEach((item) => {
@@ -1738,8 +1766,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     total,
                     order_channel: channel,
                     payment_method: paymentMethod || null
-                    ,visitor_type: localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant' ? 'merchant' : 'customer'
-                    ,merchant_registration_token: localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant'
+                    ,visitor_type: window.OZMAN_FRONT_CONFIG?.merchantAccount?.authenticated
+                        || localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant' ? 'merchant' : 'customer'
+                    ,merchant_registration_token: !window.OZMAN_FRONT_CONFIG?.merchantAccount?.authenticated
+                        && localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant'
                         ? localStorage.getItem(MERCHANT_REGISTRATION_TOKEN_KEY)
                         : null
                 })
@@ -1762,14 +1792,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             for (let index = 0; index < groups.length; index += 1) {
                 const group = groups[index];
-                const order = await recordFrontOrder(profile, channel, paymentMethod, group.items, group.context);
+                const merchantContext = currentMarketingContext();
+                const effectiveContext = merchantContext.source === 'merchant_account'
+                    ? { ...group.context, ...merchantContext }
+                    : group.context;
+                const order = await recordFrontOrder(profile, channel, paymentMethod, group.items, effectiveContext);
                 orders.push(order);
 
                 const message = channel === 'instant_payment'
-                    ? customerPaymentMessage(profile, paymentMethod, order, group.items, group.context)
-                    : customerOrderMessage(profile, order, group.items, group.context);
+                    ? customerPaymentMessage(profile, paymentMethod, order, group.items, effectiveContext)
+                    : customerOrderMessage(profile, order, group.items, effectiveContext);
 
-                openShopWhatsappMessage(message, popupWindows[index] || null, group.context.whatsapp_number);
+                openShopWhatsappMessage(message, popupWindows[index] || null, effectiveContext.whatsapp_number);
             }
 
             return orders;
@@ -3981,7 +4015,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             function openRewardWheelModal(wheel = rewardWheelConfig(), storageKey = REWARD_DISCOUNT_STORAGE_KEY) {
-                if (localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant') return;
+                if (currentVisitorType() === 'merchant') return;
                 if (!wheel || storedReward(storageKey)) return;
                 activeRewardStorageKey = storageKey;
                 setupRewardWheel(wheel);
@@ -4545,7 +4579,16 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             function fillCustomerForm() {
-                const profile = loadCustomerProfile();
+                const merchantAccount = window.OZMAN_FRONT_CONFIG?.merchantAccount;
+                const profile = merchantAccount?.authenticated
+                    ? {
+                        ...loadCustomerProfile(),
+                        name: merchantAccount.customer_name || merchantAccount.shop_name || '',
+                        phone: merchantAccount.customer_phone || '',
+                        whatsapp: merchantAccount.customer_whatsapp || merchantAccount.customer_phone || '',
+                        address: merchantAccount.customer_address || '',
+                    }
+                    : loadCustomerProfile();
                 Object.keys(customerFields).forEach(key => {
                     if (customerFields[key]) customerFields[key].value = profile[key] || '';
                 });

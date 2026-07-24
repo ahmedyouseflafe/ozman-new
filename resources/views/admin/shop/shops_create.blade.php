@@ -634,7 +634,7 @@
                     </div>
                 @endif
 
-                @php($usesCurrentUserAsShopOwner = auth()->user() && (auth()->user()->isAgent() || auth()->user()->isDistributor()))
+                @php($usesCurrentUserAsShopOwner = auth()->user()?->isAgent())
 
                 <form class="form-shell" action="{{ route('shops.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf

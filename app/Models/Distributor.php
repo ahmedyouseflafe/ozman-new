@@ -49,4 +49,9 @@ class Distributor extends Model
     {
         return $this->hasMany(DistributorMarketer::class);
     }
+
+    public function linkedShops()
+    {
+        return $this->hasMany(Shop::class);
+    }
 }
