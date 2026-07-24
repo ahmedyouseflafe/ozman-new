@@ -127,7 +127,7 @@ class FrontController extends Controller
                         ->latest()
                     ]),
             ])
-            : $shops->first();
+            : ($ozmanShop?->exists ? $ozmanShop : $shops->first());
 
         if ($shop?->exists) {
             $shops = $shops
