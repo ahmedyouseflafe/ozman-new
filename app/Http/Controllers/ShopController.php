@@ -19,6 +19,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use App\Models\ShopSocial;
+use App\Services\ShopOwnerAccountService;
 
 class ShopController extends Controller
 {
@@ -76,6 +77,60 @@ class ShopController extends Controller
             : 'تم إلغاء ربط المتجر بالموزع.';
 
         return back()->with('status', $message);
+    }
+
+    public function editOwnerPermissions(Request $request, Shop $shop): View
+    {
+        abort_unless($request->user()?->isSuperAdmin(), 403);
+
+        $owner = app(ShopOwnerAccountService::class)->resolve($shop);
+        $owner->load('employeePermissions');
+        $allowed = config('shop_owner_permissions.allowed', []);
+        $groups = collect(config('employee_permissions.groups', []))
+            ->map(function (array $group) use ($allowed) {
+                $group['permissions'] = collect($group['permissions'] ?? [])
+                    ->only($allowed)
+                    ->all();
+                return $group;
+            })
+            ->filter(fn (array $group) => ! empty($group['permissions']))
+            ->all();
+
+        return view('admin.employees.permissions', [
+            'employee' => $owner,
+            'permissionGroups' => $groups,
+            'selectedPermissions' => $owner->employeePermissions->pluck('permission')->all(),
+            'pageTitle' => 'صلاحيات لوحة المتجر',
+            'headerTitle' => 'صلاحيات لوحة المتجر',
+            'description' => 'حدد بالضبط الأقسام والعمليات التي يراها صاحب المتجر. عند الدخول من زر لوحة المتجر ستشاهد نفس هذه الصلاحيات.',
+            'formAction' => route('shops.permissions.update', $shop),
+            'backUrl' => route('shops'),
+        ]);
+    }
+
+    public function updateOwnerPermissions(Request $request, Shop $shop): RedirectResponse
+    {
+        abort_unless($request->user()?->isSuperAdmin(), 403);
+
+        $allowed = config('shop_owner_permissions.allowed', []);
+        $data = $request->validate([
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['string', Rule::in($allowed)],
+        ]);
+        $permissions = collect($data['permissions'] ?? [])
+            ->merge(config('shop_owner_permissions.required', []))
+            ->unique()
+            ->values();
+        $owner = app(ShopOwnerAccountService::class)->resolve($shop, false);
+
+        $owner->employeePermissions()->delete();
+        foreach ($permissions as $permission) {
+            $owner->employeePermissions()->create(['permission' => $permission]);
+        }
+
+        return redirect()
+            ->route('shops')
+            ->with('status', 'تم حفظ صلاحيات لوحة متجر ' . $shop->name . ' بنجاح.');
     }
 
     public function show(Shop $shop): View
@@ -192,6 +247,9 @@ class ShopController extends Controller
         }
 
         $shop = Shop::create($data);
+        if ($owner->isShopOwner()) {
+            app(ShopOwnerAccountService::class)->resolve($shop);
+        }
 
         ShopSocial::create([
             'shop_id'   => $shop->id,

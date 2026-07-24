@@ -50,6 +50,61 @@ class AdminShopDashboardImpersonationTest extends TestCase
         $this->assertAuthenticatedAs($ownerA);
     }
 
+    public function test_entering_legacy_admin_owned_shop_creates_a_dedicated_shop_owner(): void
+    {
+        $admin = User::create([
+            'name' => 'Legacy Admin',
+            'email' => 'legacy-admin@example.com',
+            'password' => 'secret123',
+            'role' => 'super_admin',
+            'is_active' => true,
+        ]);
+        $shop = Shop::create([
+            'user_id' => $admin->id,
+            'name' => 'Legacy Shop',
+            'slug' => 'legacy-shop',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('shops.enter-dashboard', $shop))
+            ->assertRedirect(route('shops.show', $shop));
+
+        $shop->refresh();
+        $this->assertNotSame($admin->id, $shop->user_id);
+        $this->assertTrue($shop->user->isShopOwner());
+        $this->assertTrue($shop->user->is_active);
+        $this->assertAuthenticatedAs($shop->user);
+    }
+
+    public function test_shop_dashboard_uses_the_exact_permissions_configured_by_admin(): void
+    {
+        $admin = User::create([
+            'name' => 'Permissions Admin',
+            'email' => 'permissions-admin@example.com',
+            'password' => 'secret123',
+            'role' => 'super_admin',
+            'is_active' => true,
+        ]);
+        [$owner, $shop] = $this->shopOwner('permissions');
+
+        $this->actingAs($admin)
+            ->put(route('shops.permissions.update', $shop), [
+                'permissions' => ['products.view', 'products.preview'],
+            ])
+            ->assertRedirect(route('shops'));
+
+        $this->post(route('shops.enter-dashboard', $shop))
+            ->assertRedirect(route('shops.show', $shop));
+        $this->assertAuthenticatedAs($owner);
+
+        $this->get(route('products'))->assertOk();
+        $this->get(route('categories'))->assertForbidden();
+        $this->get(route('users'))->assertForbidden();
+        $this->post(route('admin.return-from-shop'))->assertRedirect(route('shops'));
+        $this->assertAuthenticatedAs($admin);
+    }
+
     private function shopOwner(string $suffix): array
     {
         $owner = User::create([

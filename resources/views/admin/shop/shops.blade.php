@@ -715,6 +715,11 @@
                                         <td>
     <div class="actions">
         @if(auth()->user()?->isSuperAdmin())
+            <a href="{{ route('shops.permissions.edit', $shopId) }}" class="icon-btn"
+                title="صلاحيات لوحة المتجر" aria-label="صلاحيات لوحة المتجر">
+                <i class="ti ti-shield-lock" aria-hidden="true"></i>
+            </a>
+
             <button type="button" class="icon-btn" data-assign-distributor
                 data-shop-name="{{ $shopName }}"
                 data-action="{{ route('shops.distributor.assign', $shopId) }}"

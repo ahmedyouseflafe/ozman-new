@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Shop;
 use App\Models\User;
+use App\Services\ShopOwnerAccountService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -100,6 +101,7 @@ class AuthController extends Controller
             $shop = $user->shops()->first();
 
             if ($shop) {
+                app(ShopOwnerAccountService::class)->resolve($shop);
                 return redirect()->route('shops.show', $shop);
             }
         }
@@ -141,8 +143,7 @@ class AuthController extends Controller
 
         abort_unless($admin?->isSuperAdmin(), 403);
 
-        $owner = $shop->user;
-        abort_unless($owner?->isShopOwner() && $owner->is_active, 422, 'المتجر لا يملك حساب صاحب متجر فعال.');
+        $owner = app(ShopOwnerAccountService::class)->resolve($shop);
 
         $adminId = $admin->id;
         $adminName = $admin->name;
@@ -185,6 +186,7 @@ class AuthController extends Controller
             ->route('shops')
             ->with('success', 'تم الرجوع إلى لوحة تحكم الإدارة.');
     }
+
 
     private function redirectAfterLogin(Request $request): RedirectResponse
     {

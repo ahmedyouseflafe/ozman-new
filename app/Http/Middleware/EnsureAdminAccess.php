@@ -34,6 +34,10 @@ class EnsureAdminAccess
             return $next($request);
         }
 
+        if ($user->isShopOwner() && $user->hasAssignedPermissions()) {
+            abort_unless($user->canAccessRouteName($request->route()?->getName()), 403);
+        }
+
         if ($user->isAgent() || $user->isDistributor()) {
             if ($user->hasAssignedPermissions()) {
                 abort_unless($user->canAccessRouteName($request->route()?->getName()), 403);

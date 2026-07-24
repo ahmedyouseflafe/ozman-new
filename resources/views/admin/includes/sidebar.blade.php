@@ -228,8 +228,9 @@
     $isDistributor = $currentUser?->isDistributor();
     $isMarketer = $currentUser?->isMarketer();
     $isEmployee = $currentUser?->isEmployee();
+    $isShopOwner = $currentUser?->isShopOwner();
     $hasAssignedPermissions = $currentUser?->hasAssignedPermissions() ?? false;
-    $isPermissionManaged = $isEmployee || (($isAgent || $isDistributor || $isMarketer) && $hasAssignedPermissions);
+    $isPermissionManaged = $isEmployee || (($isShopOwner || $isAgent || $isDistributor || $isMarketer) && $hasAssignedPermissions);
     $isCatalogOnlyUser = ($isAgent || $isDistributor) && ! $hasAssignedPermissions;
     $previewShopId = request()->integer('shop_id') ?: session('current_shop_id');
     $canSee = fn(array $routes) => ! $isPermissionManaged || $currentUser?->canAccessAnyRoute($routes);

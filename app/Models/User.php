@@ -99,7 +99,7 @@ class User extends Authenticatable
             return true;
         }
 
-        if (! ($this->isAgent() || $this->isDistributor() || $this->isMarketer())) {
+        if (! ($this->isShopOwner() || $this->isAgent() || $this->isDistributor() || $this->isMarketer())) {
             return false;
         }
 
@@ -112,7 +112,7 @@ class User extends Authenticatable
 
     public function permissionKeys(): array
     {
-        if (! ($this->isEmployee() || $this->isAgent() || $this->isDistributor() || $this->isMarketer())) {
+        if (! ($this->isEmployee() || $this->isShopOwner() || $this->isAgent() || $this->isDistributor() || $this->isMarketer())) {
             return [];
         }
 
@@ -154,7 +154,7 @@ class User extends Authenticatable
             return true;
         }
 
-        $alwaysAllowed = ['dashboard', 'logout', 'lang.switch', 'translations.suggest'];
+        $alwaysAllowed = ['dashboard', 'logout', 'lang.switch', 'translations.suggest', 'admin.return-from-shop'];
         if (in_array($routeName, $alwaysAllowed, true)) {
             return true;
         }
@@ -270,6 +270,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 }

@@ -160,6 +160,10 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
         ->name('shops.enter-dashboard');
     Route::patch('/shops/{shop}/distributor', [ShopController::class, 'assignDistributor'])
         ->name('shops.distributor.assign');
+    Route::get('/shops/{shop}/permissions', [ShopController::class, 'editOwnerPermissions'])
+        ->name('shops.permissions.edit');
+    Route::put('/shops/{shop}/permissions', [ShopController::class, 'updateOwnerPermissions'])
+        ->name('shops.permissions.update');
     Route::post('/admin/return-from-shop', [AuthController::class, 'returnFromShopDashboard'])
         ->name('admin.return-from-shop');
     Route::get('/shops/{shop}/edit', [ShopController::class, 'edit'])->name('shops.edit');
