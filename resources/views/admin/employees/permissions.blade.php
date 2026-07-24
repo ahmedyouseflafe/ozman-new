@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <style>
         *{box-sizing:border-box}body{margin:0;background:#050505;color:#fff;font-family:Cairo,Segoe UI,sans-serif}.main{min-height:100vh;margin-right:245px}.content{padding:30px}.hero,.toolbar,.group{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.055);border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.35)}.hero{padding:24px;margin-bottom:20px;display:flex;justify-content:space-between;gap:16px}.hero h1{margin:0;color:#00e5ff;font-size:28px}.hero p{margin:6px 0 0;color:rgba(255,255,255,.62);font-weight:700}.toolbar{padding:16px;margin-bottom:20px;display:flex;gap:10px;align-items:center}.search{height:48px;flex:1;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.25);border-radius:16px;color:#fff;padding:0 16px;font-family:inherit}.btn{border:0;border-radius:999px;padding:12px 18px;font-family:inherit;font-weight:900;text-decoration:none;display:inline-flex;align-items:center;gap:8px;cursor:pointer}.btn-green{background:#25d366;color:#00140a}.btn-blue{background:#1473ff;color:#fff}.btn-outline{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.22)}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.group{padding:18px}.group-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:12px;margin-bottom:14px}.group h2{margin:0;color:#00e5ff;font-size:17px}.count{font-size:12px;color:rgba(255,255,255,.55)}.perm{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:16px;margin-bottom:10px;background:rgba(0,0,0,.18);font-weight:900}.perm input{width:20px;height:20px;accent-color:#1473ff}.actions{display:flex;gap:10px;margin-top:22px}.errors{margin-bottom:18px;padding:14px;border-radius:16px;background:rgba(230,55,75,.13);color:#ff8794;font-weight:800}@media(max-width:1200px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:900px){.main{margin-right:0}.grid{grid-template-columns:1fr}.hero,.toolbar{flex-direction:column;align-items:stretch}}
+        .grid{align-items:start}.group-head{border-bottom:0;padding-bottom:0;margin-bottom:0;gap:10px}.group-description{margin:7px 0 14px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.58);font-size:12px;font-weight:700;line-height:1.75}.count{white-space:nowrap}.perm{font-weight:400}.perm-text{display:flex;flex-direction:column;gap:4px}.perm-title{font-weight:900}.perm-description{color:rgba(255,255,255,.5);font-size:11px;font-weight:700;line-height:1.65}.perm input{flex:0 0 auto}
     </style>
 </head>
 <body>
@@ -54,9 +55,15 @@
                                 <h2>{{ $group['label'] }}</h2>
                                 <span class="count">{{ count($group['permissions'] ?? []) }} صلاحية</span>
                             </div>
+                            <p class="group-description">{{ $group['description'] ?? '' }}</p>
                             @foreach($group['permissions'] ?? [] as $permission => $meta)
                                 <label class="perm" data-permission-item>
-                                    <span>{{ $meta['label'] }}</span>
+                                    <span class="perm-text">
+                                        <span class="perm-title">{{ $meta['label'] }}</span>
+                                        @if(filled($meta['description'] ?? null))
+                                            <span class="perm-description">{{ $meta['description'] }}</span>
+                                        @endif
+                                    </span>
                                     <input type="checkbox" name="permissions[]" value="{{ $permission }}" @checked(in_array($permission, $selectedPermissions, true))>
                                 </label>
                             @endforeach

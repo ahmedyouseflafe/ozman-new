@@ -472,7 +472,7 @@
                                 <select id="shop_id" name="shop_id" required>
                                     <option value="">اختر المتجر</option>
                                     @foreach ($shops as $shop)
-                                        <option value="{{ $shop->id }}" @selected(old('shop_id', $selectedShopId) == $shop->id)>
+                                        <option value="{{ $shop->id }}" data-catalog-type="{{ $shop->catalog_type ?: 'general' }}" @selected(old('shop_id', $selectedShopId) == $shop->id)>
                                             {{ $shop->name }}</option>
                                     @endforeach
                                 </select>
@@ -534,6 +534,8 @@
                             </div>
                         </div>
                     </section>
+
+                    @include('admin.products._catalog_fields')
 
                     <section class="form-section">
                         <div class="section-head">

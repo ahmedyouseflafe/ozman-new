@@ -16,6 +16,7 @@ class Shop extends Model
         'distributor_marketer_id',
         'name',
         'slug',
+        'catalog_type',
         'description',
         'logo',
         'banner',
@@ -44,6 +45,11 @@ class Shop extends Model
         'is_active' => 'boolean',
         'show_ozman_products' => 'boolean',
     ];
+
+    public function catalogDefinition(): array
+    {
+        return config('catalog_types.' . ($this->catalog_type ?: 'general'), config('catalog_types.general', []));
+    }
 
     // العلاقات
 
@@ -90,5 +96,10 @@ class Shop extends Model
     public function advertisements()
     {
         return $this->hasMany(Advertisement::class);
+    }
+
+    public function rewardWheels()
+    {
+        return $this->hasMany(RewardWheel::class);
     }
 }

@@ -33,6 +33,8 @@ return new class extends Migration
                 'shop_owner',
                 'agent',
                 'distributor',
+                'marketer',
+                'employee',
                 'customer'
             ])->default('customer');
 

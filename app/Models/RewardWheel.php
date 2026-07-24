@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RewardWheel extends Model
 {
@@ -19,6 +20,7 @@ class RewardWheel extends Model
     public const TYPE_MARKETER_DIRECT = 'marketer_direct';
 
     protected $fillable = [
+        'shop_id',
         'key',
         'wheel_type',
         'title',
@@ -40,6 +42,11 @@ class RewardWheel extends Model
     public function segments(): HasMany
     {
         return $this->hasMany(RewardWheelSegment::class)->orderBy('sort_order');
+    }
+
+    public function shop(): BelongsTo
+    {
+        return $this->belongsTo(Shop::class);
     }
 
     public function questions(): HasMany

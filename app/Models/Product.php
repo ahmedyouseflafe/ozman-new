@@ -18,6 +18,7 @@ class Product extends Model
         'name_translations',
         'slug',
         'description',
+        'catalog_attributes',
         'description_translations',
         'price',
         'discount_price',
@@ -65,6 +66,7 @@ class Product extends Model
         'is_active' => 'boolean',
         'name_translations' => 'array',
         'description_translations' => 'array',
+        'catalog_attributes' => 'array',
     ];
 
     // العلاقات
@@ -92,5 +94,10 @@ class Product extends Model
     public function campaigns()
     {
         return $this->hasMany(ProductCampaign::class);
+    }
+
+    public function variants()
+    {
+        return $this->hasMany(ProductVariant::class);
     }
 }

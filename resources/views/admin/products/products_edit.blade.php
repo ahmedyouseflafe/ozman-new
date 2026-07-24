@@ -119,7 +119,7 @@
                                 <select id="shop_id" name="shop_id" required>
                                     <option value="">اختر المتجر</option>
                                     @foreach($shops as $shop)
-                                        <option value="{{ $shop->id }}" @selected(old('shop_id', $product->shop_id) == $shop->id)>{{ $shop->name }}</option>
+                                        <option value="{{ $shop->id }}" data-catalog-type="{{ $shop->catalog_type ?: 'general' }}" @selected(old('shop_id', $product->shop_id) == $shop->id)>{{ $shop->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -150,6 +150,8 @@
                             <div class="form-group full"><label class="form-label" for="description_he">الوصف بالعبري</label><textarea id="description_he" name="description_he">{{ old('description_he', data_get($product->description_translations, 'he')) }}</textarea></div>
                         </div>
                     </section>
+
+                    @include('admin.products._catalog_fields')
 
                     <section class="form-section">
                         <div class="section-head"><div class="section-icon"><i class="ti ti-coin"></i></div><div><h2>الأسعار والمخزون</h2><p>أسعار منفصلة للعميل والتاجر، مع بيانات المخزون والتعريف.</p></div></div>

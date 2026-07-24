@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Distributor;
+use App\Models\DistributorMarketer;
 use App\Models\EmployeePermission;
 use App\Models\FrontOrder;
 use App\Models\Shop;
@@ -59,6 +60,81 @@ class MerchantOrderingTest extends TestCase
         $this->assertNotSame($distributorUser->id, $merchant->id);
         $this->assertSame($merchant->id, $shop->user_id);
         $this->assertSame($distributor->id, $shop->distributor_id);
+    }
+
+    public function test_marketer_created_shop_orders_reach_distributor_and_credit_marketer_commission(): void
+    {
+        $distributorUser = User::create([
+            'name' => 'Commission distributor',
+            'email' => 'commission-distributor@example.com',
+            'password' => 'secret123',
+            'role' => 'distributor',
+            'is_active' => true,
+        ]);
+        $baseShop = Shop::create([
+            'user_id' => $distributorUser->id,
+            'name' => 'Commission base shop',
+            'slug' => 'commission-base-shop',
+            'is_active' => true,
+        ]);
+        $distributor = Distributor::create([
+            'shop_id' => $baseShop->id,
+            'user_id' => $distributorUser->id,
+            'name' => 'Commission distributor',
+            'is_active' => true,
+        ]);
+
+        $marketerUser = User::create([
+            'name' => 'Commission marketer',
+            'email' => 'commission-marketer@example.com',
+            'password' => 'secret123',
+            'role' => 'marketer',
+            'is_active' => true,
+        ]);
+        $marketer = DistributorMarketer::create([
+            'distributor_id' => $distributor->id,
+            'user_id' => $marketerUser->id,
+            'name' => 'Commission marketer',
+            'tracking_code' => 'commission-marketer',
+            'commission_rate' => 7.5,
+            'is_active' => true,
+        ]);
+        EmployeePermission::create([
+            'user_id' => $marketerUser->id,
+            'permission' => 'shops.marketer_create',
+        ]);
+
+        $this->actingAs($marketerUser)->post(route('shops.store'), [
+            'name' => 'Marketer linked merchant',
+            'owner_email' => 'marketer-linked-merchant@example.com',
+            'owner_password' => 'secret123',
+            'owner_password_confirmation' => 'secret123',
+            'is_active' => '1',
+        ])->assertRedirect(route('shops'));
+
+        $merchant = User::query()->where('email', 'marketer-linked-merchant@example.com')->firstOrFail();
+        $merchantShop = Shop::query()->where('name', 'Marketer linked merchant')->firstOrFail();
+
+        $this->assertSame($distributor->id, $merchantShop->distributor_id);
+        $this->assertSame($marketer->id, $merchantShop->distributor_marketer_id);
+
+        $this->actingAs($merchant)->postJson(route('front-orders.store'), [
+            'customer_name' => 'Marketer linked merchant',
+            'items' => [['name' => 'طلب عمولة', 'price' => '200', 'qty' => 1]],
+            'subtotal' => 200,
+            'discount' => 0,
+            'total' => 200,
+            'order_channel' => 'whatsapp',
+            'visitor_type' => 'merchant',
+        ])->assertOk();
+
+        $order = FrontOrder::query()->latest('id')->firstOrFail();
+        $this->assertSame($distributor->id, $order->distributor_id);
+        $this->assertSame($marketer->id, $order->distributor_marketer_id);
+        $this->assertSame('marketer', $order->marketing_source);
+        $this->assertSame('7.50', $order->marketer_commission_rate);
+        $this->assertSame('15.00', $order->marketer_commission_amount);
+        $this->assertTrue($marketer->frontOrders()->whereKey($order->id)->exists());
     }
 
     public function test_shop_owner_can_login_from_the_merchant_screen(): void

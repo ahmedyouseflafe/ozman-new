@@ -55,8 +55,9 @@ class ProductController extends Controller
 
         $data = $this->validatedData($request);
         $this->syncLegacyPrices($data);
-        unset($data['images'], $data['campaigns']);
+        unset($data['images'], $data['campaigns'], $data['variants']);
         $this->normalizeShopId($data);
+        $data['catalog_attributes'] = $this->catalogAttributes($request, (int) $data['shop_id']);
         $this->applyAgentOwnership($data);
         $this->authorizeCategoryForShop((int) $data['category_id'], (int) $data['shop_id']);
         $this->authorizeAgentForShop(isset($data['agent_id']) ? (int) $data['agent_id'] : null, (int) $data['shop_id']);
@@ -77,6 +78,7 @@ class ProductController extends Controller
         }
 
         $product = Product::create($data);
+        $this->syncVariants($request, $product);
         $this->storeGalleryImages($request, $product);
         $createdCampaigns = $this->storeCampaigns($request, $product);
 
@@ -118,7 +120,7 @@ class ProductController extends Controller
     {
         $this->authorizeShopAccess($product);
         $this->authorizeProductVisibility($product);
-        $product->load(['shop', 'category', 'images', 'campaigns']);
+        $product->load(['shop', 'category', 'images', 'campaigns', 'variants']);
 
         return view('admin.products.products_show', compact('product'));
     }
@@ -127,7 +129,7 @@ class ProductController extends Controller
     {
         $this->authorizeProductManagement($product);
         $this->authorizeShopAccess($product);
-        $product->load(['images', 'campaigns']);
+        $product->load(['images', 'campaigns', 'variants']);
 
         return view('admin.products.products_edit', array_merge(
             ['product' => $product],
@@ -149,9 +151,11 @@ class ProductController extends Controller
             $data['delete_campaign_ids'],
             $data['delete_image_ids'],
             $data['delete_main_image'],
-            $data['delete_video']
+            $data['delete_video'],
+            $data['variants']
         );
         $this->normalizeShopId($data);
+        $data['catalog_attributes'] = $this->catalogAttributes($request, (int) $data['shop_id']);
         $this->applyAgentOwnership($data, $product);
         $this->authorizeCategoryForShop((int) $data['category_id'], (int) $data['shop_id']);
         $this->authorizeAgentForShop(isset($data['agent_id']) ? (int) $data['agent_id'] : null, (int) $data['shop_id']);
@@ -180,6 +184,7 @@ class ProductController extends Controller
         }
 
         $product->update($data);
+        $this->syncVariants($request, $product);
         $this->deleteGalleryImages($request, $product);
         $this->deleteCampaigns($request, $product);
         $this->updateCampaigns($request, $product);
@@ -253,6 +258,7 @@ class ProductController extends Controller
             'shops' => $this->accessibleShops(),
             'categories' => $categoriesQuery->get(),
             'agents' => $agentsQuery->get(),
+            'catalogTypes' => config('catalog_types', []),
         ];
     }
 
@@ -357,6 +363,8 @@ class ProductController extends Controller
             'description' => ['nullable', 'string'],
             'description_en' => ['nullable', 'string'],
             'description_he' => ['nullable', 'string'],
+            'catalog_attributes' => ['nullable', 'array'],
+            'catalog_attributes.*' => ['nullable'],
             'price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'discount_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'customer_package_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
@@ -420,7 +428,73 @@ class ProductController extends Controller
             'existing_campaigns.*.ends_at' => ['nullable', 'date'],
             'delete_campaign_ids' => ['nullable', 'array'],
             'delete_campaign_ids.*' => ['integer'],
+            'variants' => ['nullable', 'array', 'max:200'],
+            'variants.*.size' => ['nullable', 'string', 'max:100'],
+            'variants.*.color' => ['nullable', 'string', 'max:100'],
+            'variants.*.sku' => ['nullable', 'string', 'max:255'],
+            'variants.*.price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'variants.*.quantity' => ['nullable', 'integer', 'min:0', 'max:99999999'],
+            'variants.*.is_active' => ['nullable', 'boolean'],
         ]);
+    }
+
+    private function syncVariants(Request $request, Product $product): void
+    {
+        $shopType = $product->shop()->value('catalog_type') ?: 'general';
+        if (! in_array($shopType, ['clothing', 'shoes'], true)) {
+            $product->variants()->delete();
+            return;
+        }
+
+        $variants = collect($request->input('variants', []))
+            ->filter(fn ($variant) => filled($variant['size'] ?? null) || filled($variant['color'] ?? null))
+            ->map(fn ($variant) => [
+                'size' => filled($variant['size'] ?? null) ? trim($variant['size']) : null,
+                'color' => filled($variant['color'] ?? null) ? trim($variant['color']) : null,
+                'sku' => filled($variant['sku'] ?? null) ? trim($variant['sku']) : null,
+                'price' => filled($variant['price'] ?? null) ? $variant['price'] : null,
+                'quantity' => max(0, (int) ($variant['quantity'] ?? 0)),
+                'is_active' => filter_var($variant['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            ])
+            ->values();
+
+        $product->variants()->delete();
+        if ($variants->isNotEmpty()) {
+            $product->variants()->createMany($variants->all());
+            $product->update(['quantity' => $variants->where('is_active', true)->sum('quantity')]);
+        }
+    }
+
+    private function catalogAttributes(Request $request, int $shopId): array
+    {
+        $shop = Shop::query()->findOrFail($shopId);
+        $fields = config('catalog_types.' . ($shop->catalog_type ?: 'general') . '.fields', []);
+        $input = $request->input('catalog_attributes', []);
+        $attributes = [];
+
+        foreach ($fields as $key => $definition) {
+            $value = $input[$key] ?? null;
+            if (($definition['type'] ?? null) === 'list') {
+                $value = collect(explode(',', (string) $value))
+                    ->map(fn ($item) => trim($item))
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all();
+            } elseif (($definition['type'] ?? null) === 'boolean') {
+                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+            } elseif (($definition['type'] ?? null) === 'number') {
+                $value = filled($value) ? (float) $value : null;
+            } else {
+                $value = is_string($value) ? trim($value) : $value;
+            }
+
+            if ($value !== null && $value !== '' && $value !== []) {
+                $attributes[$key] = $value;
+            }
+        }
+
+        return $attributes;
     }
 
     private function syncLegacyPrices(array &$data, ?Product $product = null): void

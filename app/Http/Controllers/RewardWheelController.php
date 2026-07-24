@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DistributorMarketer;
 use App\Models\RewardWheel;
 use App\Models\RewardWheelSegment;
+use App\Models\Shop;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,43 +50,32 @@ class RewardWheelController extends Controller
             ->with('status', 'تم حفظ بيانات عجلة خصومات العملاء بنجاح.');
     }
 
-    public function purchaseIndex(): View
+    public function purchaseIndex(Request $request): View
     {
-        abort_unless($this->canAccessCurrentRoute(), 403);
+        abort_unless($this->canManagePurchaseWheels(), 403);
 
-        $wheels = RewardWheel::query()
-            ->where('wheel_type', RewardWheel::TYPE_PURCHASE_AMOUNT)
-            ->with('segments')
-            ->orderBy('min_order_total')
-            ->latest()
-            ->get()
-            ->groupBy(fn(RewardWheel $wheel) => $this->purchaseRangeKey($wheel->min_order_total, $wheel->max_order_total))
-            ->map(function ($group) {
-                $wheel = $group->first();
-
-                if ($group->count() > 1) {
-                    $wheel->setRelation('segments', $group->flatMap->segments->sortBy('sort_order')->values());
-                }
-
-                return $wheel;
-            })
-            ->values();
+        $shopId = $this->purchaseWheelShopId($request);
+        $wheels = $this->purchaseWheelsForShop($shopId);
 
         return view('admin.reward_wheels.purchase_amount', [
             'wheels' => $wheels,
             'editWheel' => null,
+            'shops' => $this->accessibleShops(),
+            'selectedShopId' => $shopId,
         ]);
     }
 
     public function purchaseStore(Request $request): RedirectResponse
     {
-        abort_unless($this->canAccessCurrentRoute(), 403);
+        abort_unless($this->canManagePurchaseWheels(), 403);
 
         $validated = $request->validate($this->wheelValidationRules() + [
+            'shop_id' => ['nullable', 'integer', Rule::exists('shops', 'id')],
             'min_order_total' => ['required', 'numeric', 'min:0'],
             'max_order_total' => ['nullable', 'numeric', 'gte:min_order_total'],
             'win_quota_total' => ['required', 'integer', 'min:1', 'max:10000'],
         ]);
+        $shopId = $this->purchaseWheelShopId($request);
         $this->assertActiveSegmentsQuotaTotal(
             $validated['segments'],
             (int) $validated['win_quota_total'],
@@ -95,11 +85,12 @@ class RewardWheelController extends Controller
         $created = false;
         $wheel = null;
 
-        DB::transaction(function () use ($validated, $request, &$created, &$wheel) {
+        DB::transaction(function () use ($validated, $request, $shopId, &$created, &$wheel) {
             $maxOrderTotal = $validated['max_order_total'] ?? null;
 
             $wheel = RewardWheel::query()
                 ->where('wheel_type', RewardWheel::TYPE_PURCHASE_AMOUNT)
+                ->where('shop_id', $shopId)
                 ->where('min_order_total', $validated['min_order_total'])
                 ->when($maxOrderTotal === null || $maxOrderTotal === '', fn($query) => $query->whereNull('max_order_total'))
                 ->when($maxOrderTotal !== null && $maxOrderTotal !== '', fn($query) => $query->where('max_order_total', $maxOrderTotal))
@@ -108,6 +99,7 @@ class RewardWheelController extends Controller
             if (! $wheel) {
                 $created = true;
                 $wheel = RewardWheel::create([
+                    'shop_id' => $shopId,
                     'key' => 'purchase_amount_' . now()->format('YmdHis') . '_' . random_int(100, 999),
                     'wheel_type' => RewardWheel::TYPE_PURCHASE_AMOUNT,
                     'title' => $validated['title'],
@@ -136,10 +128,11 @@ class RewardWheelController extends Controller
 
     public function purchaseEdit(RewardWheel $wheel): View
     {
-        abort_unless($this->canAccessCurrentRoute(), 403);
+        abort_unless($this->canManagePurchaseWheels(), 403);
         abort_unless($wheel->wheel_type === RewardWheel::TYPE_PURCHASE_AMOUNT, 404);
+        $this->authorizePurchaseWheel($wheel);
 
-        $rangeWheels = $this->purchaseRangeWheels($wheel->min_order_total, $wheel->max_order_total)
+        $rangeWheels = $this->purchaseRangeWheels($wheel->shop_id, $wheel->min_order_total, $wheel->max_order_total)
             ->with('segments')
             ->get();
 
@@ -149,34 +142,21 @@ class RewardWheelController extends Controller
             $wheel->load('segments');
         }
 
-        $wheels = RewardWheel::query()
-            ->where('wheel_type', RewardWheel::TYPE_PURCHASE_AMOUNT)
-            ->with('segments')
-            ->orderBy('min_order_total')
-            ->latest()
-            ->get()
-            ->groupBy(fn(RewardWheel $wheel) => $this->purchaseRangeKey($wheel->min_order_total, $wheel->max_order_total))
-            ->map(function ($group) {
-                $wheel = $group->first();
-
-                if ($group->count() > 1) {
-                    $wheel->setRelation('segments', $group->flatMap->segments->sortBy('sort_order')->values());
-                }
-
-                return $wheel;
-            })
-            ->values();
+        $wheels = $this->purchaseWheelsForShop((int) $wheel->shop_id);
 
         return view('admin.reward_wheels.purchase_amount', [
             'wheels' => $wheels,
             'editWheel' => $wheel,
+            'shops' => $this->accessibleShops(),
+            'selectedShopId' => (int) $wheel->shop_id,
         ]);
     }
 
     public function purchaseUpdate(Request $request, RewardWheel $wheel): RedirectResponse
     {
-        abort_unless($this->canAccessCurrentRoute(), 403);
+        abort_unless($this->canManagePurchaseWheels(), 403);
         abort_unless($wheel->wheel_type === RewardWheel::TYPE_PURCHASE_AMOUNT, 404);
+        $this->authorizePurchaseWheel($wheel);
 
         $validated = $request->validate($this->wheelValidationRules() + [
             'min_order_total' => ['required', 'numeric', 'min:0'],
@@ -201,7 +181,7 @@ class RewardWheelController extends Controller
                 'spin_cycle' => null,
             ]);
 
-            $this->purchaseRangeWheels($wheel->min_order_total, $wheel->max_order_total)
+            $this->purchaseRangeWheels($wheel->shop_id, $wheel->min_order_total, $wheel->max_order_total)
                 ->whereKeyNot($wheel->getKey())
                 ->delete();
 
@@ -215,13 +195,15 @@ class RewardWheelController extends Controller
 
     public function purchaseDestroy(RewardWheel $wheel): RedirectResponse
     {
-        abort_unless($this->canAccessCurrentRoute(), 403);
+        abort_unless($this->canManagePurchaseWheels(), 403);
         abort_unless($wheel->wheel_type === RewardWheel::TYPE_PURCHASE_AMOUNT, 404);
+        $this->authorizePurchaseWheel($wheel);
 
+        $shopId = (int) $wheel->shop_id;
         $wheel->delete();
 
         return redirect()
-            ->route('reward-wheels.purchase.index')
+            ->route('reward-wheels.purchase.index', ['shop_id' => $shopId])
             ->with('status', 'تم حذف عجلة الشراء بنجاح.');
     }
 
@@ -734,12 +716,13 @@ class RewardWheelController extends Controller
         }
     }
 
-    private function purchaseRangeWheels($minOrderTotal, $maxOrderTotal)
+    private function purchaseRangeWheels($shopId, $minOrderTotal, $maxOrderTotal)
     {
         $maxOrderTotal = $maxOrderTotal === '' ? null : $maxOrderTotal;
 
         return RewardWheel::query()
             ->where('wheel_type', RewardWheel::TYPE_PURCHASE_AMOUNT)
+            ->where('shop_id', $shopId)
             ->where('min_order_total', $minOrderTotal)
             ->when($maxOrderTotal === null, fn($query) => $query->whereNull('max_order_total'))
             ->when($maxOrderTotal !== null, fn($query) => $query->where('max_order_total', $maxOrderTotal));
@@ -816,6 +799,66 @@ class RewardWheelController extends Controller
     private function marketerQuestionSessionKey(RewardWheel $wheel): string
     {
         return 'reward_wheels.marketer.question.' . auth()->id() . '.' . $wheel->getKey();
+    }
+
+    private function purchaseWheelsForShop(int $shopId)
+    {
+        return RewardWheel::query()
+            ->where('wheel_type', RewardWheel::TYPE_PURCHASE_AMOUNT)
+            ->where('shop_id', $shopId)
+            ->with('segments')
+            ->orderBy('min_order_total')
+            ->latest()
+            ->get()
+            ->groupBy(fn(RewardWheel $wheel) => $this->purchaseRangeKey($wheel->min_order_total, $wheel->max_order_total))
+            ->map(function ($group) {
+                $wheel = $group->first();
+
+                if ($group->count() > 1) {
+                    $wheel->setRelation('segments', $group->flatMap->segments->sortBy('sort_order')->values());
+                }
+
+                return $wheel;
+            })
+            ->values();
+    }
+
+    private function canManagePurchaseWheels(): bool
+    {
+        return request()->user()?->isShopOwner() === true
+            || $this->canAccessCurrentRoute();
+    }
+
+    private function purchaseWheelShopId(Request $request): int
+    {
+        $requestedShopId = $request->integer('shop_id')
+            ?: (int) $request->session()->get('current_shop_id');
+
+        if ($this->hasGlobalDashboardAccess()) {
+            return $requestedShopId
+                ?: (int) (Shop::query()->where('slug', 'ozman')->value('id')
+                    ?: Shop::query()->orderBy('id')->value('id'));
+        }
+
+        $shopIds = $this->ownedShopIds();
+        $shopId = $requestedShopId && in_array($requestedShopId, $shopIds, true)
+            ? $requestedShopId
+            : ($shopIds[0] ?? null);
+
+        abort_unless($shopId, 403);
+
+        return (int) $shopId;
+    }
+
+    private function authorizePurchaseWheel(RewardWheel $wheel): void
+    {
+        abort_unless($wheel->shop_id, 404);
+
+        if ($this->hasGlobalDashboardAccess()) {
+            return;
+        }
+
+        abort_unless(in_array((int) $wheel->shop_id, $this->ownedShopIds(), true), 403);
     }
 
     private function marketerCompletedQuestionsSessionKey(RewardWheel $wheel): string

@@ -75,7 +75,9 @@ class FrontOrderController extends Controller
             $validated['shop_id'] = $authenticatedShop->id;
             $validated['distributor_id'] = $linkedDistributor->id;
             $validated['distributor_marketer_id'] = $authenticatedShop->distributor_marketer_id;
-            $validated['marketing_source'] = 'merchant_account';
+            $validated['marketing_source'] = $authenticatedShop->distributor_marketer_id
+                ? 'marketer'
+                : 'merchant_account';
             $validated['reward_wheel_id'] = null;
         } elseif ($validated['visitor_type'] === 'merchant') {
             abort_unless(filled($validated['merchant_registration_token'] ?? null), 403, 'يجب تسجيل الدخول بحساب المتجر أو اعتماد طلب التسجيل.');
@@ -91,6 +93,21 @@ class FrontOrderController extends Controller
         }
 
         unset($validated['visitor_type'], $validated['merchant_registration_token']);
+
+        if (! empty($validated['reward_wheel_id'])) {
+            $wheel = RewardWheel::query()
+                ->whereKey($validated['reward_wheel_id'])
+                ->where('wheel_type', RewardWheel::TYPE_PURCHASE_AMOUNT)
+                ->where('shop_id', $validated['shop_id'] ?? 0)
+                ->where('is_active', true)
+                ->first();
+            $orderTotal = (float) ($validated['total'] ?? 0);
+            $wheelMatchesTotal = $wheel
+                && $orderTotal >= (float) $wheel->min_order_total
+                && ($wheel->max_order_total === null || $orderTotal <= (float) $wheel->max_order_total);
+
+            abort_unless($wheelMatchesTotal, 422, 'عجلة الشراء لا تخص هذا المتجر أو لا تناسب قيمة الطلب.');
+        }
 
         $marketer = null;
 
@@ -241,6 +258,8 @@ class FrontOrderController extends Controller
 
         $wheel = RewardWheel::query()
             ->whereKey($order->reward_wheel_id)
+            ->where('wheel_type', RewardWheel::TYPE_PURCHASE_AMOUNT)
+            ->where('shop_id', $order->shop_id)
             ->where('is_active', true)
             ->with(['segments' => fn($query) => $query
                 ->where('is_active', true)
@@ -248,7 +267,12 @@ class FrontOrderController extends Controller
             ])
             ->first();
 
-        if (! $wheel || $wheel->segments->count() < 2) {
+        $orderTotal = (float) $order->total;
+        $wheelMatchesTotal = $wheel
+            && $orderTotal >= (float) $wheel->min_order_total
+            && ($wheel->max_order_total === null || $orderTotal <= (float) $wheel->max_order_total);
+
+        if (! $wheelMatchesTotal || $wheel->segments->count() < 2) {
             return response()->json(['message' => 'لا توجد عجلة مناسبة لهذا الطلب.'], 422);
         }
 

@@ -176,7 +176,7 @@ class FrontController extends Controller
             'ozmanAdvertisements' => $ozmanAdvertisements,
             'frontData' => $this->frontData($frontShops, $ozmanCategories, $ozmanShop, $ozmanBottomScreens),
             'customerSignupWheel' => $this->customerSignupWheelPayload(),
-            'purchaseRewardWheels' => $this->purchaseRewardWheelsPayload(),
+            'purchaseRewardWheels' => $this->purchaseRewardWheelsPayload($shop),
             'raffleSettings' => $this->raffleSettings(),
         ]);
     }
@@ -282,7 +282,7 @@ class FrontController extends Controller
                 ->get(),
             'frontData' => $this->frontData($shops, $ozmanCategories, $ozmanShop, $ozmanBottomScreens),
             'customerSignupWheel' => $this->customerSignupWheelPayload(),
-            'purchaseRewardWheels' => $this->purchaseRewardWheelsPayload(),
+            'purchaseRewardWheels' => $this->purchaseRewardWheelsPayload($selectedShop),
             'raffleSettings' => $this->raffleSettings(),
             'initialPersonContext' => [
                 'type' => 'distributor',
@@ -387,6 +387,14 @@ class FrontController extends Controller
         $relations = [
             'social',
             'distributorMarketer.distributor',
+            'rewardWheels' => fn($query) => $query
+                ->where('wheel_type', RewardWheel::TYPE_PURCHASE_AMOUNT)
+                ->where('is_active', true)
+                ->with(['segments' => fn($segmentQuery) => $segmentQuery
+                    ->where('is_active', true)
+                    ->orderBy('sort_order')
+                ])
+                ->orderBy('min_order_total'),
             'advertisements' => fn($query) => $query
                 ->where('is_active', true)
                 ->orderBy('sort_order')
@@ -498,6 +506,7 @@ class FrontController extends Controller
                 'logo' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
                 'whatsapp_number' => $shopOrderContext['whatsapp_number'],
                 'marketing_context' => $shopOrderContext['marketing_context'],
+                'purchase_reward_wheels' => $this->purchaseRewardWheelsPayload($shop),
                 'social_links' => $this->socialLinksPayload($shop),
                 'agents' => $this->contactPeoplePayload($shop->agents ?? collect(), $shop, 'agent', $shopProductsDb, $shopDepartments, $shops),
                 'distributors' => $this->contactPeoplePayload($shop->distributors ?? collect(), $shop, 'distributor', $shopProductsDb, $shopDepartments, $shops),
@@ -534,6 +543,7 @@ class FrontController extends Controller
                 'logo' => $this->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
                 'whatsapp_number' => $this->contactWhatsappNumber($ozmanShop->whatsapp ?: $ozmanShop->phone),
                 'marketing_context' => null,
+                'purchase_reward_wheels' => $this->purchaseRewardWheelsPayload($ozmanShop),
                 'social_links' => $this->socialLinksPayload($ozmanShop),
                 'agents' => $this->contactPeoplePayload($ozmanShop->agents ?? collect(), $ozmanShop, 'agent', $ozmanProductsDb, $ozmanDepartments, $shops),
                 'distributors' => $this->contactPeoplePayload($ozmanShop->distributors ?? collect(), $ozmanShop, 'distributor', $ozmanProductsDb, $ozmanDepartments, $shops),
@@ -917,17 +927,25 @@ class FrontController extends Controller
         return array_replace($defaults, is_array($settings) ? $settings : []);
     }
 
-    private function purchaseRewardWheelsPayload(): array
+    private function purchaseRewardWheelsPayload(?Shop $shop): array
     {
-        return RewardWheel::query()
-            ->where('wheel_type', RewardWheel::TYPE_PURCHASE_AMOUNT)
-            ->where('is_active', true)
-            ->with(['segments' => fn($query) => $query
+        if (! $shop?->exists) {
+            return [];
+        }
+
+        $wheels = $shop->relationLoaded('rewardWheels')
+            ? $shop->rewardWheels
+            : $shop->rewardWheels()
+                ->where('wheel_type', RewardWheel::TYPE_PURCHASE_AMOUNT)
                 ->where('is_active', true)
-                ->orderBy('sort_order')
-            ])
-            ->orderBy('min_order_total')
-            ->get()
+                ->with(['segments' => fn($query) => $query
+                    ->where('is_active', true)
+                    ->orderBy('sort_order')
+                ])
+                ->orderBy('min_order_total')
+                ->get();
+
+        return $wheels
             ->filter(fn($wheel) => $wheel->segments->count() >= 2)
             ->map(fn($wheel) => [
                 'id' => $wheel->id,

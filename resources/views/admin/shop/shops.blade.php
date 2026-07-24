@@ -502,6 +502,7 @@
                 font-size: 28px;
             }
         }
+        .assign-modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.78);backdrop-filter:blur(8px)}.assign-modal.open{display:flex}.assign-card{width:min(520px,100%);padding:24px;border:1px solid rgba(0,229,255,.28);border-radius:24px;background:#101217;box-shadow:0 24px 80px rgba(0,0,0,.6)}.assign-card h2{margin:0 0 6px;color:#00e5ff}.assign-card p{margin:0 0 18px;color:rgba(255,255,255,.6)}.assign-card select{width:100%;height:54px;padding:0 14px;border:1px solid rgba(255,255,255,.15);border-radius:14px;background:#171a20;color:#fff;font-family:inherit}.assign-card-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}.assign-card-actions button{border:0;border-radius:999px;padding:11px 18px;font-family:inherit;font-weight:900;cursor:pointer}.assign-save{background:#00e5ff;color:#001014}.assign-cancel{background:rgba(255,255,255,.08);color:#fff}
     </style>
 </head>
 
@@ -713,6 +714,25 @@
                                         <td><span class="tag {{ $statusClass }}">{{ $statusLabel }}</span></td>
                                         <td>
     <div class="actions">
+        @if(auth()->user()?->isSuperAdmin())
+            <button type="button" class="icon-btn" data-assign-distributor
+                data-shop-name="{{ $shopName }}"
+                data-action="{{ route('shops.distributor.assign', $shopId) }}"
+                data-distributor-id="{{ data_get($shop, 'distributor_id') }}"
+                title="تعيين موزع للمتجر" aria-label="تعيين موزع للمتجر">
+                <i class="ti ti-truck-delivery" aria-hidden="true"></i>
+            </button>
+        @endif
+
+        @if(auth()->user()?->isSuperAdmin() && data_get($shop, 'user_id'))
+            <form action="{{ route('shops.enter-dashboard', $shopId) }}" method="POST">
+                @csrf
+                <button type="submit" class="icon-btn" aria-label="الدخول إلى لوحة تحكم المتجر"
+                    title="الدخول إلى لوحة تحكم المتجر">
+                    <i class="ti ti-login-2" aria-hidden="true"></i>
+                </button>
+            </form>
+        @endif
 
         <!-- عرض -->
         <a href="{{ route('shops.show', $shopId) }}" class="icon-btn"
@@ -758,6 +778,29 @@
         </main>
     </div>
 
+    @if(auth()->user()?->isSuperAdmin())
+        <div class="assign-modal" id="assignDistributorModal" role="dialog" aria-modal="true" aria-labelledby="assignDistributorTitle">
+            <form class="assign-card" id="assignDistributorForm" method="POST">
+                @csrf
+                @method('PATCH')
+                <h2 id="assignDistributorTitle">تعيين موزع للمتجر</h2>
+                <p>المتجر: <strong id="assignDistributorShopName"></strong></p>
+                <label for="assignDistributorSelect" style="display:block;margin-bottom:8px;font-weight:900">الموزع المسؤول عن الطلبات</label>
+                <select id="assignDistributorSelect" name="distributor_id">
+                    <option value="">بدون موزع / إلغاء الربط</option>
+                    @foreach($assignableDistributors as $distributor)
+                        <option value="{{ $distributor->id }}">{{ $distributor->name }}{{ $distributor->phone ? ' — ' . $distributor->phone : '' }}</option>
+                    @endforeach
+                </select>
+                <small style="display:block;margin-top:9px;color:rgba(255,255,255,.5)">بعد الحفظ ستُنسب طلبات المتجر إلى الموزع المختار. تغيير الموزع يفك أي مسوّق تابع لموزع مختلف.</small>
+                <div class="assign-card-actions">
+                    <button type="button" class="assign-cancel" data-close-assign>إلغاء</button>
+                    <button type="submit" class="assign-save">حفظ التعيين</button>
+                </div>
+            </form>
+        </div>
+    @endif
+
     <script>
         const shopSearch = document.getElementById('shopSearch');
         const statusFilter = document.getElementById('statusFilter');
@@ -776,6 +819,26 @@
 
         shopSearch?.addEventListener('input', filterShops);
         statusFilter?.addEventListener('change', filterShops);
+
+        const assignModal = document.getElementById('assignDistributorModal');
+        const assignForm = document.getElementById('assignDistributorForm');
+        const assignSelect = document.getElementById('assignDistributorSelect');
+        const assignShopName = document.getElementById('assignDistributorShopName');
+        document.querySelectorAll('[data-assign-distributor]').forEach((button) => {
+            button.addEventListener('click', () => {
+                assignForm.action = button.dataset.action;
+                assignSelect.value = button.dataset.distributorId || '';
+                assignShopName.textContent = button.dataset.shopName || '';
+                assignModal.classList.add('open');
+            });
+        });
+        document.querySelector('[data-close-assign]')?.addEventListener('click', () => assignModal?.classList.remove('open'));
+        assignModal?.addEventListener('click', (event) => {
+            if (event.target === assignModal) assignModal.classList.remove('open');
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') assignModal?.classList.remove('open');
+        });
     </script>
 </body>
 

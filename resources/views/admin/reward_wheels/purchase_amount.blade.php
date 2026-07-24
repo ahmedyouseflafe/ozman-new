@@ -528,6 +528,20 @@
                         <p>كل نطاق مبلغ له عجلة واحدة. اضغط تعديل لتغيير جوائز نفس العجلة.</p>
                     </div>
                 </div>
+                <form method="GET" action="{{ route('reward-wheels.purchase.index') }}" class="panel"
+                    style="margin-bottom:18px;padding:16px;display:flex;align-items:end;gap:12px;flex-wrap:wrap">
+                    <label class="field" style="min-width:min(100%,320px);margin:0">
+                        <span>المتجر الذي تدير عجلاته</span>
+                        <select name="shop_id" onchange="this.form.submit()">
+                            @foreach($shops as $wheelShop)
+                                <option value="{{ $wheelShop->id }}" @selected((int) $selectedShopId === (int) $wheelShop->id)>
+                                    {{ $wheelShop->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <noscript><button class="btn small" type="submit">عرض</button></noscript>
+                </form>
                 @if (session('status'))
                     <div class="status-alert">{{ session('status') }}</div>
                 @endif
@@ -544,7 +558,7 @@
                         <div class="panel-head">
                             <div class="panel-title"><i class="ti ti-disc"></i> العجلات الحالية</div>
                             @if ($editingWheel)
-                                <a class="btn small" href="{{ route('reward-wheels.purchase.index') }}"><i
+                                <a class="btn small" href="{{ route('reward-wheels.purchase.index', ['shop_id' => $selectedShopId]) }}"><i
                                         class="ti ti-plus"></i> عجلة جديدة</a>
                             @endif
                         </div>
@@ -614,6 +628,7 @@
                                 enctype="multipart/form-data">@csrf @if ($editingWheel)
                                     @method('PUT')
                                 @endif
+                                <input type="hidden" name="shop_id" value="{{ $selectedShopId }}">
                                 @php $quotaTotal = (int) old('win_quota_total', $editingWheel?->win_quota_total ?? 200); @endphp
                                 <div class="form-grid"><label class="field full"><span>عنوان العجلة</span><input
                                             type="text" name="title"

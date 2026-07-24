@@ -385,6 +385,18 @@
     </div>
 
     <div class="topbar-right">
+        @if(session()->has('impersonator_admin_id'))
+            <form method="POST" action="{{ route('admin.return-from-shop') }}">
+                @csrf
+                <button type="submit" class="topbar-btn"
+                    style="width:auto;padding:0 14px;border-radius:20px;gap:7px;color:#ffd60a;border-color:rgba(255,214,10,.45)"
+                    title="الرجوع إلى لوحة الأدمن">
+                    <i class="ti ti-arrow-back-up" aria-hidden="true"></i>
+                    <span style="font-size:11px;font-weight:900">الرجوع للأدمن</span>
+                </button>
+            </form>
+        @endif
+
         <div class="admin-header-search">
             <i class="ti ti-search" aria-hidden="true"></i>
             <input type="search" placeholder="بحث سريع...">

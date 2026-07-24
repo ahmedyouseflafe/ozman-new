@@ -103,10 +103,12 @@
                                 <select id="shop_id" name="shop_id" required>
                                     <option value="">اختر المتجر</option>
                                     @foreach($shops as $shop)
-                                        <option value="{{ $shop->id }}" @selected(old('shop_id', $category->shop_id) == $shop->id)>{{ $shop->name }}</option>
+                                        <option value="{{ $shop->id }}" data-catalog-type="{{ $shop->catalog_type ?: 'general' }}" @selected(old('shop_id', $category->shop_id) == $shop->id)>{{ $shop->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
+
+                            @include('admin.categories._catalog_guidance')
 
                             <div class="form-group">
                                 <label class="form-label" for="name"><i class="ti ti-tag" aria-hidden="true"></i>اسم الفئة</label>
@@ -176,4 +178,3 @@
 </body>
 
 </html>
-

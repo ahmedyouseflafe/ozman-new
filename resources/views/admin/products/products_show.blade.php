@@ -292,6 +292,52 @@
                     </div>
                 </div>
 
+                @php
+                    $catalogDefinition = $product->shop?->catalogDefinition() ?? [];
+                    $catalogFields = $catalogDefinition['fields'] ?? [];
+                @endphp
+                @if(count($product->catalog_attributes ?? []) || $product->variants->isNotEmpty())
+                    <section class="panel" style="padding:22px;margin-bottom:22px">
+                        <div class="panel-head">
+                            <h2 style="margin:0;color:#00e5ff">
+                                <i class="ti {{ $catalogDefinition['icon'] ?? 'ti-adjustments' }}"></i>
+                                تفاصيل {{ $catalogDefinition['label'] ?? 'المنتج' }}
+                            </h2>
+                        </div>
+                        @if(count($product->catalog_attributes ?? []))
+                            <div class="info-grid">
+                                @foreach($product->catalog_attributes as $key => $value)
+                                    <div class="info-item">
+                                        <div class="info-label">{{ data_get($catalogFields, $key . '.label', $key) }}</div>
+                                        <div class="info-value">
+                                            {{ is_array($value) ? implode('، ', $value) : (is_bool($value) ? ($value ? 'نعم' : 'لا') : $value) }}
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        @if($product->variants->isNotEmpty())
+                            <div style="overflow-x:auto;margin-top:18px">
+                                <table style="width:100%;border-collapse:collapse">
+                                    <thead><tr><th style="padding:10px;text-align:right;color:#00e5ff">المقاس</th><th style="padding:10px;text-align:right;color:#00e5ff">اللون</th><th style="padding:10px;text-align:right;color:#00e5ff">SKU</th><th style="padding:10px;text-align:right;color:#00e5ff">السعر الخاص</th><th style="padding:10px;text-align:right;color:#00e5ff">الكمية</th></tr></thead>
+                                    <tbody>
+                                        @foreach($product->variants as $variant)
+                                            <tr style="border-top:1px solid rgba(255,255,255,.08)">
+                                                <td style="padding:10px">{{ $variant->size ?: '-' }}</td>
+                                                <td style="padding:10px">{{ $variant->color ?: '-' }}</td>
+                                                <td style="padding:10px" dir="ltr">{{ $variant->sku ?: '-' }}</td>
+                                                <td style="padding:10px">{{ $variant->price !== null ? number_format((float) $variant->price, 2) : '-' }}</td>
+                                                <td style="padding:10px">{{ $variant->quantity }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </section>
+                @endif
+
                 <div class="layout">
                     <aside class="panel media-panel">
                         <div class="main-media">

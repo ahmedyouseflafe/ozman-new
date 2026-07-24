@@ -666,6 +666,20 @@
                             </div>
 
                             <div class="form-group full">
+                                <label class="form-label" for="catalog_type"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>نوع نشاط المتجر</label>
+                                <div class="field">
+                                    <select id="catalog_type" name="catalog_type" required>
+                                        @foreach(config('catalog_types', []) as $typeKey => $type)
+                                            <option value="{{ $typeKey }}" @selected(old('catalog_type', 'general') === $typeKey)>
+                                                {{ $type['label'] }} — {{ $type['description'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <small style="color:rgba(255,255,255,.55)">يحدد الحقول التي ستظهر لصاحب المتجر عند إدارة الفئات والمنتجات.</small>
+                            </div>
+
+                            <div class="form-group full">
                                 <label class="form-label" for="description"><i class="ti ti-align-right" aria-hidden="true"></i>وصف المتجر</label>
                                 <div class="field">
                                     <textarea id="description" name="description" placeholder="نبذة قصيرة عن المتجر والخدمات التي يقدمها"></textarea>

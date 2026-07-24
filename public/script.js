@@ -313,8 +313,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        function purchaseRewardWheels() {
-            return Array.isArray(window.OZMAN_FRONT_CONFIG?.purchaseRewardWheels)
+        function purchaseRewardWheels(shopId = null) {
+            const targetShop = shopId
+                ? centersData.find((center) => Number(center?.id) === Number(shopId))
+                : centersData[activeCenterIndex];
+            const shopWheels = targetShop?.purchase_reward_wheels;
+            if (Array.isArray(shopWheels)) {
+                return shopWheels;
+            }
+
+            return !shopId && Array.isArray(window.OZMAN_FRONT_CONFIG?.purchaseRewardWheels)
                 ? window.OZMAN_FRONT_CONFIG.purchaseRewardWheels
                 : [];
         }
@@ -323,10 +331,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return currentVisitorType() !== 'merchant';
         }
 
-        function eligiblePurchaseRewardWheel(total) {
+        function eligiblePurchaseRewardWheel(total, shopId = null) {
             if (!visitorCanUsePurchaseWheels()) return null;
 
-            return purchaseRewardWheels().find((wheel) => {
+            return purchaseRewardWheels(shopId).find((wheel) => {
                 const min = Number(wheel.min_order_total || 0);
                 const max = wheel.max_order_total === null || wheel.max_order_total === undefined || wheel.max_order_total === ''
                     ? Number.POSITIVE_INFINITY
@@ -461,7 +469,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const container = document.getElementById('purchaseWheelsCarousel');
             const track = document.getElementById('purchaseWheelsTrack');
             const wheels = purchaseRewardWheels();
-            if (!container || !track || wheels.length === 0) return;
+            if (!container || !track) return;
+            track.innerHTML = '';
+            if (wheels.length === 0) {
+                container.hidden = true;
+                return;
+            }
             if (!visitorCanUsePurchaseWheels()) {
                 container.hidden = true;
                 track.innerHTML = '';
@@ -1738,7 +1751,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const urls = window.OZMAN_FRONT_CONFIG || {};
             const marketingContext = orderContext || currentMarketingContext();
             const { subtotal, discount, total } = currentOrderTotals(itemsOverride);
-            const eligibleWheel = eligiblePurchaseRewardWheel(total);
+            const orderShopId = marketingContext.shop_id || urls.shopId || null;
+            const eligibleWheel = eligiblePurchaseRewardWheel(total, orderShopId);
 
             const response = await fetch(urls.orderStoreUrl || '/front-orders', {
                 method: 'POST',
@@ -1748,7 +1762,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'X-CSRF-TOKEN': csrfToken()
                 },
                 body: JSON.stringify({
-                    shop_id: marketingContext.shop_id || urls.shopId || null,
+                    shop_id: orderShopId,
                     distributor_id: marketingContext.distributor_id || null,
                     distributor_marketer_id: marketingContext.distributor_marketer_id || marketingContext.marketer_id || null,
                     marketing_source: marketingContext.marketing_source || marketingContext.source || null,
@@ -3495,6 +3509,7 @@ document.addEventListener('DOMContentLoaded', () => {
             activePersonContext = null;
             renderActiveShopHeader(centersData[index % centersData.length]);
             renderDepartmentsForCenter(index);
+            setupPurchaseWheelsVertical();
         }
 
         window.addEventListener('DOMContentLoaded', () => {

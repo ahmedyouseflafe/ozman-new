@@ -156,6 +156,12 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::get('/shops/create', [ShopController::class, 'create'])->name('shops.create');
     Route::get('/shops/ozman', [ShopController::class, 'ozman'])->name('shops.ozman');
     Route::post('/shops/store', [ShopController::class, 'store'])->name('shops.store');
+    Route::post('/shops/{shop}/enter-dashboard', [AuthController::class, 'enterShopDashboard'])
+        ->name('shops.enter-dashboard');
+    Route::patch('/shops/{shop}/distributor', [ShopController::class, 'assignDistributor'])
+        ->name('shops.distributor.assign');
+    Route::post('/admin/return-from-shop', [AuthController::class, 'returnFromShopDashboard'])
+        ->name('admin.return-from-shop');
     Route::get('/shops/{shop}/edit', [ShopController::class, 'edit'])->name('shops.edit');
     Route::put('/shops/{shop}', [ShopController::class, 'update'])->name('shops.update');
     Route::delete('/shops/{shop}', [ShopController::class, 'destroy'])->name('shops.destroy');

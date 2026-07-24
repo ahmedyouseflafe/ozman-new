@@ -27,6 +27,7 @@ class ShopController extends Controller
         $shops = Shop::query()
             ->where('slug', '!=', 'ozman')
             ->when(! $this->hasGlobalDashboardAccess(), fn($query) => $query->whereIn('id', $this->ownedShopIds()))
+            ->with('distributor:id,name')
             ->withCount('products')
             ->latest()
             ->get()
@@ -42,7 +43,39 @@ class ShopController extends Controller
             'shopsCount' => $shops->count(),
             'activeShopsCount' => $shops->where('is_active', true)->count(),
             'inactiveShopsCount' => $shops->where('is_active', false)->count(),
+            'assignableDistributors' => $this->isSuperAdmin()
+                ? Distributor::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'phone'])
+                : collect(),
         ]);
+    }
+
+    public function assignDistributor(Request $request, Shop $shop): RedirectResponse
+    {
+        abort_unless($request->user()?->isSuperAdmin(), 403);
+
+        $data = $request->validate([
+            'distributor_id' => ['nullable', 'integer', Rule::exists('distributors', 'id')->where('is_active', true)],
+        ]);
+        $distributorId = filled($data['distributor_id'] ?? null) ? (int) $data['distributor_id'] : null;
+
+        $marketerBelongsToDistributor = $shop->distributor_marketer_id
+            && DistributorMarketer::query()
+                ->whereKey($shop->distributor_marketer_id)
+                ->where('distributor_id', $distributorId)
+                ->exists();
+
+        $shop->update([
+            'distributor_id' => $distributorId,
+            'distributor_marketer_id' => $marketerBelongsToDistributor
+                ? $shop->distributor_marketer_id
+                : null,
+        ]);
+
+        $message = $distributorId
+            ? 'تم ربط المتجر بالموزع بنجاح.'
+            : 'تم إلغاء ربط المتجر بالموزع.';
+
+        return back()->with('status', $message);
     }
 
     public function show(Shop $shop): View
@@ -130,6 +163,7 @@ class ShopController extends Controller
         abort_unless($this->canAccessCurrentRoute(), 403);
 
         $data = $this->validatedData($request);
+        $data['catalog_type'] = $data['catalog_type'] ?? 'general';
         $owner = $this->resolveShopOwner($request, $data);
         $data['user_id'] = $owner->id;
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name']);
@@ -198,6 +232,7 @@ class ShopController extends Controller
         $this->authorizeShopAccess($shop);
 
         $data = $this->validatedData($request, $shop);
+        $data['catalog_type'] = $data['catalog_type'] ?? ($shop->catalog_type ?: 'general');
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name'], $shop);
         $data['is_active'] = $request->boolean('is_active');
         $data['show_ozman_products'] = $request->boolean('show_ozman_products');
@@ -266,6 +301,7 @@ class ShopController extends Controller
 
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'catalog_type' => ['nullable', Rule::in(array_keys(config('catalog_types', [])))],
             'slug' => [
                 'nullable',
                 'string',

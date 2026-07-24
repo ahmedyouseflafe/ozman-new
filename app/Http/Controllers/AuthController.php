@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Shop;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -131,6 +133,57 @@ class AuthController extends Controller
         }
 
         return view('admin.dashboard');
+    }
+
+    public function enterShopDashboard(Request $request, Shop $shop): RedirectResponse
+    {
+        $admin = $request->user();
+
+        abort_unless($admin?->isSuperAdmin(), 403);
+
+        $owner = $shop->user;
+        abort_unless($owner?->isShopOwner() && $owner->is_active, 422, 'المتجر لا يملك حساب صاحب متجر فعال.');
+
+        $adminId = $admin->id;
+        $adminName = $admin->name;
+
+        Auth::login($owner);
+        $request->session()->regenerate();
+        $request->session()->put([
+            'impersonator_admin_id' => $adminId,
+            'impersonator_admin_name' => $adminName,
+            'impersonated_shop_id' => $shop->id,
+            'current_shop_id' => $shop->id,
+        ]);
+
+        return redirect()
+            ->route('shops.show', $shop)
+            ->with('success', 'أنت الآن داخل لوحة تحكم متجر ' . $shop->name . '.');
+    }
+
+    public function returnFromShopDashboard(Request $request): RedirectResponse
+    {
+        $adminId = (int) $request->session()->get('impersonator_admin_id');
+        abort_unless($adminId > 0, 403);
+
+        $admin = User::query()
+            ->whereKey($adminId)
+            ->where('role', 'super_admin')
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        Auth::login($admin);
+        $request->session()->regenerate();
+        $request->session()->forget([
+            'impersonator_admin_id',
+            'impersonator_admin_name',
+            'impersonated_shop_id',
+            'current_shop_id',
+        ]);
+
+        return redirect()
+            ->route('shops')
+            ->with('success', 'تم الرجوع إلى لوحة تحكم الإدارة.');
     }
 
     private function redirectAfterLogin(Request $request): RedirectResponse
