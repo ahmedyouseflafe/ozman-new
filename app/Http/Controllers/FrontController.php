@@ -219,6 +219,13 @@ class FrontController extends Controller
             $shopIds->push($distributor->shop_id);
         }
 
+        $directDistributorShopIds = Shop::query()
+            ->where('distributor_id', $distributor->id)
+            ->where('is_active', true)
+            ->pluck('id');
+
+        $shopIds = $shopIds->merge($directDistributorShopIds);
+
         $marketerShopIds = Shop::query()
             ->where('is_active', true)
             ->whereHas('distributorMarketer', fn($query) => $query
