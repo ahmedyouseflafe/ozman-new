@@ -227,7 +227,50 @@
 
             <section class="panel">
                 <div class="panel-head">
-                    <div class="panel-title"><i class="ti ti-plus"></i> إضافة رقم رابح</div>
+                    <div>
+                        <div class="panel-title"><i class="ti ti-wand"></i> إضافة بطاقات رابحة عشوائيًا</div>
+                        <div class="muted">حدد النطاق وعدد الهدايا، وسيختار النظام أرقامًا غير مستخدمة بشكل عشوائي.</div>
+                    </div>
+                </div>
+                <form action="{{ route('raffle-cards.random-bulk') }}" method="POST" enctype="multipart/form-data" class="form-grid">
+                    @csrf
+                    <div>
+                        <label for="bulk_prize_title">اسم الهدية</label>
+                        <input id="bulk_prize_title" name="prize_title" value="{{ old('prize_title') }}" placeholder="مثال: سماعة بلوتوث" required>
+                    </div>
+                    <div>
+                        <label for="bulk_prize_count">عدد الهدايا</label>
+                        <input id="bulk_prize_count" name="prize_count" type="number" value="{{ old('prize_count') }}" min="1" max="10000" placeholder="مثال: 20" required>
+                    </div>
+                    <div>
+                        <label for="bulk_from_number">رقم البطاقة من</label>
+                        <input id="bulk_from_number" name="from_number" value="{{ old('from_number') }}" maxlength="6" pattern="\d{6}" inputmode="numeric" placeholder="000001" dir="ltr" required>
+                    </div>
+                    <div>
+                        <label for="bulk_to_number">رقم البطاقة إلى</label>
+                        <input id="bulk_to_number" name="to_number" value="{{ old('to_number') }}" maxlength="6" pattern="\d{6}" inputmode="numeric" placeholder="999999" dir="ltr" required>
+                    </div>
+                    <div>
+                        <label for="bulk_prize_image">صورة الهدية</label>
+                        <label class="file-card" for="bulk_prize_image">
+                            <span data-file-label>اختر صورة الهدية</span>
+                            <i class="ti ti-photo-up"></i>
+                        </label>
+                        <input class="file-input" id="bulk_prize_image" name="prize_image" type="file" accept="image/*" data-file-input>
+                    </div>
+                    <label class="check-row">
+                        <input type="checkbox" name="is_active" value="1" checked>
+                        البطاقات نشطة
+                    </label>
+                    <button class="btn btn-primary" type="submit" style="grid-column:1 / -1">
+                        <i class="ti ti-sparkles"></i> إنشاء الأرقام الرابحة عشوائيًا
+                    </button>
+                </form>
+            </section>
+
+            <section class="panel">
+                <div class="panel-head">
+                    <div class="panel-title"><i class="ti ti-plus"></i> إضافة بطاقة رابحة يدويًا</div>
                 </div>
                 <form action="{{ route('raffle-cards.store') }}" method="POST" enctype="multipart/form-data" class="form-grid">
                     @csrf

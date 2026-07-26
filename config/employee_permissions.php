@@ -92,7 +92,7 @@ return [
                 'marketer_orders.view' => ['label' => 'عرض طلبات رابط المسوّق فقط', 'description' => 'للمسوّق: طلباته المنسوبة له دون باقي طلبات الموزع.', 'routes' => ['front-orders.index']],
                 'front_orders.manage' => ['label' => 'إدارة جوائز الطلبات', 'description' => 'تسجيل وتشغيل الجائزة المرتبطة بالطلب.', 'routes' => ['front-orders.reward', 'front-orders.spinReward']],
                 'raffle_cards.view' => ['label' => 'عرض بطاقات السحب', 'description' => 'مشاهدة بطاقات الربح والسحب المباشر.', 'routes' => ['raffle-cards.index']],
-                'raffle_cards.create' => ['label' => 'إنشاء وطباعة بطاقات ربح', 'description' => 'إضافة بطاقات جديدة وتجهيزها للطباعة.', 'routes' => ['raffle-cards.store', 'raffle-cards.printable']],
+                'raffle_cards.create' => ['label' => 'إنشاء وطباعة بطاقات ربح', 'description' => 'إضافة بطاقة منفردة أو مجموعة عشوائية وتجهيز البطاقات للطباعة.', 'routes' => ['raffle-cards.store', 'raffle-cards.random-bulk', 'raffle-cards.printable']],
                 'raffle_cards.edit' => ['label' => 'تعديل بطاقات وإعدادات السحب', 'description' => 'تعديل البطاقة وإعدادات السحب.', 'routes' => ['raffle-cards.update', 'raffle-cards.settings']],
                 'raffle_cards.delete' => ['label' => 'حذف بطاقات أو نتائج سحب', 'description' => 'حذف البطاقات ومدخلات السحب؛ صلاحية حساسة.', 'routes' => ['raffle-cards.destroy', 'raffle-cards.live-draw.destroy', 'raffle-cards.live-draw.bulk-destroy']],
             ],

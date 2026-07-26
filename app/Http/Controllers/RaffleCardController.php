@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
@@ -160,6 +161,108 @@ class RaffleCardController extends Controller
         return back()->with('status', 'تمت إضافة بطاقة الربح بنجاح.');
     }
 
+    public function storeRandomBulk(Request $request): RedirectResponse
+    {
+        abort_unless($this->canAccessCurrentRoute(), 403);
+
+        $data = $request->validate([
+            'from_number' => ['required', 'digits:6'],
+            'to_number' => ['required', 'digits:6'],
+            'prize_count' => ['required', 'integer', 'min:1', 'max:10000'],
+            'prize_title' => ['required', 'string', 'max:255'],
+            'prize_image' => ['nullable', 'image', 'max:4096'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $from = (int) $data['from_number'];
+        $to = (int) $data['to_number'];
+        $requestedCount = (int) $data['prize_count'];
+
+        if ($from > $to) {
+            throw ValidationException::withMessages([
+                'to_number' => 'رقم النهاية يجب أن يكون أكبر من أو يساوي رقم البداية.',
+            ]);
+        }
+
+        $blockedNumbers = RaffleCard::query()
+            ->whereBetween('card_number', [$data['from_number'], $data['to_number']])
+            ->pluck('card_number')
+            ->merge(
+                RaffleEntry::query()
+                    ->whereBetween('card_number', [$data['from_number'], $data['to_number']])
+                    ->pluck('card_number')
+            )
+            ->mapWithKeys(fn (string $number) => [(int) $number => true])
+            ->all();
+
+        $availableCount = ($to - $from + 1) - count($blockedNumbers);
+        if ($requestedCount > $availableCount) {
+            throw ValidationException::withMessages([
+                'prize_count' => "العدد المطلوب أكبر من الأرقام المتاحة في هذا النطاق. المتاح حاليًا: {$availableCount}.",
+            ]);
+        }
+
+        $selectedNumbers = [];
+        $randomAttempts = 0;
+        $maxRandomAttempts = max(100, $requestedCount * 30);
+
+        while (count($selectedNumbers) < $requestedCount && $randomAttempts < $maxRandomAttempts) {
+            $candidate = random_int($from, $to);
+            $randomAttempts++;
+
+            if (! isset($blockedNumbers[$candidate]) && ! isset($selectedNumbers[$candidate])) {
+                $selectedNumbers[$candidate] = true;
+            }
+        }
+
+        if (count($selectedNumbers) < $requestedCount) {
+            $start = random_int($from, $to);
+            $rangeSize = $to - $from + 1;
+
+            for ($offset = 0; $offset < $rangeSize && count($selectedNumbers) < $requestedCount; $offset++) {
+                $candidate = $from + (($start - $from + $offset) % $rangeSize);
+                if (! isset($blockedNumbers[$candidate]) && ! isset($selectedNumbers[$candidate])) {
+                    $selectedNumbers[$candidate] = true;
+                }
+            }
+        }
+
+        $imagePath = $request->hasFile('prize_image')
+            ? 'storage/' . $request->file('prize_image')->store('raffle/prizes', 'public')
+            : null;
+
+        try {
+            DB::transaction(function () use ($selectedNumbers, $data, $request, $imagePath) {
+                $now = now();
+                $rows = [];
+
+                foreach (array_keys($selectedNumbers) as $number) {
+                    $rows[] = [
+                        'card_number' => str_pad((string) $number, 6, '0', STR_PAD_LEFT),
+                        'prize_title' => $data['prize_title'],
+                        'prize_image' => $imagePath,
+                        'is_active' => $request->boolean('is_active', true),
+                        'created_by' => Auth::id(),
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+
+                foreach (array_chunk($rows, 500) as $chunk) {
+                    RaffleCard::insert($chunk);
+                }
+            });
+        } catch (\Throwable $exception) {
+            $this->deleteUpload($imagePath);
+            throw $exception;
+        }
+
+        return back()->with(
+            'status',
+            "تمت إضافة {$requestedCount} بطاقة رابحة بأرقام عشوائية من {$data['from_number']} إلى {$data['to_number']}."
+        );
+    }
+
     public function update(Request $request, RaffleCard $card): RedirectResponse
     {
         abort_unless($this->canAccessCurrentRoute(), 403);
@@ -171,13 +274,16 @@ class RaffleCardController extends Controller
             'is_active' => ['nullable', 'boolean'],
         ]);
 
+        $oldImagePath = $card->prize_image;
         if ($request->hasFile('prize_image')) {
-            $this->deleteUpload($card->prize_image);
             $data['prize_image'] = 'storage/' . $request->file('prize_image')->store('raffle/prizes', 'public');
         }
 
         $data['is_active'] = $request->boolean('is_active');
         $card->update($data);
+        if ($request->hasFile('prize_image')) {
+            $this->deletePrizeImageIfUnused($oldImagePath);
+        }
 
         return back()->with('status', 'تم تحديث بطاقة الربح بنجاح.');
     }
@@ -186,8 +292,9 @@ class RaffleCardController extends Controller
     {
         abort_unless($this->canAccessCurrentRoute(), 403);
 
-        $this->deleteUpload($card->prize_image);
+        $imagePath = $card->prize_image;
         $card->delete();
+        $this->deletePrizeImageIfUnused($imagePath);
 
         return back()->with('status', 'تم حذف بطاقة الربح بنجاح.');
     }
@@ -417,5 +524,12 @@ class RaffleCardController extends Controller
         }
 
         Storage::disk('public')->delete(str_replace('storage/', '', $path));
+    }
+
+    private function deletePrizeImageIfUnused(?string $path): void
+    {
+        if ($path && ! RaffleCard::query()->where('prize_image', $path)->exists()) {
+            $this->deleteUpload($path);
+        }
     }
 }
