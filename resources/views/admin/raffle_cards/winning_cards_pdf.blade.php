@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <title>الأرقام الرابحة</title>
     <style>
         @page { margin: 24px; }
         body {
-            direction: rtl;
+            direction: ltr;
             font-family: DejaVu Sans, sans-serif;
             color: #161616;
             font-size: 11px;
         }
-        h1 { margin: 0 0 6px; color: #007f91; font-size: 24px; }
-        .summary { margin-bottom: 18px; color: #555; }
+        h1 { margin: 0 0 6px; color: #007f91; font-size: 24px; text-align: right; }
+        .summary { margin-bottom: 18px; color: #555; text-align: right; }
         table { width: 100%; border-collapse: collapse; }
         thead { display: table-header-group; }
         tr { page-break-inside: avoid; }
@@ -20,6 +20,7 @@
             border: 1px solid #cfd8dc;
             padding: 8px;
             text-align: right;
+            direction: ltr;
             vertical-align: middle;
         }
         th { color: #fff; background: #007f91; font-weight: bold; }
@@ -33,21 +34,21 @@
     </style>
 </head>
 <body>
-    <h1>تقرير الأرقام الرابحة</h1>
+    <h1>{{ $shapeArabic('تقرير الأرقام الرابحة') }}</h1>
     <div class="summary">
-        النطاق: <span dir="ltr">{{ $fromNumber }}</span> — <span dir="ltr">{{ $toNumber }}</span>
-        | عدد البطاقات الرابحة: {{ $cards->count() }}
+        {{ $shapeArabic('النطاق') }}: {{ $fromNumber }} — {{ $toNumber }}
+        | {{ $shapeArabic('عدد البطاقات الرابحة') }}: {{ $cards->count() }}
     </div>
 
     <table>
         <thead>
             <tr>
-                <th style="width:12%">رقم البطاقة</th>
-                <th style="width:10%">الصورة</th>
-                <th style="width:23%">الجائزة</th>
-                <th style="width:13%">الحالة</th>
-                <th style="width:22%">الفائز</th>
-                <th style="width:20%">رقم التواصل</th>
+                <th style="width:12%">{{ $shapeArabic('رقم البطاقة') }}</th>
+                <th style="width:10%">{{ $shapeArabic('الصورة') }}</th>
+                <th style="width:23%">{{ $shapeArabic('الجائزة') }}</th>
+                <th style="width:13%">{{ $shapeArabic('الحالة') }}</th>
+                <th style="width:22%">{{ $shapeArabic('الفائز') }}</th>
+                <th style="width:20%">{{ $shapeArabic('رقم التواصل') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -61,21 +62,21 @@
                             -
                         @endif
                     </td>
-                    <td>{{ $card->prize_title }}</td>
+                    <td>{{ $card->pdf_prize_title }}</td>
                     <td class="{{ $card->used_at ? 'status-used' : 'status-available' }}">
-                        {{ $card->used_at ? 'مستخدمة' : 'متاحة' }}
+                        {{ $shapeArabic($card->used_at ? 'مستخدمة' : 'متاحة') }}
                     </td>
-                    <td>{{ $card->used_customer_name ?: '-' }}</td>
+                    <td>{{ $card->pdf_customer_name }}</td>
                     <td dir="ltr">{{ $card->used_customer_whatsapp ?: ($card->used_customer_phone ?: '-') }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td class="empty" colspan="6">لا توجد بطاقات رابحة ضمن النطاق المحدد.</td>
+                    <td class="empty" colspan="6">{{ $shapeArabic('لا توجد بطاقات رابحة ضمن النطاق المحدد.') }}</td>
                 </tr>
             @endforelse
         </tbody>
     </table>
 
-    <div class="footer">تاريخ إنشاء التقرير: {{ $generatedAt->format('Y-m-d H:i') }} — Ozman</div>
+    <div class="footer">{{ $shapeArabic('تاريخ إنشاء التقرير') }}: {{ $generatedAt->format('Y-m-d H:i') }} — Ozman</div>
 </body>
 </html>

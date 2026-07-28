@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Shop;
 use App\Models\RaffleCard;
 use App\Models\RaffleEntry;
+use ArPHP\I18N\Arabic;
 use Barryvdh\DomPDF\Facade\Pdf;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -144,11 +145,11 @@ class RaffleCardController extends Controller
     {
         abort_unless($this->canAccessCurrentRoute(), 403);
 
-        if (! class_exists(Pdf::class)) {
+        if (! class_exists(Pdf::class) || ! class_exists(Arabic::class)) {
             return redirect()
                 ->route('raffle-cards.index')
                 ->withErrors([
-                    'pdf' => 'مكتبة إنشاء ملفات PDF غير مثبتة على السيرفر. شغّل composer install ثم حاول مجددًا.',
+                    'pdf' => 'مكتبات إنشاء PDF ودعم العربية غير مثبتة على السيرفر. شغّل composer install ثم حاول مجددًا.',
                 ]);
         }
 
@@ -163,12 +164,22 @@ class RaffleCardController extends Controller
             ]);
         }
 
+        $arabic = new Arabic();
+        $shapeArabic = fn (?string $text): string => $arabic->utf8Glyphs(
+            (string) ($text ?: '-'),
+            200,
+            false,
+            true
+        );
+
         $cards = RaffleCard::query()
             ->whereBetween('card_number', [$data['from_number'], $data['to_number']])
             ->orderBy('card_number')
             ->get()
-            ->map(function (RaffleCard $card) {
+            ->map(function (RaffleCard $card) use ($shapeArabic) {
                 $card->pdf_prize_image = $this->localImageDataUri($card->prize_image);
+                $card->pdf_prize_title = $shapeArabic($card->prize_title);
+                $card->pdf_customer_name = $shapeArabic($card->used_customer_name);
 
                 return $card;
             });
@@ -178,6 +189,7 @@ class RaffleCardController extends Controller
             'fromNumber' => $data['from_number'],
             'toNumber' => $data['to_number'],
             'generatedAt' => now(),
+            'shapeArabic' => $shapeArabic,
         ])->setPaper('a4', 'landscape');
 
         return $pdf->download(
