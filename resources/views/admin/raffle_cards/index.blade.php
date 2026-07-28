@@ -300,6 +300,28 @@
 
             <section class="panel">
                 <div class="panel-head">
+                    <div>
+                        <div class="panel-title"><i class="ti ti-file-type-pdf"></i> تحميل الأرقام الرابحة PDF</div>
+                        <div class="muted">سيتم تضمين البطاقات الرابحة الموجودة فقط ضمن النطاق المحدد، مع بيانات الجائزة والحالة والفائز.</div>
+                    </div>
+                </div>
+                <form action="{{ route('raffle-cards.export-pdf') }}" method="GET" class="form-grid">
+                    <div>
+                        <label for="pdf_from_number">رقم البطاقة من</label>
+                        <input id="pdf_from_number" name="from_number" value="{{ old('from_number', '000000') }}" maxlength="6" pattern="\d{6}" inputmode="numeric" placeholder="000000" dir="ltr" required>
+                    </div>
+                    <div>
+                        <label for="pdf_to_number">رقم البطاقة إلى</label>
+                        <input id="pdf_to_number" name="to_number" value="{{ old('to_number', '999999') }}" maxlength="6" pattern="\d{6}" inputmode="numeric" placeholder="999999" dir="ltr" required>
+                    </div>
+                    <button class="btn btn-primary" type="submit" style="grid-column:span 2">
+                        <i class="ti ti-download"></i> تحميل ملف PDF
+                    </button>
+                </form>
+            </section>
+
+            <section class="panel">
+                <div class="panel-head">
                     <div class="panel-title"><i class="ti ti-list"></i> الأرقام الرابحة</div>
                     <form class="filters" method="GET">
                         <input name="search" value="{{ $search }}" placeholder="بحث برقم البطاقة أو الجائزة">

@@ -202,6 +202,8 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
 
     Route::get('/raffle-cards', [RaffleCardController::class, 'index'])
         ->name('raffle-cards.index');
+    Route::get('/raffle-cards/export/pdf', [RaffleCardController::class, 'exportWinningCardsPdf'])
+        ->name('raffle-cards.export-pdf');
     Route::post('/raffle-cards', [RaffleCardController::class, 'store'])
         ->name('raffle-cards.store');
     Route::post('/raffle-cards/random-bulk', [RaffleCardController::class, 'storeRandomBulk'])

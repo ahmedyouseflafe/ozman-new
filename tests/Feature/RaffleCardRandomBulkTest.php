@@ -84,6 +84,43 @@ class RaffleCardRandomBulkTest extends TestCase
         $this->assertDatabaseMissing('raffle_cards', ['prize_title' => 'هدية جديدة']);
     }
 
+    public function test_admin_can_download_winning_cards_pdf_for_selected_range(): void
+    {
+        $admin = $this->admin();
+
+        foreach (['010000', '010005', '020000'] as $number) {
+            RaffleCard::create([
+                'card_number' => $number,
+                'prize_title' => "هدية {$number}",
+                'is_active' => true,
+                'created_by' => $admin->id,
+            ]);
+        }
+
+        $response = $this->actingAs($admin)->get(route('raffle-cards.export-pdf', [
+            'from_number' => '010000',
+            'to_number' => '010999',
+        ]));
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/pdf');
+        $response->assertDownload('winning-cards-010000-010999.pdf');
+        $this->assertStringStartsWith('%PDF-', $response->getContent());
+    }
+
+    public function test_pdf_export_rejects_reversed_range(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->from(route('raffle-cards.index'))
+            ->get(route('raffle-cards.export-pdf', [
+                'from_number' => '900000',
+                'to_number' => '100000',
+            ]));
+
+        $response->assertRedirect(route('raffle-cards.index'));
+        $response->assertSessionHasErrors('to_number');
+    }
+
     private function admin(): User
     {
         return User::create([

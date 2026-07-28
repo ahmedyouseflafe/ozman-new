@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Shop;
 use App\Models\RaffleCard;
 use App\Models\RaffleEntry;
+use Barryvdh\DomPDF\Facade\Pdf;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class RaffleCardController extends Controller
 {
@@ -136,6 +138,43 @@ class RaffleCardController extends Controller
             'fromNumber' => $data['from_number'],
             'toNumber' => $data['to_number'],
         ]);
+    }
+
+    public function exportWinningCardsPdf(Request $request): Response
+    {
+        abort_unless($this->canAccessCurrentRoute(), 403);
+
+        $data = $request->validate([
+            'from_number' => ['required', 'digits:6'],
+            'to_number' => ['required', 'digits:6'],
+        ]);
+
+        if ((int) $data['from_number'] > (int) $data['to_number']) {
+            throw ValidationException::withMessages([
+                'to_number' => 'رقم النهاية يجب أن يكون أكبر من أو يساوي رقم البداية.',
+            ]);
+        }
+
+        $cards = RaffleCard::query()
+            ->whereBetween('card_number', [$data['from_number'], $data['to_number']])
+            ->orderBy('card_number')
+            ->get()
+            ->map(function (RaffleCard $card) {
+                $card->pdf_prize_image = $this->localImageDataUri($card->prize_image);
+
+                return $card;
+            });
+
+        $pdf = Pdf::loadView('admin.raffle_cards.winning_cards_pdf', [
+            'cards' => $cards,
+            'fromNumber' => $data['from_number'],
+            'toNumber' => $data['to_number'],
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download(
+            "winning-cards-{$data['from_number']}-{$data['to_number']}.pdf"
+        );
     }
 
     public function store(Request $request): RedirectResponse
@@ -531,5 +570,21 @@ class RaffleCardController extends Controller
         if ($path && ! RaffleCard::query()->where('prize_image', $path)->exists()) {
             $this->deleteUpload($path);
         }
+    }
+
+    private function localImageDataUri(?string $path): ?string
+    {
+        if (! $path || str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return null;
+        }
+
+        $absolutePath = public_path(ltrim($path, '/'));
+        if (! is_file($absolutePath)) {
+            return null;
+        }
+
+        $mimeType = mime_content_type($absolutePath) ?: 'image/jpeg';
+
+        return 'data:' . $mimeType . ';base64,' . base64_encode(file_get_contents($absolutePath));
     }
 }
