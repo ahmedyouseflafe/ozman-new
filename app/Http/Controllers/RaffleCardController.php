@@ -144,6 +144,14 @@ class RaffleCardController extends Controller
     {
         abort_unless($this->canAccessCurrentRoute(), 403);
 
+        if (! class_exists(Pdf::class)) {
+            return redirect()
+                ->route('raffle-cards.index')
+                ->withErrors([
+                    'pdf' => 'مكتبة إنشاء ملفات PDF غير مثبتة على السيرفر. شغّل composer install ثم حاول مجددًا.',
+                ]);
+        }
+
         $data = $request->validate([
             'from_number' => ['required', 'digits:6'],
             'to_number' => ['required', 'digits:6'],
