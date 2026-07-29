@@ -358,6 +358,34 @@ class RaffleCardController extends Controller
         return back()->with('status', 'تم حذف بطاقة الربح بنجاح.');
     }
 
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        abort_unless($this->canAccessCurrentRoute(), 403);
+
+        $data = $request->validate([
+            'cards' => ['required', 'array', 'min:1'],
+            'cards.*' => ['integer', 'distinct', 'exists:raffle_cards,id'],
+        ]);
+
+        $cards = RaffleCard::query()
+            ->whereIn('id', $data['cards'])
+            ->get(['id', 'prize_image']);
+
+        $imagePaths = $cards
+            ->pluck('prize_image')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $deleted = DB::transaction(fn () => RaffleCard::query()
+            ->whereIn('id', $cards->pluck('id'))
+            ->delete());
+
+        $imagePaths->each(fn (string $path) => $this->deletePrizeImageIfUnused($path));
+
+        return back()->with('status', "تم حذف {$deleted} بطاقة رابحة محددة.");
+    }
+
     public function updateSettings(Request $request): RedirectResponse
     {
         abort_unless($this->canAccessCurrentRoute(), 403);

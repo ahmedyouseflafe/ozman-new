@@ -216,6 +216,8 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
         ->name('raffle-cards.live-draw.bulk-destroy');
     Route::delete('/raffle-cards/live-draw/{entry}', [RaffleCardController::class, 'destroyLiveEntry'])
         ->name('raffle-cards.live-draw.destroy');
+    Route::delete('/raffle-cards/bulk', [RaffleCardController::class, 'bulkDestroy'])
+        ->name('raffle-cards.bulk-destroy');
     Route::put('/raffle-cards/settings', [RaffleCardController::class, 'updateSettings'])
         ->name('raffle-cards.settings');
     Route::put('/raffle-cards/{card}', [RaffleCardController::class, 'update'])

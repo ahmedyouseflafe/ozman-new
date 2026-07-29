@@ -94,7 +94,7 @@ return [
                 'raffle_cards.view' => ['label' => 'عرض وتصدير بطاقات السحب', 'description' => 'مشاهدة بطاقات الربح والسحب المباشر وتصدير الأرقام الرابحة إلى PDF.', 'routes' => ['raffle-cards.index', 'raffle-cards.export-pdf']],
                 'raffle_cards.create' => ['label' => 'إنشاء وطباعة بطاقات ربح', 'description' => 'إضافة بطاقة منفردة أو مجموعة عشوائية وتجهيز البطاقات للطباعة.', 'routes' => ['raffle-cards.store', 'raffle-cards.random-bulk', 'raffle-cards.printable']],
                 'raffle_cards.edit' => ['label' => 'تعديل بطاقات وإعدادات السحب', 'description' => 'تعديل البطاقة وإعدادات السحب.', 'routes' => ['raffle-cards.update', 'raffle-cards.settings']],
-                'raffle_cards.delete' => ['label' => 'حذف بطاقات أو نتائج سحب', 'description' => 'حذف البطاقات ومدخلات السحب؛ صلاحية حساسة.', 'routes' => ['raffle-cards.destroy', 'raffle-cards.live-draw.destroy', 'raffle-cards.live-draw.bulk-destroy']],
+                'raffle_cards.delete' => ['label' => 'حذف بطاقات أو نتائج سحب', 'description' => 'حذف بطاقة واحدة أو عدة بطاقات ومدخلات السحب؛ صلاحية حساسة.', 'routes' => ['raffle-cards.destroy', 'raffle-cards.bulk-destroy', 'raffle-cards.live-draw.destroy', 'raffle-cards.live-draw.bulk-destroy']],
             ],
         ],
         'reward_wheels' => [

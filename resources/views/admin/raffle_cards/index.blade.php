@@ -322,7 +322,12 @@
 
             <section class="panel">
                 <div class="panel-head">
-                    <div class="panel-title"><i class="ti ti-list"></i> الأرقام الرابحة</div>
+                    <div>
+                        <div class="panel-title"><i class="ti ti-list"></i> الأرقام الرابحة</div>
+                        <button class="btn btn-danger" type="submit" form="winningCardsBulkDeleteForm" id="deleteSelectedWinningCardsBtn" disabled style="margin-top:10px">
+                            <i class="ti ti-trash"></i> حذف المحدد
+                        </button>
+                    </div>
                     <form class="filters" method="GET">
                         <input name="search" value="{{ $search }}" placeholder="بحث برقم البطاقة أو الجائزة">
                         <select name="status" class="btn btn-soft" onchange="this.form.submit()">
@@ -333,10 +338,18 @@
                         <button class="btn btn-soft" type="submit"><i class="ti ti-search"></i> بحث</button>
                     </form>
                 </div>
+                <form id="winningCardsBulkDeleteForm" action="{{ route('raffle-cards.bulk-destroy') }}" method="POST"
+                    onsubmit="return confirm('حذف بطاقات الربح المحددة نهائيًا؟')">
+                    @csrf
+                    @method('DELETE')
+                </form>
                 <div class="table-wrap">
                     <table>
                         <thead>
                             <tr>
+                                <th class="select-cell">
+                                    <input type="checkbox" id="selectAllWinningCards" title="تحديد الكل">
+                                </th>
                                 <th>البطاقة</th>
                                 <th>الجائزة</th>
                                 <th>الحالة</th>
@@ -347,6 +360,9 @@
                         <tbody>
                             @forelse($cards as $card)
                                 <tr>
+                                    <td class="select-cell">
+                                        <input type="checkbox" name="cards[]" value="{{ $card->id }}" form="winningCardsBulkDeleteForm" data-winning-card-checkbox>
+                                    </td>
                                     <td dir="ltr"><span class="tag">{{ $card->card_number }}</span></td>
                                     <td>
                                         <div class="prize">
@@ -393,7 +409,7 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="5">لا توجد بطاقات رابحة بعد.</td></tr>
+                                <tr><td colspan="6">لا توجد بطاقات رابحة بعد.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -492,6 +508,31 @@
         const selectAllLiveEntries = document.getElementById('selectAllLiveEntries');
         const liveEntryCheckboxes = Array.from(document.querySelectorAll('[data-live-entry-checkbox]'));
         const deleteSelectedLiveEntriesBtn = document.getElementById('deleteSelectedLiveEntriesBtn');
+        const selectAllWinningCards = document.getElementById('selectAllWinningCards');
+        const winningCardCheckboxes = Array.from(document.querySelectorAll('[data-winning-card-checkbox]'));
+        const deleteSelectedWinningCardsBtn = document.getElementById('deleteSelectedWinningCardsBtn');
+
+        function syncWinningCardBulkActions() {
+            const checkedCount = winningCardCheckboxes.filter((checkbox) => checkbox.checked).length;
+            if (deleteSelectedWinningCardsBtn) deleteSelectedWinningCardsBtn.disabled = checkedCount === 0;
+            if (selectAllWinningCards) {
+                selectAllWinningCards.checked = checkedCount > 0 && checkedCount === winningCardCheckboxes.length;
+                selectAllWinningCards.indeterminate = checkedCount > 0 && checkedCount < winningCardCheckboxes.length;
+            }
+        }
+
+        selectAllWinningCards?.addEventListener('change', () => {
+            winningCardCheckboxes.forEach((checkbox) => {
+                checkbox.checked = selectAllWinningCards.checked;
+            });
+            syncWinningCardBulkActions();
+        });
+
+        winningCardCheckboxes.forEach((checkbox) => {
+            checkbox.addEventListener('change', syncWinningCardBulkActions);
+        });
+
+        syncWinningCardBulkActions();
 
         function syncLiveEntryBulkActions() {
             const checkedCount = liveEntryCheckboxes.filter((checkbox) => checkbox.checked).length;

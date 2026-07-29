@@ -121,6 +121,44 @@ class RaffleCardRandomBulkTest extends TestCase
         $response->assertSessionHasErrors('to_number');
     }
 
+    public function test_admin_can_bulk_delete_selected_winning_cards_only(): void
+    {
+        $admin = $this->admin();
+        $selectedCards = collect(['310001', '310002'])->map(fn (string $number) => RaffleCard::create([
+            'card_number' => $number,
+            'prize_title' => 'هدية للحذف',
+            'is_active' => true,
+            'created_by' => $admin->id,
+        ]));
+        $remainingCard = RaffleCard::create([
+            'card_number' => '310003',
+            'prize_title' => 'هدية باقية',
+            'is_active' => true,
+            'created_by' => $admin->id,
+        ]);
+
+        $response = $this->actingAs($admin)->delete(route('raffle-cards.bulk-destroy'), [
+            'cards' => $selectedCards->pluck('id')->all(),
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasNoErrors();
+        foreach ($selectedCards as $card) {
+            $this->assertDatabaseMissing('raffle_cards', ['id' => $card->id]);
+        }
+        $this->assertDatabaseHas('raffle_cards', ['id' => $remainingCard->id]);
+    }
+
+    public function test_bulk_delete_requires_at_least_one_winning_card(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->from(route('raffle-cards.index'))
+            ->delete(route('raffle-cards.bulk-destroy'), ['cards' => []]);
+
+        $response->assertRedirect(route('raffle-cards.index'));
+        $response->assertSessionHasErrors('cards');
+    }
+
     private function admin(): User
     {
         return User::create([
