@@ -19,6 +19,8 @@
         label{display:grid;gap:7px;font-weight:800}
         label.full{grid-column:1/-1}
         input,textarea{width:100%;padding:13px 15px;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(0,0,0,.46);color:#fff;font:inherit;outline:none}
+        input[type=file]{padding:10px;cursor:pointer}
+        input[type=file]::file-selector-button{margin-left:10px;padding:9px 13px;border:0;border-radius:10px;background:#00e5ff;color:#001014;font:800 .85rem Cairo,sans-serif;cursor:pointer}
         input:focus,textarea:focus{border-color:#00e5ff;box-shadow:0 0 0 3px rgba(0,229,255,.1)}
         textarea{min-height:82px;resize:vertical}
         .errors{margin-bottom:18px;padding:12px 14px;border:1px solid rgba(255,70,70,.45);border-radius:12px;background:rgba(255,50,50,.1);color:#ff9b9b}
@@ -31,6 +33,9 @@
         #shopLocationMap{height:250px;border-radius:14px;overflow:hidden;background:#111}
         .location-status{margin-top:9px;color:rgba(255,255,255,.68);font-size:.82rem;font-weight:700}
         .location-status.selected{color:#65ffab}
+        .logo-field{grid-column:1/-1;padding:15px;border:1px solid rgba(0,229,255,.25);border-radius:16px;background:rgba(0,229,255,.045)}
+        .logo-preview{display:none;width:92px;height:92px;margin:12px auto 0;border:2px solid #00e5ff;border-radius:50%;object-fit:cover;box-shadow:0 0 20px rgba(0,229,255,.25)}
+        .logo-hint{color:rgba(255,255,255,.58);font-size:.78rem;font-weight:600}
         .leaflet-container{font-family:Cairo,sans-serif}
         @media(max-width:620px){body{padding:14px}.card{padding:22px}.grid{grid-template-columns:1fr}}
     </style>
@@ -47,7 +52,7 @@
             <div class="errors">{{ $errors->first() }}</div>
         @endif
 
-        <form method="POST" action="{{ route('merchant.register.store') }}">
+        <form method="POST" action="{{ route('merchant.register.store') }}" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="redirect" value="{{ old('redirect', $redirectTo) }}">
             <div class="grid">
@@ -58,6 +63,12 @@
                 <label>
                     <span>اسم المتجر</span>
                     <input name="shop_name" value="{{ old('shop_name') }}" required>
+                </label>
+                <label class="logo-field">
+                    <span><i class="fas fa-image"></i> شعار المحل</span>
+                    <input id="shopLogoInput" type="file" name="logo" accept="image/jpeg,image/png,image/webp">
+                    <small class="logo-hint">اختر صورة JPG أو PNG أو WebP، بحجم لا يزيد عن 2MB.</small>
+                    <img id="shopLogoPreview" class="logo-preview" alt="معاينة شعار المحل">
                 </label>
                 <label>
                     <span>البريد الإلكتروني</span>
@@ -110,6 +121,8 @@
     <script>
         (() => {
             const form = document.querySelector('form');
+            const logoInput = document.getElementById('shopLogoInput');
+            const logoPreview = document.getElementById('shopLogoPreview');
             const latitudeInput = document.getElementById('shopLatitude');
             const longitudeInput = document.getElementById('shopLongitude');
             const status = document.getElementById('shopLocationStatus');
@@ -121,6 +134,18 @@
             const initialPosition = hasSavedPosition ? [savedLatitude, savedLongitude] : defaultPosition;
             const map = L.map('shopLocationMap').setView(initialPosition, hasSavedPosition ? 16 : 9);
             let marker = null;
+
+            logoInput.addEventListener('change', () => {
+                const file = logoInput.files?.[0];
+                if (!file) {
+                    logoPreview.removeAttribute('src');
+                    logoPreview.style.display = 'none';
+                    return;
+                }
+
+                logoPreview.src = URL.createObjectURL(file);
+                logoPreview.style.display = 'block';
+            });
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,

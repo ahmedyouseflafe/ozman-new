@@ -9,6 +9,8 @@ use App\Models\FrontOrder;
 use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
@@ -279,6 +281,8 @@ class MerchantOrderingTest extends TestCase
 
     public function test_new_merchant_can_register_from_marketer_qr_and_first_order_credits_commission(): void
     {
+        Storage::fake('public');
+
         [, , $distributor] = $this->merchantLinkedToDistributor('register-qr');
         $marketerUser = User::create([
             'name' => 'Register QR Marketer',
@@ -318,6 +322,7 @@ class MerchantOrderingTest extends TestCase
             'address' => 'نابلس',
             'latitude' => '32.2211000',
             'longitude' => '35.2544000',
+            'logo' => UploadedFile::fake()->image('shop-logo.png', 300, 300),
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'redirect' => $redirect,
@@ -331,6 +336,8 @@ class MerchantOrderingTest extends TestCase
         $this->assertSame($marketer->id, $shop->distributor_marketer_id);
         $this->assertEqualsWithDelta(32.2211, (float) $shop->latitude, 0.0000001);
         $this->assertEqualsWithDelta(35.2544, (float) $shop->longitude, 0.0000001);
+        $this->assertNotNull($shop->logo);
+        Storage::disk('public')->assertExists(str_replace('storage/', '', $shop->logo));
         $this->assertContains($shop->id, $marketerUser->accessibleShopIds());
         $this->assertContains($shop->id, $distributor->user->accessibleShopIds());
 

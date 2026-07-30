@@ -144,6 +144,7 @@ class AuthController extends Controller
             'address' => ['nullable', 'string', 'max:1000'],
             'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'password' => ['required', 'confirmed', Password::min(8)],
             'redirect' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -155,7 +156,11 @@ class AuthController extends Controller
                 ->withInput($request->except(['password', 'password_confirmation']));
         }
 
-        [$user, $shop] = DB::transaction(function () use ($data, $referral) {
+        $logoPath = $request->hasFile('logo')
+            ? 'storage/' . $request->file('logo')->store('shops/logos', 'public')
+            : null;
+
+        [$user, $shop] = DB::transaction(function () use ($data, $referral, $logoPath) {
             $user = User::create([
                 'name' => $data['owner_name'],
                 'email' => $data['email'],
@@ -172,6 +177,7 @@ class AuthController extends Controller
                 'name' => $data['shop_name'],
                 'slug' => $this->uniqueShopSlug($data['shop_name']),
                 'catalog_type' => 'general',
+                'logo' => $logoPath,
                 'phone' => $data['phone'],
                 'whatsapp' => $data['whatsapp'] ?: $data['phone'],
                 'email' => $data['email'],
