@@ -7,9 +7,13 @@ use App\Models\Distributor;
 use App\Models\DistributorMarketer;
 use App\Models\User;
 use App\Services\ShopOwnerAccountService;
+use App\Rules\ValidPhoneNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -55,6 +59,7 @@ class AuthController extends Controller
 
         return view('front.merchant_login', [
             'redirectTo' => $this->safeMerchantRedirect($request->query('redirect')),
+            'canRegister' => is_array($request->session()->get('merchant_referral')),
         ]);
     }
 
@@ -107,6 +112,86 @@ class AuthController extends Controller
         $request->session()->forget('merchant_referral');
 
         return redirect()->to($this->safeMerchantRedirect($request->input('redirect')));
+    }
+
+    public function showMerchantRegister(Request $request): View|RedirectResponse
+    {
+        if (Auth::check()) {
+            return Auth::user()?->isShopOwner()
+                ? redirect()->route('home')
+                : redirect()->route('dashboard');
+        }
+
+        if (! $this->resolvedMerchantReferral($request)) {
+            return redirect()
+                ->route('merchant.login')
+                ->withErrors(['email' => 'إنشاء متجر جديد متاح بعد مسح QR موزع أو مروّج فعال.']);
+        }
+
+        return view('front.merchant_register', [
+            'redirectTo' => $this->safeMerchantRedirect($request->query('redirect')),
+        ]);
+    }
+
+    public function merchantRegister(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'owner_name' => ['required', 'string', 'max:255'],
+            'shop_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['required', 'string', 'max:60', new ValidPhoneNumber()],
+            'whatsapp' => ['nullable', 'string', 'max:60', new ValidPhoneNumber()],
+            'address' => ['nullable', 'string', 'max:1000'],
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'password' => ['required', 'confirmed', Password::min(8)],
+            'redirect' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $referral = $this->resolvedMerchantReferral($request);
+        if (! $referral) {
+            return back()
+                ->withErrors(['email' => 'انتهت أو أصبحت إحالة QR غير صالحة. امسح QR مرة أخرى.'])
+                ->withInput($request->except(['password', 'password_confirmation']));
+        }
+
+        [$user, $shop] = DB::transaction(function () use ($data, $referral) {
+            $user = User::create([
+                'name' => $data['owner_name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'],
+                'password' => $data['password'],
+                'role' => 'shop_owner',
+                'is_active' => true,
+            ]);
+
+            $shop = Shop::create([
+                'user_id' => $user->id,
+                'distributor_id' => $referral['distributor_id'],
+                'distributor_marketer_id' => $referral['distributor_marketer_id'],
+                'name' => $data['shop_name'],
+                'slug' => $this->uniqueShopSlug($data['shop_name']),
+                'catalog_type' => 'general',
+                'phone' => $data['phone'],
+                'whatsapp' => $data['whatsapp'] ?: $data['phone'],
+                'email' => $data['email'],
+                'address' => $data['address'] ?? null,
+                'latitude' => $data['latitude'],
+                'longitude' => $data['longitude'],
+                'is_active' => true,
+            ]);
+
+            return [$user, $shop];
+        });
+
+        Auth::login($user);
+        $request->session()->regenerate();
+        $request->session()->put('merchant_shop_id', $shop->id);
+        $request->session()->forget('merchant_referral');
+
+        return redirect()
+            ->to($this->safeMerchantRedirect($data['redirect'] ?? null))
+            ->with('status', 'تم إنشاء حساب المتجر وربطه بنجاح.');
     }
 
     public function dashboard(Request $request): View|RedirectResponse
@@ -272,9 +357,19 @@ class AuthController extends Controller
 
     private function applyMerchantReferral(Request $request, Shop $shop): void
     {
+        $referral = $this->resolvedMerchantReferral($request);
+        if (! $referral) {
+            return;
+        }
+
+        $shop->update($referral);
+    }
+
+    private function resolvedMerchantReferral(Request $request): ?array
+    {
         $referral = $request->session()->get('merchant_referral');
         if (! is_array($referral)) {
-            return;
+            return null;
         }
 
         $marketerId = (int) ($referral['distributor_marketer_id'] ?? 0);
@@ -285,14 +380,10 @@ class AuthController extends Controller
                 ->whereHas('distributor', fn ($query) => $query->where('is_active', true))
                 ->first();
 
-            if ($marketer) {
-                $shop->update([
-                    'distributor_id' => $marketer->distributor_id,
-                    'distributor_marketer_id' => $marketer->id,
-                ]);
-            }
-
-            return;
+            return $marketer ? [
+                'distributor_id' => $marketer->distributor_id,
+                'distributor_marketer_id' => $marketer->id,
+            ] : null;
         }
 
         $distributor = Distributor::query()
@@ -300,12 +391,24 @@ class AuthController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if ($distributor) {
-            $shop->update([
-                'distributor_id' => $distributor->id,
-                'distributor_marketer_id' => null,
-            ]);
+        return $distributor ? [
+            'distributor_id' => $distributor->id,
+            'distributor_marketer_id' => null,
+        ] : null;
+    }
+
+    private function uniqueShopSlug(string $name): string
+    {
+        $base = Str::slug($name) ?: 'shop';
+        $slug = $base;
+        $suffix = 2;
+
+        while (Shop::query()->where('slug', $slug)->exists()) {
+            $slug = "{$base}-{$suffix}";
+            $suffix++;
         }
+
+        return $slug;
     }
 
     public function logout(Request $request): RedirectResponse

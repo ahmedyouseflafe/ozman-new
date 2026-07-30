@@ -9,6 +9,7 @@ use App\Models\RewardWheel;
 use App\Models\RewardWheelSegment;
 use App\Models\Shop;
 use App\Models\VisitorRegistration;
+use App\Rules\ValidPhoneNumber;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -46,8 +47,8 @@ class FrontOrderController extends Controller
             'marketing_source' => ['nullable', 'string', 'max:40'],
             'reward_wheel_id' => ['nullable', 'integer', 'exists:reward_wheels,id'],
             'customer_name' => ['required', 'string', 'max:255'],
-            'customer_phone' => ['nullable', 'string', 'max:60'],
-            'customer_whatsapp' => ['nullable', 'string', 'max:60'],
+            'customer_phone' => ['nullable', 'string', 'max:60', new ValidPhoneNumber()],
+            'customer_whatsapp' => ['nullable', 'string', 'max:60', new ValidPhoneNumber()],
             'customer_address' => ['nullable', 'string', 'max:1000'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],

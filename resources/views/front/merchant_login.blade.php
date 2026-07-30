@@ -21,6 +21,7 @@
         .merchant-login-remember{display:flex;align-items:center;gap:9px;margin:4px 0 20px;color:rgba(255,255,255,.78)}
         .merchant-login-submit{width:100%;padding:14px;border:0;border-radius:14px;background:#00e5ff;color:#001014;font:900 1rem Cairo,sans-serif;cursor:pointer;box-shadow:0 0 20px rgba(0,229,255,.3)}
         .merchant-login-back{display:block;margin-top:18px;text-align:center;color:#00e5ff;text-decoration:none;font-weight:800}
+        .merchant-register-link{display:block;margin-top:14px;padding:13px;border:1px solid rgba(0,229,255,.38);border-radius:14px;text-align:center;color:#00e5ff;text-decoration:none;font-weight:900}
         .merchant-login-errors{margin-bottom:18px;padding:12px 14px;border:1px solid rgba(255,70,70,.45);border-radius:12px;background:rgba(255,50,50,.1);color:#ff9b9b}
     </style>
 </head>
@@ -56,6 +57,12 @@
                 دخول إلى الموقع
             </button>
         </form>
+        @if($canRegister)
+            <a class="merchant-register-link" href="{{ route('merchant.register', ['redirect' => $redirectTo]) }}">
+                <i class="fas fa-user-plus"></i>
+                ليس لدي حساب — إنشاء متجر جديد
+            </a>
+        @endif
         <a class="merchant-login-back" href="{{ route('home') }}">العودة إلى الموقع</a>
     </main>
 </body>

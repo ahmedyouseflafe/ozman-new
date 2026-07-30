@@ -50,6 +50,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/merchant-login', [AuthController::class, 'merchantLogin'])
         ->middleware('throttle:10,1')
         ->name('merchant.login.store');
+    Route::get('/merchant-register', [AuthController::class, 'showMerchantRegister'])->name('merchant.register');
+    Route::post('/merchant-register', [AuthController::class, 'merchantRegister'])
+        ->middleware('throttle:5,1')
+        ->name('merchant.register.store');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])

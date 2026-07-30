@@ -277,6 +277,98 @@ class MerchantOrderingTest extends TestCase
         ]))->assertForbidden();
     }
 
+    public function test_new_merchant_can_register_from_marketer_qr_and_first_order_credits_commission(): void
+    {
+        [, , $distributor] = $this->merchantLinkedToDistributor('register-qr');
+        $marketerUser = User::create([
+            'name' => 'Register QR Marketer',
+            'email' => 'register-qr-marketer@example.com',
+            'password' => 'secret123',
+            'role' => 'marketer',
+            'is_active' => true,
+        ]);
+        $marketer = DistributorMarketer::create([
+            'distributor_id' => $distributor->id,
+            'user_id' => $marketerUser->id,
+            'name' => 'Register QR Marketer',
+            'tracking_code' => 'register-qr-code',
+            'commission_rate' => 6,
+            'is_active' => true,
+        ]);
+        $redirect = route('front.marketer', ['marketer' => $marketer->tracking_code], false);
+        $qrLoginUrl = URL::signedRoute('merchant.login', [
+            'referrer_type' => 'marketer',
+            'referrer' => $marketer->tracking_code,
+            'redirect' => $redirect,
+        ]);
+
+        $this->get($qrLoginUrl)
+            ->assertOk()
+            ->assertSee('إنشاء متجر جديد');
+        $this->get(route('merchant.register', ['redirect' => $redirect]))
+            ->assertOk()
+            ->assertSee('إنشاء حساب متجر جديد');
+
+        $this->post(route('merchant.register.store'), [
+            'owner_name' => 'صاحب متجر جديد',
+            'shop_name' => 'متجر QR الجديد',
+            'email' => 'new-qr-shop@example.com',
+            'phone' => '0591234567',
+            'whatsapp' => '0591234567',
+            'address' => 'نابلس',
+            'latitude' => '32.2211000',
+            'longitude' => '35.2544000',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'redirect' => $redirect,
+        ])->assertRedirect($redirect);
+
+        $owner = User::query()->where('email', 'new-qr-shop@example.com')->firstOrFail();
+        $shop = Shop::query()->where('user_id', $owner->id)->firstOrFail();
+        $this->assertAuthenticatedAs($owner);
+        $this->assertTrue($owner->isShopOwner());
+        $this->assertSame($distributor->id, $shop->distributor_id);
+        $this->assertSame($marketer->id, $shop->distributor_marketer_id);
+        $this->assertEqualsWithDelta(32.2211, (float) $shop->latitude, 0.0000001);
+        $this->assertEqualsWithDelta(35.2544, (float) $shop->longitude, 0.0000001);
+        $this->assertContains($shop->id, $marketerUser->accessibleShopIds());
+        $this->assertContains($shop->id, $distributor->user->accessibleShopIds());
+
+        $this->postJson(route('front-orders.store'), [
+            'customer_name' => $shop->name,
+            'items' => [['name' => 'أول طلب', 'price' => '300', 'qty' => 1]],
+            'subtotal' => 300,
+            'discount' => 0,
+            'total' => 300,
+            'order_channel' => 'whatsapp',
+            'visitor_type' => 'merchant',
+        ])->assertOk();
+
+        $order = FrontOrder::query()->latest('id')->firstOrFail();
+        $this->assertSame($distributor->id, $order->distributor_id);
+        $this->assertSame($marketer->id, $order->distributor_marketer_id);
+        $this->assertSame('18.00', $order->marketer_commission_amount);
+    }
+
+    public function test_merchant_self_registration_requires_qr_referral(): void
+    {
+        $this->get(route('merchant.register'))
+            ->assertRedirect(route('merchant.login'));
+
+        $this->post(route('merchant.register.store'), [
+            'owner_name' => 'No referral',
+            'shop_name' => 'No referral shop',
+            'email' => 'no-referral@example.com',
+            'phone' => '0590000000',
+            'latitude' => '32.2211000',
+            'longitude' => '35.2544000',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertSessionHasErrors('email');
+
+        $this->assertDatabaseMissing('users', ['email' => 'no-referral@example.com']);
+    }
+
     private function merchantLinkedToDistributor(string $suffix = 'main'): array
     {
         $distributorUser = User::create([

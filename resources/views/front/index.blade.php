@@ -618,7 +618,9 @@
 
                         <label class="customer-field">
                             <span>{{ __('رقم الهاتف') }}</span>
-                            <input type="tel" name="phone" placeholder="05xxxxxxxx" required>
+                            <input type="tel" name="phone" placeholder="05xxxxxxxx" inputmode="tel" maxlength="16"
+                                pattern="(?:05[02345689][0-9]{7}|(?:\+|00)?9705[69][0-9]{7}|(?:\+|00)?9725[023458][0-9]{7})"
+                                title="{{ __('أدخل رقم جوال صحيح مثل 0591234567') }}" dir="ltr" required>
                         </label>
 
                         <div class="visitor-merchant-fields" id="visitorMerchantFields" hidden>
@@ -759,14 +761,17 @@
 
                         <label class="customer-field">
                             <span>{{ __('رقم الهاتف') }}</span>
-                            <input type="tel" id="customerPhone" name="phone" placeholder="05xxxxxxxx"
-                                required>
+                            <input type="tel" id="customerPhone" name="phone" placeholder="05xxxxxxxx" inputmode="tel" maxlength="16"
+                                pattern="(?:05[02345689][0-9]{7}|(?:\+|00)?9705[69][0-9]{7}|(?:\+|00)?9725[023458][0-9]{7})"
+                                title="{{ __('أدخل رقم جوال صحيح مثل 0591234567') }}" dir="ltr" required>
                         </label>
 
                         <label class="customer-field">
                             <span>{{ __('رقم الواتس اب') }}</span>
                             <input type="tel" id="customerWhatsapp" name="whatsapp"
-                                placeholder="{{ __('رقم واتساب للتواصل') }}" required>
+                                placeholder="{{ __('رقم واتساب للتواصل') }}" inputmode="tel" maxlength="16"
+                                pattern="(?:05[02345689][0-9]{7}|(?:\+|00)?9705[69][0-9]{7}|(?:\+|00)?9725[023458][0-9]{7})"
+                                title="{{ __('أدخل رقم واتساب صحيح مثل 0591234567') }}" dir="ltr" required>
                         </label>
 
                         <label class="customer-field">

@@ -352,7 +352,9 @@
                 </label>
                 <label>
                     رقم الهاتف
-                    <input type="tel" name="phone" id="customerPhone" placeholder="05xxxxxxxx" dir="ltr" required>
+                    <input type="tel" name="phone" id="customerPhone" placeholder="05xxxxxxxx" inputmode="tel" maxlength="16"
+                        pattern="(?:05[02345689][0-9]{7}|(?:\+|00)?9705[69][0-9]{7}|(?:\+|00)?9725[023458][0-9]{7})"
+                        title="أدخل رقم جوال صحيح مثل 0591234567" dir="ltr" required>
                 </label>
                 <label>
                     مكان السكن

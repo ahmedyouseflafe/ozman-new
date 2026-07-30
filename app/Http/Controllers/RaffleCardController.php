@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Shop;
 use App\Models\RaffleCard;
 use App\Models\RaffleEntry;
+use App\Rules\ValidPhoneNumber;
 use ArPHP\I18N\Arabic;
 use Barryvdh\DomPDF\Facade\Pdf;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
@@ -460,8 +461,8 @@ class RaffleCardController extends Controller
         $data = $request->validate([
             'card_number' => ['required', 'digits:6'],
             'customer.name' => ['required', 'string', 'max:255'],
-            'customer.phone' => ['nullable', 'required_without:customer.whatsapp', 'string', 'max:60'],
-            'customer.whatsapp' => ['nullable', 'string', 'max:60'],
+            'customer.phone' => ['nullable', 'required_without:customer.whatsapp', 'string', 'max:60', new ValidPhoneNumber()],
+            'customer.whatsapp' => ['nullable', 'string', 'max:60', new ValidPhoneNumber()],
             'customer.address' => ['nullable', 'string', 'max:1000'],
         ]);
 

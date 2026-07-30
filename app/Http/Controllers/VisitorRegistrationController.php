@@ -6,6 +6,7 @@ use App\Models\DistributorMarketer;
 use App\Models\Shop;
 use App\Models\User;
 use App\Models\VisitorRegistration;
+use App\Rules\ValidPhoneNumber;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ class VisitorRegistrationController extends Controller
             'marketing_source' => ['nullable', 'string', 'max:40'],
             'type' => ['required', Rule::in(['customer', 'merchant'])],
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:30'],
+            'phone' => ['required', 'string', 'max:30', new ValidPhoneNumber()],
             'shop_name' => ['required_if:type,merchant', 'nullable', 'string', 'max:255'],
             'tax_file' => ['required_if:type,merchant', 'nullable', 'string', 'max:255'],
             'business_location' => ['required_if:type,merchant', 'nullable', 'string', 'max:1000'],
