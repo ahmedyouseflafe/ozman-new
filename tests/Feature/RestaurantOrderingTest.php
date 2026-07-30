@@ -156,6 +156,21 @@ class RestaurantOrderingTest extends TestCase
         $this->getJson(route('restaurant.orders.feed', $otherShop))->assertForbidden();
     }
 
+    public function test_restaurant_uses_its_menu_instead_of_general_package_ordering(): void
+    {
+        [$shop] = $this->restaurant('restaurant-menu');
+
+        $this->get(route('front.shop.slug', $shop))
+            ->assertRedirect(route('restaurant.menu', $shop));
+
+        $this->get(route('restaurant.menu', $shop))
+            ->assertOk()
+            ->assertSee('قائمة الطعام')
+            ->assertSee('اختر حجم الوجبة')
+            ->assertDontSee('اختر نوع السعر المناسب قبل إضافة المنتج إلى السلة')
+            ->assertDontSee('العبوة');
+    }
+
     private function restaurant(string $suffix = 'main'): array
     {
         $owner = User::create(['name' => 'Owner', 'email' => "$suffix@restaurant.test", 'password' => 'password', 'role' => 'shop_owner', 'is_active' => true]);

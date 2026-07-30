@@ -10,14 +10,19 @@ use App\Models\Product;
 use App\Models\RewardWheel;
 use App\Models\Shop;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class FrontController extends Controller
 {
-    public function index(?Shop $shop = null): View
+    public function index(?Shop $shop = null): View|RedirectResponse
     {
+        if ($shop?->exists && $shop->catalog_type === 'restaurant') {
+            return redirect()->route('restaurant.menu', $shop);
+        }
+
         $ozmanShop = Shop::query()
             ->where('slug', 'ozman')
             ->with([
@@ -514,6 +519,10 @@ class FrontController extends Controller
             return [
                 'id' => $shop->id,
                 'title' => $shop->name,
+                'catalog_type' => $shop->catalog_type,
+                'public_url' => $shop->catalog_type === 'restaurant'
+                    ? route('restaurant.menu', $shop)
+                    : route('front.shop.slug', $shop),
                 'img' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
                 'logo' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
                 'whatsapp_number' => $shopOrderContext['whatsapp_number'],
@@ -551,6 +560,10 @@ class FrontController extends Controller
             $centersData[] = [
                 'id' => $ozmanShop->id,
                 'title' => $ozmanShop->name,
+                'catalog_type' => $ozmanShop->catalog_type,
+                'public_url' => $ozmanShop->catalog_type === 'restaurant'
+                    ? route('restaurant.menu', $ozmanShop)
+                    : route('front.shop.slug', $ozmanShop),
                 'img' => $this->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
                 'logo' => $this->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
                 'whatsapp_number' => $this->contactWhatsappNumber($ozmanShop->whatsapp ?: $ozmanShop->phone),
