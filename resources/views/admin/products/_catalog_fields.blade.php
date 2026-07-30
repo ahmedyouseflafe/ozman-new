@@ -145,7 +145,7 @@
 </section>
 
 <script>
-    (() => {
+    document.addEventListener('DOMContentLoaded', () => {
         const shopSelect = document.getElementById('shop_id');
         const groups = [...document.querySelectorAll('[data-catalog-fields]')];
         const definitions = @json(collect($catalogTypes)->map(fn ($type) => [
@@ -248,5 +248,5 @@
         shopSelect?.addEventListener('change', updateCatalogFields);
         updateCatalogFields();
         syncRestaurantPricedOptions();
-    })();
+    });
 </script>
