@@ -23,7 +23,11 @@ class ShopOwnerAccountService
         }
 
         if ($applyDefaults && ! $owner->employeePermissions()->exists()) {
-            foreach (config('shop_owner_permissions.allowed', []) as $permission) {
+            $permissions = collect(config('shop_owner_permissions.allowed', []))
+                ->merge(config("shop_owner_permissions.catalog_type_permissions.{$shop->catalog_type}", []))
+                ->unique();
+
+            foreach ($permissions as $permission) {
                 $owner->employeePermissions()->create(['permission' => $permission]);
             }
         }

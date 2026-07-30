@@ -123,6 +123,39 @@ class RestaurantOrderingTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_restaurant_view_permission_can_poll_only_its_own_live_orders(): void
+    {
+        [$shop, , $table] = $this->restaurant('live-feed');
+        [$otherShop] = $this->restaurant('foreign-live-feed');
+        EmployeePermission::create(['user_id' => $shop->user_id, 'permission' => 'restaurant.view']);
+        FrontOrder::create([
+            'shop_id' => $shop->id,
+            'restaurant_table_id' => $table->id,
+            'order_number' => 'LIVE-OWN-ORDER',
+            'customer_name' => 'Own table',
+            'order_channel' => 'restaurant',
+            'order_type' => 'dine_in',
+            'status' => 'new',
+        ]);
+        FrontOrder::create([
+            'shop_id' => $otherShop->id,
+            'order_number' => 'LIVE-FOREIGN-SECRET',
+            'customer_name' => 'Foreign table',
+            'order_channel' => 'restaurant',
+            'order_type' => 'dine_in',
+            'status' => 'new',
+        ]);
+
+        $this->actingAs($shop->user)
+            ->getJson(route('restaurant.orders.feed', $shop))
+            ->assertOk()
+            ->assertJsonPath('stats.new', 1)
+            ->assertSee('LIVE-OWN-ORDER')
+            ->assertDontSee('LIVE-FOREIGN-SECRET');
+
+        $this->getJson(route('restaurant.orders.feed', $otherShop))->assertForbidden();
+    }
+
     private function restaurant(string $suffix = 'main'): array
     {
         $owner = User::create(['name' => 'Owner', 'email' => "$suffix@restaurant.test", 'password' => 'password', 'role' => 'shop_owner', 'is_active' => true]);

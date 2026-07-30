@@ -12,5 +12,15 @@ return [
         'reward_wheels.purchase.view', 'reward_wheels.purchase.manage',
         'settings.view', 'settings.profile', 'settings.password',
     ],
+    'catalog_type_permissions' => [
+        'restaurant' => [
+            'restaurant.view',
+            'restaurant.tables.manage',
+            'restaurant.orders.manage',
+        ],
+    ],
     'required' => ['dashboard.view', 'shops.view'],
+    'catalog_type_required' => [
+        'restaurant' => ['restaurant.view'],
+    ],
 ];

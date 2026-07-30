@@ -105,6 +105,33 @@ class AdminShopDashboardImpersonationTest extends TestCase
         $this->assertAuthenticatedAs($admin);
     }
 
+    public function test_restaurant_permission_page_includes_restaurant_permissions_only_for_restaurants(): void
+    {
+        $admin = User::create([
+            'name' => 'Restaurant Permissions Admin',
+            'email' => 'restaurant-permissions-admin@example.com',
+            'password' => 'secret123',
+            'role' => 'super_admin',
+            'is_active' => true,
+        ]);
+        [, $restaurant] = $this->shopOwner('restaurant-permission-list');
+        $restaurant->update(['catalog_type' => 'restaurant']);
+        [, $generalShop] = $this->shopOwner('general-permission-list');
+
+        $this->actingAs($admin)
+            ->get(route('shops.permissions.edit', $restaurant))
+            ->assertOk()
+            ->assertSee('value="restaurant.view"', false)
+            ->assertSee('value="restaurant.tables.manage"', false)
+            ->assertSee('value="restaurant.orders.manage"', false);
+
+        $this->get(route('shops.permissions.edit', $generalShop))
+            ->assertOk()
+            ->assertDontSee('value="restaurant.view"', false)
+            ->assertDontSee('value="restaurant.tables.manage"', false)
+            ->assertDontSee('value="restaurant.orders.manage"', false);
+    }
+
     private function shopOwner(string $suffix): array
     {
         $owner = User::create([

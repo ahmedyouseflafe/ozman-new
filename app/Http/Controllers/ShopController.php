@@ -85,7 +85,7 @@ class ShopController extends Controller
 
         $owner = app(ShopOwnerAccountService::class)->resolve($shop);
         $owner->load('employeePermissions');
-        $allowed = config('shop_owner_permissions.allowed', []);
+        $allowed = $this->ownerPermissionsFor($shop);
         $groups = collect(config('employee_permissions.groups', []))
             ->map(function (array $group) use ($allowed) {
                 $group['permissions'] = collect($group['permissions'] ?? [])
@@ -112,13 +112,14 @@ class ShopController extends Controller
     {
         abort_unless($request->user()?->isSuperAdmin(), 403);
 
-        $allowed = config('shop_owner_permissions.allowed', []);
+        $allowed = $this->ownerPermissionsFor($shop);
         $data = $request->validate([
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['string', Rule::in($allowed)],
         ]);
         $permissions = collect($data['permissions'] ?? [])
             ->merge(config('shop_owner_permissions.required', []))
+            ->merge(config("shop_owner_permissions.catalog_type_required.{$shop->catalog_type}", []))
             ->unique()
             ->values();
         $owner = app(ShopOwnerAccountService::class)->resolve($shop, false);
@@ -131,6 +132,15 @@ class ShopController extends Controller
         return redirect()
             ->route('shops')
             ->with('status', 'تم حفظ صلاحيات لوحة متجر ' . $shop->name . ' بنجاح.');
+    }
+
+    private function ownerPermissionsFor(Shop $shop): array
+    {
+        return collect(config('shop_owner_permissions.allowed', []))
+            ->merge(config("shop_owner_permissions.catalog_type_permissions.{$shop->catalog_type}", []))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     public function show(Shop $shop): View

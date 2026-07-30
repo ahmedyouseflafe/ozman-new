@@ -51,6 +51,45 @@ class RestaurantController extends Controller
         ]);
     }
 
+    public function ordersFeed(Request $request, Shop $shop): JsonResponse
+    {
+        $this->authorizeShop($request, $shop);
+        abort_unless($shop->catalog_type === 'restaurant', 404);
+
+        $status = (string) $request->query('status', '');
+        $type = (string) $request->query('type', '');
+        $allowedStatuses = ['new', 'preparing', 'ready', 'completed', 'cancelled'];
+        $allowedTypes = ['dine_in', 'delivery', 'pickup'];
+        $ordersQuery = FrontOrder::with('restaurantTable')
+            ->where('shop_id', $shop->id)
+            ->whereNotNull('order_type');
+        $statsQuery = FrontOrder::query()
+            ->where('shop_id', $shop->id)
+            ->whereNotNull('order_type');
+        $orders = $ordersQuery
+            ->when(in_array($status, $allowedStatuses, true), fn($query) => $query->where('status', $status))
+            ->when(in_array($type, $allowedTypes, true), fn($query) => $query->where('order_type', $type))
+            ->latest()
+            ->limit(50)
+            ->get();
+        $stats = [
+            'new' => (clone $statsQuery)->where('status', 'new')->count(),
+            'preparing' => (clone $statsQuery)->where('status', 'preparing')->count(),
+            'ready' => (clone $statsQuery)->where('status', 'ready')->count(),
+            'today' => (clone $statsQuery)->whereDate('created_at', today())->count(),
+        ];
+
+        return response()->json([
+            'latest_id' => (int) ($orders->max('id') ?? 0),
+            'stats' => $stats,
+            'html' => view('admin.restaurant.partials.orders_rows', [
+                'orders' => $orders,
+                'canManageOrders' => $request->user()->isSuperAdmin()
+                    || $request->user()->canAccessRouteName('restaurant.orders.status'),
+            ])->render(),
+        ]);
+    }
+
     public function storeTable(Request $request, Shop $shop): RedirectResponse
     {
         $this->authorizeShop($request, $shop);

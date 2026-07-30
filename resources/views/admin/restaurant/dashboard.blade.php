@@ -6,9 +6,69 @@ body{margin:0;background:#05070b;color:#fff;font-family:Arial,sans-serif}.wrap{m
 <section class="head"><a href="{{ route('shops.show',$shop) }}">← لوحة المتجر</a><h1>إدارة مطعم {{ $shop->name }}</h1><p>الطاولات، شاشة المطبخ والكاشير، والطلبات الأونلاين.</p><a href="{{ route('restaurant.menu',$shop) }}" target="_blank">فتح منيو المطعم</a></section>
 @if(session('status'))<div class="panel">{{ session('status') }}</div>@endif
 @if($errors->any())<div class="panel" style="border-color:#ff5d6c;color:#ffb5bd"><b>تعذر تنفيذ العملية:</b><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
-<section class="grid" style="margin-bottom:18px"><div class="card"><b>طلبات اليوم</b><h2>{{ $stats['today'] }}</h2></div><div class="card"><b>جديدة</b><h2>{{ $stats['new'] }}</h2></div><div class="card"><b>قيد التحضير</b><h2>{{ $stats['preparing'] }}</h2></div><div class="card"><b>جاهزة</b><h2>{{ $stats['ready'] }}</h2></div></section>
+<section class="grid" style="margin-bottom:18px"><div class="card"><b>طلبات اليوم</b><h2 id="stat-today">{{ $stats['today'] }}</h2></div><div class="card"><b>جديدة</b><h2 id="stat-new">{{ $stats['new'] }}</h2></div><div class="card"><b>قيد التحضير</b><h2 id="stat-preparing">{{ $stats['preparing'] }}</h2></div><div class="card"><b>جاهزة</b><h2 id="stat-ready">{{ $stats['ready'] }}</h2></div></section>
 <section class="panel"><h2>الطاولات وQR</h2><form method="post" action="{{ route('restaurant.tables.store',$shop) }}">@csrf <input name="name" placeholder="مثال: طاولة 1" required> <input name="capacity" type="number" min="1" placeholder="عدد المقاعد"> <button>إضافة طاولة</button></form>
 <div class="grid" style="margin-top:16px">@forelse($tables as $table)<article class="card"><h3>{{ $table->name }}</h3><p>{{ $table->capacity ? $table->capacity.' مقاعد' : '' }}</p><img src="{{ route('restaurant.tables.qr',['table'=>$table->code]) }}" width="150" style="background:#fff;padding:8px"><p><a download href="{{ route('restaurant.tables.qr',['table'=>$table->code]) }}">تحميل QR</a></p><form method="post" action="{{ route('restaurant.tables.destroy',$table) }}">@csrf @method('delete')<button class="danger" onclick="return confirm('حذف الطاولة؟')">حذف</button></form></article>@empty<p>لا توجد طاولات بعد.</p>@endforelse</div></section>
-<section class="panel"><h2>شاشة المطبخ والكاشير</h2><form method="get" style="margin-bottom:14px"><select name="type"><option value="">كل أنواع الطلب</option>@foreach(['dine_in'=>'داخل المطعم','delivery'=>'توصيل','pickup'=>'استلام'] as $k=>$v)<option value="{{ $k }}" @selected($selectedType===$k)>{{ $v }}</option>@endforeach</select> <select name="status"><option value="">كل الحالات</option>@foreach(['new'=>'جديد','preparing'=>'قيد التحضير','ready'=>'جاهز','completed'=>'مكتمل','cancelled'=>'ملغي'] as $k=>$v)<option value="{{ $k }}" @selected($selectedStatus===$k)>{{ $v }}</option>@endforeach</select> <button>فلترة</button></form><div class="table-wrap"><table><thead><tr><th>الطلب</th><th>المصدر</th><th>الزبون/الطاولة</th><th>التفاصيل</th><th>المجموع</th><th>الحالة</th></tr></thead><tbody>
-@forelse($orders as $order)<tr><td>{{ $order->order_number }}<br><small>{{ $order->created_at }}</small></td><td><span class="tag">{{ ['dine_in'=>'داخل المطعم','delivery'=>'توصيل','pickup'=>'استلام'][$order->order_type] ?? $order->order_type }}</span></td><td>{{ $order->restaurantTable?->name ?: $order->customer_name }}<br>{{ $order->customer_phone }}</td><td>@foreach($order->items ?? [] as $item)<div><b>{{ $item['qty'] }}× {{ $item['name'] }}</b> {{ $item['size'] ?? '' }}<br><small>إضافات: {{ implode('، ',$item['addons'] ?? []) ?: '-' }} | بدون: {{ implode('، ',$item['excluded'] ?? []) ?: '-' }} {{ $item['notes'] ?? '' }}</small></div>@endforeach</td><td>{{ $order->total }} ₪</td><td><form method="post" action="{{ route('restaurant.orders.status',$order) }}">@csrf @method('patch')<select name="status">@foreach(['new'=>'جديد','preparing'=>'قيد التحضير','ready'=>'جاهز','completed'=>'مكتمل','cancelled'=>'ملغي'] as $k=>$v)<option value="{{ $k }}" @selected($order->status===$k)>{{ $v }}</option>@endforeach</select><button>حفظ</button></form></td></tr>@empty<tr><td colspan="6">لا توجد طلبات.</td></tr>@endforelse
-</tbody></table></div><div style="margin-top:15px">{{ $orders->links() }}</div></section></main></body></html>
+<section class="panel"><h2>شاشة المطبخ والكاشير <small id="live-status" style="color:#63e6be;font-size:13px">● تحديث مباشر</small></h2><form method="get" style="margin-bottom:14px"><select name="type"><option value="">كل أنواع الطلب</option>@foreach(['dine_in'=>'داخل المطعم','delivery'=>'توصيل','pickup'=>'استلام'] as $k=>$v)<option value="{{ $k }}" @selected($selectedType===$k)>{{ $v }}</option>@endforeach</select> <select name="status"><option value="">كل الحالات</option>@foreach(['new'=>'جديد','preparing'=>'قيد التحضير','ready'=>'جاهز','completed'=>'مكتمل','cancelled'=>'ملغي'] as $k=>$v)<option value="{{ $k }}" @selected($selectedStatus===$k)>{{ $v }}</option>@endforeach</select> <button>فلترة</button></form><div class="table-wrap"><table><thead><tr><th>الطلب</th><th>المصدر</th><th>الزبون/الطاولة</th><th>التفاصيل</th><th>المجموع</th><th>الحالة</th></tr></thead><tbody id="restaurant-orders-body">
+@include('admin.restaurant.partials.orders_rows', [
+    'orders' => $orders,
+    'canManageOrders' => auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.orders.status'),
+])
+</tbody></table></div><div style="margin-top:15px">{{ $orders->links() }}</div></section></main>
+<script>
+(() => {
+    const body = document.getElementById('restaurant-orders-body');
+    const liveStatus = document.getElementById('live-status');
+    if (!body || !liveStatus) return;
+
+    const feedUrl = {{ Illuminate\Support\Js::from(route('restaurant.orders.feed', [
+        'shop' => $shop,
+        'status' => $selectedStatus,
+        'type' => $selectedType,
+    ])) }};
+    let latestId = Number(body.querySelector('tr[data-order-id]')?.dataset.orderId || 0);
+    let polling = false;
+
+    async function refreshOrders() {
+        if (polling || document.hidden) return;
+        polling = true;
+        try {
+            const response = await fetch(feedUrl, {
+                headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                credentials: 'same-origin',
+                cache: 'no-store',
+            });
+            if (response.status === 401 || response.status === 403) {
+                liveStatus.textContent = '● لا توجد صلاحية أو انتهت الجلسة';
+                liveStatus.style.color = '#ff7b89';
+                return;
+            }
+            if (!response.ok) throw new Error('feed');
+            const data = await response.json();
+            body.innerHTML = data.html;
+            for (const key of ['today', 'new', 'preparing', 'ready']) {
+                const element = document.getElementById(`stat-${key}`);
+                if (element) element.textContent = data.stats[key] ?? 0;
+            }
+            if (Number(data.latest_id) > latestId && latestId > 0) {
+                liveStatus.textContent = '● وصل طلب جديد الآن';
+            } else {
+                liveStatus.textContent = '● متصل وتحديث مباشر';
+            }
+            latestId = Math.max(latestId, Number(data.latest_id) || 0);
+            liveStatus.style.color = '#63e6be';
+        } catch (_) {
+            liveStatus.textContent = '● جاري إعادة الاتصال';
+            liveStatus.style.color = '#ffd166';
+        } finally {
+            polling = false;
+        }
+    }
+
+    window.setInterval(refreshOrders, 3000);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) refreshOrders();
+    });
+})();
+</script>
+</body></html>
