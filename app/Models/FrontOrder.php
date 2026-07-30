@@ -9,6 +9,7 @@ class FrontOrder extends Model
 {
     protected $fillable = [
         'shop_id',
+        'restaurant_table_id',
         'distributor_id',
         'distributor_marketer_id',
         'marketing_source',
@@ -20,6 +21,7 @@ class FrontOrder extends Model
         'customer_phone',
         'customer_whatsapp',
         'customer_address',
+        'customer_notes',
         'latitude',
         'longitude',
         'map_link',
@@ -28,6 +30,7 @@ class FrontOrder extends Model
         'discount',
         'total',
         'order_channel',
+        'order_type',
         'payment_method',
         'payment_status',
         'status',
@@ -53,6 +56,11 @@ class FrontOrder extends Model
     public function shop(): BelongsTo
     {
         return $this->belongsTo(Shop::class);
+    }
+
+    public function restaurantTable(): BelongsTo
+    {
+        return $this->belongsTo(RestaurantTable::class);
     }
 
     public function distributor(): BelongsTo
@@ -88,6 +96,10 @@ class FrontOrder extends Model
     {
         return [
             'new' => 'جديد',
+            'preparing' => 'قيد التحضير',
+            'ready' => 'جاهز',
+            'completed' => 'مكتمل',
+            'cancelled' => 'ملغي',
             'not_delivered' => 'لم يتم التسليم',
             'delivered' => 'تم التسليم',
         ];

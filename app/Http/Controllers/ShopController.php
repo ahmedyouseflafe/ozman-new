@@ -145,7 +145,9 @@ class ShopController extends Controller
             'advertisements' => fn($query) => $query->latest(),
         ])->loadCount(['products', 'categories', 'agents', 'distributors', 'advertisements']);
 
-        $publicShopUrl = route('front.shop.slug', $shop);
+        $publicShopUrl = $shop->catalog_type === 'restaurant'
+            ? route('restaurant.menu', $shop)
+            : route('front.shop.slug', $shop);
         $shopQrCodeSvg = (new Writer(new ImageRenderer(
             new RendererStyle(360, 2),
             new SvgImageBackEnd()

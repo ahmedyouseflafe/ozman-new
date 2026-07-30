@@ -10,6 +10,7 @@ use App\Http\Controllers\FrontController;
 use App\Http\Controllers\FrontOrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RaffleCardController;
+use App\Http\Controllers\RestaurantController;
 use App\Http\Controllers\RewardWheelController;
 use App\Http\Controllers\ScreenController;
 use App\Http\Controllers\SettingsController;
@@ -25,6 +26,10 @@ Route::get('/', [FrontController::class, 'index'])->name('home');
 Route::get('/market', [FrontController::class, 'index'])->name('front.home');
 Route::get('/front/shops/{shop}', [FrontController::class, 'index'])->name('front.shop');
 Route::get('/stores/{shop:slug}', [FrontController::class, 'index'])->name('front.shop.slug');
+Route::get('/restaurants/{shop:slug}', [RestaurantController::class, 'menu'])->name('restaurant.menu');
+Route::get('/restaurants/{shop:slug}/table/{tableCode}', [RestaurantController::class, 'menu'])->name('restaurant.table');
+Route::post('/restaurants/{shop}/orders', [RestaurantController::class, 'storeOrder'])->middleware('throttle:30,1')->name('restaurant.orders.store');
+Route::get('/restaurant-tables/{table}/qr.svg', [RestaurantController::class, 'tableQr'])->name('restaurant.tables.qr');
 Route::get('/distributor-stores/{distributor}', [FrontController::class, 'distributor'])->name('front.distributor');
 Route::get('/marketer-stores/{marketer:tracking_code}', [FrontController::class, 'marketer'])->name('front.marketer');
 Route::get('/marketer-wheel/{marketer:tracking_code}', [RewardWheelController::class, 'publicMarketerDirect'])->name('front.marketer.direct-wheel');
@@ -64,6 +69,10 @@ Route::get('/display', [ScreenController::class, 'mainDisplay'])->name('display.
 Route::get('/display/shop/{shop}', [ScreenController::class, 'shopDisplay'])->name('display.shop');
 
 Route::middleware(['auth', 'admin.access'])->group(function () {
+    Route::get('/shops/{shop}/restaurant', [RestaurantController::class, 'dashboard'])->name('restaurant.dashboard');
+    Route::post('/shops/{shop}/restaurant/tables', [RestaurantController::class, 'storeTable'])->name('restaurant.tables.store');
+    Route::delete('/restaurant-tables/{table}', [RestaurantController::class, 'destroyTable'])->name('restaurant.tables.destroy');
+    Route::patch('/restaurant-orders/{order}/status', [RestaurantController::class, 'status'])->name('restaurant.orders.status');
     Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
 
     Route::get('/dashboard/main', function () {

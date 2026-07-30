@@ -78,6 +78,11 @@ class Shop extends Model
         return $this->hasMany(Product::class);
     }
 
+    public function restaurantTables()
+    {
+        return $this->hasMany(RestaurantTable::class);
+    }
+
     public function agents()
     {
         return $this->hasMany(Agent::class);

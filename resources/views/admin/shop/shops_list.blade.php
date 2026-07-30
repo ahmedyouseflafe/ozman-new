@@ -701,6 +701,12 @@
                         </div>
 
                         <div class="actions">
+                            @if($shop->catalog_type === 'restaurant')
+                            <a href="{{ route('restaurant.dashboard', $shop) }}" class="btn btn-primary">
+                                <i class="ti ti-tools-kitchen-2" aria-hidden="true"></i>
+                                إدارة المطعم والطاولات
+                            </a>
+                            @endif
                             <a href="{{ $publicShopUrl }}" target="_blank" rel="noopener" class="btn btn-primary">
                                 <i class="ti ti-external-link" aria-hidden="true"></i>
                                 فتح رابط المتجر

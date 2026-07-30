@@ -2,6 +2,19 @@
     $savedCatalogAttributes = old('catalog_attributes', isset($product) ? ($product->catalog_attributes ?? []) : []);
 @endphp
 
+<style>
+    /*
+     * form-grid has an explicit display:grid in the product pages. Some
+     * browsers therefore render catalog groups even when the hidden attribute
+     * is present. Keep every non-selected business type completely out of the
+     * layout.
+     */
+    .catalog-fields[hidden],
+    #productVariantsPanel[hidden] {
+        display: none !important;
+    }
+</style>
+
 <section class="form-section" id="catalogSpecificSection">
     <div class="section-head">
         <div class="section-icon"><i class="ti ti-adjustments-horizontal"></i></div>
@@ -108,6 +121,8 @@
             groups.forEach((group) => {
                 const active = group.dataset.catalogFields === type;
                 group.hidden = !active;
+                group.style.display = active ? '' : 'none';
+                group.setAttribute('aria-hidden', active ? 'false' : 'true');
                 group.querySelectorAll('input, select, textarea').forEach((field) => field.disabled = !active);
             });
             if (definitions[type]) {
@@ -116,6 +131,8 @@
             }
             const usesVariants = ['clothing', 'shoes'].includes(type);
             variantsPanel.hidden = !usesVariants;
+            variantsPanel.style.display = usesVariants ? '' : 'none';
+            variantsPanel.setAttribute('aria-hidden', usesVariants ? 'false' : 'true');
             variantsPanel.querySelectorAll('input, button').forEach((field) => field.disabled = !usesVariants);
         }
 

@@ -63,8 +63,10 @@ return [
         'icon' => 'ti-tools-kitchen-2',
         'fields' => [
             'meal_sizes' => ['label' => 'أحجام الوجبة', 'type' => 'list', 'placeholder' => 'مثال: صغير, وسط, كبير'],
+            'meal_size_prices' => ['label' => 'أسعار الأحجام', 'type' => 'list', 'placeholder' => 'مثال: صغير:20, وسط:25, كبير:30'],
             'ingredients' => ['label' => 'المكونات', 'type' => 'textarea'],
             'addons' => ['label' => 'الإضافات المتاحة', 'type' => 'list'],
+            'addon_prices' => ['label' => 'أسعار الإضافات', 'type' => 'list', 'placeholder' => 'مثال: جبنة:3, صوص:2'],
             'preparation_time' => ['label' => 'وقت التحضير بالدقائق', 'type' => 'number'],
             'calories' => ['label' => 'السعرات الحرارية', 'type' => 'number'],
             'spice_level' => ['label' => 'درجة الحدة', 'type' => 'select', 'options' => ['غير حار', 'خفيف', 'متوسط', 'حار']],
