@@ -77,16 +77,27 @@
                         </div>
                     </div>
 
+                    @if ($errors->createMarketer->any())
+                        <div role="alert" style="margin-bottom:16px; padding:14px 18px; border:1px solid rgba(255,82,82,.55); border-radius:14px; background:rgba(255,82,82,.1); color:#ff9b9b; font-weight:800">
+                            <div style="margin-bottom:6px">تعذر إضافة المسوق، يرجى تصحيح التالي:</div>
+                            <ul style="margin:0; padding-right:20px">
+                                @foreach ($errors->createMarketer->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <form method="POST" action="{{ route('distributors.marketers.store', $distributor) }}" style="display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; margin-bottom:20px">
                         @csrf
-                        <input name="name" placeholder="اسم المسوق" required style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
-                        <input name="phone" placeholder="الهاتف" dir="ltr" style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
-                        <input name="whatsapp" placeholder="واتساب" dir="ltr" style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
-                        <input name="email" placeholder="البريد الإلكتروني" dir="ltr" style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
-                        <input type="number" name="commission_rate" min="0" max="100" step="0.01" value="0" placeholder="نسبة الربح %" dir="ltr" style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
+                        <input name="name" value="{{ old('name') }}" placeholder="اسم المسوق" required style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
+                        <input name="phone" value="{{ old('phone') }}" placeholder="الهاتف" dir="ltr" style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
+                        <input name="whatsapp" value="{{ old('whatsapp') }}" placeholder="واتساب" dir="ltr" style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
+                        <input name="email" value="{{ old('email') }}" placeholder="البريد الإلكتروني" dir="ltr" style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
+                        <input type="number" name="commission_rate" min="0" max="100" step="0.01" value="{{ old('commission_rate', 0) }}" placeholder="نسبة الربح %" dir="ltr" style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
                         <input type="password" name="login_password" placeholder="كلمة مرور الدخول" style="background:#08080c; border:1px solid rgba(255,255,255,.12); border-radius:14px; color:#fff; padding:14px">
                         <label style="display:flex; align-items:center; gap:8px; color:#fff; font-weight:800">
-                            <input type="checkbox" name="is_active" value="1" checked>
+                            <input type="checkbox" name="is_active" value="1" @checked(old('is_active', '1'))>
                             نشط
                         </label>
                         <button class="btn btn-primary" type="submit" style="grid-column:span 4"><i class="ti ti-user-plus"></i>إضافة مسوق</button>

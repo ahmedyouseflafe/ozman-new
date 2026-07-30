@@ -189,13 +189,20 @@ class DistributorController extends Controller
     {
         $this->authorizeDistributorAccess($distributor);
 
-        $data = $request->validate([
+        $data = $request->validateWithBag('createMarketer', [
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],
             'whatsapp' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'commission_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'login_password' => ['nullable', 'string', 'min:6', 'max:255'],
+        ], [
+            'name.required' => 'أدخل اسم المسوق.',
+            'email.email' => 'صيغة البريد الإلكتروني غير صحيحة.',
+            'commission_rate.numeric' => 'نسبة الربح يجب أن تكون رقماً.',
+            'commission_rate.min' => 'نسبة الربح لا يمكن أن تكون أقل من صفر.',
+            'commission_rate.max' => 'نسبة الربح لا يمكن أن تكون أكبر من 100%.',
+            'login_password.min' => 'كلمة مرور المسوق يجب أن تكون 6 خانات على الأقل.',
         ]);
 
         $data['commission_rate'] = $data['commission_rate'] ?? 0;
@@ -207,7 +214,7 @@ class DistributorController extends Controller
             if (! filled($data['email'] ?? null)) {
                 throw ValidationException::withMessages([
                     'email' => 'أدخل بريد المسوق الإلكتروني لإنشاء حساب دخول.',
-                ]);
+                ])->errorBag('createMarketer');
             }
 
             $user = User::query()->where('email', $data['email'])->first();
@@ -215,7 +222,7 @@ class DistributorController extends Controller
             if ($user && ! $user->isMarketer()) {
                 throw ValidationException::withMessages([
                     'email' => 'هذا البريد مستخدم لحساب آخر. استخدم بريد مختلف للمسوق.',
-                ]);
+                ])->errorBag('createMarketer');
             }
 
             if ($user) {
