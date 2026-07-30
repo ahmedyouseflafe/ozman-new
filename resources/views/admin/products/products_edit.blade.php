@@ -153,7 +153,7 @@
 
                     @include('admin.products._catalog_fields')
 
-                    <section class="form-section">
+                    <section class="form-section" id="legacyProductPricingSection">
                         <div class="section-head"><div class="section-icon"><i class="ti ti-coin"></i></div><div><h2>الأسعار والمخزون</h2><p>أسعار منفصلة للعميل والتاجر، مع بيانات المخزون والتعريف.</p></div></div>
                         <div class="pricing-sections">
                             <div class="pricing-card customer">

@@ -120,7 +120,9 @@ class RestaurantController extends Controller
             $items[] = [
                 'product_id' => $product->id, 'name' => $product->name, 'price' => $unit,
                 'qty' => (int) $row['qty'], 'size' => $size, 'addons' => $addons->all(),
-                'excluded' => array_values($row['excluded'] ?? []), 'notes' => $row['notes'] ?? null, 'line_total' => $line,
+                'excluded' => collect($row['excluded'] ?? [])
+                    ->intersect($attributes['removable_ingredients'] ?? [])->values()->all(),
+                'notes' => $row['notes'] ?? null, 'line_total' => $line,
             ];
         }
 

@@ -65,6 +65,7 @@ return [
             'meal_sizes' => ['label' => 'أحجام الوجبة', 'type' => 'list', 'placeholder' => 'مثال: صغير, وسط, كبير'],
             'meal_size_prices' => ['label' => 'أسعار الأحجام', 'type' => 'list', 'placeholder' => 'مثال: صغير:20, وسط:25, كبير:30'],
             'ingredients' => ['label' => 'المكونات', 'type' => 'textarea'],
+            'removable_ingredients' => ['label' => 'مكونات يمكن للعميل حذفها', 'type' => 'list', 'placeholder' => 'مثال: بصل, مخلل, صوص'],
             'addons' => ['label' => 'الإضافات المتاحة', 'type' => 'list'],
             'addon_prices' => ['label' => 'أسعار الإضافات', 'type' => 'list', 'placeholder' => 'مثال: جبنة:3, صوص:2'],
             'preparation_time' => ['label' => 'وقت التحضير بالدقائق', 'type' => 'number'],

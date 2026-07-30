@@ -99,6 +99,49 @@
             @endforeach
         </div>
     </div>
+
+    @php
+        $restaurantSizes = collect(data_get($savedCatalogAttributes, 'meal_size_prices', []))
+            ->map(fn($item) => array_pad(explode(':', (string) $item, 2), 2, ''));
+        $restaurantAddons = collect(data_get($savedCatalogAttributes, 'addon_prices', []))
+            ->map(fn($item) => array_pad(explode(':', (string) $item, 2), 2, ''));
+        $restaurantRemovable = collect(data_get($savedCatalogAttributes, 'removable_ingredients', []));
+        $restaurantBasePrice = old('customer_package_price', isset($product) ? $product->customer_package_price : null);
+        $restaurantQuantity = old('quantity', isset($product) ? $product->quantity : 0);
+    @endphp
+    <div id="restaurantMenuEditor" hidden style="margin-top:20px;display:none">
+        <div class="section-head">
+            <div class="section-icon"><i class="ti ti-tools-kitchen-2"></i></div>
+            <div><h2>تسعير وتوفر الوجبة</h2><p>أدخل سعر الوجبة، الأحجام، الإضافات والمكونات التي يستطيع الزبون حذفها.</p></div>
+        </div>
+        <input type="hidden" name="show_customer_package_price" value="1" data-restaurant-input>
+        @foreach(['show_customer_carton_price','show_customer_pallet_price','show_package_price','show_carton_price','show_pallet_price'] as $visibilityField)
+            <input type="hidden" name="{{ $visibilityField }}" value="0" data-restaurant-input>
+        @endforeach
+        <div class="form-grid">
+            <div class="form-group"><label class="form-label">السعر الأساسي للوجبة</label><input type="number" step="0.01" min="0" name="customer_package_price" value="{{ $restaurantBasePrice }}" data-restaurant-input required></div>
+            <div class="form-group"><label class="form-label">عدد الوجبات المتوفرة</label><input type="number" min="0" name="quantity" value="{{ $restaurantQuantity }}" data-restaurant-input><small style="color:rgba(255,255,255,.55)">ضع صفراً عندما تكون الوجبة نافدة.</small></div>
+        </div>
+        <h3 style="color:#00e5ff;margin-top:22px">أحجام الوجبة وأسعارها</h3>
+        <div class="form-grid">
+            @for($i=0;$i<5;$i++)
+                <div class="form-group"><label class="form-label">الحجم {{ $i+1 }}</label><input data-restaurant-input data-priced-name="size" value="{{ data_get($restaurantSizes, "$i.0") }}" placeholder="مثال: كبير"></div>
+                <div class="form-group"><label class="form-label">سعر الحجم</label><input data-restaurant-input data-priced-value="size" type="number" min="0" step="0.01" value="{{ data_get($restaurantSizes, "$i.1") }}"></div>
+                <input type="hidden" name="catalog_attributes[meal_size_prices][]" data-restaurant-input data-priced-output="size">
+            @endfor
+        </div>
+        <h3 style="color:#00e5ff;margin-top:22px">الإضافات وأسعارها</h3>
+        <div class="form-grid">
+            @for($i=0;$i<6;$i++)
+                <div class="form-group"><label class="form-label">الإضافة {{ $i+1 }}</label><input data-restaurant-input data-priced-name="addon" value="{{ data_get($restaurantAddons, "$i.0") }}" placeholder="مثال: جبنة"></div>
+                <div class="form-group"><label class="form-label">سعر الإضافة</label><input data-restaurant-input data-priced-value="addon" type="number" min="0" step="0.01" value="{{ data_get($restaurantAddons, "$i.1") }}"></div>
+                <input type="hidden" name="catalog_attributes[addon_prices][]" data-restaurant-input data-priced-output="addon">
+            @endfor
+        </div>
+        <div class="form-group full" style="margin-top:20px"><label class="form-label">المكونات التي يمكن للزبون حذفها</label>
+            <input name="catalog_attributes[removable_ingredients]" data-restaurant-input value="{{ $restaurantRemovable->implode(', ') }}" placeholder="مثال: بصل، مخلل، بندورة">
+        </div>
+    </div>
 </section>
 
 <script>
@@ -114,6 +157,10 @@
         const variantsPanel = document.getElementById('productVariantsPanel');
         const variantsList = document.getElementById('productVariantsList');
         const addVariant = document.getElementById('addProductVariant');
+        const restaurantEditor = document.getElementById('restaurantMenuEditor');
+        const legacyPricing = document.getElementById('legacyProductPricingSection');
+        const legacyCampaigns = [...document.querySelectorAll('.form-section')]
+            .find((section) => section.querySelector('h2')?.textContent.trim() === 'حملات المنتج');
         let variantIndex = variantsList?.querySelectorAll('[data-variant-row]').length || 0;
 
         function updateCatalogFields() {
@@ -134,7 +181,50 @@
             variantsPanel.style.display = usesVariants ? '' : 'none';
             variantsPanel.setAttribute('aria-hidden', usesVariants ? 'false' : 'true');
             variantsPanel.querySelectorAll('input, button').forEach((field) => field.disabled = !usesVariants);
+
+            const isRestaurant = type === 'restaurant';
+            restaurantEditor.hidden = !isRestaurant;
+            restaurantEditor.style.display = isRestaurant ? '' : 'none';
+            restaurantEditor.querySelectorAll('[data-restaurant-input]').forEach((field) => field.disabled = !isRestaurant);
+            if (legacyPricing) {
+                legacyPricing.hidden = isRestaurant;
+                legacyPricing.style.display = isRestaurant ? 'none' : '';
+                legacyPricing.querySelectorAll('input,select,textarea').forEach((field) => field.disabled = isRestaurant);
+            }
+            if (legacyCampaigns) {
+                legacyCampaigns.hidden = isRestaurant;
+                legacyCampaigns.style.display = isRestaurant ? 'none' : '';
+                legacyCampaigns.querySelectorAll('input,select,textarea,button').forEach((field) => field.disabled = isRestaurant);
+            }
+            const agentField = document.getElementById('agent_id')?.closest('.form-group');
+            if (agentField) {
+                agentField.hidden = isRestaurant;
+                agentField.style.display = isRestaurant ? 'none' : '';
+                agentField.querySelectorAll('select,input').forEach((field) => field.disabled = isRestaurant);
+            }
+            document.querySelectorAll('[data-catalog-fields="restaurant"] input').forEach((field) => {
+                const key = field.name.match(/catalog_attributes\[([^\]]+)\]/)?.[1];
+                if (['meal_sizes','meal_size_prices','addons','addon_prices','removable_ingredients'].includes(key)) {
+                    field.closest('.form-group')?.setAttribute('hidden', '');
+                    field.disabled = true;
+                }
+            });
         }
+
+        function syncRestaurantPricedOptions() {
+            ['size', 'addon'].forEach((kind) => {
+                const names = [...restaurantEditor.querySelectorAll(`[data-priced-name="${kind}"]`)];
+                const prices = [...restaurantEditor.querySelectorAll(`[data-priced-value="${kind}"]`)];
+                const outputs = [...restaurantEditor.querySelectorAll(`[data-priced-output="${kind}"]`)];
+                outputs.forEach((output, index) => {
+                    const name = names[index]?.value.trim() || '';
+                    const price = prices[index]?.value;
+                    output.value = name && price !== '' ? `${name}:${price}` : '';
+                });
+            });
+        }
+        restaurantEditor?.addEventListener('input', syncRestaurantPricedOptions);
+        restaurantEditor?.closest('form')?.addEventListener('submit', syncRestaurantPricedOptions);
 
         function variantTemplate(index) {
             return `<div data-variant-row class="form-grid" style="padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:16px">
@@ -157,5 +247,6 @@
 
         shopSelect?.addEventListener('change', updateCatalogFields);
         updateCatalogFields();
+        syncRestaurantPricedOptions();
     })();
 </script>

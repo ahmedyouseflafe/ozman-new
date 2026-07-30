@@ -475,7 +475,7 @@ class ProductController extends Controller
         foreach ($fields as $key => $definition) {
             $value = $input[$key] ?? null;
             if (($definition['type'] ?? null) === 'list') {
-                $value = collect(explode(',', (string) $value))
+                $value = collect(is_array($value) ? $value : explode(',', (string) $value))
                     ->map(fn ($item) => trim($item))
                     ->filter()
                     ->unique()

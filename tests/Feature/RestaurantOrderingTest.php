@@ -56,7 +56,12 @@ class RestaurantOrderingTest extends TestCase
         $product = Product::create([
             'shop_id' => $shop->id, 'category_id' => $category->id, 'name' => 'برغر', 'slug' => "burger-$suffix",
             'price' => 20, 'quantity' => 50, 'is_active' => true,
-            'catalog_attributes' => ['meal_size_prices' => ['صغير:20', 'كبير:30'], 'addon_prices' => ['جبنة:3'], 'ingredients' => 'بصل، بندورة'],
+            'catalog_attributes' => [
+                'meal_size_prices' => ['صغير:20', 'كبير:30'],
+                'addon_prices' => ['جبنة:3'],
+                'ingredients' => 'بصل، بندورة',
+                'removable_ingredients' => ['بصل'],
+            ],
         ]);
         $table = RestaurantTable::create(['shop_id' => $shop->id, 'name' => 'طاولة 1', 'code' => "table-$suffix", 'is_active' => true]);
         return [$shop, $product, $table];

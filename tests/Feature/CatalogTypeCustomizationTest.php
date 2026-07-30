@@ -81,4 +81,32 @@ class CatalogTypeCustomizationTest extends TestCase
         $this->assertArrayHasKey('sweets', config('catalog_types'));
         $this->assertArrayHasKey('shoes', config('catalog_types'));
     }
+
+    public function test_restaurant_product_saves_menu_price_and_structured_options(): void
+    {
+        $owner = User::create(['name' => 'Chef', 'email' => 'chef@example.com', 'password' => 'secret123', 'role' => 'shop_owner', 'is_active' => true]);
+        $shop = Shop::create(['user_id' => $owner->id, 'name' => 'Chef Restaurant', 'slug' => 'chef-restaurant', 'catalog_type' => 'restaurant', 'is_active' => true]);
+        $category = Category::create(['shop_id' => $shop->id, 'name' => 'وجبات', 'slug' => 'chef-meals', 'is_active' => true]);
+
+        $this->actingAs($owner)->post(route('products.store'), [
+            'shop_id' => $shop->id, 'category_id' => $category->id, 'name' => 'برغر',
+            'customer_package_price' => 22, 'quantity' => 30,
+            'show_customer_package_price' => 1, 'show_customer_carton_price' => 0,
+            'show_customer_pallet_price' => 0, 'show_package_price' => 0,
+            'show_carton_price' => 0, 'show_pallet_price' => 0,
+            'catalog_attributes' => [
+                'meal_size_prices' => ['صغير:22', '', 'كبير:30'],
+                'addon_prices' => ['جبنة:3', 'صوص:2'],
+                'removable_ingredients' => 'بصل, مخلل',
+                'ingredients' => 'لحم، خبز، بصل',
+                'preparation_time' => 15,
+            ],
+        ])->assertRedirect(route('products'));
+
+        $product = Product::where('shop_id', $shop->id)->firstOrFail();
+        $this->assertSame('22.00', $product->price);
+        $this->assertSame(['صغير:22', 'كبير:30'], $product->catalog_attributes['meal_size_prices']);
+        $this->assertSame(['جبنة:3', 'صوص:2'], $product->catalog_attributes['addon_prices']);
+        $this->assertSame(['بصل', 'مخلل'], $product->catalog_attributes['removable_ingredients']);
+    }
 }
