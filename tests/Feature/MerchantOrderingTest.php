@@ -279,6 +279,24 @@ class MerchantOrderingTest extends TestCase
         ]))->assertForbidden();
     }
 
+    public function test_proxy_safe_relative_qr_signature_is_accepted(): void
+    {
+        [, , $distributor] = $this->merchantLinkedToDistributor('relative-qr');
+        $redirect = route('front.distributor', $distributor, false);
+        $relativeQrUrl = URL::signedRoute('merchant.login', [
+            'referrer_type' => 'distributor',
+            'referrer' => $distributor->id,
+            'redirect' => $redirect,
+        ], absolute: false);
+
+        $this->get('https://ozman.online' . $relativeQrUrl)
+            ->assertOk()
+            ->assertSessionHas('merchant_referral', [
+                'distributor_id' => $distributor->id,
+                'distributor_marketer_id' => null,
+            ]);
+    }
+
     public function test_new_merchant_can_register_from_marketer_qr_and_first_order_credits_commission(): void
     {
         Storage::fake('public');

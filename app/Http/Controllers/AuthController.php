@@ -333,7 +333,13 @@ class AuthController extends Controller
             return;
         }
 
-        abort_unless($request->hasValidSignature(), 403);
+        // Accept legacy absolute signatures and the proxy-safe relative signatures
+        // used by newly generated QR codes. Relative signatures remain valid when
+        // the hosting proxy changes http to https or normalizes the domain.
+        abort_unless(
+            $request->hasValidSignature() || $request->hasValidSignature(absolute: false),
+            403
+        );
 
         if ($type === 'marketer') {
             $marketer = DistributorMarketer::query()
