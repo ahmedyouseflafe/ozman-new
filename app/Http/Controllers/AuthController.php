@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Shop;
+use App\Models\Distributor;
+use App\Models\DistributorMarketer;
 use App\Models\User;
 use App\Services\ShopOwnerAccountService;
 use Illuminate\Http\RedirectResponse;
@@ -43,6 +45,8 @@ class AuthController extends Controller
 
     public function showMerchantLogin(Request $request): View|RedirectResponse
     {
+        $this->captureMerchantReferral($request);
+
         if (Auth::check()) {
             return Auth::user()?->isShopOwner()
                 ? redirect()->route('home')
@@ -76,7 +80,6 @@ class AuthController extends Controller
 
         $shop = Auth::user()?->shops()
             ->where('is_active', true)
-            ->whereNotNull('distributor_id')
             ->first();
 
         if (! $shop) {
@@ -87,8 +90,21 @@ class AuthController extends Controller
                 ->onlyInput('email', 'redirect');
         }
 
+        $this->applyMerchantReferral($request, $shop);
+        $shop->refresh();
+
+        $linkedDistributor = $shop->distributorMarketer?->distributor ?: $shop->distributor;
+        if (! $linkedDistributor?->is_active) {
+            Auth::logout();
+
+            return back()
+                ->withErrors(['email' => 'هذا الحساب غير مرتبط بمتجر فعال وموزع. امسح QR الموزع أو المروّج ثم سجّل الدخول.'])
+                ->onlyInput('email', 'redirect');
+        }
+
         $request->session()->regenerate();
         $request->session()->put('merchant_shop_id', $shop->id);
+        $request->session()->forget('merchant_referral');
 
         return redirect()->to($this->safeMerchantRedirect($request->input('redirect')));
     }
@@ -215,6 +231,81 @@ class AuthController extends Controller
         }
 
         return $path . ($query ? '?' . $query : '');
+    }
+
+    private function captureMerchantReferral(Request $request): void
+    {
+        $type = $request->query('referrer_type');
+        $reference = $request->query('referrer');
+
+        if (! in_array($type, ['distributor', 'marketer'], true) || ! filled($reference)) {
+            return;
+        }
+
+        abort_unless($request->hasValidSignature(), 403);
+
+        if ($type === 'marketer') {
+            $marketer = DistributorMarketer::query()
+                ->where('tracking_code', $reference)
+                ->where('is_active', true)
+                ->whereHas('distributor', fn ($query) => $query->where('is_active', true))
+                ->firstOrFail();
+
+            $request->session()->put('merchant_referral', [
+                'distributor_id' => $marketer->distributor_id,
+                'distributor_marketer_id' => $marketer->id,
+            ]);
+
+            return;
+        }
+
+        $distributor = Distributor::query()
+            ->whereKey((int) $reference)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $request->session()->put('merchant_referral', [
+            'distributor_id' => $distributor->id,
+            'distributor_marketer_id' => null,
+        ]);
+    }
+
+    private function applyMerchantReferral(Request $request, Shop $shop): void
+    {
+        $referral = $request->session()->get('merchant_referral');
+        if (! is_array($referral)) {
+            return;
+        }
+
+        $marketerId = (int) ($referral['distributor_marketer_id'] ?? 0);
+        if ($marketerId > 0) {
+            $marketer = DistributorMarketer::query()
+                ->whereKey($marketerId)
+                ->where('is_active', true)
+                ->whereHas('distributor', fn ($query) => $query->where('is_active', true))
+                ->first();
+
+            if ($marketer) {
+                $shop->update([
+                    'distributor_id' => $marketer->distributor_id,
+                    'distributor_marketer_id' => $marketer->id,
+                ]);
+            }
+
+            return;
+        }
+
+        $distributor = Distributor::query()
+            ->whereKey((int) ($referral['distributor_id'] ?? 0))
+            ->where('is_active', true)
+            ->first();
+
+        if ($distributor) {
+            $shop->update([
+                'distributor_id' => $distributor->id,
+                'distributor_marketer_id' => null,
+            ]);
+        }
     }
 
     public function logout(Request $request): RedirectResponse

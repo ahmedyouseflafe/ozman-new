@@ -14,6 +14,7 @@ use BaconQrCode\Writer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -138,19 +139,29 @@ class DistributorController extends Controller
         $distributor->load('agent');
         $distributor->load(['marketers' => fn($query) => $query->latest()]);
         $publicDistributorUrl = route('front.distributor', $distributor);
+        $distributorQrTargetUrl = URL::signedRoute('merchant.login', [
+            'referrer_type' => 'distributor',
+            'referrer' => $distributor->id,
+            'redirect' => parse_url($publicDistributorUrl, PHP_URL_PATH),
+        ]);
         $distributorQrCodeSvg = (new Writer(new ImageRenderer(
             new RendererStyle(360, 2),
             new SvgImageBackEnd()
-        )))->writeString($publicDistributorUrl);
+        )))->writeString($distributorQrTargetUrl);
         $distributorQrCodeDataUri = 'data:image/svg+xml;base64,' . base64_encode($distributorQrCodeSvg);
         $marketerShareLinks = $distributor->marketers
             ->map(function (DistributorMarketer $marketer) {
                 $url = route('front.marketer', ['marketer' => $marketer->tracking_code]);
                 $wheelUrl = route('front.marketer.direct-wheel', ['marketer' => $marketer->tracking_code]);
+                $qrUrl = URL::signedRoute('merchant.login', [
+                    'referrer_type' => 'marketer',
+                    'referrer' => $marketer->tracking_code,
+                    'redirect' => parse_url($url, PHP_URL_PATH),
+                ]);
                 $qrCodeSvg = (new Writer(new ImageRenderer(
                     new RendererStyle(220, 2),
                     new SvgImageBackEnd()
-                )))->writeString($url);
+                )))->writeString($qrUrl);
                 $wheelQrCodeSvg = (new Writer(new ImageRenderer(
                     new RendererStyle(220, 2),
                     new SvgImageBackEnd()
@@ -159,6 +170,7 @@ class DistributorController extends Controller
                 return [
                     'marketer' => $marketer,
                     'url' => $url,
+                    'qr_url' => $qrUrl,
                     'qr' => 'data:image/svg+xml;base64,' . base64_encode($qrCodeSvg),
                     'wheel_url' => $wheelUrl,
                     'wheel_qr' => 'data:image/svg+xml;base64,' . base64_encode($wheelQrCodeSvg),

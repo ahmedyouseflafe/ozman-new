@@ -199,6 +199,11 @@ class FrontController extends Controller
     {
         abort_unless($distributor->is_active, 404);
 
+        request()->session()->put('merchant_referral', [
+            'distributor_id' => $distributor->id,
+            'distributor_marketer_id' => $marketer?->id,
+        ]);
+
         $distributor->load(['shop', 'user']);
 
         $ozmanShop = Shop::query()

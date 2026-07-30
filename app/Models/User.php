@@ -222,7 +222,7 @@ class User extends Authenticatable
         }
 
         if ($this->isDistributor()) {
-            $distributorShopIds = Distributor::query()
+            $distributorProfiles = Distributor::query()
                 ->where(function ($query) {
                     $query->where('user_id', $this->id);
 
@@ -230,9 +230,15 @@ class User extends Authenticatable
                         $query->orWhere('email', $this->email);
                     }
                 })
-                ->pluck('shop_id');
+                ->get(['id', 'shop_id']);
 
-            $shopIds = $shopIds->merge($distributorShopIds);
+            $shopIds = $shopIds
+                ->merge($distributorProfiles->pluck('shop_id'))
+                ->merge(
+                    Shop::query()
+                        ->whereIn('distributor_id', $distributorProfiles->pluck('id'))
+                        ->pluck('id')
+                );
         }
 
         if ($this->isMarketer()) {

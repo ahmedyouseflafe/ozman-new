@@ -59,7 +59,7 @@
                         <div class="detail-box" style="grid-column:1 / -1; display:flex; gap:22px; align-items:center; justify-content:space-between; flex-wrap:wrap">
                             <div>
                                 <span class="label">QR Code</span>
-                                <span class="value">امسح الكود لفتح صفحة محل الموزع مباشرة</span>
+                                <span class="value">امسح الكود لتسجيل دخول المتجر وربطه بهذا الموزع تلقائيًا</span>
                             </div>
                             <a href="{{ $publicDistributorUrl }}" target="_blank" rel="noopener">
                                 <img src="{{ $distributorQrCodeDataUri }}" alt="QR Code لمحل {{ $distributor->name }}" style="width:180px; height:180px; background:#fff; border-radius:18px; padding:12px">
@@ -124,7 +124,7 @@
                                      </div>
                                  </div>
                                 <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end">
-                                    <a href="{{ $share['url'] }}" target="_blank" rel="noopener" title="QR رابط المتجر">
+                                    <a href="{{ $share['qr_url'] }}" target="_blank" rel="noopener" title="QR تسجيل المتجر وربطه بالمروّج">
                                         <img src="{{ $share['qr'] }}" alt="QR Code للمسوق {{ $marketer->name }}" style="width:130px; height:130px; background:#fff; border-radius:16px; padding:10px">
                                     </a>
                                     <a href="{{ $share['wheel_url'] }}" target="_blank" rel="noopener" title="QR العجلة المباشرة">

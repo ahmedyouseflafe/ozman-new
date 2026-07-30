@@ -9,6 +9,7 @@ use App\Models\FrontOrder;
 use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class MerchantOrderingTest extends TestCase
@@ -178,6 +179,102 @@ class MerchantOrderingTest extends TestCase
         $this->assertSame($linkedDistributor->id, $order->distributor_id);
         $this->assertSame('merchant_account', $order->marketing_source);
         $this->assertNotSame($otherDistributor->id, $order->distributor_id);
+    }
+
+    public function test_marketer_qr_login_links_shop_and_attributes_orders_and_commission(): void
+    {
+        [$merchant, $merchantShop, $distributor] = $this->merchantLinkedToDistributor('qr-marketer');
+        $merchantShop->update([
+            'distributor_id' => null,
+            'distributor_marketer_id' => null,
+        ]);
+
+        $marketerUser = User::create([
+            'name' => 'QR Marketer',
+            'email' => 'qr-marketer-user@example.com',
+            'password' => 'secret123',
+            'role' => 'marketer',
+            'is_active' => true,
+        ]);
+        $marketer = DistributorMarketer::create([
+            'distributor_id' => $distributor->id,
+            'user_id' => $marketerUser->id,
+            'name' => 'QR Marketer',
+            'tracking_code' => 'qr-marketer-code',
+            'commission_rate' => 8,
+            'is_active' => true,
+        ]);
+        $redirect = route('front.marketer', ['marketer' => $marketer->tracking_code], false);
+        $qrLoginUrl = URL::signedRoute('merchant.login', [
+            'referrer_type' => 'marketer',
+            'referrer' => $marketer->tracking_code,
+            'redirect' => $redirect,
+        ]);
+
+        $this->get($qrLoginUrl)
+            ->assertOk()
+            ->assertSee('دخول صاحب المتجر');
+
+        $this->post(route('merchant.login.store'), [
+            'email' => $merchant->email,
+            'password' => 'secret123',
+            'redirect' => $redirect,
+        ])->assertRedirect($redirect);
+
+        $merchantShop->refresh();
+        $this->assertSame($distributor->id, $merchantShop->distributor_id);
+        $this->assertSame($marketer->id, $merchantShop->distributor_marketer_id);
+        $this->assertContains($merchantShop->id, $marketerUser->accessibleShopIds());
+
+        $this->postJson(route('front-orders.store'), [
+            'customer_name' => 'QR merchant',
+            'items' => [['name' => 'طلب QR', 'price' => '250', 'qty' => 1]],
+            'subtotal' => 250,
+            'discount' => 0,
+            'total' => 250,
+            'order_channel' => 'whatsapp',
+            'visitor_type' => 'merchant',
+        ])->assertOk();
+
+        $order = FrontOrder::query()->latest('id')->firstOrFail();
+        $this->assertSame($distributor->id, $order->distributor_id);
+        $this->assertSame($marketer->id, $order->distributor_marketer_id);
+        $this->assertSame('20.00', $order->marketer_commission_amount);
+    }
+
+    public function test_distributor_qr_login_links_shop_directly_to_distributor(): void
+    {
+        [$merchant, $merchantShop, $distributor] = $this->merchantLinkedToDistributor('qr-distributor');
+        $merchantShop->update([
+            'distributor_id' => null,
+            'distributor_marketer_id' => null,
+        ]);
+        $redirect = route('front.distributor', $distributor, false);
+        $qrLoginUrl = URL::signedRoute('merchant.login', [
+            'referrer_type' => 'distributor',
+            'referrer' => $distributor->id,
+            'redirect' => $redirect,
+        ]);
+
+        $this->get($qrLoginUrl)->assertOk();
+        $this->post(route('merchant.login.store'), [
+            'email' => $merchant->email,
+            'password' => 'secret123',
+            'redirect' => $redirect,
+        ])->assertRedirect($redirect);
+
+        $merchantShop->refresh();
+        $this->assertSame($distributor->id, $merchantShop->distributor_id);
+        $this->assertNull($merchantShop->distributor_marketer_id);
+        $this->assertContains($merchantShop->id, $distributor->user->accessibleShopIds());
+    }
+
+    public function test_unsigned_merchant_referral_is_rejected(): void
+    {
+        $this->get(route('merchant.login', [
+            'referrer_type' => 'distributor',
+            'referrer' => 999,
+        ]))->assertForbidden();
     }
 
     private function merchantLinkedToDistributor(string $suffix = 'main'): array
