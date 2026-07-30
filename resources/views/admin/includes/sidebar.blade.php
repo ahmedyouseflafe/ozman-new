@@ -260,6 +260,9 @@
     if (! $previewShopId) {
         $previewShopId = auth()->user()?->accessibleShopIds()[0] ?? null;
     }
+    $restaurantNavShop = $previewShopId
+        ? \App\Models\Shop::query()->whereKey($previewShopId)->where('catalog_type', 'restaurant')->first()
+        : null;
 
     $previewDistributor = null;
     if ($isDistributor) {
@@ -412,7 +415,13 @@
         </a>
         @endif
 
-        @if($canSee(['front-orders.index']))
+        @if($restaurantNavShop && $canSee(['restaurant.dashboard']))
+        <a href="{{ route('restaurant.dashboard', $restaurantNavShop) }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('restaurant.*') ? 'active' : '' }}">
+             <i class="ti ti-tools-kitchen-2" aria-hidden="true"></i>
+             إدارة المطعم والطلبات
+        </a>
+        @elseif($canSee(['front-orders.index']))
         <a href="{{ route('front-orders.index') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('front-orders.index') ? 'active' : '' }}">
              <i class="ti ti-receipt-2" aria-hidden="true"></i>
@@ -532,7 +541,12 @@
         </a>
     @endif
 
-    @if($canSee(['front-orders.index']))
+    @if($restaurantNavShop && $canSee(['restaurant.dashboard']))
+        <a href="{{ route('restaurant.dashboard', $restaurantNavShop) }}" class="admin-mobile-nav-item {{ request()->routeIs('restaurant.*') ? 'active' : '' }}">
+            <i class="ti ti-tools-kitchen-2" aria-hidden="true"></i>
+            المطعم
+        </a>
+    @elseif($canSee(['front-orders.index']))
         <a href="{{ route('front-orders.index') }}" class="admin-mobile-nav-item {{ request()->routeIs('front-orders.index') ? 'active' : '' }}">
             <i class="ti ti-receipt-2" aria-hidden="true"></i>
             الطلبات

@@ -15,6 +15,7 @@ use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -225,8 +226,9 @@ class FrontOrderController extends Controller
 
     public function status(Request $request, FrontOrder $order)
     {
+        abort_if(filled($order->order_type), 422, 'طلبات المطعم تُدار من لوحة المطعم فقط.');
         abort_if($request->user()?->isMarketer(), 403);
-        abort_unless($this->canAccessCurrentRoute(), 403);
+        abort_unless($request->user()?->isShopOwner() || $this->canAccessCurrentRoute(), 403);
         abort_unless($this->canAccessOrder($request, $order), 403);
 
         $validated = $request->validate([
@@ -304,14 +306,29 @@ class FrontOrderController extends Controller
         ]);
     }
 
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
-        abort_unless($this->canAccessCurrentRoute(), 403);
+        $user = $request->user();
+        abort_unless($user?->isShopOwner() || $this->canAccessCurrentRoute(), 403);
 
         $channel = $request->query('channel');
         $orderStatus = $request->query('status');
         $search = trim((string) $request->query('search', ''));
-        $user = $request->user();
+        $accessibleShopIds = (!$user?->isSuperAdmin() && !$user?->isMarketer() && !$user?->isDistributor())
+            ? $user?->accessibleShopIds() ?? []
+            : [];
+
+        if ($user?->isShopOwner()) {
+            $currentShopId = (int) $request->session()->get('current_shop_id', 0);
+            $restaurant = Shop::query()
+                ->whereIn('id', $accessibleShopIds)
+                ->where('catalog_type', 'restaurant')
+                ->when($currentShopId > 0, fn($query) => $query->whereKey($currentShopId))
+                ->first();
+            if ($restaurant) {
+                return redirect()->route('restaurant.dashboard', $restaurant);
+            }
+        }
         $marketerIds = $user?->isMarketer()
             ? $user->distributorMarketerProfiles()
                 ->where('is_active', true)
@@ -327,6 +344,8 @@ class FrontOrderController extends Controller
             ->with(['shop', 'rewardWheel', 'distributor', 'distributorMarketer'])
             ->when($user?->isMarketer(), fn($query) => $query->whereIn('front_orders.distributor_marketer_id', $marketerIds))
             ->when($user?->isDistributor(), fn($query) => $this->scopeToDistributorOrders($query, $distributorIds))
+            ->when(!$user?->isSuperAdmin() && !$user?->isMarketer() && !$user?->isDistributor(),
+                fn($query) => $query->whereIn('front_orders.shop_id', $accessibleShopIds))
             ->when(in_array($channel, ['whatsapp', 'instant_payment'], true), fn($query) => $query->where('order_channel', $channel))
             ->when(array_key_exists((string) $orderStatus, FrontOrder::statusOptions()), fn($query) => $query->where('status', $orderStatus))
             ->when($search !== '', function ($query) use ($search, $user) {
@@ -349,6 +368,9 @@ class FrontOrderController extends Controller
         $statsQuery = FrontOrder::query()
             ->when($user?->isMarketer(), fn($query) => $query->whereIn('front_orders.distributor_marketer_id', $marketerIds))
             ->when($user?->isDistributor(), fn($query) => $this->scopeToDistributorOrders($query, $distributorIds));
+        if (!$user?->isSuperAdmin() && !$user?->isMarketer() && !$user?->isDistributor()) {
+            $statsQuery->whereIn('front_orders.shop_id', $accessibleShopIds);
+        }
         $distributorProfiles = $user?->isDistributor()
             ? $user->distributorProfiles()
                 ->with('shop')
@@ -440,6 +462,10 @@ class FrontOrderController extends Controller
 
             return $order->distributorMarketer
                 && in_array((int) $order->distributorMarketer->distributor_id, $distributorIds, true);
+        }
+
+        if (!$user?->isSuperAdmin()) {
+            return in_array((int) $order->shop_id, $user?->accessibleShopIds() ?? [], true);
         }
 
         return true;

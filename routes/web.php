@@ -29,7 +29,7 @@ Route::get('/stores/{shop:slug}', [FrontController::class, 'index'])->name('fron
 Route::get('/restaurants/{shop:slug}', [RestaurantController::class, 'menu'])->name('restaurant.menu');
 Route::get('/restaurants/{shop:slug}/table/{tableCode}', [RestaurantController::class, 'menu'])->name('restaurant.table');
 Route::post('/restaurants/{shop}/orders', [RestaurantController::class, 'storeOrder'])->middleware('throttle:30,1')->name('restaurant.orders.store');
-Route::get('/restaurant-tables/{table}/qr.svg', [RestaurantController::class, 'tableQr'])->name('restaurant.tables.qr');
+Route::get('/restaurant-tables/{table:code}/qr.svg', [RestaurantController::class, 'tableQr'])->name('restaurant.tables.qr');
 Route::get('/distributor-stores/{distributor}', [FrontController::class, 'distributor'])->name('front.distributor');
 Route::get('/marketer-stores/{marketer:tracking_code}', [FrontController::class, 'marketer'])->name('front.marketer');
 Route::get('/marketer-wheel/{marketer:tracking_code}', [RewardWheelController::class, 'publicMarketerDirect'])->name('front.marketer.direct-wheel');

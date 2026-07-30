@@ -6,6 +6,7 @@ use App\Models\FrontOrder;
 use App\Models\Product;
 use App\Models\RestaurantTable;
 use App\Models\Shop;
+use App\Rules\ValidPhoneNumber;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -15,6 +16,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class RestaurantController extends Controller
@@ -24,11 +26,28 @@ class RestaurantController extends Controller
         $this->authorizeShop($request, $shop);
         abort_unless($shop->catalog_type === 'restaurant', 404);
 
+        $status = (string) $request->query('status', '');
+        $type = (string) $request->query('type', '');
+        $allowedStatuses = ['new', 'preparing', 'ready', 'completed', 'cancelled'];
+        $allowedTypes = ['dine_in', 'delivery', 'pickup'];
+        $ordersQuery = FrontOrder::with('restaurantTable')->where('shop_id', $shop->id)->whereNotNull('order_type');
+        $stats = [
+            'new' => (clone $ordersQuery)->where('status', 'new')->count(),
+            'preparing' => (clone $ordersQuery)->where('status', 'preparing')->count(),
+            'ready' => (clone $ordersQuery)->where('status', 'ready')->count(),
+            'today' => (clone $ordersQuery)->whereDate('created_at', today())->count(),
+        ];
+
         return view('admin.restaurant.dashboard', [
             'shop' => $shop,
             'tables' => $shop->restaurantTables()->latest()->get(),
-            'orders' => FrontOrder::with('restaurantTable')->where('shop_id', $shop->id)
-                ->whereNotNull('order_type')->latest()->limit(100)->get(),
+            'orders' => $ordersQuery
+                ->when(in_array($status, $allowedStatuses, true), fn($query) => $query->where('status', $status))
+                ->when(in_array($type, $allowedTypes, true), fn($query) => $query->where('order_type', $type))
+                ->latest()->paginate(50)->withQueryString(),
+            'stats' => $stats,
+            'selectedStatus' => $status,
+            'selectedType' => $type,
         ]);
     }
 
@@ -37,9 +56,10 @@ class RestaurantController extends Controller
         $this->authorizeShop($request, $shop);
         abort_unless($shop->catalog_type === 'restaurant', 404);
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:100', Rule::unique('restaurant_tables', 'name')->where('shop_id', $shop->id)],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
+        abort_if($shop->restaurantTables()->count() >= 500, 422, 'تم الوصول للحد الأقصى لعدد الطاولات.');
         $data['code'] = Str::lower(Str::random(32));
         $data['is_active'] = true;
         $shop->restaurantTables()->create($data);
@@ -76,7 +96,7 @@ class RestaurantController extends Controller
             'order_type' => ['required', 'in:dine_in,delivery,pickup'],
             'table_code' => ['nullable', 'string', 'max:50'],
             'customer_name' => ['required', 'string', 'max:255'],
-            'customer_phone' => ['nullable', 'string', 'max:60'],
+            'customer_phone' => ['nullable', 'string', 'max:60', new ValidPhoneNumber()],
             'customer_address' => ['nullable', 'string', 'max:1000'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
             'items' => ['required', 'array', 'min:1', 'max:100'],
@@ -112,16 +132,21 @@ class RestaurantController extends Controller
             $addonPrices = $this->pricedOptions($attributes['addon_prices'] ?? []);
             $unit = (float) ($product->discount_price ?: $product->price);
             $size = $row['size'] ?? null;
+            abort_if($size && !array_key_exists($size, $sizePrices), 422, 'حجم الوجبة المحدد غير متاح.');
             if ($size && array_key_exists($size, $sizePrices)) $unit = $sizePrices[$size];
-            $addons = collect($row['addons'] ?? [])->filter(fn($name) => array_key_exists($name, $addonPrices))->values();
+            $requestedAddons = collect($row['addons'] ?? [])->unique()->values();
+            abort_if($requestedAddons->contains(fn($name) => !array_key_exists($name, $addonPrices)), 422, 'إحدى الإضافات المحددة غير متاحة.');
+            $requestedExcluded = collect($row['excluded'] ?? [])->unique()->values();
+            $removable = collect($attributes['removable_ingredients'] ?? []);
+            abort_if($requestedExcluded->diff($removable)->isNotEmpty(), 422, 'لا يمكن حذف أحد المكونات المحددة.');
+            $addons = $requestedAddons;
             $unit += $addons->sum(fn($name) => $addonPrices[$name]);
             $line = round($unit * (int) $row['qty'], 2);
             $subtotal += $line;
             $items[] = [
                 'product_id' => $product->id, 'name' => $product->name, 'price' => $unit,
                 'qty' => (int) $row['qty'], 'size' => $size, 'addons' => $addons->all(),
-                'excluded' => collect($row['excluded'] ?? [])
-                    ->intersect($attributes['removable_ingredients'] ?? [])->values()->all(),
+                'excluded' => $requestedExcluded->all(),
                 'notes' => $row['notes'] ?? null, 'line_total' => $line,
             ];
         }
@@ -143,6 +168,14 @@ class RestaurantController extends Controller
         abort_unless($order->shop && $order->order_type, 404);
         $this->authorizeShop($request, $order->shop);
         $data = $request->validate(['status' => ['required', 'in:new,preparing,ready,completed,cancelled']]);
+        $transitions = [
+            'new' => ['new', 'preparing', 'cancelled'],
+            'preparing' => ['preparing', 'ready', 'cancelled'],
+            'ready' => ['ready', 'completed', 'cancelled'],
+            'completed' => ['completed'],
+            'cancelled' => ['cancelled'],
+        ];
+        abort_unless(in_array($data['status'], $transitions[$order->status] ?? [], true), 422, 'لا يمكن إعادة الطلب إلى حالة سابقة.');
         $order->update($data);
         return back()->with('status', 'تم تحديث حالة الطلب.');
     }

@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\FrontOrder;
+use App\Models\EmployeePermission;
 use App\Models\RestaurantTable;
 use App\Models\Shop;
 use App\Models\User;
@@ -24,7 +26,7 @@ class RestaurantOrderingTest extends TestCase
             'customer_name' => 'طاولة 1',
             'items' => [[
                 'product_id' => $product->id, 'qty' => 2, 'size' => 'كبير',
-                'addons' => ['جبنة', 'إضافة مزورة'], 'excluded' => ['بصل'],
+                'addons' => ['جبنة'], 'excluded' => ['بصل'],
                 'notes' => 'بدون ملح', 'price' => 1,
             ]],
         ])->assertOk();
@@ -37,6 +39,16 @@ class RestaurantOrderingTest extends TestCase
         $this->assertSame(['بصل'], $order->items[0]['excluded']);
     }
 
+    public function test_restaurant_order_rejects_forged_addon(): void
+    {
+        [$shop, $product, $table] = $this->restaurant('forged-addon');
+        $this->postJson(route('restaurant.orders.store', $shop), [
+            'order_type' => 'dine_in', 'table_code' => $table->code, 'customer_name' => 'طاولة',
+            'items' => [['product_id' => $product->id, 'qty' => 1, 'addons' => ['إضافة مزورة']]],
+        ])->assertStatus(422);
+        $this->assertDatabaseMissing('front_orders', ['shop_id' => $shop->id]);
+    }
+
     public function test_product_from_another_restaurant_is_rejected(): void
     {
         [$shop] = $this->restaurant();
@@ -46,6 +58,69 @@ class RestaurantOrderingTest extends TestCase
             'order_type' => 'pickup', 'customer_name' => 'عميل', 'customer_phone' => '0591234567',
             'items' => [['product_id' => $otherProduct->id, 'qty' => 1]],
         ])->assertStatus(422);
+    }
+
+    public function test_restaurant_owner_cannot_open_another_restaurant_dashboard(): void
+    {
+        [$shop] = $this->restaurant('mine');
+        [$otherShop] = $this->restaurant('not-mine');
+
+        $this->actingAs($shop->user)
+            ->get(route('restaurant.dashboard', $otherShop))
+            ->assertForbidden();
+    }
+
+    public function test_shop_owner_front_orders_are_scoped_and_restaurant_owner_is_redirected(): void
+    {
+        [$restaurant] = $this->restaurant('redirect');
+        $foreignOwner = User::create(['name' => 'Foreign', 'email' => 'foreign@test.test', 'password' => 'password', 'role' => 'shop_owner', 'is_active' => true]);
+        $foreignShop = Shop::create(['user_id' => $foreignOwner->id, 'name' => 'Foreign Shop', 'slug' => 'foreign-shop', 'catalog_type' => 'general', 'is_active' => true]);
+        FrontOrder::create(['shop_id' => $foreignShop->id, 'order_number' => 'FOREIGN-ORDER', 'customer_name' => 'Foreign customer', 'order_channel' => 'whatsapp']);
+
+        $this->actingAs($restaurant->user)
+            ->get(route('front-orders.index'))
+            ->assertRedirect(route('restaurant.dashboard', $restaurant));
+    }
+
+    public function test_restaurant_status_cannot_move_backwards_or_use_generic_status_route(): void
+    {
+        [$shop, , $table] = $this->restaurant('status');
+        $order = FrontOrder::create([
+            'shop_id' => $shop->id, 'restaurant_table_id' => $table->id,
+            'order_number' => 'RST-STATUS', 'customer_name' => 'Table',
+            'order_channel' => 'restaurant', 'order_type' => 'dine_in', 'status' => 'ready',
+        ]);
+
+        $this->actingAs($shop->user)
+            ->patch(route('restaurant.orders.status', $order), ['status' => 'preparing'])
+            ->assertStatus(422);
+        $this->actingAs($shop->user)
+            ->patch(route('front-orders.status', $order), ['status' => 'completed'])
+            ->assertStatus(422);
+    }
+
+    public function test_general_shop_owner_only_sees_orders_for_owned_shop(): void
+    {
+        $owner = User::create(['name' => 'Owner A', 'email' => 'owner-a@test.test', 'password' => 'password', 'role' => 'shop_owner', 'is_active' => true]);
+        $ownShop = Shop::create(['user_id' => $owner->id, 'name' => 'Own', 'slug' => 'own-general', 'catalog_type' => 'general', 'is_active' => true]);
+        $otherOwner = User::create(['name' => 'Owner B', 'email' => 'owner-b@test.test', 'password' => 'password', 'role' => 'shop_owner', 'is_active' => true]);
+        $otherShop = Shop::create(['user_id' => $otherOwner->id, 'name' => 'Other', 'slug' => 'other-general', 'catalog_type' => 'general', 'is_active' => true]);
+        FrontOrder::create(['shop_id' => $ownShop->id, 'order_number' => 'OWN-ORDER', 'customer_name' => 'Own Customer', 'order_channel' => 'whatsapp']);
+        FrontOrder::create(['shop_id' => $otherShop->id, 'order_number' => 'SECRET-FOREIGN-ORDER', 'customer_name' => 'Other Customer', 'order_channel' => 'whatsapp']);
+
+        $this->actingAs($owner)->get(route('front-orders.index'))
+            ->assertOk()->assertSee('OWN-ORDER')->assertDontSee('SECRET-FOREIGN-ORDER');
+    }
+
+    public function test_restaurant_permissions_separate_view_from_table_management(): void
+    {
+        [$shop] = $this->restaurant('permissions');
+        EmployeePermission::create(['user_id' => $shop->user_id, 'permission' => 'restaurant.view']);
+
+        $this->actingAs($shop->user)->get(route('restaurant.dashboard', $shop))->assertOk();
+        $this->actingAs($shop->user)->post(route('restaurant.tables.store', $shop), [
+            'name' => 'طاولة محظورة', 'capacity' => 4,
+        ])->assertForbidden();
     }
 
     private function restaurant(string $suffix = 'main'): array
