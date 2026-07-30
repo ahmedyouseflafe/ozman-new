@@ -14,14 +14,14 @@
         <td>{{ $order->total }} ₪</td>
         <td>
             @if($canManageOrders)
-                <form method="post" action="{{ route('restaurant.orders.status',$order) }}">
+                <form class="status-form" method="post" action="{{ route('restaurant.orders.status',$order) }}">
                     @csrf @method('patch')
-                    <select name="status">
+                    <select class="field" name="status">
                         @foreach(['new'=>'جديد','preparing'=>'قيد التحضير','ready'=>'جاهز','completed'=>'مكتمل','cancelled'=>'ملغي'] as $key=>$label)
                             <option value="{{ $key }}" @selected($order->status===$key)>{{ $label }}</option>
                         @endforeach
                     </select>
-                    <button>حفظ</button>
+                    <button class="btn btn-primary">حفظ</button>
                 </form>
             @else
                 <span class="tag">{{ ['new'=>'جديد','preparing'=>'قيد التحضير','ready'=>'جاهز','completed'=>'مكتمل','cancelled'=>'ملغي'][$order->status] ?? $order->status }}</span>
