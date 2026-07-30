@@ -171,6 +171,32 @@ class RestaurantOrderingTest extends TestCase
             ->assertDontSee('العبوة');
     }
 
+    public function test_delivery_order_requires_and_stores_customer_location(): void
+    {
+        [$shop, $product] = $this->restaurant('delivery-location');
+        $payload = [
+            'order_type' => 'delivery',
+            'customer_name' => 'Delivery Customer',
+            'customer_phone' => '0591234567',
+            'customer_address' => 'Nablus',
+            'items' => [['product_id' => $product->id, 'qty' => 1]],
+        ];
+
+        $this->postJson(route('restaurant.orders.store', $shop), $payload)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['latitude', 'longitude']);
+
+        $response = $this->postJson(route('restaurant.orders.store', $shop), $payload + [
+            'latitude' => 32.2211000,
+            'longitude' => 35.2544000,
+        ])->assertOk();
+
+        $order = FrontOrder::findOrFail($response->json('order_id'));
+        $this->assertEqualsWithDelta(32.2211, (float) $order->latitude, 0.0000001);
+        $this->assertEqualsWithDelta(35.2544, (float) $order->longitude, 0.0000001);
+        $this->assertSame('https://www.google.com/maps?q=32.2211,35.2544', $order->map_link);
+    }
+
     private function restaurant(string $suffix = 'main'): array
     {
         $owner = User::create(['name' => 'Owner', 'email' => "$suffix@restaurant.test", 'password' => 'password', 'role' => 'shop_owner', 'is_active' => true]);

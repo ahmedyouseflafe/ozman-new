@@ -137,6 +137,8 @@ class RestaurantController extends Controller
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_phone' => ['nullable', 'string', 'max:60', new ValidPhoneNumber()],
             'customer_address' => ['nullable', 'string', 'max:1000'],
+            'latitude' => ['required_if:order_type,delivery', 'nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['required_if:order_type,delivery', 'nullable', 'numeric', 'between:-180,180'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
             'items' => ['required', 'array', 'min:1', 'max:100'],
             'items.*.product_id' => ['required', 'integer'],
@@ -195,6 +197,10 @@ class RestaurantController extends Controller
             'order_number' => 'RST-' . now()->format('ymd') . '-' . Str::upper(Str::random(6)),
             'customer_name' => $data['customer_name'], 'customer_phone' => $data['customer_phone'] ?? null,
             'customer_address' => $data['customer_address'] ?? null, 'customer_notes' => $data['customer_notes'] ?? null,
+            'latitude' => $data['latitude'] ?? null, 'longitude' => $data['longitude'] ?? null,
+            'map_link' => isset($data['latitude'], $data['longitude'])
+                ? 'https://www.google.com/maps?q=' . $data['latitude'] . ',' . $data['longitude']
+                : null,
             'items' => $items, 'subtotal' => $subtotal, 'total' => $subtotal, 'discount' => 0,
             'order_channel' => 'restaurant', 'order_type' => $data['order_type'],
             'payment_status' => 'pending', 'status' => 'new',
