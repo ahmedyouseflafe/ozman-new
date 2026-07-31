@@ -250,10 +250,10 @@
             position:absolute;
             top:50%;
             left:50%;
-            width:58px;
-            height:58px;
+            width:42px;
+            height:42px;
             object-fit:cover;
-            border-radius:16px;
+            border-radius:11px;
             border:2px solid rgba(255,255,255,.72);
             background:#050505;
             box-shadow:0 6px 18px rgba(0,0,0,.32);
@@ -290,6 +290,7 @@
             .type-btn { width:112px; }
             .location-row { grid-template-columns:1fr; }
             .wheel { width:min(88vw,360px); border-width:9px; }
+            .wheel-prize-image { width:36px; height:36px; border-radius:9px; }
         }
     </style>
 </head>
@@ -402,7 +403,7 @@
                                 @endphp
                                 <span class="wheel-label" style="transform: rotate({{ $angle }}deg) translate(25%, -50%);">{{ $segment->label }}</span>
                                 @if($segment->discount_type === 'gift' && $segment->gift_image)
-                                    <img class="wheel-prize-image" src="{{ asset($segment->gift_image) }}" alt="{{ $segment->label }}" style="transform: rotate({{ $angle }}deg) translate(min(28vw, 124px), -50%) rotate({{ $counterAngle }}deg);">
+                                    <img class="wheel-prize-image" src="{{ asset($segment->gift_image) }}" alt="{{ $segment->label }}" style="transform: rotate({{ $angle }}deg) translate(min(42vw, 188px), -50%) rotate({{ $counterAngle }}deg);">
                                 @endif
                             @endforeach
                         </div>
