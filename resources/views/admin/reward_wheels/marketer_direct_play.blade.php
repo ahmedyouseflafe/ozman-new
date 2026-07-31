@@ -27,14 +27,15 @@
         .wheel::after { content:''; position:absolute; inset:38%; border-radius:50%; background:#050505; border:1px solid rgba(255,255,255,.16); box-shadow:0 0 20px rgba(0,229,255,.22); z-index:2; }
         .wheel-labels { position:absolute; inset:0; pointer-events:none; }
         .wheel-label { position:absolute; top:50%; left:50%; width:44%; transform-origin:0 0; color:#fff; font-size:13px; font-weight:900; text-align:center; text-shadow:0 2px 8px rgba(0,0,0,.58); z-index:1; }
-        .wheel-prize-image { position:absolute; top:50%; left:50%; width:42px; height:42px; object-fit:cover; border-radius:11px; border:2px solid rgba(255,255,255,.72); background:#050505; box-shadow:0 6px 18px rgba(0,0,0,.32); transform-origin:0 0; z-index:1; }
+        .wheel-prize-slot { position:absolute; inset:0; transform-origin:center; z-index:1; }
+        .wheel-prize-image { position:absolute; top:18px; left:50%; width:38px; height:38px; object-fit:cover; border-radius:10px; border:2px solid rgba(255,255,255,.72); background:#050505; box-shadow:0 6px 18px rgba(0,0,0,.32); transform-origin:center; }
         .btn { border:0; min-height:46px; border-radius:999px; padding:0 22px; display:inline-flex; align-items:center; justify-content:center; gap:8px; color:#001014; background:linear-gradient(135deg,var(--primary),var(--accent)); font-family:inherit; font-weight:900; cursor:pointer; text-decoration:none; margin-top:18px; }
         .btn.secondary { color:#fff; background:rgba(255,255,255,.075); border:1px solid var(--border); }
         .btn:disabled { opacity:.55; cursor:not-allowed; }
         .result { min-height:54px; margin-top:18px; color:var(--green); font-size:20px; font-weight:900; text-align:center; }
         .gift-result-img { display:block; width:min(220px,80vw); max-height:220px; object-fit:cover; border-radius:20px; border:1px solid var(--border); margin:12px auto 0; box-shadow:0 0 24px rgba(0,229,255,.18); }
         .inactive { color:#ffb8b3; margin-top:12px; font-weight:900; }
-        @media(max-width:900px){ .main{margin-right:0}.content{padding:22px 16px 36px}.play-head{flex-direction:column;align-items:stretch} h1{font-size:28px}.wheel{width:min(84vw,370px)}.wheel-prize-image{width:36px;height:36px;border-radius:9px} }
+        @media(max-width:900px){ .main{margin-right:0}.content{padding:22px 16px 36px}.play-head{flex-direction:column;align-items:stretch} h1{font-size:28px}.wheel{width:min(84vw,370px)}.wheel-prize-image{top:13px;width:32px;height:32px;border-radius:8px} }
     </style>
 </head>
 
@@ -98,7 +99,7 @@
                                         @endphp
                                         <span class="wheel-label" style="transform: rotate({{ $angle }}deg) translate(25%, -50%);">{{ $segment->label }}</span>
                                         @if($segment->discount_type === 'gift' && $segment->gift_image)
-                                            <img class="wheel-prize-image" src="{{ asset($segment->gift_image) }}" alt="{{ $segment->label }}" style="transform: rotate({{ $angle }}deg) translate(min(42vw, 188px), -50%) rotate({{ $counterAngle }}deg);">
+                                            <span class="wheel-prize-slot" style="transform:rotate({{ $angle + 90 }}deg)"><img class="wheel-prize-image" src="{{ asset($segment->gift_image) }}" alt="{{ $segment->label }}" style="transform:translateX(-50%) rotate({{ $counterAngle - 90 }}deg)"></span>
                                         @endif
                                     @endforeach
                                 </div>

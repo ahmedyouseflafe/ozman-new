@@ -224,19 +224,24 @@
             text-shadow: 0 2px 8px rgba(0,0,0,.58);
             z-index: 1;
         }
+        .wheel-prize-slot {
+            position: absolute;
+            inset: 0;
+            transform-origin: center;
+            z-index: 1;
+        }
         .wheel-prize-image {
             position: absolute;
-            top: 50%;
+            top: 18px;
             left: 50%;
-            width: 42px;
-            height: 42px;
+            width: 38px;
+            height: 38px;
             object-fit: cover;
-            border-radius: 11px;
+            border-radius: 10px;
             border: 2px solid rgba(255,255,255,.72);
             background: #050505;
             box-shadow: 0 6px 18px rgba(0,0,0,.32);
-            transform-origin: 0 0;
-            z-index: 1;
+            transform-origin: center;
         }
         .result { min-height: 54px; margin-top: 18px; color: var(--green); font-size: 20px; font-weight: 900; text-align: center; }
         .gift-result-img {
@@ -260,7 +265,7 @@
             .panel { padding: 18px; }
             .question-title { font-size: 21px; }
             .wheel { width: min(84vw, 360px); }
-            .wheel-prize-image { width:36px; height:36px; border-radius:9px; }
+            .wheel-prize-image { top:13px; width:32px; height:32px; border-radius:8px; }
         }
     </style>
 </head>
@@ -435,7 +440,7 @@
                                             @endphp
                                             <span class="wheel-label" style="transform: rotate({{ $angle }}deg) translate(25%, -50%);">{{ $segment->label }}</span>
                                             @if($segment->discount_type === 'gift' && $segment->gift_image)
-                                                <img class="wheel-prize-image" src="{{ asset($segment->gift_image) }}" alt="{{ $segment->label }}" style="transform: rotate({{ $angle }}deg) translate(min(42vw, 188px), -50%) rotate({{ $counterAngle }}deg);">
+                                                <span class="wheel-prize-slot" style="transform:rotate({{ $angle + 90 }}deg)"><img class="wheel-prize-image" src="{{ asset($segment->gift_image) }}" alt="{{ $segment->label }}" style="transform:translateX(-50%) rotate({{ $counterAngle - 90 }}deg)"></span>
                                             @endif
                                         @endforeach
                                     </div>
