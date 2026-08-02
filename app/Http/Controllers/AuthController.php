@@ -185,6 +185,9 @@ class AuthController extends Controller
                 'latitude' => $data['latitude'],
                 'longitude' => $data['longitude'],
                 'is_active' => true,
+                // المتجر المسجل من QR هو عميل للموزع/المروج، لذلك يجب أن
+                // يرى كتالوج Ozman الأساسي فور دخوله بدون نسخ ملكية المنتجات.
+                'show_ozman_products' => true,
             ]);
 
             return [$user, $shop];

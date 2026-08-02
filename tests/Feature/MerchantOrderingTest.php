@@ -352,6 +352,7 @@ class MerchantOrderingTest extends TestCase
         $this->assertTrue($owner->isShopOwner());
         $this->assertSame($distributor->id, $shop->distributor_id);
         $this->assertSame($marketer->id, $shop->distributor_marketer_id);
+        $this->assertTrue($shop->show_ozman_products);
         $this->assertEqualsWithDelta(32.2211, (float) $shop->latitude, 0.0000001);
         $this->assertEqualsWithDelta(35.2544, (float) $shop->longitude, 0.0000001);
         $this->assertNotNull($shop->logo);
