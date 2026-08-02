@@ -4651,7 +4651,61 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             }
 
+            function authenticatedMerchantProfile() {
+                const merchant = window.OZMAN_FRONT_CONFIG?.merchantAccount;
+                if (!merchant?.authenticated) return null;
+
+                return {
+                    name: merchant.shop_name || merchant.customer_name || '',
+                    phone: merchant.customer_phone || '',
+                    whatsapp: merchant.customer_whatsapp || merchant.customer_phone || '',
+                    address: merchant.customer_address || '',
+                    latitude: merchant.customer_latitude || '',
+                    longitude: merchant.customer_longitude || '',
+                    mapLink: merchant.customer_map_link || ''
+                };
+            }
+
+            function submitAuthenticatedMerchantOrder(product = null) {
+                const profile = authenticatedMerchantProfile();
+                if (!profile) return false;
+
+                if (!product && ozmanCart.length === 0) {
+                    showCartToast(frontLabel('chooseProductsBeforePayment', 'اختار منتجاتك قبل إرسال الطلب'));
+                    return true;
+                }
+
+                pendingSingleProduct = product
+                    ? productForCurrentVisitor({
+                        ...product,
+                        order_context: product.order_context || currentRecipientContext(),
+                    })
+                    : null;
+
+                closeCartPanel();
+                const rewardTotal = pendingSingleProduct
+                    ? cartItemLineTotal(pendingSingleProduct)
+                    : cartFinalValue();
+                const orderGroups = orderGroupsForCurrentItems();
+                const whatsappWindows = orderGroups.map(() => window.open('', '_blank'));
+                const orderPromise = submitSplitFrontOrders(profile, 'whatsapp', 'whatsapp', whatsappWindows);
+                trackPendingPurchaseOrderPromise(orderPromise);
+
+                orderPromise.then(() => {
+                    clearSubmittedOrderItems();
+                    openPurchaseRewardWheelForTotal(rewardTotal);
+                }).catch((error) => {
+                    whatsappWindows.forEach((whatsappWindow) => {
+                        if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
+                    });
+                    showCartToast(error.message || 'تعذر حفظ الطلب في الداشبورد.');
+                });
+
+                return true;
+            }
+
             function openCustomerLoginModal(product = null) {
+                if (submitAuthenticatedMerchantOrder(product)) return;
                 if (!customerLoginModal) return;
                 pendingSingleProduct = product
                     ? productForCurrentVisitor({

@@ -41,6 +41,23 @@ class FrontOrderController extends Controller
                 ->first();
         }
 
+        // بيانات صاحب المتجر ثابتة في حسابه. نعتمدها من السيرفر ولا نطلبها
+        // مجدداً عند كل طلب، كما نمنع تغييرها من بيانات الطلب المرسلة يدوياً.
+        if ($authenticatedShop) {
+            $request->merge([
+                'customer_name' => $authenticatedShop->name,
+                'customer_phone' => $authenticatedShop->phone ?: $request->user()?->phone,
+                'customer_whatsapp' => $authenticatedShop->whatsapp ?: $authenticatedShop->phone ?: $request->user()?->phone,
+                'customer_address' => $authenticatedShop->address,
+                'latitude' => $authenticatedShop->latitude,
+                'longitude' => $authenticatedShop->longitude,
+                'map_link' => $authenticatedShop->latitude !== null && $authenticatedShop->longitude !== null
+                    ? 'https://www.google.com/maps?q=' . $authenticatedShop->latitude . ',' . $authenticatedShop->longitude
+                    : null,
+                'visitor_type' => 'merchant',
+            ]);
+        }
+
         $validated = $request->validate([
             'shop_id' => ['nullable', 'integer', 'exists:shops,id'],
             'distributor_id' => ['nullable', 'integer', 'exists:distributors,id'],

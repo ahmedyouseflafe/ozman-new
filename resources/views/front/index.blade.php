@@ -208,6 +208,11 @@
             'customer_phone' => auth()->user()?->phone ?: $authenticatedMerchantShop->phone,
             'customer_whatsapp' => $authenticatedMerchantShop->whatsapp ?: $authenticatedMerchantShop->phone,
             'customer_address' => $authenticatedMerchantShop->address,
+            'customer_latitude' => $authenticatedMerchantShop->latitude,
+            'customer_longitude' => $authenticatedMerchantShop->longitude,
+            'customer_map_link' => $authenticatedMerchantShop->latitude !== null && $authenticatedMerchantShop->longitude !== null
+                ? 'https://www.google.com/maps?q=' . $authenticatedMerchantShop->latitude . ',' . $authenticatedMerchantShop->longitude
+                : null,
         ] : null;
     @endphp
 

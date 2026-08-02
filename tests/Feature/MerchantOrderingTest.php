@@ -158,6 +158,11 @@ class MerchantOrderingTest extends TestCase
     public function test_authenticated_merchant_order_ignores_spoofed_distributor_and_shop(): void
     {
         [$merchant, $merchantShop, $linkedDistributor] = $this->merchantLinkedToDistributor();
+        $merchantShop->update([
+            'address' => 'عنوان المتجر المحفوظ',
+            'latitude' => 32.2211,
+            'longitude' => 35.2544,
+        ]);
         [, $otherShop, $otherDistributor] = $this->merchantLinkedToDistributor('other');
 
         $response = $this->actingAs($merchant)->postJson(route('front-orders.store'), [
@@ -180,6 +185,11 @@ class MerchantOrderingTest extends TestCase
         $this->assertSame($merchantShop->id, $order->shop_id);
         $this->assertSame($linkedDistributor->id, $order->distributor_id);
         $this->assertSame('merchant_account', $order->marketing_source);
+        $this->assertSame($merchantShop->name, $order->customer_name);
+        $this->assertSame($merchantShop->phone, $order->customer_phone);
+        $this->assertSame('عنوان المتجر المحفوظ', $order->customer_address);
+        $this->assertEqualsWithDelta(32.2211, (float) $order->latitude, 0.0000001);
+        $this->assertEqualsWithDelta(35.2544, (float) $order->longitude, 0.0000001);
         $this->assertNotSame($otherDistributor->id, $order->distributor_id);
     }
 
