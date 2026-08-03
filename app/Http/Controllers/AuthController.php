@@ -195,7 +195,7 @@ class AuthController extends Controller
                 'catalog_type' => 'general',
                 'logo' => $logoPath,
                 'phone' => $data['phone'],
-                'whatsapp' => $data['whatsapp'] ?: $data['phone'],
+                'whatsapp' => ($data['whatsapp'] ?? null) ?: $data['phone'],
                 'email' => $data['email'],
                 'address' => $data['address'] ?? null,
                 'latitude' => $data['latitude'],
