@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
@@ -135,10 +136,19 @@ class AuthController extends Controller
 
     public function merchantRegister(Request $request): RedirectResponse
     {
+        $normalizedEmail = Str::lower(trim((string) $request->input('email')));
+        $request->merge(['email' => $normalizedEmail]);
+        $orphanOwner = filter_var($normalizedEmail, FILTER_VALIDATE_EMAIL)
+            ? User::query()->where('email', $normalizedEmail)->first()
+            : null;
+        if (! $orphanOwner?->isShopOwner() || $orphanOwner->shops()->exists()) {
+            $orphanOwner = null;
+        }
+
         $data = $request->validate([
             'owner_name' => ['required', 'string', 'max:255'],
             'shop_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($orphanOwner?->id)],
             'phone' => ['required', 'string', 'max:60', new ValidPhoneNumber()],
             'whatsapp' => ['nullable', 'string', 'max:60', new ValidPhoneNumber()],
             'address' => ['nullable', 'string', 'max:1000'],
@@ -147,6 +157,8 @@ class AuthController extends Controller
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'password' => ['required', 'confirmed', Password::min(8)],
             'redirect' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'email.unique' => 'هذا البريد مرتبط بحساب موجود فعلياً. جرّب تسجيل الدخول أو استخدم بريداً آخر.',
         ]);
 
         $referral = $this->resolvedMerchantReferral($request);
@@ -155,6 +167,10 @@ class AuthController extends Controller
                 ->withErrors(['email' => 'انتهت أو أصبحت إحالة QR غير صالحة. امسح QR مرة أخرى.'])
                 ->withInput($request->except(['password', 'password_confirmation']));
         }
+
+        // حذف المتجر قديماً كان يترك حساب صاحبه بلا متجر ويحجز بريده.
+        // لا نحذف السجل اليتيم إلا بعد التأكد من صلاحية إحالة QR.
+        $orphanOwner?->delete();
 
         $logoPath = $request->hasFile('logo')
             ? 'storage/' . $request->file('logo')->store('shops/logos', 'public')

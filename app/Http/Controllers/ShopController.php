@@ -13,6 +13,7 @@ use BaconQrCode\Writer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -348,7 +349,15 @@ class ShopController extends Controller
 
         $this->deleteUpload($shop->logo);
         $this->deleteUpload($shop->banner);
-        $shop->delete();
+
+        DB::transaction(function () use ($shop) {
+            $owner = $shop->user;
+            $shop->delete();
+
+            if ($owner?->isShopOwner() && $owner->shops()->doesntExist()) {
+                $owner->delete();
+            }
+        });
 
         return redirect()
             ->route('shops')

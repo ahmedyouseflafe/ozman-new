@@ -408,6 +408,42 @@ class MerchantOrderingTest extends TestCase
         $this->assertSame('18.00', $order->marketer_commission_amount);
     }
 
+    public function test_qr_registration_reclaims_email_left_by_deleted_shop_owner_account(): void
+    {
+        [, , $distributor] = $this->merchantLinkedToDistributor('orphan-email');
+        $orphan = User::create([
+            'name' => 'حساب متجر محذوف',
+            'email' => 'deleted-shop@example.com',
+            'password' => 'old-password',
+            'role' => 'shop_owner',
+            'is_active' => true,
+        ]);
+        $this->assertTrue($orphan->shops()->doesntExist());
+
+        $qrLoginUrl = URL::signedRoute('merchant.login', [
+            'referrer_type' => 'distributor',
+            'referrer' => $distributor->id,
+            'redirect' => route('home', absolute: false),
+        ]);
+        $this->get($qrLoginUrl)->assertOk();
+
+        $this->post(route('merchant.register.store'), [
+            'owner_name' => 'صاحب المتجر الجديد',
+            'shop_name' => 'المتجر الجديد',
+            'email' => ' DELETED-SHOP@example.com ',
+            'phone' => '0591234567',
+            'latitude' => '32.2211000',
+            'longitude' => '35.2544000',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertRedirect();
+
+        $replacement = User::query()->where('email', 'deleted-shop@example.com')->firstOrFail();
+        $this->assertNotSame($orphan->id, $replacement->id);
+        $this->assertTrue($replacement->shops()->exists());
+        $this->assertSame(1, User::query()->where('email', 'deleted-shop@example.com')->count());
+    }
+
     public function test_merchant_self_registration_requires_qr_referral(): void
     {
         $this->get(route('merchant.register'))
