@@ -458,6 +458,21 @@ class RaffleCardController extends Controller
 
     public function check(Request $request): JsonResponse
     {
+        $merchantShop = $request->user()?->isShopOwner()
+            ? $request->user()->shops()->where('is_active', true)->first()
+            : null;
+
+        if ($merchantShop) {
+            $request->merge([
+                'customer' => [
+                    'name' => $merchantShop->name,
+                    'phone' => $merchantShop->phone ?: $request->user()?->phone,
+                    'whatsapp' => $merchantShop->whatsapp ?: $merchantShop->phone ?: $request->user()?->phone,
+                    'address' => $merchantShop->address,
+                ],
+            ]);
+        }
+
         $data = $request->validate([
             'card_number' => ['required', 'digits:6'],
             'customer.name' => ['required', 'string', 'max:255'],

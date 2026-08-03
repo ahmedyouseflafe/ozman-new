@@ -6,6 +6,7 @@ use App\Models\Distributor;
 use App\Models\DistributorMarketer;
 use App\Models\EmployeePermission;
 use App\Models\FrontOrder;
+use App\Models\RaffleCard;
 use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -153,6 +154,27 @@ class MerchantOrderingTest extends TestCase
         $response->assertRedirect(route('home'));
         $this->assertAuthenticatedAs($merchant);
         $this->assertSame($merchantShop->id, session('merchant_shop_id'));
+    }
+
+    public function test_authenticated_shop_owner_can_check_raffle_card_without_entering_customer_data_again(): void
+    {
+        [$merchant, $merchantShop] = $this->merchantLinkedToDistributor('raffle-owner');
+        $merchantShop->update(['address' => 'عنوان المتجر الثابت']);
+        $card = RaffleCard::create([
+            'card_number' => '654321',
+            'prize_title' => 'هدية اختبار',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($merchant)
+            ->postJson(route('raffle.check'), ['card_number' => '654321'])
+            ->assertOk();
+
+        $card->refresh();
+        $this->assertNotNull($card->used_at);
+        $this->assertSame($merchantShop->name, $card->used_customer_name);
+        $this->assertSame($merchantShop->phone, $card->used_customer_phone);
+        $this->assertSame('عنوان المتجر الثابت', $card->used_customer_payload['address']);
     }
 
     public function test_authenticated_merchant_order_ignores_spoofed_distributor_and_shop(): void

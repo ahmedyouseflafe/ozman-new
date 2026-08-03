@@ -4284,6 +4284,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             function requireCustomerRegistration(message = 'سجل بياناتك أولاً قبل استخدام هذه الخاصية.') {
+                if (window.OZMAN_FRONT_CONFIG?.merchantAccount?.authenticated) {
+                    return true;
+                }
+
                 if (hasCompletedCustomerRegistration()) {
                     return true;
                 }
@@ -5312,7 +5316,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         },
                         body: JSON.stringify({
                             card_number: raffleCardNumber.value,
-                            customer: loadCustomerProfile(),
+                            customer: authenticatedMerchantProfile() || loadCustomerProfile(),
                         }),
                     });
                     const payload = await response.json().catch(() => ({}));
