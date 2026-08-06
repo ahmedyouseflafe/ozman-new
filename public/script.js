@@ -29,7 +29,37 @@ function initMediaStorySlider(slider) {
         activateSlide(index);
 }
 
+function initLazyVideos(root = document) {
+    const videos = Array.from(root.querySelectorAll('video[data-src]'));
+    if (!videos.length) return;
+
+    const load = (video) => {
+        if (video.src || !video.dataset.src) return;
+        video.src = video.dataset.src;
+        video.load();
+        if (video.closest('.media-story-slide')?.classList.contains('active')) {
+            video.play().catch(() => {});
+        }
+    };
+
+    if (!('IntersectionObserver' in window)) {
+        videos.forEach(load);
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            load(entry.target);
+            observer.unobserve(entry.target);
+        });
+    }, { rootMargin: '250px' });
+
+    videos.forEach((video) => observer.observe(video));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    initLazyVideos();
     document.querySelectorAll('[data-media-story]').forEach((slider) => {
         initMediaStorySlider(slider);
     });
@@ -1254,7 +1284,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const title = escapeCartHtml(item.title || shop.title || 'عرض المتجر');
                         const src = escapeCartHtml(item.type === 'youtube' ? youtubeEmbedUrl(item.src) : item.src);
                         const media = item.type === 'video'
-                            ? `<video src="${src}" muted playsinline loop></video>`
+                            ? `<video data-src="${src}" poster="${escapeCartHtml(item.poster || '')}" preload="none" muted playsinline loop></video>`
                             : item.type === 'youtube'
                                 ? `<iframe src="${src}" title="${title}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`
                                 : `<img src="${src}" alt="${title}">`;
@@ -1263,7 +1293,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }).join('')}</div>`;
 
                     const slider = display.querySelector('[data-media-story]');
-                    if (slider) initMediaStorySlider(slider);
+                    if (slider) {
+                        initLazyVideos(slider);
+                        initMediaStorySlider(slider);
+                    }
                 } else {
                     const template = display.dataset.emptyTextTemplate || 'أهلا بك في :shop - اكتشف أقسام ومنتجات المتجر';
                     const text = escapeCartHtml(template.replace(':shop', shop.title || 'المحل'));

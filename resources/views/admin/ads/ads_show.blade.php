@@ -33,6 +33,13 @@
                         <img src="{{ asset($ad->media) }}" class="preview" alt="{{ $ad->title }}">
                     @elseif($ad->type === 'video')
                         <video src="{{ asset($ad->media) }}" class="preview" controls></video>
+                        @if($ad->video_status === 'processing')
+                            <p class="tag tag-y">جاري تجهيز الفيديو...</p>
+                        @elseif($ad->video_status === 'failed')
+                            <p class="tag tag-r">فشل تجهيز الفيديو: {{ $ad->video_error }}</p>
+                        @elseif($ad->video_status === 'ready')
+                            <p class="tag tag-g">الفيديو جاهز ومحسّن</p>
+                        @endif
                     @else
                         <div class="detail-box">
                             <span class="label">رابط يوتيوب</span>

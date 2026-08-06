@@ -351,6 +351,13 @@
                         @if($product->video)
                             <div class="video-box">
                                 <video src="{{ asset($product->video) }}" controls></video>
+                                @if($product->video_status === 'processing')
+                                    <p>جاري تجهيز الفيديو...</p>
+                                @elseif($product->video_status === 'failed')
+                                    <p>فشل تجهيز الفيديو: {{ $product->video_error }}</p>
+                                @elseif($product->video_status === 'ready')
+                                    <p>الفيديو جاهز ومحسّن</p>
+                                @endif
                             </div>
                         @endif
 

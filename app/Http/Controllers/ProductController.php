@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Agent;
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\VideoProcessingService;
 use App\Models\ProductCampaign;
 use App\Models\ProductImage;
 use App\Models\Shop;
@@ -78,6 +79,9 @@ class ProductController extends Controller
         }
 
         $product = Product::create($data);
+        if ($request->hasFile('video')) {
+            app(VideoProcessingService::class)->queue($product, 'video');
+        }
         $this->syncVariants($request, $product);
         $this->storeGalleryImages($request, $product);
         $createdCampaigns = $this->storeCampaigns($request, $product);
@@ -177,13 +181,24 @@ class ProductController extends Controller
 
         if ($request->hasFile('video')) {
             $this->deleteUpload($product->video);
+            $this->deleteUpload($product->video_poster);
             $data['video'] = $this->storeUpload($request, 'video', 'products/videos');
+            $data['video_status'] = null;
+            $data['video_poster'] = null;
+            $data['video_error'] = null;
         } elseif ($request->boolean('delete_video')) {
             $this->deleteUpload($product->video);
+            $this->deleteUpload($product->video_poster);
             $data['video'] = null;
+            $data['video_status'] = null;
+            $data['video_poster'] = null;
+            $data['video_error'] = null;
         }
 
         $product->update($data);
+        if ($request->hasFile('video')) {
+            app(VideoProcessingService::class)->queue($product, 'video');
+        }
         $this->syncVariants($request, $product);
         $this->deleteGalleryImages($request, $product);
         $this->deleteCampaigns($request, $product);
@@ -224,6 +239,7 @@ class ProductController extends Controller
         $product->load(['images', 'campaigns']);
         $this->deleteUpload($product->main_image);
         $this->deleteUpload($product->video);
+        $this->deleteUpload($product->video_poster);
 
         foreach ($product->images as $image) {
             $this->deleteUpload($image->image);
@@ -231,6 +247,7 @@ class ProductController extends Controller
 
         foreach ($product->campaigns as $campaign) {
             $this->deleteUpload($campaign->media);
+            $this->deleteUpload($campaign->video_poster);
         }
 
         $product->delete();
@@ -385,7 +402,7 @@ class ProductController extends Controller
             'barcode' => ['nullable', 'string', 'max:255'],
             'rating' => ['nullable', 'numeric', 'between:0,5'],
             'main_image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif', 'max:1048576'],
-            'video' => ['nullable', 'file', 'mimes:mp4,mov,avi,webm', 'max:20480'],
+            'video' => ['nullable', 'file', 'mimes:mp4,mov,avi,webm', 'max:'.config('media.video_max_upload_kb')],
             'images' => ['nullable', 'array'],
             'images.*' => ['file', 'mimes:jpg,jpeg,png,webp,gif', 'max:1048576'],
             'delete_main_image' => ['nullable', 'boolean'],
@@ -648,7 +665,7 @@ class ProductController extends Controller
                 $media = 'storage/' . $path;
             }
 
-            $createdCampaigns->push(ProductCampaign::create([
+            $campaign = ProductCampaign::create([
                 'product_id' => $product->id,
                 'title' => $title,
                 'title_translations' => array_filter([
@@ -673,7 +690,11 @@ class ProductController extends Controller
                 'starts_at' => $startsAt ?: null,
                 'ends_at' => $endsAt ?: null,
                 'is_active' => true,
-            ]));
+            ]);
+            $createdCampaigns->push($campaign);
+            if ($file && $type === 'video') {
+                app(VideoProcessingService::class)->queue($campaign);
+            }
         }
 
         return $createdCampaigns;
@@ -763,13 +784,20 @@ class ProductController extends Controller
                 $mediaType = $updates['type'];
                 $this->validateCampaignFile($file, $mediaType);
                 $this->deleteUpload($campaign->media);
+                $this->deleteUpload($campaign->video_poster);
 
                 $directory = $mediaType === 'image' ? 'products/campaigns/images' : 'products/campaigns/videos';
                 $path = $file->store($directory, 'public');
                 $updates['media'] = 'storage/' . $path;
+                $updates['video_status'] = null;
+                $updates['video_poster'] = null;
+                $updates['video_error'] = null;
             }
 
             $campaign->update($updates);
+            if ($file && $updates['type'] === 'video') {
+                app(VideoProcessingService::class)->queue($campaign);
+            }
         }
     }
 

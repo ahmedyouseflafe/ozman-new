@@ -27,6 +27,13 @@
                         <img src="{{ asset($screen->media) }}" class="preview" alt="{{ $screen->title }}">
                     @elseif($screen->type === 'video')
                         <video src="{{ asset($screen->media) }}" class="preview" controls></video>
+                        @if($screen->video_status === 'processing')
+                            <p class="tag tag-y">جاري تجهيز الفيديو...</p>
+                        @elseif($screen->video_status === 'failed')
+                            <p class="tag tag-r">فشل تجهيز الفيديو: {{ $screen->video_error }}</p>
+                        @elseif($screen->video_status === 'ready')
+                            <p class="tag tag-g">الفيديو جاهز ومحسّن</p>
+                        @endif
                     @else
                         <div class="detail-box">
                             <span class="label">رابط يوتيوب</span>

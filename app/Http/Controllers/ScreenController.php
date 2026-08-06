@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Advertisement;
 use App\Models\MainScreen;
 use App\Models\Shop;
+use App\Services\VideoProcessingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,7 +15,7 @@ use Illuminate\View\View;
 
 class ScreenController extends Controller
 {
-    private const MAX_SCREEN_UPLOAD_KILOBYTES = 1048576; // 1 GB
+    private const MAX_SCREEN_UPLOAD_KILOBYTES = 25600; // 25 MB before processing
 
     public function index(): View
     {
@@ -64,7 +65,10 @@ class ScreenController extends Controller
         $data['is_active'] = $request->boolean('is_active');
         $data['media'] = $this->resolveMedia($request);
 
-        MainScreen::create($data);
+        $screen = MainScreen::create($data);
+        if ($screen->type === 'video' && $request->hasFile('media_file')) {
+            app(VideoProcessingService::class)->queue($screen);
+        }
 
         return redirect()
             ->route('screens')
@@ -105,12 +109,19 @@ class ScreenController extends Controller
 
         if ($this->shouldReplaceMedia($request, $screen)) {
             $this->deleteUpload($screen->media);
+            $this->deleteUpload($screen->video_poster);
             $data['media'] = $this->resolveMedia($request);
+            $data['video_status'] = null;
+            $data['video_poster'] = null;
+            $data['video_error'] = null;
         } else {
             unset($data['media']);
         }
 
         $screen->update($data);
+        if ($screen->type === 'video' && $request->hasFile('media_file')) {
+            app(VideoProcessingService::class)->queue($screen);
+        }
 
         return redirect()
             ->route('screens')
@@ -123,6 +134,7 @@ class ScreenController extends Controller
         $this->authorizeScreenVisibility($screen);
 
         $this->deleteUpload($screen->media);
+        $this->deleteUpload($screen->video_poster);
         $screen->delete();
 
         return redirect()
@@ -134,6 +146,7 @@ class ScreenController extends Controller
     {
         $items = MainScreen::query()
             ->where('is_active', true)
+            ->publiclyReady()
             ->latest()
             ->get();
 
@@ -149,6 +162,7 @@ class ScreenController extends Controller
         $items = Advertisement::query()
             ->where('shop_id', $shop->id)
             ->where('is_active', true)
+            ->publiclyReady()
             ->orderBy('sort_order')
             ->latest()
             ->get();
@@ -177,6 +191,7 @@ class ScreenController extends Controller
                 Rule::requiredIf(fn() => $isCreate && in_array($request->input('type'), ['image', 'video'], true)),
                 'nullable',
                 'file',
+                Rule::when($request->input('type') === 'video', ['mimetypes:video/mp4,video/quicktime,video/webm,video/x-msvideo']),
                 'max:' . self::MAX_SCREEN_UPLOAD_KILOBYTES,
             ],
             'duration' => ['nullable', 'integer', 'min:1', 'max:3600'],

@@ -23,135 +23,51 @@ class FrontController extends Controller
             return redirect()->route('restaurant.menu', $shop);
         }
 
-        $ozmanShop = Shop::query()
-            ->where('slug', 'ozman')
-            ->with([
-                'social',
-                'distributorMarketer.distributor',
-                'advertisements' => fn($query) => $query
-                    ->where('is_active', true)
-                    ->orderBy('sort_order')
-                    ->latest(),
-                'agents' => fn($query) => $query
-                    ->where('is_active', true)
-                    ->with(['categories' => fn($categoryQuery) => $categoryQuery
-                        ->where('is_active', true)
-                        ->latest()
-                    ])
-                    ->with(['products' => fn($productQuery) => $productQuery
-                        ->where('is_active', true)
-                        ->with(['images', 'campaigns', 'category'])
-                        ->latest()
-                    ])
-                    ->latest(),
-                'distributors' => fn($query) => $query->where('is_active', true)->latest(),
-                'categories' => fn($query) => $query
-                    ->where('is_active', true)
-                    ->whereNull('agent_id')
-                    ->with(['products' => fn($productQuery) => $productQuery
-                        ->where('is_active', true)
-                        ->whereNull('agent_id')
-                        ->with(['images', 'campaigns'])
-                        ->latest()
-                    ])
-                    ->latest(),
-                'products' => fn($query) => $query
-                    ->where('is_active', true)
-                    ->whereNull('agent_id')
-                    ->with(['images', 'campaigns', 'category'])
-                    ->orderByDesc('is_featured')
-                    ->latest(),
-            ])
-            ->first();
-
-        $shops = Shop::query()
+        $shopSummaries = Shop::query()
             ->where('is_active', true)
-            ->where('slug', '!=', 'ozman')
-            ->with([
-                'social',
-                'distributorMarketer.distributor',
-                'advertisements' => fn($query) => $query
-                    ->where('is_active', true)
-                    ->orderBy('sort_order')
-                    ->latest(),
-                'agents' => fn($query) => $query
-                    ->where('is_active', true)
-                    ->with(['categories' => fn($categoryQuery) => $categoryQuery
-                        ->where('is_active', true)
-                        ->latest()
-                    ])
-                    ->with(['products' => fn($productQuery) => $productQuery
-                        ->where('is_active', true)
-                        ->with(['images', 'campaigns', 'category'])
-                        ->latest()
-                    ])
-                    ->latest(),
-                'distributors' => fn($query) => $query->where('is_active', true)->latest(),
-                'categories' => fn($query) => $query
-                    ->where('is_active', true)
-                    ->whereNull('agent_id')
-                    ->with(['products' => fn($productQuery) => $productQuery
-                        ->where('is_active', true)
-                        ->whereNull('agent_id')
-                        ->with(['images', 'campaigns'])
-                        ->latest()
-                    ])
-                    ->latest(),
+            ->select([
+                'id', 'name', 'slug', 'catalog_type', 'logo', 'banner',
+                'phone', 'whatsapp', 'address', 'latitude', 'longitude',
             ])
             ->latest()
             ->get();
 
-        $shop = $shop?->exists
-            ? $shops->firstWhere('id', $shop->id) ?? $shop->load([
-                'social',
-                'distributorMarketer.distributor',
-                'advertisements' => fn($query) => $query
-                    ->where('is_active', true)
-                    ->orderBy('sort_order')
-                    ->latest(),
-                'agents' => fn($query) => $query
-                    ->where('is_active', true)
-                    ->with(['categories' => fn($categoryQuery) => $categoryQuery
-                        ->where('is_active', true)
-                        ->latest()
-                    ])
-                    ->with(['products' => fn($productQuery) => $productQuery
-                        ->where('is_active', true)
-                        ->with(['images', 'campaigns', 'category'])
-                        ->latest()
-                    ])
-                    ->latest(),
-                'distributors' => fn($query) => $query->where('is_active', true)->latest(),
-                'categories' => fn($query) => $query
-                    ->where('is_active', true)
-                    ->whereNull('agent_id')
-                    ->with(['products' => fn($productQuery) => $productQuery
-                        ->where('is_active', true)
-                        ->whereNull('agent_id')
-                        ->with(['images', 'campaigns'])
-                        ->latest()
-                    ]),
-            ])
-            : ($ozmanShop?->exists ? $ozmanShop : $shops->first());
+        $ozmanSummary = $shopSummaries->firstWhere('slug', 'ozman');
+        $selectedShopId = $shop?->exists ? $shop->id : $ozmanSummary?->id;
+        $selectedShopId ??= $shopSummaries->first()?->id;
 
-        if ($shop?->exists) {
-            $shops = $shops
-                ->reject(fn(Shop $listedShop) => $listedShop->id === $shop->id)
-                ->prepend($shop)
-                ->values();
-        }
+        $shop = $selectedShopId
+            ? Shop::query()
+                ->with($this->shopFrontRelations(
+                    includeProducts: true,
+                    ozmanCategoriesOnly: (int) $selectedShopId === (int) $ozmanSummary?->id,
+                ))
+                ->find($selectedShopId)
+            : null;
 
-        if (! $shop?->exists && $ozmanShop?->exists) {
-            $shop = $ozmanShop;
-        }
+        $ozmanShop = $ozmanSummary?->id
+            ? ((int) $shop?->id === (int) $ozmanSummary->id
+                ? $shop
+                : Shop::query()
+                    ->with($this->shopFrontRelations(includeProducts: true, ozmanCategoriesOnly: true))
+                    ->find($ozmanSummary->id))
+            : null;
 
-        $frontShops = $shops->isNotEmpty()
-            ? $shops
-            : collect($shop?->exists ? [$shop] : []);
+        $shops = $shopSummaries
+            ->where('slug', '!=', 'ozman')
+            ->values();
+
+        $frontShops = collect([$shop])
+            ->filter()
+            ->merge($shopSummaries->reject(
+                fn(Shop $listedShop) => (int) $listedShop->id === (int) $shop?->id
+            ))
+            ->values();
 
         $ozmanCategories = $ozmanShop?->categories ?? collect();
         $ozmanScreens = MainScreen::query()
             ->where('is_active', true)
+            ->publiclyReady()
             ->latest()
             ->get();
         $ozmanBottomScreens = $ozmanScreens
@@ -159,6 +75,7 @@ class FrontController extends Controller
             ->values();
         $ozmanAdvertisements = Advertisement::query()
             ->where('is_active', true)
+            ->publiclyReady()
             ->where(function ($query) use ($ozmanShop) {
                 $query->whereNull('shop_id');
 
@@ -326,6 +243,7 @@ class FrontController extends Controller
             'distributorMarketer.distributor',
             'advertisements' => fn($query) => $query
                 ->where('is_active', true)
+                ->publiclyReady()
                 ->orderBy('sort_order')
                 ->latest(),
             'agents' => fn($query) => $query
@@ -336,7 +254,7 @@ class FrontController extends Controller
                 ])
                 ->with(['products' => fn($productQuery) => $productQuery
                     ->where('is_active', true)
-                    ->with(['images', 'campaigns', 'category'])
+                    ->with(['images', 'campaigns' => fn($campaignQuery) => $campaignQuery->publiclyReady(), 'category'])
                     ->latest()
                 ])
                 ->latest(),
@@ -347,7 +265,7 @@ class FrontController extends Controller
                 ->with(['products' => fn($productQuery) => $productQuery
                     ->where('is_active', true)
                     ->whereNull('agent_id')
-                    ->with(['images', 'campaigns'])
+                    ->with(['images', 'campaigns' => fn($campaignQuery) => $campaignQuery->publiclyReady()])
                     ->latest()
                 ])
                 ->latest(),
@@ -445,7 +363,7 @@ class FrontController extends Controller
             $relations['products'] = fn($query) => $query
                 ->where('is_active', true)
                 ->when($ozmanCategoriesOnly, fn($productQuery) => $productQuery->whereNull('agent_id'))
-                ->with(['images', 'campaigns', 'category'])
+                ->with(['images', 'campaigns' => fn($campaignQuery) => $campaignQuery->publiclyReady(), 'category'])
                 ->orderByDesc('is_featured')
                 ->latest();
         }
@@ -466,6 +384,10 @@ class FrontController extends Controller
         }
 
         $centersData = $shops->map(function (Shop $shop) use (&$productsDb, $shops, $ozmanShop, $ozmanBottomScreens, $ozmanCategories) {
+            if (! $shop->relationLoaded('categories')) {
+                return $this->lightweightShopPayload($shop);
+            }
+
             $shopProductsDb = [];
             $shopDepartments = [];
 
@@ -599,6 +521,33 @@ class FrontController extends Controller
         ];
     }
 
+    private function lightweightShopPayload(Shop $shop): array
+    {
+        return [
+            'id' => $shop->id,
+            'title' => $shop->name,
+            'catalog_type' => $shop->catalog_type,
+            'public_url' => $shop->catalog_type === 'restaurant'
+                ? route('restaurant.menu', $shop)
+                : route('front.shop.slug', $shop),
+            'img' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
+            'logo' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
+            'whatsapp_number' => $this->contactWhatsappNumber($shop->whatsapp ?: $shop->phone),
+            'marketing_context' => null,
+            'purchase_reward_wheels' => [],
+            'social_links' => [],
+            'agents' => [],
+            'distributors' => [],
+            'display_items' => [],
+            'departments' => [],
+            'products_db' => [],
+            'address' => $shop->address,
+            'latitude' => $shop->latitude !== null ? (float) $shop->latitude : null,
+            'longitude' => $shop->longitude !== null ? (float) $shop->longitude : null,
+            'map_url' => $this->shopMapUrl($shop),
+        ];
+    }
+
     private function productPayload(Product $product): array
     {
         $gallery = $product->images
@@ -614,6 +563,7 @@ class FrontController extends Controller
             ->map(fn($campaign) => [
                 'type' => $campaign->type,
                 'src' => $this->imageUrl($campaign->media, ''),
+                'poster' => $this->imageUrl($campaign->video_poster, ''),
                 'title' => $campaign->localized('title'),
                 'offer_type' => $campaign->offer_type,
                 'unit_key' => $campaign->unit_key,
@@ -653,7 +603,10 @@ class FrontController extends Controller
             'carton_price' => $cartonPrice !== null ? number_format($cartonPrice, 2) . ' ₪' : null,
             'img' => $image,
             'gallery' => $gallery ?: [$image],
-            'video' => $this->imageUrl($product->video, ''),
+            'video' => in_array($product->video_status, [null, 'ready'], true)
+                ? $this->imageUrl($product->video, '')
+                : '',
+            'video_poster' => $this->imageUrl($product->video_poster, ''),
             'campaigns' => $campaignMedia,
             'description' => $product->localized('description'),
         ];
@@ -890,6 +843,7 @@ class FrontController extends Controller
             ->map(fn($item) => [
                 'type' => $item->type ?? 'image',
                 'src' => $this->imageUrl($item->media, ''),
+                'poster' => $this->imageUrl($item->video_poster ?? null, ''),
                 'title' => $item->title ?? '',
                 'duration' => max((int) ($item->duration ?? 8), 1) * 1000,
             ])

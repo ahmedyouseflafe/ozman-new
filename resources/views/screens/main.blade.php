@@ -71,7 +71,7 @@
                                 @if($item->type === 'image')
                                     <img src="{{ asset($item->media) }}" alt="{{ $item->title }}">
                                 @elseif($item->type === 'video')
-                                    <video src="{{ asset($item->media) }}" muted playsinline autoplay loop></video>
+                                    <video src="{{ asset($item->media) }}" poster="{{ $item->video_poster ? asset($item->video_poster) : '' }}" preload="metadata" muted playsinline autoplay loop></video>
                                 @else
                                     <div class="youtube">
                                         <i class="ti ti-brand-youtube"></i>

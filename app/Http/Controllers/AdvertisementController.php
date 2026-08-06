@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Advertisement;
 use App\Models\Shop;
+use App\Services\VideoProcessingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -58,6 +59,9 @@ class AdvertisementController extends Controller
         $data['media'] = $this->resolveMedia($request);
 
         $ad = Advertisement::create($data);
+        if ($ad->type === 'video' && $request->hasFile('media_file')) {
+            app(VideoProcessingService::class)->queue($ad);
+        }
 
         $this->notifySuperAdmin(
             'advertisement_created',
@@ -100,12 +104,19 @@ class AdvertisementController extends Controller
 
         if ($this->shouldReplaceMedia($request, $ad)) {
             $this->deleteUpload($ad->media);
+            $this->deleteUpload($ad->video_poster);
             $data['media'] = $this->resolveMedia($request);
+            $data['video_status'] = null;
+            $data['video_poster'] = null;
+            $data['video_error'] = null;
         } else {
             unset($data['media']);
         }
 
         $ad->update($data);
+        if ($ad->type === 'video' && $request->hasFile('media_file')) {
+            app(VideoProcessingService::class)->queue($ad);
+        }
 
         return redirect()
             ->route('ads')
@@ -116,6 +127,7 @@ class AdvertisementController extends Controller
     {
         $this->authorizeShopAccess($ad);
         $this->deleteUpload($ad->media);
+        $this->deleteUpload($ad->video_poster);
         $ad->delete();
 
         return redirect()
@@ -142,7 +154,8 @@ class AdvertisementController extends Controller
                 Rule::requiredIf(fn() => $isCreate && in_array($request->input('type'), ['image', 'video'], true)),
                 'nullable',
                 'file',
-                'max:20480',
+                Rule::when($request->input('type') === 'video', ['mimetypes:video/mp4,video/quicktime,video/webm,video/x-msvideo']),
+                'max:' . config('media.video_max_upload_kb'),
             ],
             'duration' => ['nullable', 'integer', 'min:1', 'max:3600'],
             'sort_order' => ['nullable', 'integer', 'min:0'],

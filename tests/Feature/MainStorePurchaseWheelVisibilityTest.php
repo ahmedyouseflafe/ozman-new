@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\RewardWheel;
 use App\Models\Shop;
 use App\Models\User;
@@ -82,5 +84,55 @@ class MainStorePurchaseWheelVisibilityTest extends TestCase
 
         $this->assertSame($other->id, $response->viewData('shop')->id);
         $this->assertSame([], $response->viewData('purchaseRewardWheels'));
+    }
+
+    public function test_home_only_embeds_products_for_the_active_shop(): void
+    {
+        $admin = User::create([
+            'name' => 'Performance Admin',
+            'email' => 'performance-admin@example.com',
+            'password' => 'secret123',
+            'role' => 'super_admin',
+            'is_active' => true,
+        ]);
+        $ozman = Shop::create([
+            'user_id' => $admin->id,
+            'name' => 'Ozman',
+            'slug' => 'ozman',
+            'is_active' => true,
+        ]);
+        $other = Shop::create([
+            'user_id' => $admin->id,
+            'name' => 'Heavy Shop',
+            'slug' => 'heavy-shop',
+            'is_active' => true,
+        ]);
+        $category = Category::create([
+            'shop_id' => $other->id,
+            'name' => 'Heavy Category',
+            'slug' => 'heavy-category',
+            'is_active' => true,
+        ]);
+        Product::create([
+            'shop_id' => $other->id,
+            'category_id' => $category->id,
+            'name' => 'Heavy Product',
+            'slug' => 'heavy-product',
+            'price' => 50,
+            'is_active' => true,
+        ]);
+
+        $homeData = $this->get(route('home'))->assertOk()->viewData('frontData');
+        $homeOther = collect($homeData['centersData'])->firstWhere('id', $other->id);
+
+        $this->assertSame($ozman->id, $homeData['centersData'][0]['id']);
+        $this->assertSame([], $homeOther['departments']);
+        $this->assertSame([], $homeOther['products_db']);
+        $this->assertSame(route('front.shop.slug', $other), $homeOther['public_url']);
+
+        $otherData = $this->get(route('front.shop.slug', $other))->assertOk()->viewData('frontData');
+
+        $this->assertSame($other->id, $otherData['centersData'][0]['id']);
+        $this->assertSame('Heavy Product', $otherData['centersData'][0]['products_db']['Heavy Category'][0]['name']);
     }
 }
