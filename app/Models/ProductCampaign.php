@@ -27,9 +27,6 @@ class ProductCampaign extends Model
         'starts_at',
         'ends_at',
         'is_active',
-        'video_status',
-        'video_poster',
-        'video_error',
     ];
 
     protected $casts = [
@@ -46,11 +43,4 @@ class ProductCampaign extends Model
         return $this->belongsTo(Product::class);
     }
 
-    public function scopePubliclyReady($query)
-    {
-        return $query->where(fn($query) => $query
-            ->where('type', '!=', 'video')
-            ->orWhereNull('video_status')
-            ->orWhere('video_status', 'ready'));
-    }
 }

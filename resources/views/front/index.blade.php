@@ -270,7 +270,7 @@
                             <article class="media-story-slide {{ $loop->first ? 'active' : '' }}"
                                 data-duration="{{ max((int) ($item->duration ?? 8), 1) * 1000 }}">
                                 @if ($item->type === 'video')
-                                    <video data-src="{{ $mediaUrl($item->media) }}" poster="{{ $mediaUrl($item->video_poster ?? null) }}" preload="none" muted playsinline loop></video>
+                                    <video src="{{ $mediaUrl($item->media) }}" muted playsinline loop></video>
                                 @elseif($item->type === 'youtube')
                                     <iframe src="{{ $youtubeEmbedUrl($item->media) }}" title="{{ $item->title }}"
                                         allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
@@ -377,7 +377,7 @@
                                 <article class="media-story-slide {{ $loop->first ? 'active' : '' }}"
                                     data-duration="{{ max((int) ($item->duration ?? 8), 1) * 1000 }}">
                                     @if ($item->type === 'video')
-                                        <video data-src="{{ $mediaUrl($item->media) }}" poster="{{ $mediaUrl($item->video_poster ?? null) }}" preload="none" muted playsinline loop></video>
+                                        <video src="{{ $mediaUrl($item->media) }}" muted playsinline loop></video>
                                     @elseif($item->type === 'youtube')
                                         <iframe src="{{ $youtubeEmbedUrl($item->media) }}"
                                             title="{{ $item->title }}"

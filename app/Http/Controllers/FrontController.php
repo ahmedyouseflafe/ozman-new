@@ -67,7 +67,6 @@ class FrontController extends Controller
         $ozmanCategories = $ozmanShop?->categories ?? collect();
         $ozmanScreens = MainScreen::query()
             ->where('is_active', true)
-            ->publiclyReady()
             ->latest()
             ->get();
         $ozmanBottomScreens = $ozmanScreens
@@ -75,7 +74,6 @@ class FrontController extends Controller
             ->values();
         $ozmanAdvertisements = Advertisement::query()
             ->where('is_active', true)
-            ->publiclyReady()
             ->where(function ($query) use ($ozmanShop) {
                 $query->whereNull('shop_id');
 
@@ -243,7 +241,6 @@ class FrontController extends Controller
             'distributorMarketer.distributor',
             'advertisements' => fn($query) => $query
                 ->where('is_active', true)
-                ->publiclyReady()
                 ->orderBy('sort_order')
                 ->latest(),
             'agents' => fn($query) => $query
@@ -254,7 +251,7 @@ class FrontController extends Controller
                 ])
                 ->with(['products' => fn($productQuery) => $productQuery
                     ->where('is_active', true)
-                    ->with(['images', 'campaigns' => fn($campaignQuery) => $campaignQuery->publiclyReady(), 'category'])
+                    ->with(['images', 'campaigns', 'category'])
                     ->latest()
                 ])
                 ->latest(),
@@ -265,7 +262,7 @@ class FrontController extends Controller
                 ->with(['products' => fn($productQuery) => $productQuery
                     ->where('is_active', true)
                     ->whereNull('agent_id')
-                    ->with(['images', 'campaigns' => fn($campaignQuery) => $campaignQuery->publiclyReady()])
+                    ->with(['images', 'campaigns'])
                     ->latest()
                 ])
                 ->latest(),
@@ -363,7 +360,7 @@ class FrontController extends Controller
             $relations['products'] = fn($query) => $query
                 ->where('is_active', true)
                 ->when($ozmanCategoriesOnly, fn($productQuery) => $productQuery->whereNull('agent_id'))
-                ->with(['images', 'campaigns' => fn($campaignQuery) => $campaignQuery->publiclyReady(), 'category'])
+                ->with(['images', 'campaigns', 'category'])
                 ->orderByDesc('is_featured')
                 ->latest();
         }
@@ -563,7 +560,6 @@ class FrontController extends Controller
             ->map(fn($campaign) => [
                 'type' => $campaign->type,
                 'src' => $this->imageUrl($campaign->media, ''),
-                'poster' => $this->imageUrl($campaign->video_poster, ''),
                 'title' => $campaign->localized('title'),
                 'offer_type' => $campaign->offer_type,
                 'unit_key' => $campaign->unit_key,
@@ -603,10 +599,7 @@ class FrontController extends Controller
             'carton_price' => $cartonPrice !== null ? number_format($cartonPrice, 2) . ' ₪' : null,
             'img' => $image,
             'gallery' => $gallery ?: [$image],
-            'video' => in_array($product->video_status, [null, 'ready'], true)
-                ? $this->imageUrl($product->video, '')
-                : '',
-            'video_poster' => $this->imageUrl($product->video_poster, ''),
+            'video' => $this->imageUrl($product->video, ''),
             'campaigns' => $campaignMedia,
             'description' => $product->localized('description'),
         ];
@@ -843,7 +836,6 @@ class FrontController extends Controller
             ->map(fn($item) => [
                 'type' => $item->type ?? 'image',
                 'src' => $this->imageUrl($item->media, ''),
-                'poster' => $this->imageUrl($item->video_poster ?? null, ''),
                 'title' => $item->title ?? '',
                 'duration' => max((int) ($item->duration ?? 8), 1) * 1000,
             ])
