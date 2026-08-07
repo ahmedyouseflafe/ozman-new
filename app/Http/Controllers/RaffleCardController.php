@@ -67,6 +67,28 @@ class RaffleCardController extends Controller
         ]);
     }
 
+    public function inspector(Request $request): View
+    {
+        abort_unless($this->canAccessCurrentRoute(), 403);
+
+        $data = $request->validate([
+            'card_number' => ['nullable', 'digits:6'],
+        ], [
+            'card_number.digits' => 'أدخل رقم البطاقة المكوّن من 6 أرقام.',
+        ]);
+
+        $searched = filled($data['card_number'] ?? null);
+        $card = $searched
+            ? RaffleCard::query()->where('card_number', $data['card_number'])->first()
+            : null;
+
+        return view('admin.raffle_cards.inspector', [
+            'cardNumber' => $data['card_number'] ?? '',
+            'searched' => $searched,
+            'card' => $card,
+        ]);
+    }
+
     public function openCard(string $cardNumber): RedirectResponse
     {
         abort_unless(preg_match('/^\d{6}$/', $cardNumber) === 1, 404);

@@ -451,6 +451,12 @@
              <i class="ti ti-ticket" aria-hidden="true"></i>
              بطاقات السحب
         </a>
+        @elseif($canSee(['raffle-cards.inspector']))
+        <a href="{{ route('raffle-cards.inspector') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('raffle-cards.inspector') ? 'active' : '' }}">
+             <i class="ti ti-ticket" aria-hidden="true"></i>
+             فحص بطاقة رابحة
+        </a>
         @endif
 
         @if($canSee(['reward-wheels.customer-signup.edit', 'reward-wheels.customer-signup.update']))
