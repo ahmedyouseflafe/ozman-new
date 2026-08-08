@@ -47,6 +47,7 @@
                         <div class="detail"><span>رقم البطاقة</span><strong dir="ltr">{{ $card->card_number }}</strong></div>
                         <div class="detail"><span>حالة البطاقة</span><strong>{{ $card->is_active ? 'نشطة' : 'غير نشطة' }}</strong></div>
                         <div class="detail"><span>حالة الاستخدام</span><strong>{{ $card->used_at ? 'مستخدمة سابقاً' : 'متاحة ولم تُستخدم' }}</strong></div>
+                        <div class="detail"><span>اسم الفائز</span><strong>{{ $winnerName ?: 'لم تُستخدم البطاقة بعد' }}</strong></div>
                     </div>
                 </div>
             @elseif($searched)

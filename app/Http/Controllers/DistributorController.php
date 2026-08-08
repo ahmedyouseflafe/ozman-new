@@ -434,6 +434,7 @@ class DistributorController extends Controller
     public function update(Request $request, Distributor $distributor): RedirectResponse
     {
         $this->authorizeDistributorAccess($distributor);
+        $hadLoginAccount = filled($distributor->user_id);
 
         $data = $this->validatedData($request);
         $this->applyAgentShop($data);
@@ -447,6 +448,12 @@ class DistributorController extends Controller
         }
 
         $distributor->update($data);
+
+        if (! $hadLoginAccount && filled($distributor->fresh()->user_id)) {
+            return redirect()
+                ->route('distributors.permissions.edit', $distributor)
+                ->with('status', 'تم إنشاء حساب دخول الموزع. اختر صلاحياته الآن.');
+        }
 
         return redirect()
             ->route('distributors')
@@ -472,7 +479,7 @@ class DistributorController extends Controller
         if (! $user) {
             return redirect()
                 ->route('distributors.edit', $distributor)
-                ->withErrors(['user_id' => 'اربط الموزع بحساب دخول قبل تحديد الصلاحيات.']);
+                ->withErrors(['user_id' => 'هذا الموزع لا يملك حساب دخول بعد. أدخل بريده الإلكتروني وكلمة مرور الدخول ثم احفظ؛ بعدها ستفتح لك صفحة الصلاحيات تلقائياً.']);
         }
 
         $user->load('employeePermissions');

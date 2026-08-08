@@ -57,6 +57,7 @@
                     <i class="ti ti-eye" aria-hidden="true"></i>
                 </button>
             </div>
+            <small class="form-hint">بدون حساب دخول (بريد + كلمة مرور) لا يمكن للموزع الدخول أو تطبيق أي صلاحية عليه.</small>
         </div>
 
         <div class="form-group">

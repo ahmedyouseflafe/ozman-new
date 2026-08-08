@@ -568,11 +568,11 @@
                                                     <a href="{{ route('distributors.edit', $distributor) }}" class="icon-btn" aria-label="تعديل">
                                                         <i class="ti ti-edit" aria-hidden="true"></i>
                                                     </a>
-                                                    @if(data_get($distributor, 'user_id'))
-                                                        <a href="{{ route('distributors.permissions.edit', $distributor) }}" class="icon-btn" aria-label="صلاحيات">
-                                                            <i class="ti ti-lock" aria-hidden="true"></i>
-                                                        </a>
-                                                    @endif
+                                                    <a href="{{ route('distributors.permissions.edit', $distributor) }}" class="icon-btn"
+                                                        aria-label="صلاحيات"
+                                                        title="{{ data_get($distributor, 'user_id') ? 'صلاحيات الموزع' : 'أنشئ حساب دخول للموزع أولاً ثم حدد صلاحياته' }}">
+                                                        <i class="ti ti-lock{{ data_get($distributor, 'user_id') ? '' : '-open' }}" aria-hidden="true"></i>
+                                                    </a>
                                                     <form action="{{ route('distributors.destroy', $distributor) }}" method="POST" onsubmit="return confirm('هل تريد حذف هذا الموزع؟')">
                                                         @csrf
                                                         @method('DELETE')

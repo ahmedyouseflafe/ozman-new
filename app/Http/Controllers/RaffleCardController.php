@@ -82,10 +82,20 @@ class RaffleCardController extends Controller
             ? RaffleCard::query()->where('card_number', $data['card_number'])->first()
             : null;
 
+        $winnerName = $card?->used_customer_name;
+
+        if ($card && blank($winnerName)) {
+            $winnerName = RaffleEntry::query()
+                ->where('card_number', $card->card_number)
+                ->where('outcome', RaffleEntry::OUTCOME_WINNER)
+                ->value('customer_name');
+        }
+
         return view('admin.raffle_cards.inspector', [
             'cardNumber' => $data['card_number'] ?? '',
             'searched' => $searched,
             'card' => $card,
+            'winnerName' => $winnerName,
         ]);
     }
 

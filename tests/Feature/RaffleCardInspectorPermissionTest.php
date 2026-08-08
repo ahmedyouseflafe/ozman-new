@@ -29,13 +29,17 @@ class RaffleCardInspectorPermissionTest extends TestCase
             'card_number' => '123456',
             'prize_title' => 'هدية الفحص',
             'is_active' => true,
+            'used_at' => now(),
+            'used_customer_name' => 'أحمد الفائز',
         ]);
 
         $this->actingAs($employee)
             ->get(route('raffle-cards.inspector', ['card_number' => '123456']))
             ->assertOk()
             ->assertSee('البطاقة رابحة')
-            ->assertSee('هدية الفحص');
+            ->assertSee('هدية الفحص')
+            ->assertSee('اسم الفائز')
+            ->assertSee('أحمد الفائز');
 
         $this->actingAs($employee)
             ->get(route('raffle-cards.index'))
