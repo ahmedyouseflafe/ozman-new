@@ -158,7 +158,34 @@
 
         @media(max-width: 900px) {
             .sidebar.admin-neon-sidebar {
+                display: flex;
+                width: min(86vw, 330px);
+                z-index: 90;
+                transform: translateX(110%);
+                transition: transform .28s ease;
+                box-shadow: -18px 0 50px rgba(0, 0, 0, .58);
+            }
+
+            .sidebar.admin-neon-sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .admin-mobile-menu-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 80;
                 display: none;
+                border: 0;
+                background: rgba(0, 0, 0, .7);
+                backdrop-filter: blur(4px);
+            }
+
+            .admin-mobile-menu-overlay.visible {
+                display: block;
+            }
+
+            .admin-mobile-sidebar-close {
+                display: inline-flex !important;
             }
 
             body {
@@ -214,7 +241,9 @@
         }
 
         @media(min-width: 901px) {
-            .admin-mobile-nav {
+            .admin-mobile-nav,
+            .admin-mobile-menu-overlay,
+            .admin-mobile-sidebar-close {
                 display: none;
             }
         }
@@ -283,13 +312,16 @@
         : route('products.preview', $previewShopId ? ['shop_id' => $previewShopId] : []);
 @endphp
 
-<div class="sidebar admin-neon-sidebar">
+<div class="sidebar admin-neon-sidebar" id="admin-dashboard-sidebar">
     <div class="admin-sidebar-logo">
         <div class="admin-sidebar-logo-icon">O</div>
         <div>
             <div class="admin-sidebar-logo-text">Ozman</div>
             <div class="admin-sidebar-logo-sub">لوحة التحكم</div>
         </div>
+        <button type="button" class="admin-mobile-sidebar-close" data-admin-menu-close aria-label="إغلاق قائمة لوحة التحكم" style="display:none;margin-right:auto;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;align-items:center;justify-content:center;cursor:pointer">
+            <i class="ti ti-x" aria-hidden="true"></i>
+        </button>
     </div>
 
     <nav class="admin-sidebar-nav">
@@ -539,6 +571,8 @@
     </div>
 </div>
 
+<button type="button" class="admin-mobile-menu-overlay" data-admin-menu-close aria-label="إغلاق قائمة لوحة التحكم"></button>
+
 <nav class="admin-mobile-nav" aria-label="تنقل لوحة التحكم للجوال">
     @if($canSee(['dashboard']))
         <a href="{{ route('dashboard') }}" class="admin-mobile-nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
@@ -559,40 +593,17 @@
         </a>
     @endif
 
-    @if($canSee(['reward-wheels.marketer.play']))
-        <a href="{{ route('reward-wheels.marketer.play') }}" class="admin-mobile-nav-item {{ request()->routeIs('reward-wheels.marketer.play') ? 'active' : '' }}">
-            <i class="ti ti-disc" aria-hidden="true"></i>
-            الأسئلة
-        </a>
-    @endif
-
-    @if($canSee(['reward-wheels.marketer.direct.play']))
-        <a href="{{ route('reward-wheels.marketer.direct.play') }}" class="admin-mobile-nav-item {{ request()->routeIs('reward-wheels.marketer.direct.play') ? 'active' : '' }}">
-            <i class="ti ti-bolt" aria-hidden="true"></i>
-            المباشرة
-        </a>
-    @endif
-
-    @if(! $isCatalogOnlyUser && $canSee(['shops', 'shops.show', 'shops.create', 'shops.edit']))
-        <a href="{{ route('shops') }}" class="admin-mobile-nav-item {{ request()->routeIs('shops') || request()->routeIs('shops.*') ? 'active' : '' }}">
-            <i class="ti ti-building-store" aria-hidden="true"></i>
-            المتاجر
-        </a>
-    @endif
-
-    @if(! $isCatalogOnlyUser && $canSee(['distributors.marketers.index', 'distributors.marketers.permissions.edit']))
-        <a href="{{ route('distributors.marketers.index') }}" class="admin-mobile-nav-item {{ request()->routeIs('distributors.marketers.*') ? 'active' : '' }}">
-            <i class="ti ti-speakerphone" aria-hidden="true"></i>
-            المسوقون
-        </a>
-    @endif
-
     @if($canSee(['products']))
         <a href="{{ route('products') }}" class="admin-mobile-nav-item {{ request()->routeIs('products*') ? 'active' : '' }}">
             <i class="ti ti-package" aria-hidden="true"></i>
             المنتجات
         </a>
     @endif
+
+    <button type="button" class="admin-mobile-nav-item" data-admin-menu-open aria-controls="admin-dashboard-sidebar" aria-expanded="false">
+        <i class="ti ti-menu-2" aria-hidden="true"></i>
+        كل الأقسام
+    </button>
 
     @if($canSee(['products.preview']))
         <a href="{{ $previewUrl }}" class="admin-mobile-nav-item {{ request()->routeIs('products.preview') ? 'active' : '' }}">
@@ -609,3 +620,32 @@
         </button>
     </form>
 </nav>
+
+@once
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const sidebar = document.querySelector('.sidebar.admin-neon-sidebar');
+        const overlay = document.querySelector('.admin-mobile-menu-overlay');
+        const openButton = document.querySelector('[data-admin-menu-open]');
+        const closeButtons = document.querySelectorAll('[data-admin-menu-close]');
+
+        if (!sidebar || !overlay || !openButton) return;
+        const setOpen = (isOpen) => {
+            sidebar.classList.toggle('mobile-open', isOpen);
+            overlay.classList.toggle('visible', isOpen);
+            openButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            document.body.style.overflow = isOpen ? 'hidden' : '';
+        };
+
+        openButton.addEventListener('click', () => setOpen(true));
+        closeButtons.forEach((button) => button.addEventListener('click', () => setOpen(false)));
+        sidebar.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => setOpen(false)));
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') setOpen(false);
+        });
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 900) setOpen(false);
+        });
+    });
+</script>
+@endonce

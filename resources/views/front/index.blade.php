@@ -748,7 +748,7 @@
                 </div>
             </div>
         @endunless
-        
+
         <div class="modal-overlay customer-login-modal" id="customerLoginModal" aria-hidden="true">
             <div class="modal-content glass customer-login-card">
                 <div class="modal-header">
