@@ -465,6 +465,7 @@ class ProductController extends Controller
         if ($shopType === 'electronics') {
             abort_if($variants->isEmpty(), 422, 'أضف خيار تخزين ولون واحدًا على الأقل للجهاز.');
             abort_if($variants->contains(fn ($variant) => ! filled($variant['storage']) || ! filled($variant['color']) || $variant['price'] === null), 422, 'التخزين واللون والسعر مطلوبة لكل خيار جهاز.');
+            abort_if($variants->contains(fn ($variant) => ! preg_match('/^#[0-9a-fA-F]{6}$/', (string) $variant['color'])), 422, 'اختر لونًا صحيحًا لكل خيار جهاز.');
         }
 
         $product->variants()->delete();

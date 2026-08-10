@@ -92,7 +92,8 @@
                     <div class="form-group"><label class="form-label">المقاس/النمرة</label><input name="variants[{{ $index }}][size]" value="{{ data_get($variant, 'size') }}"></div>
                     <div class="form-group" data-electronics-variant><label class="form-label">سعة التخزين</label><input name="variants[{{ $index }}][storage]" value="{{ data_get($variant, 'storage') }}" placeholder="128GB"></div>
                     <div class="form-group" data-electronics-variant><label class="form-label">الرام</label><input name="variants[{{ $index }}][ram]" value="{{ data_get($variant, 'ram') }}" placeholder="8GB"></div>
-                    <div class="form-group"><label class="form-label">اللون</label><input name="variants[{{ $index }}][color]" value="{{ data_get($variant, 'color') }}"></div>
+                    <div class="form-group" data-standard-color><label class="form-label">اللون</label><input name="variants[{{ $index }}][color]" value="{{ data_get($variant, 'color') }}"></div>
+                    <div class="form-group" data-electronics-color hidden><label class="form-label">لون الجهاز</label><input type="color" name="variants[{{ $index }}][color]" value="{{ preg_match('/^#[0-9a-fA-F]{6}$/', (string) data_get($variant, 'color')) ? data_get($variant, 'color') : '#000000' }}" disabled style="height:54px;padding:6px;cursor:pointer"></div>
                     <div class="form-group"><label class="form-label">SKU للخيار</label><input name="variants[{{ $index }}][sku]" value="{{ data_get($variant, 'sku') }}" dir="ltr"></div>
                     <div class="form-group"><label class="form-label" data-variant-price-label>سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[{{ $index }}][price]" value="{{ data_get($variant, 'price') }}"></div>
                     <div class="form-group"><label class="form-label">الكمية</label><input type="number" min="0" name="variants[{{ $index }}][quantity]" value="{{ data_get($variant, 'quantity', 0) }}"></div>
@@ -194,6 +195,14 @@
                 field.hidden = !isElectronics;
                 field.querySelectorAll('input').forEach((input) => input.disabled = !isElectronics || !usesVariants);
             });
+            variantsPanel.querySelectorAll('[data-standard-color]').forEach((field) => {
+                field.hidden = isElectronics;
+                field.querySelectorAll('input').forEach((input) => input.disabled = isElectronics || !usesVariants);
+            });
+            variantsPanel.querySelectorAll('[data-electronics-color]').forEach((field) => {
+                field.hidden = !isElectronics;
+                field.querySelectorAll('input').forEach((input) => input.disabled = !isElectronics || !usesVariants);
+            });
             variantsPanel.querySelectorAll('input[name$="[size]"]').forEach((input) => {
                 input.closest('.form-group').hidden = isElectronics;
                 input.disabled = isElectronics || !usesVariants;
@@ -249,7 +258,8 @@
                 <div class="form-group"><label class="form-label">المقاس/النمرة</label><input name="variants[${index}][size]"></div>
                 <div class="form-group" data-electronics-variant><label class="form-label">سعة التخزين</label><input name="variants[${index}][storage]" placeholder="128GB"></div>
                 <div class="form-group" data-electronics-variant><label class="form-label">الرام</label><input name="variants[${index}][ram]" placeholder="8GB"></div>
-                <div class="form-group"><label class="form-label">اللون</label><input name="variants[${index}][color]"></div>
+                <div class="form-group" data-standard-color><label class="form-label">اللون</label><input name="variants[${index}][color]"></div>
+                <div class="form-group" data-electronics-color hidden><label class="form-label">لون الجهاز</label><input type="color" name="variants[${index}][color]" value="#000000" disabled style="height:54px;padding:6px;cursor:pointer"></div>
                 <div class="form-group"><label class="form-label">SKU للخيار</label><input name="variants[${index}][sku]" dir="ltr"></div>
                 <div class="form-group"><label class="form-label" data-variant-price-label>سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[${index}][price]"></div>
                 <div class="form-group"><label class="form-label">الكمية</label><input type="number" min="0" name="variants[${index}][quantity]" value="0"></div>
