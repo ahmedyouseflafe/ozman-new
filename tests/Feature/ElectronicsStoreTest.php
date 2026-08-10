@@ -65,6 +65,25 @@ class ElectronicsStoreTest extends TestCase
         $this->assertDatabaseCount('front_orders', 0);
     }
 
+    public function test_main_market_exposes_electronics_store_url_and_storefront_shows_empty_categories(): void
+    {
+        [$shop, $category] = $this->store('navigation');
+
+        $home = $this->get(route('home'));
+        $home->assertOk()->assertSee('electronics');
+        $this->assertStringContainsString(
+            route('electronics.store', $shop),
+            str_replace('\/', '/', $home->getContent())
+        );
+
+        $this->get(route('electronics.store', $shop))
+            ->assertOk()
+            ->assertSee($category->name);
+
+        $script = file_get_contents(public_path('script.js'));
+        $this->assertStringContainsString("['restaurant', 'electronics'].includes", $script);
+    }
+
     private function store(string $suffix): array
     {
         $owner = User::create(['name' => 'Owner '.$suffix, 'email' => $suffix.'@electronics.test', 'password' => 'password', 'role' => 'shop_owner', 'is_active' => true]);

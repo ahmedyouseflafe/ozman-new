@@ -3505,7 +3505,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function selectCategory(index) {
             const selectedCenter = centersData[index % centersData.length];
-            if (selectedCenter?.catalog_type === 'restaurant' && selectedCenter?.public_url) {
+            if (['restaurant', 'electronics'].includes(selectedCenter?.catalog_type) && selectedCenter?.public_url) {
                 window.location.assign(selectedCenter.public_url);
                 return;
             }
