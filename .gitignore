@@ -11,6 +11,9 @@
 /.phpunit.cache
 /.vscode
 /.zed
+/.chrome-*-audit
+/.chrome-responsive-*
+/mobile-audit-*.png
 /auth.json
 /node_modules
 /public/build

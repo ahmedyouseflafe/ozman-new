@@ -1,3 +1,9 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>لوحة التحكم الرئيسية - Ozman</title>
 <style>
     * {
         box-sizing: border-box;
@@ -811,21 +817,13 @@
         }
     }
 </style>
+</head>
+<body>
 
 <h2 class="sr-only">لوحة تحكم هيلني شوب - نظرة عامة على المتجر والمنتجات والمستخدمين</h2>
 
 <div class="shell dashboard-main-shell">
     @include('admin.includes.sidebar')
-    <div class="sidebar">
-        <div class="logo">
-            <div class="logo-icon">H</div>
-            <div>
-                <div class="logo-text">هيلني شوب</div>
-                <div class="logo-sub">لوحة التحكم</div>
-            </div>
-        </div>
-    </div>
-
     <div class="main">
         <div class="topbar">
             <div class="topbar-title" id="page-title">لوحة التحكم</div>
@@ -1459,3 +1457,5 @@
         }
     }
 </script>
+</body>
+</html>

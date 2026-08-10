@@ -131,7 +131,8 @@
         .live-draw-error { color:#ff91a0; font-weight:900; margin-top:18px; }
         @keyframes drawPulse { 0%{ transform:scale(.985); opacity:.82; } 100%{ transform:scale(1.015); opacity:1; } }
         @media(max-width:1100px){ .grid,.form-grid{grid-template-columns:1fr;} .edit-box{grid-template-columns:1fr;} }
-        @media(max-width:900px){ .main{margin-right:0;} .content{padding:20px 14px 90px;} .page-head{flex-direction:column; align-items:stretch;} h1{font-size:28px;} }
+        @media(max-width:900px){ .main{margin-right:0;} .content{padding:20px 14px 90px;} .page-head,.panel-head{flex-direction:column; align-items:stretch;} .live-actions{width:100%;} .live-actions .btn{flex:1 1 180px;min-width:0;} h1{font-size:28px;} }
+        @media(max-width:420px){ .live-actions{display:grid;grid-template-columns:1fr;} .live-actions .btn{width:100%;white-space:normal;} }
     </style>
 </head>
 

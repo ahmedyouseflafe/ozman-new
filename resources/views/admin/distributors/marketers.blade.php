@@ -30,7 +30,7 @@
         .stat-card { padding: 18px; }
         .stat-card span { color: rgba(255,255,255,.64); font-size: 13px; font-weight: 900; }
         .stat-card strong { display: block; margin-top: 10px; color: #00e5ff; font-size: 30px; }
-        .panel { padding: 22px; }
+        .panel { padding: 22px; min-width: 0; max-width: 100%; overflow: hidden; }
         .filters { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 10px; margin-bottom: 18px; }
         .create-form {
             display: grid;
@@ -81,7 +81,7 @@
         }
         .btn-primary { background: rgba(0,229,255,.14); color: #00e5ff; border-color: rgba(0,229,255,.34); }
         .btn-danger { color: #ff6878; border-color: rgba(255,104,120,.32); background: rgba(255,104,120,.08); }
-        .table-wrap { overflow-x: auto; border: 1px solid rgba(255,255,255,.08); border-radius: 20px; }
+        .table-wrap { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; border: 1px solid rgba(255,255,255,.08); border-radius: 20px; }
         table { width: 100%; min-width: 1160px; border-collapse: collapse; }
         th, td { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,.07); text-align: right; vertical-align: top; }
         th { color: #00e5ff; font-size: 12px; }
@@ -212,9 +212,13 @@
             width: 1px;
             height: 1px;
             padding: 0;
-            margin: -1px;
+            margin: 0;
             overflow: hidden;
             clip: rect(0, 0, 0, 0);
+            clip-path: inset(50%);
+            top: 0;
+            right: 0;
+            left: auto;
             white-space: nowrap;
             border: 0;
         }

@@ -1,5 +1,43 @@
 ﻿@once
     <style>
+        html,
+        body {
+            max-width: 100%;
+            overflow-x: clip;
+        }
+
+        .shell,
+        .main,
+        .content,
+        .panel,
+        .card,
+        .form-section {
+            min-width: 0;
+        }
+
+        .main {
+            width: auto;
+            max-width: calc(100vw - 245px);
+        }
+
+        .table-wrap,
+        .table-responsive,
+        .orders-wrap,
+        .table-panel {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            overscroll-behavior-inline: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        input,
+        select,
+        textarea,
+        button {
+            max-width: 100%;
+        }
+
         .sidebar.admin-neon-sidebar {
             width: 245px;
             background: rgba(0, 0, 0, .78);
@@ -173,6 +211,7 @@
 
             .main {
                 width: 100% !important;
+                max-width: 100% !important;
                 margin-right: 0 !important;
             }
 

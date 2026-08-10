@@ -4,7 +4,7 @@ const pageUrl = process.argv[2] || 'http://127.0.0.1:8000';
 const debugPort = process.argv[3] || '9222';
 const viewport = { width: 412, height: 915, deviceScaleFactor: 1, mobile: true };
 
-const targets = await fetch(`http://127.0.0.1:${debugPort}/json`);
+const targets = await fetch(`http://localhost:${debugPort}/json`);
 const pages = (await targets.json()).filter((target) => target.type === 'page');
 const target = pages[0];
 
