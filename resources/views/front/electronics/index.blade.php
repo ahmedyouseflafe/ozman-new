@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{{ $shop->name }} | متجر التقنية</title>
+    <style>
+        *{box-sizing:border-box}body{margin:0;background:#070a10;color:#f6f8fb;font-family:Cairo,Segoe UI,sans-serif}a{text-decoration:none;color:inherit}.wrap{width:min(1240px,calc(100% - 28px));margin:auto}.hero{min-height:330px;padding:34px;border-radius:0 0 34px 34px;display:grid;align-content:end;background:linear-gradient(100deg,rgba(0,0,0,.88),rgba(0,20,38,.42)),url('{{ $shop->banner ? asset('storage/'.$shop->banner) : '' }}') center/cover,#0b1d2b;border-bottom:1px solid #17364d}.hero h1{font-size:clamp(32px,6vw,66px);margin:0;color:#61dafb}.hero p{color:#aec4d3;max-width:650px}.filters{display:grid;grid-template-columns:2fr repeat(5,1fr);gap:9px;padding:18px;background:#0c111a;border:1px solid #1c2937;border-radius:22px;margin:22px 0;position:sticky;top:8px;z-index:4}.filters input,.filters select,.filters button{min-width:0;height:44px;border-radius:13px;border:1px solid #26384b;background:#111a25;color:#fff;padding:0 12px}.filters button{background:#16a8e0;color:#00131c;font-weight:900}.cats{display:flex;gap:10px;overflow:auto;padding-bottom:10px}.chip{white-space:nowrap;padding:9px 15px;border:1px solid #264156;border-radius:999px;color:#b8d9ea}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:16px 0 40px}.card{background:linear-gradient(150deg,#111a25,#0a0f17);border:1px solid #1c3041;border-radius:22px;overflow:hidden;position:relative}.card img{width:100%;aspect-ratio:1/1;object-fit:contain;background:#fff}.body{padding:16px}.brand{font-size:12px;color:#61dafb}.card h2{font-size:18px;margin:6px 0;min-height:48px}.specs{display:flex;gap:6px;flex-wrap:wrap}.specs span{font-size:11px;background:#172432;color:#b9cad6;border-radius:8px;padding:5px 7px}.price{font-size:22px;font-weight:900;margin-top:14px}.stock{font-size:12px;color:#63e6a5}.actions{display:flex;gap:8px;margin-top:12px}.actions a,.actions button{flex:1;padding:10px;border-radius:12px;border:0;text-align:center;font-weight:800}.details{background:#16a8e0;color:#00131c}.compare{background:#1c2937;color:#fff;cursor:pointer}.compare-bar{position:fixed;bottom:14px;right:14px;left:14px;z-index:10;background:#0c111af2;border:1px solid #2c526b;border-radius:18px;padding:12px;display:none;align-items:center;gap:10px}.compare-bar.show{display:flex}.compare-list{display:flex;gap:8px;overflow:auto;flex:1}.compare-item{min-width:180px;background:#14202c;padding:8px;border-radius:10px;font-size:12px}.empty{text-align:center;padding:70px;color:#8296a6}.pagination{margin:20px 0 100px}@media(max-width:980px){.filters{grid-template-columns:repeat(3,1fr)}.filters input:first-child{grid-column:1/-1}.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:580px){.hero{min-height:240px;padding:22px}.filters{position:static;grid-template-columns:1fr 1fr}.filters input:first-child{grid-column:1/-1}.grid{grid-template-columns:1fr}.card{display:grid;grid-template-columns:42% 58%}.card img{height:100%;aspect-ratio:auto}.actions{flex-direction:column}.compare-bar{bottom:8px}.compare-item{min-width:140px}}
+    </style>
+</head>
+<body>
+<header class="hero"><div class="wrap"><div class="brand">متجر جوالات وإلكترونيات</div><h1>{{ $shop->name }}</h1><p>{{ $shop->description }}</p></div></header>
+<main class="wrap">
+    <form class="filters" method="GET">
+        <input name="q" value="{{ request('q') }}" placeholder="ابحث عن جهاز أو موديل...">
+        <select name="brand"><option value="">كل الماركات</option>@foreach($brands as $brand)<option @selected(request('brand')===$brand)>{{ $brand }}</option>@endforeach</select>
+        <select name="storage"><option value="">كل السعات</option>@foreach($storages as $storage)<option @selected(request('storage')===$storage)>{{ $storage }}</option>@endforeach</select>
+        <select name="condition"><option value="">جديد ومستعمل</option><option @selected(request('condition')==='جديد')>جديد</option><option @selected(request('condition')==='مستعمل')>مستعمل</option></select>
+        <input type="number" name="min_price" value="{{ request('min_price') }}" placeholder="أقل سعر">
+        <input type="number" name="max_price" value="{{ request('max_price') }}" placeholder="أعلى سعر">
+        <button>تصفية</button>
+    </form>
+    <nav class="cats"><a class="chip" href="{{ route('electronics.store',$shop) }}">الكل</a>@foreach($categories as $category)<a class="chip" href="{{ route('electronics.store',[$shop,'category'=>$category->id]) }}">{{ $category->localized('name') }}</a>@endforeach</nav>
+    <section class="grid">
+        @forelse($products as $product)
+            @php
+                $attrs = $product->catalog_attributes ?? [];
+                $available = $product->variants->where('quantity', '>', 0);
+                $from = $available->min(fn ($variant) => (float) ($variant->price ?? $product->discount_price ?? $product->price));
+                $compareData = ['id' => $product->id, 'name' => $product->localized('name'), 'brand' => data_get($attrs, 'brand'), 'model' => data_get($attrs, 'model'), 'network' => data_get($attrs, 'network'), 'screen' => data_get($attrs, 'screen_size'), 'processor' => data_get($attrs, 'processor'), 'price' => $from];
+            @endphp
+            <article class="card" data-compare="{{ e(json_encode($compareData, JSON_UNESCAPED_UNICODE)) }}">
+                <img src="{{ $product->main_image ? asset('storage/'.$product->main_image) : asset('images/1.jpg') }}" alt="{{ $product->localized('name') }}">
+                <div class="body"><div class="brand">{{ data_get($attrs,'brand') }} · {{ data_get($attrs,'condition') }}</div><h2>{{ $product->localized('name') }}</h2><div class="specs"><span>{{ data_get($attrs,'network') }}</span><span>{{ data_get($attrs,'screen_size') }}</span>@foreach($available->pluck('storage')->filter()->unique()->take(3) as $storage)<span>{{ $storage }}</span>@endforeach</div><div class="price">{{ number_format($from,2) }} ₪</div><div class="stock">{{ $available->sum('quantity') ? 'متوفر الآن' : 'نفدت الخيارات' }}</div><div class="actions"><a class="details" href="{{ route('electronics.product',[$shop,$product]) }}">التفاصيل والشراء</a><button type="button" class="compare">مقارنة</button></div></div>
+            </article>
+        @empty <div class="empty">لا توجد أجهزة مطابقة للفلاتر.</div> @endforelse
+    </section>
+    <div class="pagination">{{ $products->links() }}</div>
+</main>
+<aside class="compare-bar" id="compareBar"><strong>المقارنة</strong><div class="compare-list" id="compareList"></div><button type="button" id="clearCompare">مسح</button></aside>
+<script>
+const selected=[];const bar=document.getElementById('compareBar'),list=document.getElementById('compareList');
+function draw(){bar.classList.toggle('show',selected.length>0);list.innerHTML=selected.map(x=>`<div class="compare-item"><b>${x.name}</b><br>${x.brand||''} ${x.model||''}<br>${x.network||''} · ${x.screen||''}<br>${x.processor||''}<br><b>${Number(x.price).toFixed(2)} ₪</b></div>`).join('')}
+document.querySelectorAll('.compare').forEach(btn=>btn.onclick=()=>{const item=JSON.parse(btn.closest('[data-compare]').dataset.compare);if(!selected.some(x=>x.id===item.id)&&selected.length<3)selected.push(item);draw()});document.getElementById('clearCompare').onclick=()=>{selected.length=0;draw()};
+</script>
+</body></html>

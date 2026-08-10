@@ -22,6 +22,9 @@ class FrontController extends Controller
         if ($shop?->exists && $shop->catalog_type === 'restaurant') {
             return redirect()->route('restaurant.menu', $shop);
         }
+        if ($shop?->exists && $shop->catalog_type === 'electronics') {
+            return redirect()->route('electronics.store', $shop);
+        }
 
         $shopSummaries = Shop::query()
             ->where('is_active', true)
@@ -439,9 +442,7 @@ class FrontController extends Controller
                 'id' => $shop->id,
                 'title' => $shop->name,
                 'catalog_type' => $shop->catalog_type,
-                'public_url' => $shop->catalog_type === 'restaurant'
-                    ? route('restaurant.menu', $shop)
-                    : route('front.shop.slug', $shop),
+                'public_url' => $this->shopPublicUrl($shop),
                 'img' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
                 'logo' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
                 'whatsapp_number' => $shopOrderContext['whatsapp_number'],
@@ -480,9 +481,7 @@ class FrontController extends Controller
                 'id' => $ozmanShop->id,
                 'title' => $ozmanShop->name,
                 'catalog_type' => $ozmanShop->catalog_type,
-                'public_url' => $ozmanShop->catalog_type === 'restaurant'
-                    ? route('restaurant.menu', $ozmanShop)
-                    : route('front.shop.slug', $ozmanShop),
+                'public_url' => $this->shopPublicUrl($ozmanShop),
                 'img' => $this->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
                 'logo' => $this->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
                 'whatsapp_number' => $this->contactWhatsappNumber($ozmanShop->whatsapp ?: $ozmanShop->phone),
@@ -524,9 +523,7 @@ class FrontController extends Controller
             'id' => $shop->id,
             'title' => $shop->name,
             'catalog_type' => $shop->catalog_type,
-            'public_url' => $shop->catalog_type === 'restaurant'
-                ? route('restaurant.menu', $shop)
-                : route('front.shop.slug', $shop),
+            'public_url' => $this->shopPublicUrl($shop),
             'img' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
             'logo' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
             'whatsapp_number' => $this->contactWhatsappNumber($shop->whatsapp ?: $shop->phone),
@@ -896,6 +893,15 @@ class FrontController extends Controller
         $settings = is_array($stored) ? ($stored['raffle'] ?? []) : [];
 
         return array_replace($defaults, is_array($settings) ? $settings : []);
+    }
+
+    private function shopPublicUrl(Shop $shop): string
+    {
+        return match ($shop->catalog_type) {
+            'restaurant' => route('restaurant.menu', $shop),
+            'electronics' => route('electronics.store', $shop),
+            default => route('front.shop.slug', $shop),
+        };
     }
 
     private function purchaseRewardWheelsPayload(?Shop $shop): array

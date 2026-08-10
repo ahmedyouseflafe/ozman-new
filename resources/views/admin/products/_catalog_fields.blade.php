@@ -76,12 +76,12 @@
 
     @php
         $variantRows = old('variants', isset($product) ? $product->variants->toArray() : []);
-        $variantRows = count($variantRows) ? $variantRows : [['size' => '', 'color' => '', 'sku' => '', 'price' => '', 'quantity' => 0, 'is_active' => true]];
+        $variantRows = count($variantRows) ? $variantRows : [['size' => '', 'storage' => '', 'ram' => '', 'color' => '', 'sku' => '', 'price' => '', 'quantity' => 0, 'is_active' => true]];
     @endphp
     <div id="productVariantsPanel" hidden style="margin-top:20px;padding-top:18px;border-top:1px solid rgba(255,255,255,.1)">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px">
             <div>
-                <h3 style="margin:0;color:#00e5ff">مخزون المقاسات والألوان</h3>
+                <h3 id="productVariantsTitle" style="margin:0;color:#00e5ff">مخزون الخيارات</h3>
                 <small style="color:rgba(255,255,255,.55)">كل صف يمثل خيارًا مستقلاً، والكمية الإجمالية تُحسب تلقائيًا.</small>
             </div>
             <button type="button" class="btn" id="addProductVariant"><i class="ti ti-plus"></i> إضافة خيار</button>
@@ -90,6 +90,8 @@
             @foreach($variantRows as $index => $variant)
                 <div data-variant-row class="form-grid" style="padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:16px">
                     <div class="form-group"><label class="form-label">المقاس/النمرة</label><input name="variants[{{ $index }}][size]" value="{{ data_get($variant, 'size') }}"></div>
+                    <div class="form-group" data-electronics-variant><label class="form-label">سعة التخزين</label><input name="variants[{{ $index }}][storage]" value="{{ data_get($variant, 'storage') }}" placeholder="128GB"></div>
+                    <div class="form-group" data-electronics-variant><label class="form-label">الرام</label><input name="variants[{{ $index }}][ram]" value="{{ data_get($variant, 'ram') }}" placeholder="8GB"></div>
                     <div class="form-group"><label class="form-label">اللون</label><input name="variants[{{ $index }}][color]" value="{{ data_get($variant, 'color') }}"></div>
                     <div class="form-group"><label class="form-label">SKU للخيار</label><input name="variants[{{ $index }}][sku]" value="{{ data_get($variant, 'sku') }}" dir="ltr"></div>
                     <div class="form-group"><label class="form-label">سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[{{ $index }}][price]" value="{{ data_get($variant, 'price') }}"></div>
@@ -176,11 +178,23 @@
                 title.textContent = `تفاصيل ${definitions[type].label}`;
                 description.textContent = definitions[type].description;
             }
-            const usesVariants = ['clothing', 'shoes'].includes(type);
+            const usesVariants = ['clothing', 'shoes', 'electronics'].includes(type);
             variantsPanel.hidden = !usesVariants;
             variantsPanel.style.display = usesVariants ? '' : 'none';
             variantsPanel.setAttribute('aria-hidden', usesVariants ? 'false' : 'true');
             variantsPanel.querySelectorAll('input, button').forEach((field) => field.disabled = !usesVariants);
+            const isElectronics = type === 'electronics';
+            document.getElementById('productVariantsTitle').textContent = isElectronics
+                ? 'مخزون التخزين والرام والألوان'
+                : 'مخزون المقاسات والألوان';
+            variantsPanel.querySelectorAll('[data-electronics-variant]').forEach((field) => {
+                field.hidden = !isElectronics;
+                field.querySelectorAll('input').forEach((input) => input.disabled = !isElectronics || !usesVariants);
+            });
+            variantsPanel.querySelectorAll('input[name$="[size]"]').forEach((input) => {
+                input.closest('.form-group').hidden = isElectronics;
+                input.disabled = isElectronics || !usesVariants;
+            });
 
             const isRestaurant = type === 'restaurant';
             restaurantEditor.hidden = !isRestaurant;
@@ -229,6 +243,8 @@
         function variantTemplate(index) {
             return `<div data-variant-row class="form-grid" style="padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:16px">
                 <div class="form-group"><label class="form-label">المقاس/النمرة</label><input name="variants[${index}][size]"></div>
+                <div class="form-group" data-electronics-variant><label class="form-label">سعة التخزين</label><input name="variants[${index}][storage]" placeholder="128GB"></div>
+                <div class="form-group" data-electronics-variant><label class="form-label">الرام</label><input name="variants[${index}][ram]" placeholder="8GB"></div>
                 <div class="form-group"><label class="form-label">اللون</label><input name="variants[${index}][color]"></div>
                 <div class="form-group"><label class="form-label">SKU للخيار</label><input name="variants[${index}][sku]" dir="ltr"></div>
                 <div class="form-group"><label class="form-label">سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[${index}][price]"></div>
@@ -239,6 +255,7 @@
 
         addVariant?.addEventListener('click', () => {
             variantsList.insertAdjacentHTML('beforeend', variantTemplate(variantIndex++));
+            updateCatalogFields();
         });
         variantsList?.addEventListener('click', (event) => {
             if (!event.target.closest('[data-remove-variant]')) return;

@@ -430,6 +430,8 @@ class ProductController extends Controller
             'delete_campaign_ids.*' => ['integer'],
             'variants' => ['nullable', 'array', 'max:200'],
             'variants.*.size' => ['nullable', 'string', 'max:100'],
+            'variants.*.storage' => ['nullable', 'string', 'max:100'],
+            'variants.*.ram' => ['nullable', 'string', 'max:100'],
             'variants.*.color' => ['nullable', 'string', 'max:100'],
             'variants.*.sku' => ['nullable', 'string', 'max:255'],
             'variants.*.price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
@@ -441,15 +443,17 @@ class ProductController extends Controller
     private function syncVariants(Request $request, Product $product): void
     {
         $shopType = $product->shop()->value('catalog_type') ?: 'general';
-        if (! in_array($shopType, ['clothing', 'shoes'], true)) {
+        if (! in_array($shopType, ['clothing', 'shoes', 'electronics'], true)) {
             $product->variants()->delete();
             return;
         }
 
         $variants = collect($request->input('variants', []))
-            ->filter(fn ($variant) => filled($variant['size'] ?? null) || filled($variant['color'] ?? null))
+            ->filter(fn ($variant) => filled($variant['size'] ?? null) || filled($variant['storage'] ?? null) || filled($variant['ram'] ?? null) || filled($variant['color'] ?? null))
             ->map(fn ($variant) => [
                 'size' => filled($variant['size'] ?? null) ? trim($variant['size']) : null,
+                'storage' => filled($variant['storage'] ?? null) ? trim($variant['storage']) : null,
+                'ram' => filled($variant['ram'] ?? null) ? trim($variant['ram']) : null,
                 'color' => filled($variant['color'] ?? null) ? trim($variant['color']) : null,
                 'sku' => filled($variant['sku'] ?? null) ? trim($variant['sku']) : null,
                 'price' => filled($variant['price'] ?? null) ? $variant['price'] : null,

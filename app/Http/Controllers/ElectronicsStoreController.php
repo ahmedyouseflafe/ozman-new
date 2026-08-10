@@ -1,0 +1,137 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\FrontOrder;
+use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\Shop;
+use App\Rules\ValidPhoneNumber;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\View\View;
+
+class ElectronicsStoreController extends Controller
+{
+    public function index(Request $request, Shop $shop): View
+    {
+        $this->ensureStore($shop);
+        $query = Product::query()
+            ->with(['category', 'images', 'variants' => fn ($query) => $query->where('is_active', true)])
+            ->where('shop_id', $shop->id)
+            ->where('is_active', true);
+
+        $this->applyFilters($query, $request);
+        $products = $query->orderByDesc('is_featured')->latest()->paginate(24)->withQueryString();
+        $filterSource = Product::query()->where('shop_id', $shop->id)->where('is_active', true);
+
+        return view('front.electronics.index', [
+            'shop' => $shop,
+            'products' => $products,
+            'categories' => $shop->categories()->where('is_active', true)->get(),
+            'brands' => (clone $filterSource)->get()->pluck('catalog_attributes.brand')->filter()->unique()->sort()->values(),
+            'storages' => ProductVariant::query()->whereHas('product', fn ($q) => $q->where('shop_id', $shop->id)->where('is_active', true))
+                ->whereNotNull('storage')->distinct()->orderBy('storage')->pluck('storage'),
+        ]);
+    }
+
+    public function show(Shop $shop, Product $product): View
+    {
+        $this->ensureStore($shop);
+        abort_unless($product->shop_id === $shop->id && $product->is_active, 404);
+        $product->load(['category', 'images', 'variants' => fn ($query) => $query->where('is_active', true)->orderBy('storage')->orderBy('color')]);
+        $related = Product::query()->with('variants')->where('shop_id', $shop->id)->where('is_active', true)
+            ->whereKeyNot($product->id)->when($product->category_id, fn ($q) => $q->where('category_id', $product->category_id))->limit(4)->get();
+
+        return view('front.electronics.show', compact('shop', 'product', 'related'));
+    }
+
+    public function order(Request $request, Shop $shop): JsonResponse
+    {
+        $this->ensureStore($shop);
+        $data = $request->validate([
+            'customer_name' => ['required', 'string', 'max:255'],
+            'customer_phone' => ['required', 'string', 'max:60', new ValidPhoneNumber],
+            'customer_address' => ['required', 'string', 'max:1000'],
+            'customer_notes' => ['nullable', 'string', 'max:2000'],
+            'items' => ['required', 'array', 'min:1', 'max:30'],
+            'items.*.variant_id' => ['required', 'integer'],
+            'items.*.qty' => ['required', 'integer', 'min:1', 'max:20'],
+        ]);
+
+        $order = DB::transaction(function () use ($data, $shop) {
+            $items = [];
+            $subtotal = 0.0;
+            foreach ($data['items'] as $row) {
+                $variant = ProductVariant::query()->with('product')->lockForUpdate()->find($row['variant_id']);
+                abort_unless($variant && $variant->is_active && $variant->product?->is_active && $variant->product->shop_id === $shop->id, 422, 'أحد خيارات الأجهزة غير متاح.');
+                $quantity = (int) $row['qty'];
+                abort_if($variant->quantity < $quantity, 422, 'الكمية المطلوبة غير متوفرة لأحد الخيارات.');
+                $unitPrice = (float) ($variant->price ?? $variant->product->discount_price ?? $variant->product->price);
+                $lineTotal = round($unitPrice * $quantity, 2);
+                $subtotal += $lineTotal;
+                $items[] = [
+                    'product_id' => $variant->product_id,
+                    'variant_id' => $variant->id,
+                    'name' => $variant->product->name,
+                    'brand' => data_get($variant->product->catalog_attributes, 'brand'),
+                    'model' => data_get($variant->product->catalog_attributes, 'model'),
+                    'condition' => data_get($variant->product->catalog_attributes, 'condition'),
+                    'storage' => $variant->storage,
+                    'ram' => $variant->ram,
+                    'color' => $variant->color,
+                    'sku' => $variant->sku,
+                    'price' => $unitPrice,
+                    'qty' => $quantity,
+                    'line_total' => $lineTotal,
+                ];
+                $variant->decrement('quantity', $quantity);
+                $variant->product->update(['quantity' => $variant->product->variants()->where('is_active', true)->sum('quantity')]);
+            }
+
+            return FrontOrder::create([
+                'shop_id' => $shop->id,
+                'order_number' => 'ELC-' . now()->format('ymd') . '-' . Str::upper(Str::random(6)),
+                'customer_name' => $data['customer_name'],
+                'customer_phone' => $data['customer_phone'],
+                'customer_address' => $data['customer_address'],
+                'customer_notes' => $data['customer_notes'] ?? null,
+                'items' => $items,
+                'subtotal' => $subtotal,
+                'discount' => 0,
+                'total' => $subtotal,
+                'order_channel' => 'electronics',
+                'payment_status' => 'pending',
+                'status' => 'new',
+            ]);
+        });
+
+        return response()->json(['ok' => true, 'order_id' => $order->id, 'order_number' => $order->order_number]);
+    }
+
+    private function applyFilters(Builder $query, Request $request): void
+    {
+        $query->when($request->filled('q'), fn ($q) => $q->where(fn ($nested) => $nested
+            ->where('name', 'like', '%' . $request->string('q') . '%')
+            ->orWhere('catalog_attributes->brand', 'like', '%' . $request->string('q') . '%')
+            ->orWhere('catalog_attributes->model', 'like', '%' . $request->string('q') . '%')))
+            ->when($request->filled('category'), fn ($q) => $q->where('category_id', $request->integer('category')))
+            ->when($request->filled('brand'), fn ($q) => $q->where('catalog_attributes->brand', $request->string('brand')))
+            ->when($request->filled('condition'), fn ($q) => $q->where('catalog_attributes->condition', $request->string('condition')))
+            ->when($request->filled('min_price'), fn ($q) => $q->whereHas('variants', fn ($v) => $v
+                ->where('is_active', true)->where('quantity', '>', 0)
+                ->where('product_variants.price', '>=', $request->float('min_price'))))
+            ->when($request->filled('max_price'), fn ($q) => $q->whereHas('variants', fn ($v) => $v
+                ->where('is_active', true)->where('quantity', '>', 0)
+                ->where('product_variants.price', '<=', $request->float('max_price'))))
+            ->when($request->filled('storage'), fn ($q) => $q->whereHas('variants', fn ($v) => $v->where('storage', $request->string('storage'))->where('quantity', '>', 0)));
+    }
+
+    private function ensureStore(Shop $shop): void
+    {
+        abort_unless($shop->is_active && $shop->catalog_type === 'electronics', 404);
+    }
+}
