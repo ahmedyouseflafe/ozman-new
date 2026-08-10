@@ -37,11 +37,14 @@ class ElectronicsStoreTest extends TestCase
     public function test_storefront_filters_and_server_priced_order_decrements_only_selected_option(): void
     {
         [$shop, $category] = $this->store('sale');
-        $product = Product::create(['shop_id' => $shop->id, 'category_id' => $category->id, 'name' => 'Galaxy Test', 'slug' => 'galaxy-test', 'price' => 1, 'quantity' => 5, 'is_active' => true, 'catalog_attributes' => ['brand' => 'Samsung', 'condition' => 'جديد', 'network' => '5G']]);
+        $product = Product::create(['shop_id' => $shop->id, 'category_id' => $category->id, 'name' => 'Galaxy Test', 'slug' => 'galaxy-test', 'price' => 1, 'quantity' => 5, 'main_image' => 'storage/products/main/galaxy.webp', 'is_active' => true, 'catalog_attributes' => ['brand' => 'Samsung', 'condition' => 'جديد', 'network' => '5G']]);
         $variant = $product->variants()->create(['storage' => '128GB', 'ram' => '8GB', 'color' => '#111111', 'price' => 2200, 'quantity' => 3, 'is_active' => true]);
         $product->variants()->create(['storage' => '256GB', 'ram' => '12GB', 'color' => '#1565c0', 'price' => 2600, 'quantity' => 2, 'is_active' => true]);
 
-        $this->get(route('electronics.store', [$shop, 'brand' => 'Samsung', 'storage' => '128GB', 'min_price' => 2000, 'max_price' => 2300]))->assertOk()->assertSee('Galaxy Test');
+        $storefront = $this->get(route('electronics.store', [$shop, 'brand' => 'Samsung', 'storage' => '128GB', 'min_price' => 2000, 'max_price' => 2300]));
+        $storefront->assertOk()->assertSee('Galaxy Test')->assertSee('data-tilt', false);
+        $this->assertStringContainsString('/storage/products/main/galaxy.webp', $storefront->getContent());
+        $this->assertStringNotContainsString('/storage/storage/', $storefront->getContent());
         $response = $this->postJson(route('electronics.orders.store', $shop), [
             'customer_name' => 'Customer', 'customer_phone' => '0591234567', 'customer_address' => 'Ramallah',
             'items' => [['variant_id' => $variant->id, 'qty' => 2, 'price' => 1]],
