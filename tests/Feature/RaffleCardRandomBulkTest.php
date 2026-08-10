@@ -138,6 +138,23 @@ class RaffleCardRandomBulkTest extends TestCase
         $this->assertStringContainsString('break-after: auto;', $html);
     }
 
+    public function test_printable_page_supports_twenty_four_cards_on_a4(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('raffle-cards.printable'), [
+            'from_number' => '300001',
+            'to_number' => '300024',
+            'cards_per_page' => 24,
+            'brand_text' => 'Ozman',
+        ]);
+
+        $response->assertOk();
+        $html = $response->getContent();
+        $this->assertSame(1, substr_count($html, 'class="sheet cards-24"'));
+        $this->assertSame(24, substr_count($html, 'class="ticket"'));
+        $this->assertStringContainsString('grid-template-columns: repeat(4, 1fr);', $html);
+        $this->assertStringContainsString('grid-template-rows: repeat(6, 1fr);', $html);
+    }
+
     public function test_admin_can_bulk_delete_selected_winning_cards_only(): void
     {
         $admin = $this->admin();

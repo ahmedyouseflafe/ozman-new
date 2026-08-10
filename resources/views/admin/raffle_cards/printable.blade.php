@@ -59,6 +59,12 @@
         .sheet.cards-6 { grid-template-rows: repeat(3, 1fr); }
         .sheet.cards-8 { grid-template-rows: repeat(4, 1fr); }
         .sheet.cards-10 { grid-template-rows: repeat(5, 1fr); gap: 4mm; }
+        .sheet.cards-24 {
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            gap: 2mm;
+            padding: 5mm;
+        }
         .ticket {
             position: relative;
             display: grid;
@@ -77,6 +83,13 @@
             grid-template-columns: 21mm 20mm minmax(0, 1fr);
             gap: 1.6mm;
             padding: 2.8mm;
+        }
+        .sheet.cards-24 .ticket {
+            min-height: 0;
+            grid-template-columns: 9mm 11mm minmax(0, 1fr);
+            gap: 1mm;
+            padding: 1.2mm;
+            border-width: .25mm;
         }
         .cut-mark {
             position: absolute;
@@ -111,6 +124,11 @@
             width: 19mm;
             height: 19mm;
         }
+        .sheet.cards-24 .social-stack { gap: 1.2mm; }
+        .sheet.cards-24 .social-qr {
+            width: 8.5mm;
+            height: 8.5mm;
+        }
         .social-qr img,
         .main-qr img {
             width: 100%;
@@ -139,6 +157,11 @@
             min-width: 0;
         }
         .sheet.cards-10 .follow-copy { font-size: 10pt; gap: 4mm; }
+        .sheet.cards-24 .follow-copy {
+            font-size: 5.2pt;
+            line-height: 1.25;
+            gap: 2mm;
+        }
         .main-side {
             display: grid;
             justify-items: center;
@@ -156,6 +179,21 @@
         .sheet.cards-10 .main-qr {
             width: 28mm;
             height: 28mm;
+        }
+        .sheet.cards-24 .main-side { gap: .55mm; }
+        .sheet.cards-24 .main-qr {
+            width: 16mm;
+            height: 16mm;
+        }
+        .sheet.cards-24 .brand-mark {
+            min-width: 7mm;
+            min-height: 3mm;
+            padding: .15mm .5mm;
+            font-size: 4pt;
+        }
+        .sheet.cards-24 .scan-text {
+            font-size: 4.5pt;
+            line-height: 1.15;
         }
         .brand-mark {
             min-width: 10mm;
@@ -188,6 +226,16 @@
             font-size: 16pt;
             letter-spacing: .9mm;
         }
+        .sheet.cards-24 .card-number {
+            font-size: 10pt;
+            letter-spacing: .45mm;
+        }
+        .sheet.cards-24 .cut-mark {
+            width: 4mm;
+            height: 4mm;
+        }
+        .sheet.cards-24 .cut-mark::before { width: 4mm; }
+        .sheet.cards-24 .cut-mark::after { height: 4mm; }
         @media print {
             @page {
                 size: A4 portrait;

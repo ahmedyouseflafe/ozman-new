@@ -204,6 +204,7 @@
                             <option value="8" @selected(old('cards_per_page', '8') === '8')>8 بطاقات</option>
                             <option value="10" @selected(old('cards_per_page') === '10')>10 بطاقات</option>
                             <option value="6" @selected(old('cards_per_page') === '6')>6 بطاقات</option>
+                            <option value="24" @selected(old('cards_per_page') === '24')>24 بطاقة</option>
                         </select>
                     </div>
                     <div>

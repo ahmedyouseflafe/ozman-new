@@ -113,7 +113,7 @@ class RaffleCardController extends Controller
         $data = $request->validate([
             'from_number' => ['required', 'digits:6'],
             'to_number' => ['required', 'digits:6'],
-            'cards_per_page' => ['required', 'integer', Rule::in([6, 8, 10])],
+            'cards_per_page' => ['required', 'integer', Rule::in([6, 8, 10, 24])],
             'social_qr_1_url' => ['nullable', 'url', 'max:1000'],
             'social_qr_2_url' => ['nullable', 'url', 'max:1000'],
             'brand_text' => ['nullable', 'string', 'max:120'],
