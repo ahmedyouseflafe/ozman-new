@@ -824,7 +824,6 @@
                 <div class="logo-sub">لوحة التحكم</div>
             </div>
         </div>
-         @include('admin.includes.sidebar')
     </div>
 
     <div class="main">

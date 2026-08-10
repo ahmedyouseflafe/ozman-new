@@ -32,8 +32,10 @@ class ResponsiveDashboardPermissionsTest extends TestCase
             ]);
         }
 
-        $this->actingAs($employee)
-            ->get(route('dashboard'))
+        $response = $this->actingAs($employee)
+            ->get(route('dashboard'));
+
+        $response
             ->assertOk()
             ->assertSee('id="admin-dashboard-sidebar"', false)
             ->assertSee('data-admin-menu-open', false)
@@ -42,5 +44,15 @@ class ResponsiveDashboardPermissionsTest extends TestCase
             ->assertSee(route('ads'))
             ->assertSee(route('distributors'))
             ->assertSee(route('raffle-cards.index'));
+
+        $html = $response->getContent();
+        $this->assertSame(1, substr_count($html, 'id="admin-dashboard-sidebar"'));
+        $this->assertStringContainsString('--admin-mobile-nav-count: 5', $html);
+        $this->assertSame(1, substr_count($html, 'class="admin-mobile-nav"'));
+
+        $mainDashboard = $this->actingAs($employee)->get(route('dashboard.main'));
+        $mainDashboard->assertOk();
+        $this->assertSame(1, substr_count($mainDashboard->getContent(), 'id="admin-dashboard-sidebar"'));
+        $this->assertSame(1, substr_count($mainDashboard->getContent(), 'class="admin-mobile-nav"'));
     }
 }

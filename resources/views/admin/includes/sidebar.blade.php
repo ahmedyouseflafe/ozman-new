@@ -157,13 +157,50 @@
         }
 
         @media(max-width: 900px) {
+            html,
+            body {
+                width: 100%;
+                max-width: 100%;
+                overflow-x: hidden;
+            }
+
+            .shell,
+            .main,
+            .content {
+                min-width: 0 !important;
+                max-width: 100% !important;
+            }
+
+            .main {
+                width: 100% !important;
+                margin-right: 0 !important;
+            }
+
+            .content {
+                padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+            }
+
+            .content img,
+            .content video,
+            .content canvas,
+            .content svg {
+                max-width: 100%;
+            }
+
+            .content > *,
+            .topbar.admin-neon-header > * {
+                min-width: 0;
+            }
+
             .sidebar.admin-neon-sidebar {
                 display: flex;
                 width: min(86vw, 330px);
+                max-width: calc(100vw - 28px);
                 z-index: 90;
                 transform: translateX(110%);
                 transition: transform .28s ease;
                 box-shadow: -18px 0 50px rgba(0, 0, 0, .58);
+                padding-bottom: env(safe-area-inset-bottom);
             }
 
             .sidebar.admin-neon-sidebar.mobile-open {
@@ -189,7 +226,7 @@
             }
 
             body {
-                padding-bottom: 76px;
+                padding-bottom: calc(76px + env(safe-area-inset-bottom));
             }
 
             .admin-mobile-nav {
@@ -199,7 +236,7 @@
                 bottom: 10px;
                 z-index: 60;
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+                grid-template-columns: repeat(var(--admin-mobile-nav-count, 4), minmax(0, 1fr));
                 gap: 6px;
                 padding: 8px;
                 border: 1px solid rgba(0, 229, 255, .22);
@@ -208,6 +245,7 @@
                 backdrop-filter: blur(18px);
                 box-shadow: 0 -10px 34px rgba(0, 0, 0, .36), 0 0 18px rgba(0, 229, 255, .16);
                 font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+                padding-bottom: calc(8px + env(safe-area-inset-bottom));
             }
 
             .admin-mobile-nav-item {
@@ -226,6 +264,9 @@
                 font-size: 10px;
                 font-weight: 900;
                 cursor: pointer;
+                min-width: 0;
+                padding: 5px 2px;
+                line-height: 1.2;
             }
 
             .admin-mobile-nav-item i {
@@ -237,6 +278,23 @@
                 background: rgba(0, 229, 255, .15);
                 border-color: rgba(0, 229, 255, .32);
                 color: #00e5ff;
+            }
+        }
+
+        @media(max-width: 380px) {
+            .admin-mobile-nav {
+                right: 6px;
+                left: 6px;
+                bottom: 6px;
+                gap: 3px;
+                padding-right: 5px;
+                padding-left: 5px;
+                border-radius: 18px;
+            }
+
+            .admin-mobile-nav-item {
+                min-height: 48px;
+                font-size: 9px;
             }
         }
 
@@ -573,7 +631,14 @@
 
 <button type="button" class="admin-mobile-menu-overlay" data-admin-menu-close aria-label="إغلاق قائمة لوحة التحكم"></button>
 
-<nav class="admin-mobile-nav" aria-label="تنقل لوحة التحكم للجوال">
+@php
+    $mobileNavCount = 1
+        + ($canSee(['dashboard']) ? 1 : 0)
+        + (($restaurantNavShop && $canSee(['restaurant.dashboard'])) || $canSee(['front-orders.index']) ? 1 : 0)
+        + ($canSee(['products']) ? 1 : 0)
+        + ($canSee(['products.preview']) ? 1 : 0);
+@endphp
+<nav class="admin-mobile-nav" aria-label="تنقل لوحة التحكم للجوال" style="--admin-mobile-nav-count: {{ min($mobileNavCount, 5) }}">
     @if($canSee(['dashboard']))
         <a href="{{ route('dashboard') }}" class="admin-mobile-nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <i class="ti ti-layout-dashboard" aria-hidden="true"></i>
@@ -612,13 +677,6 @@
         </a>
     @endif
 
-    <form method="POST" action="{{ route('logout') }}" style="margin:0;">
-        @csrf
-        <button type="submit" class="admin-mobile-nav-item" style="width:100%;">
-            <i class="ti ti-logout" aria-hidden="true"></i>
-            خروج
-        </button>
-    </form>
 </nav>
 
 @once
