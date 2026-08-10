@@ -121,6 +121,23 @@ class RaffleCardRandomBulkTest extends TestCase
         $response->assertSessionHasErrors('to_number');
     }
 
+    public function test_printable_cards_use_one_physical_page_per_sheet_without_trailing_break(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('raffle-cards.printable'), [
+            'from_number' => '198501',
+            'to_number' => '198509',
+            'cards_per_page' => 8,
+            'brand_text' => 'Ozman',
+        ]);
+
+        $response->assertOk();
+        $html = $response->getContent();
+        $this->assertSame(2, substr_count($html, 'class="sheet cards-8"'));
+        $this->assertStringContainsString('height: 296mm;', $html);
+        $this->assertStringContainsString('.sheet:last-child', $html);
+        $this->assertStringContainsString('break-after: auto;', $html);
+    }
+
     public function test_admin_can_bulk_delete_selected_winning_cards_only(): void
     {
         $admin = $this->admin();

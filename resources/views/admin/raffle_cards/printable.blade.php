@@ -45,7 +45,7 @@
         }
         .sheet {
             width: 210mm;
-            min-height: 297mm;
+            min-height: 296mm;
             margin: 0 auto;
             padding: 8mm;
             background: #fff;
@@ -53,7 +53,7 @@
             grid-template-columns: repeat(2, 1fr);
             gap: 5mm;
             align-content: start;
-            page-break-after: always;
+            break-after: page;
             box-shadow: 0 20px 70px rgba(0,0,0,.45);
         }
         .sheet.cards-6 { grid-template-rows: repeat(3, 1fr); }
@@ -197,11 +197,19 @@
             .toolbar { display: none; }
             .print-root { display: block; padding: 0; }
             .sheet {
+                width: 210mm;
+                height: 296mm;
+                min-height: 296mm;
                 margin: 0;
                 box-shadow: none;
+                overflow: hidden;
+                break-after: page;
                 page-break-after: always;
             }
-            .sheet:last-child { page-break-after: auto; }
+            .sheet:last-child {
+                break-after: auto;
+                page-break-after: auto;
+            }
         }
     </style>
 </head>
