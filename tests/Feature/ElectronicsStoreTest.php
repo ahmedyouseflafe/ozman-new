@@ -43,6 +43,7 @@ class ElectronicsStoreTest extends TestCase
 
         $storefront = $this->get(route('electronics.store', [$shop, 'brand' => 'Samsung', 'storage' => '128GB', 'min_price' => 2000, 'max_price' => 2300]));
         $storefront->assertOk()->assertSee('Galaxy Test')->assertSee('data-tilt', false);
+        $storefront->assertSee('id="electronicsWebgl"', false)->assertSee('electronics-3d.js', false);
         $this->assertStringContainsString('/storage/products/main/galaxy.webp', $storefront->getContent());
         $this->assertStringNotContainsString('/storage/storage/', $storefront->getContent());
         $response = $this->postJson(route('electronics.orders.store', $shop), [

@@ -21,11 +21,13 @@
         @keyframes orbit{to{transform:rotate(360deg)}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes deviceFloat{50%{transform:perspective(900px) rotateY(-18deg) rotateX(5deg) translateY(-16px)}}
         @media(max-width:980px){.hero-content{grid-template-columns:1fr}.hero-device{display:none}.grid{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:580px){.hero{min-height:390px;border-radius:0 0 34px 34px}.hero-content{min-height:330px}.hero h1{font-size:52px}.filters{margin-top:-22px}.grid{grid-template-columns:1fr}.card{display:block}.device-visual{height:300px}.card .device-image{height:88%}}
+        .hero-webgl{justify-self:center;width:min(460px,40vw);height:440px;position:relative;filter:drop-shadow(0 35px 55px rgba(0,0,0,.65))}.hero-webgl canvas{display:block;width:100%!important;height:100%!important;cursor:grab}.hero-webgl canvas:active{cursor:grabbing}.webgl-fallback{position:absolute;inset:20%;display:grid;place-items:center;border:1px solid rgba(33,220,255,.2);border-radius:50%;color:var(--tech-cyan)}
+        @media(max-width:980px){.hero-webgl{position:absolute;left:-80px;opacity:.32;width:380px;pointer-events:none}.hero-copy{position:relative;z-index:2}}
         @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition-duration:.01ms!important}.card{opacity:1;translate:none}}
     </style>
 </head>
 <body>
-<header class="hero" style="--hero-image:url('{{ $shop->banner ? asset($shop->banner) : '' }}')"><div class="wrap hero-content"><div class="hero-copy"><div class="hero-kicker">● الجيل الجديد من التسوق التقني</div><h1>{{ $shop->name }}</h1><p>{{ $shop->description ?: 'اكتشف أحدث الأجهزة، اختر مواصفاتك بدقة، واطلبها مباشرة من المتجر.' }}</p></div><div class="hero-device" aria-hidden="true"></div></div></header>
+<header class="hero" style="--hero-image:url('{{ $shop->banner ? asset($shop->banner) : '' }}')"><div class="wrap hero-content"><div class="hero-copy"><div class="hero-kicker">● الجيل الجديد من التسوق التقني</div><h1>{{ $shop->name }}</h1><p>{{ $shop->description ?: 'اكتشف أحدث الأجهزة، اختر مواصفاتك بدقة، واطلبها مباشرة من المتجر.' }}</p></div><div class="hero-webgl" id="electronicsWebgl" aria-label="مجسم هاتف ثلاثي الأبعاد تفاعلي"><div class="webgl-fallback">3D</div></div></div></header>
 <main class="wrap">
     <form class="filters" method="GET">
         <input name="q" value="{{ request('q') }}" placeholder="ابحث عن جهاز أو موديل...">
@@ -67,4 +69,5 @@ document.querySelectorAll('.compare').forEach(btn=>btn.onclick=()=>{const item=J
 const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('is-visible');observer.unobserve(entry.target)}}),{threshold:.12});
 document.querySelectorAll('[data-tilt]').forEach((card,index)=>{card.style.transitionDelay=`${Math.min(index*70,350)}ms`;observer.observe(card);card.addEventListener('pointermove',event=>{if(matchMedia('(pointer:coarse)').matches)return;const rect=card.getBoundingClientRect(),x=(event.clientX-rect.left)/rect.width,y=(event.clientY-rect.top)/rect.height;card.style.setProperty('--ry',`${(x-.5)*10}deg`);card.style.setProperty('--rx',`${(.5-y)*9}deg`);card.style.setProperty('--mx',`${x*100}%`);card.style.setProperty('--my',`${y*100}%`)});card.addEventListener('pointerleave',()=>{card.style.setProperty('--rx','0deg');card.style.setProperty('--ry','0deg')})});
 </script>
+<script type="module" src="{{ asset('electronics-3d.js') }}?v={{ filemtime(public_path('electronics-3d.js')) }}"></script>
 </body></html>
