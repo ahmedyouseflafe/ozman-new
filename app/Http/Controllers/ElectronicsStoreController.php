@@ -83,6 +83,7 @@ class ElectronicsStoreController extends Controller
                     'storage' => $variant->storage,
                     'ram' => $variant->ram,
                     'color' => $variant->color,
+                    'color_name' => $variant->color_name ?: $variant->color,
                     'sku' => $variant->sku,
                     'price' => $unitPrice,
                     'qty' => $quantity,

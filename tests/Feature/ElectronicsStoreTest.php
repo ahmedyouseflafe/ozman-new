@@ -21,8 +21,8 @@ class ElectronicsStoreTest extends TestCase
             'shop_id' => $shop->id, 'category_id' => $category->id, 'name' => 'Phone Pro',
             'catalog_attributes' => ['brand' => 'OzTech', 'model' => 'P1', 'condition' => 'مستعمل', 'battery_health' => 91, 'network' => '5G', 'supports_esim' => 1, 'unknown' => 'drop'],
             'variants' => [
-                ['storage' => '128GB', 'ram' => '8GB', 'color' => '#111111', 'price' => 1100, 'quantity' => 2, 'is_active' => 1],
-                ['storage' => '256GB', 'ram' => '12GB', 'color' => '#1565c0', 'price' => 1350, 'quantity' => 1, 'is_active' => 1],
+                ['storage' => '128GB', 'ram' => '8GB', 'color' => '#111111', 'color_name' => 'أسود', 'price' => 1100, 'quantity' => 2, 'is_active' => 1],
+                ['storage' => '256GB', 'ram' => '12GB', 'color' => '#1565c0', 'color_name' => 'أزرق', 'price' => 1350, 'quantity' => 1, 'is_active' => 1],
             ],
         ])->assertRedirect(route('products'));
 
@@ -31,14 +31,14 @@ class ElectronicsStoreTest extends TestCase
         $this->assertArrayNotHasKey('unknown', $product->catalog_attributes);
         $this->assertSame(3, $product->quantity);
         $this->assertSame('1100.00', $product->price);
-        $this->assertDatabaseHas('product_variants', ['product_id' => $product->id, 'storage' => '256GB', 'ram' => '12GB', 'color' => '#1565c0', 'quantity' => 1]);
+        $this->assertDatabaseHas('product_variants', ['product_id' => $product->id, 'storage' => '256GB', 'ram' => '12GB', 'color' => '#1565c0', 'color_name' => 'أزرق', 'quantity' => 1]);
     }
 
     public function test_storefront_filters_and_server_priced_order_decrements_only_selected_option(): void
     {
         [$shop, $category] = $this->store('sale');
         $product = Product::create(['shop_id' => $shop->id, 'category_id' => $category->id, 'name' => 'Galaxy Test', 'slug' => 'galaxy-test', 'price' => 1, 'quantity' => 5, 'main_image' => 'storage/products/main/galaxy.webp', 'is_active' => true, 'catalog_attributes' => ['brand' => 'Samsung', 'condition' => 'جديد', 'network' => '5G']]);
-        $variant = $product->variants()->create(['storage' => '128GB', 'ram' => '8GB', 'color' => '#111111', 'price' => 2200, 'quantity' => 3, 'is_active' => true]);
+        $variant = $product->variants()->create(['storage' => '128GB', 'ram' => '8GB', 'color' => '#111111', 'color_name' => 'أسود', 'price' => 2200, 'quantity' => 3, 'is_active' => true]);
         $product->variants()->create(['storage' => '256GB', 'ram' => '12GB', 'color' => '#1565c0', 'price' => 2600, 'quantity' => 2, 'is_active' => true]);
 
         $storefront = $this->get(route('electronics.store', [$shop, 'brand' => 'Samsung', 'storage' => '128GB', 'min_price' => 2000, 'max_price' => 2300]));
@@ -52,6 +52,7 @@ class ElectronicsStoreTest extends TestCase
         ])->assertOk();
         $order = FrontOrder::findOrFail($response->json('order_id'));
         $this->assertSame('4400.00', $order->total);
+        $this->assertSame('أسود', $order->items[0]['color_name']);
         $this->assertSame(1, $variant->fresh()->quantity);
         $this->assertSame(3, $product->fresh()->quantity);
     }

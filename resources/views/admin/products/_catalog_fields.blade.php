@@ -76,7 +76,7 @@
 
     @php
         $variantRows = old('variants', isset($product) ? $product->variants->toArray() : []);
-        $variantRows = count($variantRows) ? $variantRows : [['size' => '', 'storage' => '', 'ram' => '', 'color' => '', 'sku' => '', 'price' => '', 'quantity' => 0, 'is_active' => true]];
+        $variantRows = count($variantRows) ? $variantRows : [['size' => '', 'storage' => '', 'ram' => '', 'color' => '', 'color_name' => '', 'sku' => '', 'price' => '', 'quantity' => 0, 'is_active' => true]];
     @endphp
     <div id="productVariantsPanel" hidden style="margin-top:20px;padding-top:18px;border-top:1px solid rgba(255,255,255,.1)">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px">
@@ -94,6 +94,7 @@
                     <div class="form-group" data-electronics-variant><label class="form-label">الرام</label><input name="variants[{{ $index }}][ram]" value="{{ data_get($variant, 'ram') }}" placeholder="8GB"></div>
                     <div class="form-group" data-standard-color><label class="form-label">اللون</label><input name="variants[{{ $index }}][color]" value="{{ data_get($variant, 'color') }}"></div>
                     <div class="form-group" data-electronics-color hidden><label class="form-label">لون الجهاز</label><input type="color" name="variants[{{ $index }}][color]" value="{{ preg_match('/^#[0-9a-fA-F]{6}$/', (string) data_get($variant, 'color')) ? data_get($variant, 'color') : '#000000' }}" disabled style="height:54px;padding:6px;cursor:pointer"></div>
+                    <div class="form-group" data-electronics-variant><label class="form-label">اسم اللون للزبون والطلب</label><input name="variants[{{ $index }}][color_name]" value="{{ data_get($variant, 'color_name') }}" placeholder="مثال: أسود تيتانيوم"></div>
                     <div class="form-group"><label class="form-label">SKU للخيار</label><input name="variants[{{ $index }}][sku]" value="{{ data_get($variant, 'sku') }}" dir="ltr"></div>
                     <div class="form-group"><label class="form-label" data-variant-price-label>سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[{{ $index }}][price]" value="{{ data_get($variant, 'price') }}"></div>
                     <div class="form-group"><label class="form-label">الكمية</label><input type="number" min="0" name="variants[{{ $index }}][quantity]" value="{{ data_get($variant, 'quantity', 0) }}"></div>
@@ -260,6 +261,7 @@
                 <div class="form-group" data-electronics-variant><label class="form-label">الرام</label><input name="variants[${index}][ram]" placeholder="8GB"></div>
                 <div class="form-group" data-standard-color><label class="form-label">اللون</label><input name="variants[${index}][color]"></div>
                 <div class="form-group" data-electronics-color hidden><label class="form-label">لون الجهاز</label><input type="color" name="variants[${index}][color]" value="#000000" disabled style="height:54px;padding:6px;cursor:pointer"></div>
+                <div class="form-group" data-electronics-variant><label class="form-label">اسم اللون للزبون والطلب</label><input name="variants[${index}][color_name]" placeholder="مثال: أسود تيتانيوم"></div>
                 <div class="form-group"><label class="form-label">SKU للخيار</label><input name="variants[${index}][sku]" dir="ltr"></div>
                 <div class="form-group"><label class="form-label" data-variant-price-label>سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[${index}][price]"></div>
                 <div class="form-group"><label class="form-label">الكمية</label><input type="number" min="0" name="variants[${index}][quantity]" value="0"></div>

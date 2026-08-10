@@ -24,10 +24,19 @@
         .hero-webgl{justify-self:center;width:min(460px,40vw);height:440px;position:relative;filter:drop-shadow(0 35px 55px rgba(0,0,0,.65))}.hero-webgl canvas{display:block;width:100%!important;height:100%!important;cursor:grab}.hero-webgl canvas:active{cursor:grabbing}.webgl-fallback{position:absolute;inset:20%;display:grid;place-items:center;border:1px solid rgba(33,220,255,.2);border-radius:50%;color:var(--tech-cyan)}
         @media(max-width:980px){.hero-webgl{position:absolute;left:-80px;opacity:.32;width:380px;pointer-events:none}.hero-copy{position:relative;z-index:2}}
         @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition-duration:.01ms!important}.card{opacity:1;translate:none}}
+        .hero{min-height:430px;border-radius:0 0 42px 42px}.hero-content{min-height:390px;grid-template-columns:minmax(0,1fr) minmax(280px,.72fr)}.hero h1{font-size:clamp(44px,7vw,82px)}.hero-webgl{height:370px;width:min(390px,36vw)}.filters{margin-top:-22px}.grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.device-visual{height:230px}.card .device-image{width:74%;height:74%}.body{padding:17px}.card h2{font-size:19px;min-height:44px}.price{font-size:23px}
+        @media(max-width:1100px){.grid{grid-template-columns:repeat(3,1fr)}}
+        @media(max-width:820px){.grid{grid-template-columns:repeat(2,1fr)}.hero-webgl{width:330px;left:-35px;opacity:.72;display:block}.hero-content{grid-template-columns:1fr}.hero-copy{max-width:68%;z-index:3}.device-visual{height:220px}}
+        @media(max-width:580px){.hero{min-height:310px;border-radius:0 0 28px 28px}.hero-content{min-height:285px}.hero-copy{max-width:72%}.hero h1{font-size:38px;margin:14px 0}.hero p{font-size:13px;line-height:1.7}.hero-kicker{font-size:9px;padding:6px 9px}.hero-webgl{display:block;left:-92px;top:4px;width:285px;height:285px;opacity:.82;filter:drop-shadow(0 20px 35px rgba(0,0,0,.65));pointer-events:none}.filters{margin-top:-12px}.grid{grid-template-columns:1fr;gap:14px}.card{display:grid;grid-template-columns:38% 62%;border-radius:20px;overflow:hidden;animation:mobileCardFloat 5s ease-in-out infinite}.device-visual{height:210px;border-radius:19px 0 0 19px}.card .device-image{width:70%;height:70%}.device-visual:before{width:135px;height:135px}.device-visual:after{width:100px;height:100px}.body{padding:14px}.card h2{font-size:17px;min-height:0}.price{font-size:21px;margin-top:10px}.actions{flex-direction:row}.actions a,.actions button{padding:9px 5px;font-size:12px}@keyframes mobileCardFloat{50%{transform:translateY(-4px);box-shadow:0 25px 55px rgba(0,0,0,.48),0 0 24px rgba(33,220,255,.08)}}}
     </style>
 </head>
 <body>
-<header class="hero" style="--hero-image:url('{{ $shop->banner ? asset($shop->banner) : '' }}')"><div class="wrap hero-content"><div class="hero-copy"><div class="hero-kicker">● الجيل الجديد من التسوق التقني</div><h1>{{ $shop->name }}</h1><p>{{ $shop->description ?: 'اكتشف أحدث الأجهزة، اختر مواصفاتك بدقة، واطلبها مباشرة من المتجر.' }}</p></div><div class="hero-webgl" id="electronicsWebgl" aria-label="مجسم هاتف ثلاثي الأبعاد تفاعلي"><div class="webgl-fallback">3D</div></div></div></header>
+@php
+    $bannerUrl = $shop->banner
+        ? (\Illuminate\Support\Str::startsWith($shop->banner, ['http://', 'https://', 'storage/']) ? asset($shop->banner) : asset('storage/'.$shop->banner))
+        : '';
+@endphp
+<header class="hero" style="--hero-image:url('{{ $bannerUrl }}')"><div class="wrap hero-content"><div class="hero-copy"><div class="hero-kicker">● الجيل الجديد من التسوق التقني</div><h1>{{ $shop->name }}</h1><p>{{ $shop->description ?: 'اكتشف أحدث الأجهزة، اختر مواصفاتك بدقة، واطلبها مباشرة من المتجر.' }}</p></div><div class="hero-webgl" id="electronicsWebgl" aria-label="مجسم هاتف ثلاثي الأبعاد تفاعلي"><div class="webgl-fallback">3D</div></div></div></header>
 <main class="wrap">
     <form class="filters" method="GET">
         <input name="q" value="{{ request('q') }}" placeholder="ابحث عن جهاز أو موديل...">
