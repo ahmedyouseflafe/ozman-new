@@ -151,8 +151,8 @@ class RaffleCardController extends Controller
             ? $this->qrDataUri($smallWriter, $data['social_qr_2_url'])
             : null;
 
-        $cards = collect(range($from, $to))
-            ->map(function (int $number) use ($writer) {
+        $cardsPerPage = (int) $data['cards_per_page'];
+        $makeCard = function (int $number) use ($writer) {
                 $cardNumber = str_pad((string) $number, 6, '0', STR_PAD_LEFT);
                 $url = route('front.raffle-card.open', ['cardNumber' => $cardNumber]);
 
@@ -161,11 +161,26 @@ class RaffleCardController extends Controller
                     'url' => $url,
                     'qr' => $this->qrDataUri($writer, $url),
                 ];
-            });
+            };
+
+        if ($cardsPerPage === 24) {
+            $pageCount = (int) ceil($count / $cardsPerPage);
+            $cardPages = collect(range(0, $pageCount - 1))
+                ->map(function (int $pageIndex) use ($from, $to, $pageCount, $cardsPerPage, $makeCard) {
+                    return collect(range(0, $cardsPerPage - 1))
+                        ->map(fn (int $positionIndex) => $from + ($positionIndex * $pageCount) + $pageIndex)
+                        ->filter(fn (int $number) => $number <= $to)
+                        ->map($makeCard)
+                        ->values();
+                });
+        } else {
+            $cards = collect(range($from, $to))->map($makeCard);
+            $cardPages = $cards->chunk($cardsPerPage)->values();
+        }
 
         return view('admin.raffle_cards.printable', [
-            'cards' => $cards,
-            'cardsPerPage' => (int) $data['cards_per_page'],
+            'cardPages' => $cardPages,
+            'cardsPerPage' => $cardsPerPage,
             'socialQr1' => $socialQr1,
             'socialQr2' => $socialQr2,
             'brandText' => $data['brand_text'] ?: 'Ozman',

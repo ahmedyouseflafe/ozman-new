@@ -60,10 +60,12 @@
         .sheet.cards-8 { grid-template-rows: repeat(4, 1fr); }
         .sheet.cards-10 { grid-template-rows: repeat(5, 1fr); gap: 4mm; }
         .sheet.cards-24 {
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(6, 1fr);
-            gap: 2mm;
-            padding: 5mm;
+            width: 297mm;
+            min-height: 209mm;
+            grid-template-columns: repeat(8, minmax(0, 1fr));
+            grid-template-rows: repeat(3, minmax(0, 1fr));
+            gap: 1.5mm;
+            padding: 4mm;
         }
         .ticket {
             position: relative;
@@ -86,9 +88,10 @@
         }
         .sheet.cards-24 .ticket {
             min-height: 0;
-            grid-template-columns: 9mm 11mm minmax(0, 1fr);
-            gap: 1mm;
-            padding: 1.2mm;
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto auto;
+            gap: .8mm;
+            padding: 1.4mm;
             border-width: .25mm;
         }
         .cut-mark {
@@ -124,10 +127,14 @@
             width: 19mm;
             height: 19mm;
         }
-        .sheet.cards-24 .social-stack { gap: 1.2mm; }
+        .sheet.cards-24 .social-stack {
+            grid-row: 3;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.2mm;
+        }
         .sheet.cards-24 .social-qr {
-            width: 8.5mm;
-            height: 8.5mm;
+            width: 9mm;
+            height: 9mm;
         }
         .social-qr img,
         .main-qr img {
@@ -158,9 +165,11 @@
         }
         .sheet.cards-10 .follow-copy { font-size: 10pt; gap: 4mm; }
         .sheet.cards-24 .follow-copy {
-            font-size: 5.2pt;
-            line-height: 1.25;
-            gap: 2mm;
+            grid-row: 2;
+            grid-template-columns: repeat(2, 1fr);
+            font-size: 4.6pt;
+            line-height: 1.15;
+            gap: .8mm;
         }
         .main-side {
             display: grid;
@@ -180,10 +189,13 @@
             width: 28mm;
             height: 28mm;
         }
-        .sheet.cards-24 .main-side { gap: .55mm; }
+        .sheet.cards-24 .main-side {
+            grid-row: 1;
+            gap: .45mm;
+        }
         .sheet.cards-24 .main-qr {
-            width: 16mm;
-            height: 16mm;
+            width: 23mm;
+            height: 23mm;
         }
         .sheet.cards-24 .brand-mark {
             min-width: 7mm;
@@ -241,6 +253,10 @@
                 size: A4 portrait;
                 margin: 0;
             }
+            @page raffle-landscape {
+                size: A4 landscape;
+                margin: 0;
+            }
             body { background: #fff; }
             .toolbar { display: none; }
             .print-root { display: block; padding: 0; }
@@ -258,6 +274,12 @@
                 break-after: auto;
                 page-break-after: auto;
             }
+            .sheet.cards-24 {
+                page: raffle-landscape;
+                width: 297mm;
+                height: 209mm;
+                min-height: 209mm;
+            }
         }
     </style>
 </head>
@@ -272,7 +294,7 @@
     </div>
 
     <div class="print-root">
-        @foreach($cards->chunk($cardsPerPage) as $chunk)
+        @foreach($cardPages as $chunk)
             <section class="sheet cards-{{ $cardsPerPage }}">
                 @foreach($chunk as $card)
                     <article class="ticket">

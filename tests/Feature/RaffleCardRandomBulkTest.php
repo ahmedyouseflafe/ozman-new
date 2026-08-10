@@ -151,8 +151,31 @@ class RaffleCardRandomBulkTest extends TestCase
         $html = $response->getContent();
         $this->assertSame(1, substr_count($html, 'class="sheet cards-24"'));
         $this->assertSame(24, substr_count($html, 'class="ticket"'));
-        $this->assertStringContainsString('grid-template-columns: repeat(4, 1fr);', $html);
-        $this->assertStringContainsString('grid-template-rows: repeat(6, 1fr);', $html);
+        $this->assertStringContainsString('grid-template-columns: repeat(8, minmax(0, 1fr));', $html);
+        $this->assertStringContainsString('grid-template-rows: repeat(3, minmax(0, 1fr));', $html);
+        $this->assertStringContainsString('size: A4 landscape;', $html);
+    }
+
+    public function test_twenty_four_card_sheets_are_ordered_for_sequential_cutting(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('raffle-cards.printable'), [
+            'from_number' => '190501',
+            'to_number' => '190548',
+            'cards_per_page' => 24,
+            'brand_text' => 'Ozman',
+        ]);
+
+        $response->assertOk();
+        $html = $response->getContent();
+        preg_match_all('/<section class="sheet cards-24">(.*?)<\/section>/s', $html, $sheets);
+
+        $this->assertCount(2, $sheets[1]);
+
+        preg_match_all('/<div class="card-number">(\d{6})<\/div>/', $sheets[1][0], $firstPageNumbers);
+        preg_match_all('/<div class="card-number">(\d{6})<\/div>/', $sheets[1][1], $secondPageNumbers);
+
+        $this->assertSame(['190501', '190503', '190505'], array_slice($firstPageNumbers[1], 0, 3));
+        $this->assertSame(['190502', '190504', '190506'], array_slice($secondPageNumbers[1], 0, 3));
     }
 
     public function test_admin_can_bulk_delete_selected_winning_cards_only(): void
