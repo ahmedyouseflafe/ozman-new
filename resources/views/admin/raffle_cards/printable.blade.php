@@ -60,12 +60,12 @@
         .sheet.cards-8 { grid-template-rows: repeat(4, 1fr); }
         .sheet.cards-10 { grid-template-rows: repeat(5, 1fr); gap: 4mm; }
         .sheet.cards-24 {
-            width: 297mm;
-            min-height: 209mm;
-            grid-template-columns: repeat(8, minmax(0, 1fr));
-            grid-template-rows: repeat(3, minmax(0, 1fr));
+            width: 210mm;
+            min-height: 296mm;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-rows: repeat(8, minmax(0, 1fr));
             gap: 1.5mm;
-            padding: 4mm;
+            padding: 5mm;
         }
         .ticket {
             position: relative;
@@ -88,10 +88,10 @@
         }
         .sheet.cards-24 .ticket {
             min-height: 0;
-            grid-template-columns: 1fr;
-            grid-template-rows: auto auto auto;
-            gap: .8mm;
-            padding: 1.4mm;
+            grid-template-columns: 13mm 16mm minmax(0, 1fr);
+            grid-template-rows: 1fr;
+            gap: 1mm;
+            padding: 1.2mm;
             border-width: .25mm;
         }
         .cut-mark {
@@ -128,13 +128,13 @@
             height: 19mm;
         }
         .sheet.cards-24 .social-stack {
-            grid-row: 3;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.2mm;
+            grid-row: auto;
+            grid-template-columns: 1fr;
+            gap: .8mm;
         }
         .sheet.cards-24 .social-qr {
-            width: 9mm;
-            height: 9mm;
+            width: 10.5mm;
+            height: 10.5mm;
         }
         .social-qr img,
         .main-qr img {
@@ -165,11 +165,11 @@
         }
         .sheet.cards-10 .follow-copy { font-size: 10pt; gap: 4mm; }
         .sheet.cards-24 .follow-copy {
-            grid-row: 2;
-            grid-template-columns: repeat(2, 1fr);
-            font-size: 4.6pt;
+            grid-row: auto;
+            grid-template-columns: 1fr;
+            font-size: 5pt;
             line-height: 1.15;
-            gap: .8mm;
+            gap: 1mm;
         }
         .main-side {
             display: grid;
@@ -190,12 +190,12 @@
             height: 28mm;
         }
         .sheet.cards-24 .main-side {
-            grid-row: 1;
-            gap: .45mm;
+            grid-row: auto;
+            gap: .35mm;
         }
         .sheet.cards-24 .main-qr {
-            width: 23mm;
-            height: 23mm;
+            width: 15mm;
+            height: 15mm;
         }
         .sheet.cards-24 .brand-mark {
             min-width: 7mm;
@@ -253,10 +253,6 @@
                 size: A4 portrait;
                 margin: 0;
             }
-            @page raffle-landscape {
-                size: A4 landscape;
-                margin: 0;
-            }
             body { background: #fff; }
             .toolbar { display: none; }
             .print-root { display: block; padding: 0; }
@@ -275,10 +271,9 @@
                 page-break-after: auto;
             }
             .sheet.cards-24 {
-                page: raffle-landscape;
-                width: 297mm;
-                height: 209mm;
-                min-height: 209mm;
+                width: 210mm;
+                height: 296mm;
+                min-height: 296mm;
             }
         }
     </style>

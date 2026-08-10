@@ -151,9 +151,9 @@ class RaffleCardRandomBulkTest extends TestCase
         $html = $response->getContent();
         $this->assertSame(1, substr_count($html, 'class="sheet cards-24"'));
         $this->assertSame(24, substr_count($html, 'class="ticket"'));
-        $this->assertStringContainsString('grid-template-columns: repeat(8, minmax(0, 1fr));', $html);
-        $this->assertStringContainsString('grid-template-rows: repeat(3, minmax(0, 1fr));', $html);
-        $this->assertStringContainsString('size: A4 landscape;', $html);
+        $this->assertStringContainsString('grid-template-columns: repeat(3, minmax(0, 1fr));', $html);
+        $this->assertStringContainsString('grid-template-rows: repeat(8, minmax(0, 1fr));', $html);
+        $this->assertStringContainsString('size: A4 portrait;', $html);
     }
 
     public function test_twenty_four_card_sheets_are_ordered_for_sequential_cutting(): void
