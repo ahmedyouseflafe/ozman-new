@@ -368,18 +368,18 @@ class ProductController extends Controller
             'price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'discount_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'customer_package_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
-            'show_customer_package_price' => ['required', 'boolean'],
+            'show_customer_package_price' => ['nullable', 'boolean'],
             'customer_carton_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'customer_pallet_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
-            'show_customer_carton_price' => ['required', 'boolean'],
-            'show_customer_pallet_price' => ['required', 'boolean'],
+            'show_customer_carton_price' => ['nullable', 'boolean'],
+            'show_customer_pallet_price' => ['nullable', 'boolean'],
             'merchant_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'package_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'pallet_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'carton_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
-            'show_package_price' => ['required', 'boolean'],
-            'show_carton_price' => ['required', 'boolean'],
-            'show_pallet_price' => ['required', 'boolean'],
+            'show_package_price' => ['nullable', 'boolean'],
+            'show_carton_price' => ['nullable', 'boolean'],
+            'show_pallet_price' => ['nullable', 'boolean'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'sku' => ['nullable', 'string', 'max:255'],
             'barcode' => ['nullable', 'string', 'max:255'],
@@ -462,10 +462,19 @@ class ProductController extends Controller
             ])
             ->values();
 
+        if ($shopType === 'electronics') {
+            abort_if($variants->isEmpty(), 422, 'أضف خيار تخزين ولون واحدًا على الأقل للجهاز.');
+            abort_if($variants->contains(fn ($variant) => ! filled($variant['storage']) || ! filled($variant['color']) || $variant['price'] === null), 422, 'التخزين واللون والسعر مطلوبة لكل خيار جهاز.');
+        }
+
         $product->variants()->delete();
         if ($variants->isNotEmpty()) {
             $product->variants()->createMany($variants->all());
-            $product->update(['quantity' => $variants->where('is_active', true)->sum('quantity')]);
+            $updates = ['quantity' => $variants->where('is_active', true)->sum('quantity')];
+            if ($shopType === 'electronics') {
+                $updates['price'] = $variants->where('is_active', true)->min('price') ?? $variants->min('price') ?? 0;
+            }
+            $product->update($updates);
         }
     }
 

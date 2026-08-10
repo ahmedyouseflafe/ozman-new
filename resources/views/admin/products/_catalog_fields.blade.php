@@ -94,7 +94,7 @@
                     <div class="form-group" data-electronics-variant><label class="form-label">الرام</label><input name="variants[{{ $index }}][ram]" value="{{ data_get($variant, 'ram') }}" placeholder="8GB"></div>
                     <div class="form-group"><label class="form-label">اللون</label><input name="variants[{{ $index }}][color]" value="{{ data_get($variant, 'color') }}"></div>
                     <div class="form-group"><label class="form-label">SKU للخيار</label><input name="variants[{{ $index }}][sku]" value="{{ data_get($variant, 'sku') }}" dir="ltr"></div>
-                    <div class="form-group"><label class="form-label">سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[{{ $index }}][price]" value="{{ data_get($variant, 'price') }}"></div>
+                    <div class="form-group"><label class="form-label" data-variant-price-label>سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[{{ $index }}][price]" value="{{ data_get($variant, 'price') }}"></div>
                     <div class="form-group"><label class="form-label">الكمية</label><input type="number" min="0" name="variants[{{ $index }}][quantity]" value="{{ data_get($variant, 'quantity', 0) }}"></div>
                     <div class="form-group" style="justify-content:flex-end"><input type="hidden" name="variants[{{ $index }}][is_active]" value="0"><label class="visibility-check"><input type="checkbox" name="variants[{{ $index }}][is_active]" value="1" @checked((bool) data_get($variant, 'is_active', true))>متوفر للبيع</label><button type="button" class="btn" data-remove-variant style="color:#ff6070">حذف الخيار</button></div>
                 </div>
@@ -187,6 +187,9 @@
             document.getElementById('productVariantsTitle').textContent = isElectronics
                 ? 'مخزون التخزين والرام والألوان'
                 : 'مخزون المقاسات والألوان';
+            variantsPanel.querySelectorAll('[data-variant-price-label]').forEach((label) => {
+                label.textContent = isElectronics ? 'سعر الخيار (مطلوب)' : 'سعر خاص (اختياري)';
+            });
             variantsPanel.querySelectorAll('[data-electronics-variant]').forEach((field) => {
                 field.hidden = !isElectronics;
                 field.querySelectorAll('input').forEach((input) => input.disabled = !isElectronics || !usesVariants);
@@ -197,24 +200,25 @@
             });
 
             const isRestaurant = type === 'restaurant';
+            const usesSpecializedPricing = isRestaurant || isElectronics;
             restaurantEditor.hidden = !isRestaurant;
             restaurantEditor.style.display = isRestaurant ? '' : 'none';
             restaurantEditor.querySelectorAll('[data-restaurant-input]').forEach((field) => field.disabled = !isRestaurant);
             if (legacyPricing) {
-                legacyPricing.hidden = isRestaurant;
-                legacyPricing.style.display = isRestaurant ? 'none' : '';
-                legacyPricing.querySelectorAll('input,select,textarea').forEach((field) => field.disabled = isRestaurant);
+                legacyPricing.hidden = usesSpecializedPricing;
+                legacyPricing.style.display = usesSpecializedPricing ? 'none' : '';
+                legacyPricing.querySelectorAll('input,select,textarea').forEach((field) => field.disabled = usesSpecializedPricing);
             }
             if (legacyCampaigns) {
-                legacyCampaigns.hidden = isRestaurant;
-                legacyCampaigns.style.display = isRestaurant ? 'none' : '';
-                legacyCampaigns.querySelectorAll('input,select,textarea,button').forEach((field) => field.disabled = isRestaurant);
+                legacyCampaigns.hidden = usesSpecializedPricing;
+                legacyCampaigns.style.display = usesSpecializedPricing ? 'none' : '';
+                legacyCampaigns.querySelectorAll('input,select,textarea,button').forEach((field) => field.disabled = usesSpecializedPricing);
             }
             const agentField = document.getElementById('agent_id')?.closest('.form-group');
             if (agentField) {
-                agentField.hidden = isRestaurant;
-                agentField.style.display = isRestaurant ? 'none' : '';
-                agentField.querySelectorAll('select,input').forEach((field) => field.disabled = isRestaurant);
+                agentField.hidden = usesSpecializedPricing;
+                agentField.style.display = usesSpecializedPricing ? 'none' : '';
+                agentField.querySelectorAll('select,input').forEach((field) => field.disabled = usesSpecializedPricing);
             }
             document.querySelectorAll('[data-catalog-fields="restaurant"] input').forEach((field) => {
                 const key = field.name.match(/catalog_attributes\[([^\]]+)\]/)?.[1];
@@ -247,7 +251,7 @@
                 <div class="form-group" data-electronics-variant><label class="form-label">الرام</label><input name="variants[${index}][ram]" placeholder="8GB"></div>
                 <div class="form-group"><label class="form-label">اللون</label><input name="variants[${index}][color]"></div>
                 <div class="form-group"><label class="form-label">SKU للخيار</label><input name="variants[${index}][sku]" dir="ltr"></div>
-                <div class="form-group"><label class="form-label">سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[${index}][price]"></div>
+                <div class="form-group"><label class="form-label" data-variant-price-label>سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[${index}][price]"></div>
                 <div class="form-group"><label class="form-label">الكمية</label><input type="number" min="0" name="variants[${index}][quantity]" value="0"></div>
                 <div class="form-group" style="justify-content:flex-end"><input type="hidden" name="variants[${index}][is_active]" value="0"><label class="visibility-check"><input type="checkbox" name="variants[${index}][is_active]" value="1" checked>متوفر للبيع</label><button type="button" class="btn" data-remove-variant style="color:#ff6070">حذف الخيار</button></div>
             </div>`;

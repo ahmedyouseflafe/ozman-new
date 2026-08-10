@@ -19,9 +19,6 @@ class ElectronicsStoreTest extends TestCase
         [$shop, $category, $owner] = $this->store('admin');
         $this->actingAs($owner)->post(route('products.store'), [
             'shop_id' => $shop->id, 'category_id' => $category->id, 'name' => 'Phone Pro',
-            'show_customer_package_price' => 1, 'customer_package_price' => 999,
-            'show_customer_carton_price' => 0, 'show_customer_pallet_price' => 0,
-            'show_package_price' => 0, 'show_carton_price' => 0, 'show_pallet_price' => 0,
             'catalog_attributes' => ['brand' => 'OzTech', 'model' => 'P1', 'condition' => 'مستعمل', 'battery_health' => 91, 'network' => '5G', 'supports_esim' => 1, 'unknown' => 'drop'],
             'variants' => [
                 ['storage' => '128GB', 'ram' => '8GB', 'color' => 'أسود', 'price' => 1100, 'quantity' => 2, 'is_active' => 1],
@@ -33,6 +30,7 @@ class ElectronicsStoreTest extends TestCase
         $this->assertSame('OzTech', $product->catalog_attributes['brand']);
         $this->assertArrayNotHasKey('unknown', $product->catalog_attributes);
         $this->assertSame(3, $product->quantity);
+        $this->assertSame('1100.00', $product->price);
         $this->assertDatabaseHas('product_variants', ['product_id' => $product->id, 'storage' => '256GB', 'ram' => '12GB', 'color' => 'أزرق', 'quantity' => 1]);
     }
 
