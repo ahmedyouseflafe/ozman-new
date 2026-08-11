@@ -98,7 +98,7 @@
                     <div class="form-group"><label class="form-label">SKU للخيار</label><input name="variants[{{ $index }}][sku]" value="{{ data_get($variant, 'sku') }}" dir="ltr"></div>
                     <div class="form-group"><label class="form-label" data-variant-price-label>سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[{{ $index }}][price]" value="{{ data_get($variant, 'price') }}"></div>
                     <div class="form-group"><label class="form-label">الكمية</label><input type="number" min="0" name="variants[{{ $index }}][quantity]" value="{{ data_get($variant, 'quantity', 0) }}"></div>
-                    <div class="form-group" style="justify-content:flex-end"><input type="hidden" name="variants[{{ $index }}][is_active]" value="0"><label class="visibility-check"><input type="checkbox" name="variants[{{ $index }}][is_active]" value="1" @checked((bool) data_get($variant, 'is_active', true))>متوفر للبيع</label><button type="button" class="btn" data-remove-variant style="color:#ff6070">حذف الخيار</button></div>
+                    <div class="form-group" style="justify-content:flex-end"><input type="hidden" name="variants[{{ $index }}][is_active]" value="0"><label class="visibility-check"><input type="checkbox" name="variants[{{ $index }}][is_active]" value="1" @checked((bool) data_get($variant, 'is_active', true))>متوفر للبيع</label><button type="button" class="btn" data-add-variant-color hidden><i class="ti ti-palette"></i> إضافة لون لنفس السعة</button><button type="button" class="btn" data-remove-variant style="color:#ff6070">حذف الخيار</button></div>
                 </div>
             @endforeach
         </div>
@@ -204,6 +204,9 @@
                 field.hidden = !isElectronics;
                 field.querySelectorAll('input').forEach((input) => input.disabled = !isElectronics || !usesVariants);
             });
+            variantsPanel.querySelectorAll('[data-add-variant-color]').forEach((button) => {
+                button.hidden = !isElectronics;
+            });
             variantsPanel.querySelectorAll('input[name$="[size]"]').forEach((input) => {
                 input.closest('.form-group').hidden = isElectronics;
                 input.disabled = isElectronics || !usesVariants;
@@ -265,7 +268,7 @@
                 <div class="form-group"><label class="form-label">SKU للخيار</label><input name="variants[${index}][sku]" dir="ltr"></div>
                 <div class="form-group"><label class="form-label" data-variant-price-label>سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[${index}][price]"></div>
                 <div class="form-group"><label class="form-label">الكمية</label><input type="number" min="0" name="variants[${index}][quantity]" value="0"></div>
-                <div class="form-group" style="justify-content:flex-end"><input type="hidden" name="variants[${index}][is_active]" value="0"><label class="visibility-check"><input type="checkbox" name="variants[${index}][is_active]" value="1" checked>متوفر للبيع</label><button type="button" class="btn" data-remove-variant style="color:#ff6070">حذف الخيار</button></div>
+                <div class="form-group" style="justify-content:flex-end"><input type="hidden" name="variants[${index}][is_active]" value="0"><label class="visibility-check"><input type="checkbox" name="variants[${index}][is_active]" value="1" checked>متوفر للبيع</label><button type="button" class="btn" data-add-variant-color hidden><i class="ti ti-palette"></i> إضافة لون لنفس السعة</button><button type="button" class="btn" data-remove-variant style="color:#ff6070">حذف الخيار</button></div>
             </div>`;
         }
 
@@ -274,6 +277,27 @@
             updateCatalogFields();
         });
         variantsList?.addEventListener('click', (event) => {
+            const addColorButton = event.target.closest('[data-add-variant-color]');
+            if (addColorButton) {
+                const sourceRow = addColorButton.closest('[data-variant-row]');
+                const newRow = sourceRow.cloneNode(true);
+                const newIndex = variantIndex++;
+
+                newRow.querySelectorAll('[name]').forEach((field) => {
+                    field.name = field.name.replace(/variants\[\d+\]/, `variants[${newIndex}]`);
+                });
+                newRow.querySelectorAll('input[name$="[color]"]').forEach((field) => {
+                    field.value = field.type === 'color' ? '#000000' : '';
+                });
+                newRow.querySelector('input[name$="[color_name]"]').value = '';
+                newRow.querySelector('input[name$="[sku]"]').value = '';
+                newRow.querySelector('input[name$="[quantity]"]').value = '0';
+
+                sourceRow.insertAdjacentElement('afterend', newRow);
+                updateCatalogFields();
+                newRow.querySelector('input[type="color"]')?.focus();
+                return;
+            }
             if (!event.target.closest('[data-remove-variant]')) return;
             event.target.closest('[data-variant-row]')?.remove();
         });

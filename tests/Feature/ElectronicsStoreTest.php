@@ -34,6 +34,28 @@ class ElectronicsStoreTest extends TestCase
         $this->assertDatabaseHas('product_variants', ['product_id' => $product->id, 'storage' => '256GB', 'ram' => '12GB', 'color' => '#1565c0', 'color_name' => 'أزرق', 'quantity' => 1]);
     }
 
+    public function test_same_storage_and_ram_can_have_multiple_independent_colors(): void
+    {
+        [$shop, $category, $owner] = $this->store('multi-color');
+
+        $this->actingAs($owner)->post(route('products.store'), [
+            'shop_id' => $shop->id,
+            'category_id' => $category->id,
+            'name' => 'Multi Color Phone',
+            'variants' => [
+                ['storage' => '128GB', 'ram' => '8GB', 'color' => '#111111', 'color_name' => 'Black', 'price' => 1100, 'quantity' => 2, 'is_active' => 1],
+                ['storage' => '128GB', 'ram' => '8GB', 'color' => '#f5f5f5', 'color_name' => 'White', 'price' => 1100, 'quantity' => 4, 'is_active' => 1],
+                ['storage' => '256GB', 'ram' => '8GB', 'color' => '#111111', 'color_name' => 'Black', 'price' => 1350, 'quantity' => 1, 'is_active' => 1],
+            ],
+        ])->assertRedirect(route('products'));
+
+        $product = Product::where('shop_id', $shop->id)->where('name', 'Multi Color Phone')->firstOrFail();
+
+        $this->assertSame(3, $product->variants()->count());
+        $this->assertSame(2, $product->variants()->where('storage', '128GB')->count());
+        $this->assertSame(7, $product->quantity);
+    }
+
     public function test_storefront_filters_and_server_priced_order_decrements_only_selected_option(): void
     {
         [$shop, $category] = $this->store('sale');
