@@ -90,13 +90,13 @@
             @foreach($variantRows as $index => $variant)
                 <div data-variant-row class="form-grid" style="padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:16px">
                     <div class="form-group"><label class="form-label">المقاس/النمرة</label><input name="variants[{{ $index }}][size]" value="{{ data_get($variant, 'size') }}"></div>
-                    <div class="form-group" data-electronics-variant><label class="form-label">سعة التخزين</label><input name="variants[{{ $index }}][storage]" value="{{ data_get($variant, 'storage') }}" placeholder="128GB"></div>
-                    <div class="form-group" data-electronics-variant><label class="form-label">الرام</label><input name="variants[{{ $index }}][ram]" value="{{ data_get($variant, 'ram') }}" placeholder="8GB"></div>
+                    <div class="form-group" data-electronics-variant data-variant-shared><label class="form-label">سعة التخزين</label><input name="variants[{{ $index }}][storage]" value="{{ data_get($variant, 'storage') }}" placeholder="128GB"></div>
+                    <div class="form-group" data-electronics-variant data-variant-shared><label class="form-label">الرام</label><input name="variants[{{ $index }}][ram]" value="{{ data_get($variant, 'ram') }}" placeholder="8GB"></div>
                     <div class="form-group" data-standard-color><label class="form-label">اللون</label><input name="variants[{{ $index }}][color]" value="{{ data_get($variant, 'color') }}"></div>
                     <div class="form-group" data-electronics-color hidden><label class="form-label">لون الجهاز</label><input type="color" name="variants[{{ $index }}][color]" value="{{ preg_match('/^#[0-9a-fA-F]{6}$/', (string) data_get($variant, 'color')) ? data_get($variant, 'color') : '#000000' }}" disabled style="height:54px;padding:6px;cursor:pointer"></div>
                     <div class="form-group" data-electronics-variant><label class="form-label">اسم اللون للزبون والطلب</label><input name="variants[{{ $index }}][color_name]" value="{{ data_get($variant, 'color_name') }}" placeholder="مثال: أسود تيتانيوم"></div>
                     <div class="form-group"><label class="form-label">SKU للخيار</label><input name="variants[{{ $index }}][sku]" value="{{ data_get($variant, 'sku') }}" dir="ltr"></div>
-                    <div class="form-group"><label class="form-label" data-variant-price-label>سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[{{ $index }}][price]" value="{{ data_get($variant, 'price') }}"></div>
+                    <div class="form-group" data-variant-shared><label class="form-label" data-variant-price-label>سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[{{ $index }}][price]" value="{{ data_get($variant, 'price') }}"></div>
                     <div class="form-group"><label class="form-label">الكمية</label><input type="number" min="0" name="variants[{{ $index }}][quantity]" value="{{ data_get($variant, 'quantity', 0) }}"></div>
                     <div class="form-group" style="justify-content:flex-end"><input type="hidden" name="variants[{{ $index }}][is_active]" value="0"><label class="visibility-check"><input type="checkbox" name="variants[{{ $index }}][is_active]" value="1" @checked((bool) data_get($variant, 'is_active', true))>متوفر للبيع</label><button type="button" class="btn" data-add-variant-color hidden><i class="ti ti-palette"></i> إضافة لون لنفس السعة</button><button type="button" class="btn" data-remove-variant style="color:#ff6070">حذف الخيار</button></div>
                 </div>
@@ -189,6 +189,11 @@
             document.getElementById('productVariantsTitle').textContent = isElectronics
                 ? 'مخزون التخزين والرام والألوان'
                 : 'مخزون المقاسات والألوان';
+            if (addVariant) {
+                addVariant.innerHTML = isElectronics
+                    ? '<i class="ti ti-plus"></i> إضافة سعة جديدة'
+                    : '<i class="ti ti-plus"></i> إضافة خيار';
+            }
             variantsPanel.querySelectorAll('[data-variant-price-label]').forEach((label) => {
                 label.textContent = isElectronics ? 'سعر الخيار (مطلوب)' : 'سعر خاص (اختياري)';
             });
@@ -211,6 +216,7 @@
                 input.closest('.form-group').hidden = isElectronics;
                 input.disabled = isElectronics || !usesVariants;
             });
+            updateElectronicsVariantStructure(isElectronics);
 
             const isRestaurant = type === 'restaurant';
             const usesSpecializedPricing = isRestaurant || isElectronics;
@@ -260,16 +266,86 @@
         function variantTemplate(index) {
             return `<div data-variant-row class="form-grid" style="padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:16px">
                 <div class="form-group"><label class="form-label">المقاس/النمرة</label><input name="variants[${index}][size]"></div>
-                <div class="form-group" data-electronics-variant><label class="form-label">سعة التخزين</label><input name="variants[${index}][storage]" placeholder="128GB"></div>
-                <div class="form-group" data-electronics-variant><label class="form-label">الرام</label><input name="variants[${index}][ram]" placeholder="8GB"></div>
+                <div class="form-group" data-electronics-variant data-variant-shared><label class="form-label">سعة التخزين</label><input name="variants[${index}][storage]" placeholder="128GB"></div>
+                <div class="form-group" data-electronics-variant data-variant-shared><label class="form-label">الرام</label><input name="variants[${index}][ram]" placeholder="8GB"></div>
                 <div class="form-group" data-standard-color><label class="form-label">اللون</label><input name="variants[${index}][color]"></div>
                 <div class="form-group" data-electronics-color hidden><label class="form-label">لون الجهاز</label><input type="color" name="variants[${index}][color]" value="#000000" disabled style="height:54px;padding:6px;cursor:pointer"></div>
                 <div class="form-group" data-electronics-variant><label class="form-label">اسم اللون للزبون والطلب</label><input name="variants[${index}][color_name]" placeholder="مثال: أسود تيتانيوم"></div>
                 <div class="form-group"><label class="form-label">SKU للخيار</label><input name="variants[${index}][sku]" dir="ltr"></div>
-                <div class="form-group"><label class="form-label" data-variant-price-label>سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[${index}][price]"></div>
+                <div class="form-group" data-variant-shared><label class="form-label" data-variant-price-label>سعر خاص (اختياري)</label><input type="number" step="0.01" min="0" name="variants[${index}][price]"></div>
                 <div class="form-group"><label class="form-label">الكمية</label><input type="number" min="0" name="variants[${index}][quantity]" value="0"></div>
                 <div class="form-group" style="justify-content:flex-end"><input type="hidden" name="variants[${index}][is_active]" value="0"><label class="visibility-check"><input type="checkbox" name="variants[${index}][is_active]" value="1" checked>متوفر للبيع</label><button type="button" class="btn" data-add-variant-color hidden><i class="ti ti-palette"></i> إضافة لون لنفس السعة</button><button type="button" class="btn" data-remove-variant style="color:#ff6070">حذف الخيار</button></div>
             </div>`;
+        }
+
+        function colorListFor(row) {
+            let list = row.querySelector(':scope > [data-variant-colors-list]');
+            if (!list) {
+                list = document.createElement('div');
+                list.dataset.variantColorsList = '';
+                list.style.cssText = 'grid-column:1/-1;display:grid;gap:10px;margin-top:4px;padding-top:12px;border-top:1px dashed rgba(0,229,255,.28)';
+                list.innerHTML = '<strong style="color:#00e5ff">ألوان إضافية لنفس السعة</strong>';
+                row.appendChild(list);
+            }
+            return list;
+        }
+
+        function markAsExtraColor(row, rootRow) {
+            row.dataset.variantColorRow = '';
+            row.style.cssText = 'padding:10px;border:1px solid rgba(0,229,255,.2);border-radius:14px;background:rgba(0,229,255,.025)';
+            row.querySelector(':scope > [data-variant-colors-list]')?.remove();
+            row.querySelectorAll('[data-variant-shared]').forEach((field) => field.hidden = true);
+            const size = row.querySelector('input[name$="[size]"]')?.closest('.form-group');
+            if (size) size.hidden = true;
+            const addButton = row.querySelector('[data-add-variant-color]');
+            if (addButton) addButton.hidden = true;
+            syncExtraColor(row, rootRow);
+        }
+
+        function syncExtraColor(row, rootRow) {
+            ['storage', 'ram', 'price'].forEach((key) => {
+                const source = rootRow.querySelector(`input[name$="[${key}]"]`);
+                const target = row.querySelector(`input[name$="[${key}]"]`);
+                if (source && target) target.value = source.value;
+            });
+        }
+
+        function updateElectronicsVariantStructure(isElectronics) {
+            if (!isElectronics) {
+                variantsList.querySelectorAll(':scope > [data-variant-row]').forEach((rootRow) => {
+                    const list = rootRow.querySelector(':scope > [data-variant-colors-list]');
+                    [...(list?.querySelectorAll(':scope > [data-variant-row]') || [])].forEach((row) => {
+                        delete row.dataset.variantColorRow;
+                        row.removeAttribute('style');
+                        rootRow.insertAdjacentElement('afterend', row);
+                    });
+                    list?.remove();
+                });
+                return;
+            }
+
+            const groups = new Map();
+            [...variantsList.querySelectorAll(':scope > [data-variant-row]')].forEach((row) => {
+                const storage = row.querySelector('input[name$="[storage]"]')?.value.trim() || '';
+                const ram = row.querySelector('input[name$="[ram]"]')?.value.trim() || '';
+                const price = row.querySelector('input[name$="[price]"]')?.value.trim() || '';
+                const key = `${storage.toLowerCase()}|${ram.toLowerCase()}|${price}`;
+
+                if (!storage || !groups.has(key)) {
+                    if (storage) groups.set(key, row);
+                    return;
+                }
+
+                const rootRow = groups.get(key);
+                markAsExtraColor(row, rootRow);
+                colorListFor(rootRow).appendChild(row);
+            });
+
+            variantsList.querySelectorAll(':scope > [data-variant-row]').forEach((rootRow) => {
+                rootRow.querySelectorAll(':scope > [data-variant-colors-list] > [data-variant-row]').forEach((row) => {
+                    markAsExtraColor(row, rootRow);
+                });
+            });
         }
 
         addVariant?.addEventListener('click', () => {
@@ -283,6 +359,7 @@
                 const newRow = sourceRow.cloneNode(true);
                 const newIndex = variantIndex++;
 
+                newRow.querySelector(':scope > [data-variant-colors-list]')?.remove();
                 newRow.querySelectorAll('[name]').forEach((field) => {
                     field.name = field.name.replace(/variants\[\d+\]/, `variants[${newIndex}]`);
                 });
@@ -293,13 +370,30 @@
                 newRow.querySelector('input[name$="[sku]"]').value = '';
                 newRow.querySelector('input[name$="[quantity]"]').value = '0';
 
-                sourceRow.insertAdjacentElement('afterend', newRow);
-                updateCatalogFields();
+                markAsExtraColor(newRow, sourceRow);
+                colorListFor(sourceRow).appendChild(newRow);
                 newRow.querySelector('input[type="color"]')?.focus();
                 return;
             }
             if (!event.target.closest('[data-remove-variant]')) return;
-            event.target.closest('[data-variant-row]')?.remove();
+            const row = event.target.closest('[data-variant-row]');
+            const list = row?.parentElement?.closest('[data-variant-colors-list]');
+            row?.remove();
+            if (list && !list.querySelector('[data-variant-row]')) list.remove();
+        });
+        variantsList?.addEventListener('input', (event) => {
+            if (!event.target.closest('[data-variant-shared]')) return;
+            const rootRow = event.target.closest('[data-variant-row]');
+            rootRow?.querySelectorAll(':scope > [data-variant-colors-list] > [data-variant-row]').forEach((row) => {
+                syncExtraColor(row, rootRow);
+            });
+        });
+        variantsList?.closest('form')?.addEventListener('submit', () => {
+            variantsList.querySelectorAll(':scope > [data-variant-row]').forEach((rootRow) => {
+                rootRow.querySelectorAll(':scope > [data-variant-colors-list] > [data-variant-row]').forEach((row) => {
+                    syncExtraColor(row, rootRow);
+                });
+            });
         });
 
         shopSelect?.addEventListener('change', updateCatalogFields);
