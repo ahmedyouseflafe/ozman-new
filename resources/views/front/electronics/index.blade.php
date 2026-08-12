@@ -28,6 +28,31 @@
         @media(max-width:1100px){.grid{grid-template-columns:repeat(3,1fr)}}
         @media(max-width:820px){.grid{grid-template-columns:repeat(2,1fr)}.hero-webgl{width:330px;left:-35px;opacity:.72;display:block}.hero-content{grid-template-columns:1fr}.hero-copy{max-width:68%;z-index:3}.device-visual{height:220px}}
         @media(max-width:580px){.hero{min-height:310px;border-radius:0 0 28px 28px}.hero-content{min-height:285px}.hero-copy{max-width:72%}.hero h1{font-size:38px;margin:14px 0}.hero p{font-size:13px;line-height:1.7}.hero-kicker{font-size:9px;padding:6px 9px}.hero-webgl{display:block;left:-92px;top:4px;width:285px;height:285px;opacity:.82;filter:drop-shadow(0 20px 35px rgba(0,0,0,.65));pointer-events:none}.filters{margin-top:-12px}.grid{grid-template-columns:1fr;gap:14px}.card{display:grid;grid-template-columns:38% 62%;border-radius:20px;overflow:hidden;animation:mobileCardFloat 5s ease-in-out infinite}.device-visual{height:210px;border-radius:19px 0 0 19px}.card .device-image{width:70%;height:70%}.device-visual:before{width:135px;height:135px}.device-visual:after{width:100px;height:100px}.body{padding:14px}.card h2{font-size:17px;min-height:0}.price{font-size:21px;margin-top:10px}.actions{flex-direction:row}.actions a,.actions button{padding:9px 5px;font-size:12px}@keyframes mobileCardFloat{50%{transform:translateY(-4px);box-shadow:0 25px 55px rgba(0,0,0,.48),0 0 24px rgba(33,220,255,.08)}}}
+
+        /* Refined storefront layout */
+        .hero{min-height:400px;padding:24px 34px;border-radius:0 0 38px 38px}
+        .hero-content{min-height:350px;grid-template-columns:minmax(0,1.15fr) minmax(320px,.65fr);gap:42px}
+        .hero-copy{padding-block:24px}.hero h1{font-size:clamp(46px,6.5vw,78px);margin:18px 0 14px}.hero p{margin:0;max-width:690px}
+        .hero-webgl{width:min(360px,34vw);height:340px}
+        main.wrap{position:relative;padding-top:0}
+        .filters{position:relative;top:auto;margin:-24px 0 24px;padding:14px;grid-template-columns:minmax(240px,2fr) repeat(5,minmax(105px,1fr));gap:8px;border-radius:18px;z-index:3;box-shadow:0 18px 50px rgba(0,0,0,.38),0 0 0 1px rgba(33,220,255,.04)}
+        .filters input,.filters select,.filters button{height:42px;border-radius:11px;font-size:13px}.filters button{grid-column:auto}
+        .cats{padding:2px 0 18px;gap:8px}.chip{padding:8px 14px;font-size:13px;background:#0b121d}
+        .grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:4px 0 44px;align-items:start}
+        .card{border-radius:22px;overflow:hidden;box-shadow:0 16px 38px rgba(0,0,0,.3);transform:perspective(1200px) rotateX(var(--rx)) rotateY(var(--ry)) translateY(var(--lift));transform-origin:center;will-change:transform}
+        .card:hover{--lift:-7px;box-shadow:0 28px 65px rgba(0,0,0,.48),0 0 30px rgba(33,220,255,.11)}
+        .device-visual{height:205px;border-radius:21px 21px 0 0;background:radial-gradient(circle at 50% 48%,rgba(33,220,255,.16),transparent 37%),linear-gradient(145deg,#101b29,#070b12);transform:translateZ(22px)}
+        .device-visual:before{width:175px;height:175px}.device-visual:after{width:128px;height:128px}
+        .card .device-image{width:76%;height:76%;mix-blend-mode:normal;filter:drop-shadow(0 22px 18px rgba(0,0,0,.62));transform:translateZ(20px)}
+        .card:hover .device-image{transform:translateY(-6px) translateZ(28px) scale(1.045) rotate(-1.5deg)}
+        .body{padding:15px 16px 16px;transform:translateZ(12px)}
+        .brand{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.card h2{font-size:18px;line-height:1.45;min-height:0;margin:5px 0 10px}
+        .specs{min-height:29px}.specs span{font-size:10px;padding:4px 6px}.price{font-size:22px;margin-top:10px;line-height:1.25}.stock{margin-top:4px}
+        .actions{gap:7px;margin-top:11px}.actions a,.actions button{padding:9px 7px;min-height:42px;font-size:12px;display:grid;place-items:center}.details{flex:1.25}
+        .pagination{margin-bottom:70px}
+        @media(max-width:1180px){.filters{grid-template-columns:repeat(3,1fr)}.filters input:first-child{grid-column:1/-1}.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+        @media(max-width:860px){.hero{min-height:350px}.hero-content{min-height:310px;grid-template-columns:1fr}.hero-copy{max-width:72%}.hero-webgl{position:absolute;width:310px;height:300px;left:-24px;opacity:.9}.filters{margin-top:-18px;grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+        @media(max-width:560px){.wrap{width:min(100% - 20px,1240px)}.hero{min-height:300px;padding:18px 10px}.hero-content{min-height:265px}.hero-copy{max-width:70%;padding:12px 0}.hero h1{font-size:36px}.hero-webgl{width:255px;height:255px;left:-78px}.filters{margin-top:-10px;padding:10px;gap:7px;border-radius:15px}.filters input,.filters select,.filters button{height:40px}.cats{padding-bottom:14px}.grid{grid-template-columns:1fr;gap:12px}.card{display:grid;grid-template-columns:145px minmax(0,1fr);border-radius:18px}.device-visual{height:100%;min-height:205px;border-radius:17px 0 0 17px}.device-visual:before{width:120px;height:120px}.device-visual:after{width:88px;height:88px}.card .device-image{width:82%;height:82%}.body{padding:13px}.card h2{font-size:16px;margin-bottom:7px}.price{font-size:19px}.actions a,.actions button{min-height:38px;font-size:11px;padding:7px 5px}}
     </style>
 </head>
 <body>
