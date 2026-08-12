@@ -28,6 +28,7 @@ if (mount) {
                 return min(max(q.x,max(q.y,q.z)),0.0)+length(max(q,0.0))-r;
             }
             float torus(vec3 p, vec2 t) { vec2 q=vec2(length(p.xz)-t.x,p.y); return length(q)-t.y; }
+            float cylinderZ(vec3 p,float r,float h){vec2 d=abs(vec2(length(p.xy),p.z))-vec2(r,h);return min(max(d.x,d.y),0.)+length(max(d,0.));}
             float hash(float n){return fract(sin(n*91.3458)*47453.5453);}
             vec2 phoneEdge(float t){
                 float side=floor(t*4.); float q=fract(t*4.);
@@ -39,17 +40,26 @@ if (mount) {
 
             vec2 mapScene(vec3 p) {
                 p.y += sin(time*.8)*.07;
-                p.xz *= rot(-.52-pointer.x*.42-sin(time*.28)*.08);
+                p.xz *= rot(-.48-pointer.x*.42-sin(time*.34)*1.02);
                 p.yz *= rot(.08+pointer.y*.16);
                 float body=roundedBox(p,vec3(1.12,2.2,.16),.20);
                 float screen=roundedBox(p-vec3(0.,0.,.175),vec3(1.01,2.07,.025),.15);
                 float island=roundedBox(p-vec3(0.,1.83,.225),vec3(.30,.065,.018),.055);
                 float rail=roundedBox(p-vec3(-1.115,.55,0.),vec3(.018,.32,.10),.014);
                 float button=roundedBox(p-vec3(1.115,.42,0.),vec3(.018,.45,.10),.014);
+                float backGlass=roundedBox(p-vec3(0.,-.38,-.175),vec3(.88,1.18,.025),.16);
+                float plateau=roundedBox(p-vec3(0.,1.42,-.235),vec3(1.04,.57,.075),.16);
+                float lensA=cylinderZ(p-vec3(-.64,1.66,-.34),.255,.085);
+                float lensB=cylinderZ(p-vec3(-.64,1.12,-.34),.255,.085);
+                float lensC=cylinderZ(p-vec3(-.08,1.39,-.34),.255,.085);
+                float lenses=min(lensA,min(lensB,lensC));
                 float d=body; float id=1.;
                 if(screen<d){d=screen;id=2.;}
                 if(island<d){d=island;id=3.;}
                 if(min(rail,button)<d){d=min(rail,button);id=4.;}
+                if(backGlass<d){d=backGlass;id=5.;}
+                if(plateau<d){d=plateau;id=6.;}
+                if(lenses<d){d=lenses;id=7.;}
                 return vec2(d,id);
             }
 
@@ -118,7 +128,17 @@ if (mount) {
                         float edgeShade=smoothstep(1.0,.72,abs(screenUv.x))*smoothstep(2.05,1.7,abs(screenUv.y));
                         color += (screenColor*(.72+diff*.35)*(.78+.22*edgeShade)+glass*vec3(.65,.9,1.))*reveal+vec3(.2,.9,1.)*rim*.48;
                     } else if(hit.y<3.5) color += vec3(.002,.003,.005)+vec3(.08,.32,.48)*rim;
-                    else color += vec3(.11,.14,.17)*(diff+.22)+vec3(.2,.8,1.)*rim;
+                    else if(hit.y<4.5) color += vec3(.11,.14,.17)*(diff+.22)+vec3(.2,.8,1.)*rim;
+                    else if(hit.y<5.5) {
+                        color += vec3(.025,.075,.13)*(.55+diff*.62)+vec3(.08,.45,.72)*rim*.72;
+                        color += pow(max(dot(reflect(rd,n),light),0.),30.)*vec3(.35,.65,.9);
+                    } else if(hit.y<6.5) {
+                        color += vec3(.055,.14,.22)*(.48+diff*.78)+vec3(.2,.65,.92)*rim;
+                    } else {
+                        float lensGlow=pow(max(dot(reflect(rd,n),light),0.),18.);
+                        color += vec3(.002,.006,.012)+vec3(.025,.16,.27)*diff+vec3(.2,.72,1.)*lensGlow;
+                        color += vec3(.08,.28,.48)*rim*.7;
+                    }
                     color*=reveal;
                 }
 
@@ -186,7 +206,6 @@ if (mount) {
             mount.addEventListener('pointerleave',()=>{targetX=0;targetY=0});
             new ResizeObserver(resize).observe(mount);
             new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;if(visible&&!frame)frame=requestAnimationFrame(render)}).observe(mount);
-            const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
             const started=performance.now();
             function render(now){
                 frame=0;
@@ -194,7 +213,7 @@ if (mount) {
                 resize();
                 currentX+=(targetX-currentX)*.055; currentY+=(targetY-currentY)*.055;
                 gl.uniform2f(uniforms.resolution,canvas.width,canvas.height);
-                gl.uniform1f(uniforms.time,reduced?0:(now-started)/1000);
+                gl.uniform1f(uniforms.time,(now-started)/1000);
                 gl.uniform2f(uniforms.pointer,currentX,currentY);
                 gl.drawArrays(gl.TRIANGLES,0,3);
                 frame=requestAnimationFrame(render);
