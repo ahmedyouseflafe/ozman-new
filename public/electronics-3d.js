@@ -76,8 +76,8 @@ if (mount) {
                 vec3 color=vec3(0.);
 
                 // Every cycle starts as a cloud of energy, then assembles into the phone.
-                float cycle=mod(time,11.5);
-                float assembled=smoothstep(1.6,3.8,cycle);
+                float cycle=min(time,4.2);
+                float assembled=smoothstep(1.2,3.5,cycle);
                 float reveal=smoothstep(.42,1.,assembled);
                 for(int i=0;i<72;i++){
                     float fi=float(i), seed=hash(fi+4.);
@@ -155,7 +155,8 @@ if (mount) {
                 float vignette=smoothstep(2.1,.42,length(uv*.72));
                 color*=.62+.38*vignette;
                 color=1.-exp(-color*1.28);
-                fragColor=vec4(color,max(max(color.r,color.g),color.b));
+                float alpha=smoothstep(.035,.16,max(max(color.r,color.g),color.b));
+                fragColor=vec4(color,alpha);
             }
         `;
 
