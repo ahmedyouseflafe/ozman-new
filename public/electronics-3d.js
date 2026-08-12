@@ -28,17 +28,28 @@ if (mount) {
                 return min(max(q.x,max(q.y,q.z)),0.0)+length(max(q,0.0))-r;
             }
             float torus(vec3 p, vec2 t) { vec2 q=vec2(length(p.xz)-t.x,p.y); return length(q)-t.y; }
+            float hash(float n){return fract(sin(n*91.3458)*47453.5453);}
+            vec2 phoneEdge(float t){
+                float side=floor(t*4.); float q=fract(t*4.);
+                if(side<1.) return vec2(mix(-.92,.92,q),1.83);
+                if(side<2.) return vec2(.92,mix(1.83,-1.83,q));
+                if(side<3.) return vec2(mix(.92,-.92,q),-1.83);
+                return vec2(-.92,mix(-1.83,1.83,q));
+            }
 
             vec2 mapScene(vec3 p) {
                 p.y += sin(time*.8)*.07;
-                p.xz *= rot(-.42-pointer.x*.38);
+                p.xz *= rot(-.52-pointer.x*.42-sin(time*.28)*.08);
                 p.yz *= rot(.08+pointer.y*.16);
                 float body=roundedBox(p,vec3(1.12,2.2,.16),.20);
                 float screen=roundedBox(p-vec3(0.,0.,.175),vec3(1.01,2.07,.025),.15);
                 float island=roundedBox(p-vec3(0.,1.83,.225),vec3(.30,.065,.018),.055);
+                float rail=roundedBox(p-vec3(-1.115,.55,0.),vec3(.018,.32,.10),.014);
+                float button=roundedBox(p-vec3(1.115,.42,0.),vec3(.018,.45,.10),.014);
                 float d=body; float id=1.;
                 if(screen<d){d=screen;id=2.;}
                 if(island<d){d=island;id=3.;}
+                if(min(rail,button)<d){d=min(rail,button);id=4.;}
                 return vec2(d,id);
             }
 
@@ -53,6 +64,22 @@ if (mount) {
             void main() {
                 vec2 uv=(gl_FragCoord.xy*2.-resolution.xy)/resolution.y;
                 vec3 color=vec3(0.);
+
+                // Every cycle starts as a cloud of energy, then assembles into the phone.
+                float cycle=mod(time,11.5);
+                float assembled=smoothstep(1.6,3.8,cycle);
+                float reveal=smoothstep(.42,1.,assembled);
+                for(int i=0;i<72;i++){
+                    float fi=float(i), seed=hash(fi+4.);
+                    float angle=seed*PI*2.+time*(.25+hash(fi)*.35);
+                    vec2 cloud=vec2(cos(angle)*(1.55+hash(fi+8.)*1.4),sin(angle)*(1.+hash(fi+19.)*1.45));
+                    cloud+=vec2(sin(time*.8+fi)*.18,cos(time*.55+fi*.7)*.12);
+                    vec2 target=phoneEdge(fract(seed+fi*.618));
+                    vec2 particle=mix(cloud,target,smoothstep(.08,.94,assembled));
+                    float spark=.0045/(length(uv-particle)+.003);
+                    float twinkle=.55+.45*sin(time*4.+fi*1.7);
+                    color+=mix(vec3(.02,.75,1.),vec3(.55,.25,1.),hash(fi+2.))*spark*twinkle*(1.-reveal*.68);
+                }
 
                 // Holographic rings and technical scan lines behind the phone.
                 vec2 ringUv=uv-vec2(-.05,.02);
@@ -71,20 +98,28 @@ if (mount) {
                     travel+=hit.x*.72;
                 }
 
-                if(travel<12.) {
+                if(travel<12. && reveal>.01) {
                     vec3 n=normalAt(p);
                     vec3 light=normalize(vec3(-3.,4.,5.));
                     float diff=max(dot(n,light),0.);
                     float rim=pow(1.-max(dot(n,-rd),0.),2.8);
-                    if(hit.y<1.5) color += vec3(.035,.055,.08)*(diff+.3)+vec3(.12,.75,1.)*rim*.7;
+                    if(hit.y<1.5) {
+                        float brushed=.018*sin(p.y*170.)+.012*sin(p.x*220.);
+                        color += (vec3(.045,.06,.075)+brushed)*(diff+.35)+vec3(.18,.78,1.)*rim*.82;
+                        color += pow(max(dot(reflect(rd,n),light),0.),42.)*vec3(.8,.95,1.)*1.4;
+                    }
                     else if(hit.y<2.5) {
                         vec2 screenUv=p.xy;
                         float aurora=.5+.5*sin(screenUv.y*2.3+sin(screenUv.x*3.+time*.4));
                         vec3 screenColor=mix(vec3(.015,.07,.13),vec3(.25,.08,.55),aurora);
                         screenColor+=vec3(.02,.65,1.)*softGlow(abs(length(screenUv-vec2(.3,.45))-.62),.016)*.33;
                         screenColor+=vec3(.6,.2,1.)*softGlow(abs(length(screenUv+vec2(.2,.55))-.82),.012)*.25;
-                        color += screenColor*(.72+diff*.35)+vec3(.2,.9,1.)*rim*.48;
-                    } else color += vec3(.003,.005,.008)+vec3(.1,.7,1.)*rim*.18;
+                        float glass=pow(max(dot(reflect(rd,n),light),0.),22.);
+                        float edgeShade=smoothstep(1.0,.72,abs(screenUv.x))*smoothstep(2.05,1.7,abs(screenUv.y));
+                        color += (screenColor*(.72+diff*.35)*(.78+.22*edgeShade)+glass*vec3(.65,.9,1.))*reveal+vec3(.2,.9,1.)*rim*.48;
+                    } else if(hit.y<3.5) color += vec3(.002,.003,.005)+vec3(.08,.32,.48)*rim;
+                    else color += vec3(.11,.14,.17)*(diff+.22)+vec3(.2,.8,1.)*rim;
+                    color*=reveal;
                 }
 
                 // Floating spec nodes: camera, 5G, battery and chip motifs.
@@ -93,8 +128,8 @@ if (mount) {
                     float a=fi*PI*2./5.+time*.15;
                     vec2 node=vec2(cos(a)*1.72,sin(a)*1.02);
                     float nodeRing=abs(length(uv-node)-(.075+.012*sin(time+fi)));
-                    color+=mix(vec3(.02,.7,1.),vec3(.5,.25,1.),fi/4.)*softGlow(nodeRing,.006)*.7;
-                    color+=vec3(.12,.75,1.)*softGlow(length(uv-node),.003)*.8;
+                    color+=mix(vec3(.02,.7,1.),vec3(.5,.25,1.),fi/4.)*softGlow(nodeRing,.006)*.7*reveal;
+                    color+=vec3(.12,.75,1.)*softGlow(length(uv-node),.003)*.8*reveal;
                 }
 
                 float vignette=smoothstep(2.1,.42,length(uv*.72));
