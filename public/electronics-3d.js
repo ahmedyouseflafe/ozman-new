@@ -42,16 +42,16 @@ if (mount) {
                 p.y += sin(time*.8)*.07;
                 p.xz *= rot(-.48-pointer.x*.42-sin(time*.34)*1.02);
                 p.yz *= rot(.08+pointer.y*.16);
-                float body=roundedBox(p,vec3(1.12,2.2,.16),.20);
-                float screen=roundedBox(p-vec3(0.,0.,.175),vec3(1.01,2.07,.025),.15);
+                float body=roundedBox(p,vec3(1.10,2.2,.205),.22);
+                float screen=roundedBox(p-vec3(0.,0.,.220),vec3(1.005,2.085,.018),.16);
                 float island=roundedBox(p-vec3(0.,1.83,.225),vec3(.30,.065,.018),.055);
                 float rail=roundedBox(p-vec3(-1.115,.55,0.),vec3(.018,.32,.10),.014);
                 float button=roundedBox(p-vec3(1.115,.42,0.),vec3(.018,.45,.10),.014);
-                float backGlass=roundedBox(p-vec3(0.,-.38,-.175),vec3(.88,1.18,.025),.16);
-                float plateau=roundedBox(p-vec3(0.,1.42,-.235),vec3(1.04,.57,.075),.16);
-                float lensA=cylinderZ(p-vec3(-.64,1.66,-.34),.255,.085);
-                float lensB=cylinderZ(p-vec3(-.64,1.12,-.34),.255,.085);
-                float lensC=cylinderZ(p-vec3(-.08,1.39,-.34),.255,.085);
+                float backGlass=roundedBox(p-vec3(0.,-.38,-.222),vec3(.94,1.18,.018),.17);
+                float plateau=roundedBox(p-vec3(0.,1.43,-.265),vec3(1.04,.60,.095),.18);
+                float lensA=cylinderZ(p-vec3(-.67,1.70,-.405),.285,.105);
+                float lensB=cylinderZ(p-vec3(-.67,1.13,-.405),.285,.105);
+                float lensC=cylinderZ(p-vec3(-.08,1.415,-.405),.285,.105);
                 float lenses=min(lensA,min(lensB,lensC));
                 float d=body; float id=1.;
                 if(screen<d){d=screen;id=2.;}
@@ -88,17 +88,17 @@ if (mount) {
                     vec2 particle=mix(cloud,target,smoothstep(.08,.94,assembled));
                     float spark=.0045/(length(uv-particle)+.003);
                     float twinkle=.55+.45*sin(time*4.+fi*1.7);
-                    color+=mix(vec3(.02,.75,1.),vec3(.55,.25,1.),hash(fi+2.))*spark*twinkle*(1.-reveal*.68);
+                    color+=mix(vec3(1.,.22,.025),vec3(1.,.68,.18),hash(fi+2.))*spark*twinkle*(1.-reveal*.68);
                 }
 
                 // Holographic rings and technical scan lines behind the phone.
                 vec2 ringUv=uv-vec2(-.05,.02);
                 float ring=abs(length(ringUv)-1.55);
-                color += vec3(.03,.75,1.)*softGlow(ring,.004)*.42;
+                color += vec3(1.,.28,.035)*softGlow(ring,.004)*.32;
                 float ring2=abs(length((uv-vec2(.12,-.05))*vec2(1.,1.7))-1.15);
-                color += vec3(.42,.25,1.)*softGlow(ring2,.003)*.32;
+                color += vec3(1.,.62,.12)*softGlow(ring2,.003)*.24;
                 float scan=step(.985,sin((uv.y+time*.08)*75.)*.5+.5);
-                color += vec3(.05,.45,.65)*scan*smoothstep(1.8,.15,abs(uv.x))*.07;
+                color += vec3(.7,.18,.025)*scan*smoothstep(1.8,.15,abs(uv.x))*.045;
 
                 vec3 ro=vec3(0.,0.,7.2), rd=normalize(vec3(uv,-2.35));
                 float travel=0.; vec2 hit=vec2(0.); vec3 p;
@@ -115,29 +115,29 @@ if (mount) {
                     float rim=pow(1.-max(dot(n,-rd),0.),2.8);
                     if(hit.y<1.5) {
                         float brushed=.018*sin(p.y*170.)+.012*sin(p.x*220.);
-                        color += (vec3(.045,.06,.075)+brushed)*(diff+.35)+vec3(.18,.78,1.)*rim*.82;
-                        color += pow(max(dot(reflect(rd,n),light),0.),42.)*vec3(.8,.95,1.)*1.4;
+                        color += (vec3(.52,.12,.025)+brushed)*(diff+.42)+vec3(1.,.42,.08)*rim*.92;
+                        color += pow(max(dot(reflect(rd,n),light),0.),42.)*vec3(1.,.72,.4)*1.5;
                     }
                     else if(hit.y<2.5) {
                         vec2 screenUv=p.xy;
                         float aurora=.5+.5*sin(screenUv.y*2.3+sin(screenUv.x*3.+time*.4));
-                        vec3 screenColor=mix(vec3(.015,.07,.13),vec3(.25,.08,.55),aurora);
-                        screenColor+=vec3(.02,.65,1.)*softGlow(abs(length(screenUv-vec2(.3,.45))-.62),.016)*.33;
-                        screenColor+=vec3(.6,.2,1.)*softGlow(abs(length(screenUv+vec2(.2,.55))-.82),.012)*.25;
+                        vec3 screenColor=mix(vec3(.003,.002,.001),vec3(.24,.035,.004),aurora);
+                        screenColor+=vec3(1.,.22,.025)*softGlow(abs(length(screenUv-vec2(.3,.45))-.62),.016)*.48;
+                        screenColor+=vec3(1.,.62,.12)*softGlow(abs(length(screenUv+vec2(.2,.55))-.82),.012)*.34;
                         float glass=pow(max(dot(reflect(rd,n),light),0.),22.);
                         float edgeShade=smoothstep(1.0,.72,abs(screenUv.x))*smoothstep(2.05,1.7,abs(screenUv.y));
-                        color += (screenColor*(.72+diff*.35)*(.78+.22*edgeShade)+glass*vec3(.65,.9,1.))*reveal+vec3(.2,.9,1.)*rim*.48;
+                        color += (screenColor*(.72+diff*.35)*(.78+.22*edgeShade)+glass*vec3(1.,.65,.32))*reveal+vec3(1.,.34,.06)*rim*.52;
                     } else if(hit.y<3.5) color += vec3(.002,.003,.005)+vec3(.08,.32,.48)*rim;
-                    else if(hit.y<4.5) color += vec3(.11,.14,.17)*(diff+.22)+vec3(.2,.8,1.)*rim;
+                    else if(hit.y<4.5) color += vec3(.55,.14,.035)*(diff+.30)+vec3(1.,.5,.12)*rim;
                     else if(hit.y<5.5) {
-                        color += vec3(.025,.075,.13)*(.55+diff*.62)+vec3(.08,.45,.72)*rim*.72;
-                        color += pow(max(dot(reflect(rd,n),light),0.),30.)*vec3(.35,.65,.9);
+                        color += vec3(.72,.18,.045)*(.62+diff*.68)+vec3(1.,.48,.12)*rim*.78;
+                        color += pow(max(dot(reflect(rd,n),light),0.),30.)*vec3(1.,.62,.3);
                     } else if(hit.y<6.5) {
-                        color += vec3(.055,.14,.22)*(.48+diff*.78)+vec3(.2,.65,.92)*rim;
+                        color += vec3(.66,.145,.03)*(.58+diff*.82)+vec3(1.,.48,.1)*rim;
                     } else {
                         float lensGlow=pow(max(dot(reflect(rd,n),light),0.),18.);
-                        color += vec3(.002,.006,.012)+vec3(.025,.16,.27)*diff+vec3(.2,.72,1.)*lensGlow;
-                        color += vec3(.08,.28,.48)*rim*.7;
+                        color += vec3(.001,.001,.001)+vec3(.025,.045,.065)*diff+vec3(.35,.62,.82)*lensGlow;
+                        color += vec3(.12,.24,.34)*rim*.8;
                     }
                     color*=reveal;
                 }
@@ -148,8 +148,8 @@ if (mount) {
                     float a=fi*PI*2./5.+time*.15;
                     vec2 node=vec2(cos(a)*1.72,sin(a)*1.02);
                     float nodeRing=abs(length(uv-node)-(.075+.012*sin(time+fi)));
-                    color+=mix(vec3(.02,.7,1.),vec3(.5,.25,1.),fi/4.)*softGlow(nodeRing,.006)*.7*reveal;
-                    color+=vec3(.12,.75,1.)*softGlow(length(uv-node),.003)*.8*reveal;
+                    color+=mix(vec3(1.,.24,.02),vec3(1.,.65,.12),fi/4.)*softGlow(nodeRing,.006)*.55*reveal;
+                    color+=vec3(1.,.42,.08)*softGlow(length(uv-node),.003)*.7*reveal;
                 }
 
                 float vignette=smoothstep(2.1,.42,length(uv*.72));
