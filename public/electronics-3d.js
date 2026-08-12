@@ -91,15 +91,6 @@ if (mount) {
                     color+=mix(vec3(1.,.22,.025),vec3(1.,.68,.18),hash(fi+2.))*spark*twinkle*(1.-reveal*.68);
                 }
 
-                // Holographic rings and technical scan lines behind the phone.
-                vec2 ringUv=uv-vec2(-.05,.02);
-                float ring=abs(length(ringUv)-1.55);
-                color += vec3(1.,.28,.035)*softGlow(ring,.004)*.32;
-                float ring2=abs(length((uv-vec2(.12,-.05))*vec2(1.,1.7))-1.15);
-                color += vec3(1.,.62,.12)*softGlow(ring2,.003)*.24;
-                float scan=step(.985,sin((uv.y+time*.08)*75.)*.5+.5);
-                color += vec3(.7,.18,.025)*scan*smoothstep(1.8,.15,abs(uv.x))*.045;
-
                 vec3 ro=vec3(0.,0.,7.2), rd=normalize(vec3(uv,-2.35));
                 float travel=0.; vec2 hit=vec2(0.); vec3 p;
                 for(int i=0;i<100;i++){
@@ -142,20 +133,8 @@ if (mount) {
                     color*=reveal;
                 }
 
-                // Floating spec nodes: camera, 5G, battery and chip motifs.
-                for(int i=0;i<5;i++){
-                    float fi=float(i);
-                    float a=fi*PI*2./5.+time*.15;
-                    vec2 node=vec2(cos(a)*1.72,sin(a)*1.02);
-                    float nodeRing=abs(length(uv-node)-(.075+.012*sin(time+fi)));
-                    color+=mix(vec3(1.,.24,.02),vec3(1.,.65,.12),fi/4.)*softGlow(nodeRing,.006)*.55*reveal;
-                    color+=vec3(1.,.42,.08)*softGlow(length(uv-node),.003)*.7*reveal;
-                }
-
-                float vignette=smoothstep(2.1,.42,length(uv*.72));
-                color*=.62+.38*vignette;
                 color=1.-exp(-color*1.28);
-                float alpha=smoothstep(.035,.16,max(max(color.r,color.g),color.b));
+                float alpha=smoothstep(.055,.13,max(max(color.r,color.g),color.b));
                 fragColor=vec4(color,alpha);
             }
         `;
@@ -175,6 +154,7 @@ if (mount) {
             gl.linkProgram(program);
             if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
             gl.useProgram(program);
+            gl.clearColor(0, 0, 0, 0);
 
             const buffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -216,6 +196,7 @@ if (mount) {
                 gl.uniform2f(uniforms.resolution,canvas.width,canvas.height);
                 gl.uniform1f(uniforms.time,(now-started)/1000);
                 gl.uniform2f(uniforms.pointer,currentX,currentY);
+                gl.clear(gl.COLOR_BUFFER_BIT);
                 gl.drawArrays(gl.TRIANGLES,0,3);
                 frame=requestAnimationFrame(render);
             }
