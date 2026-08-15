@@ -60,11 +60,18 @@ class FrontController extends Controller
             ->where('slug', '!=', 'ozman')
             ->values();
 
-        $frontShops = collect([$shop])
+        $frontShopIds = collect([$shop?->id])
             ->filter()
-            ->merge($shopSummaries->reject(
-                fn(Shop $listedShop) => (int) $listedShop->id === (int) $shop?->id
-            ))
+            ->merge($shopSummaries->pluck('id'))
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values();
+        $frontShopOrder = $frontShopIds->flip();
+        $frontShops = Shop::query()
+            ->whereIn('id', $frontShopIds)
+            ->with($this->shopFrontRelations())
+            ->get()
+            ->sortBy(fn(Shop $listedShop) => $frontShopOrder->get($listedShop->id, PHP_INT_MAX))
             ->values();
 
         $ozmanCategories = $ozmanShop?->categories ?? collect();

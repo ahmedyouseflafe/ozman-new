@@ -86,7 +86,7 @@ class MainStorePurchaseWheelVisibilityTest extends TestCase
         $this->assertSame([], $response->viewData('purchaseRewardWheels'));
     }
 
-    public function test_home_only_embeds_products_for_the_active_shop(): void
+    public function test_home_embeds_each_shop_catalog_and_shares_ozman_products(): void
     {
         $admin = User::create([
             'name' => 'Performance Admin',
@@ -105,6 +105,20 @@ class MainStorePurchaseWheelVisibilityTest extends TestCase
             'user_id' => $admin->id,
             'name' => 'Heavy Shop',
             'slug' => 'heavy-shop',
+            'is_active' => true,
+        ]);
+        $ozmanCategory = Category::create([
+            'shop_id' => $ozman->id,
+            'name' => 'Ozman Originals',
+            'slug' => 'ozman-originals',
+            'is_active' => true,
+        ]);
+        Product::create([
+            'shop_id' => $ozman->id,
+            'category_id' => $ozmanCategory->id,
+            'name' => 'Original Ozman Product',
+            'slug' => 'original-ozman-product',
+            'price' => 25,
             'is_active' => true,
         ]);
         $category = Category::create([
@@ -126,8 +140,9 @@ class MainStorePurchaseWheelVisibilityTest extends TestCase
         $homeOther = collect($homeData['centersData'])->firstWhere('id', $other->id);
 
         $this->assertSame($ozman->id, $homeData['centersData'][0]['id']);
-        $this->assertSame([], $homeOther['departments']);
-        $this->assertSame([], $homeOther['products_db']);
+        $this->assertSame('Heavy Product', $homeOther['products_db']['Heavy Category'][0]['name']);
+        $this->assertSame('Original Ozman Product', $homeOther['products_db']['Ozman Originals'][0]['name']);
+        $this->assertSame('ozman', collect($homeOther['departments'])->firstWhere('title', 'Ozman Originals')['shared_source']);
         $this->assertSame(route('front.shop.slug', $other), $homeOther['public_url']);
 
         $otherData = $this->get(route('front.shop.slug', $other))->assertOk()->viewData('frontData');
