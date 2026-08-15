@@ -238,7 +238,9 @@ class ShopController extends Controller
         $data['user_id'] = $owner->id;
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name']);
         $data['is_active'] = $request->boolean('is_active');
-        $data['show_ozman_products'] = $request->boolean('show_ozman_products');
+        // Every new storefront starts with the original Ozman catalog enabled.
+        // It can still be disabled later from the shop edit screen.
+        $data['show_ozman_products'] = true;
 
         if (Auth::user()?->isDistributor()) {
             $distributor = $this->currentDistributorProfile();

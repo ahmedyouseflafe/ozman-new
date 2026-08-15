@@ -46,6 +46,12 @@ class Shop extends Model
         'show_ozman_products' => 'boolean',
     ];
 
+    protected $attributes = [
+        'catalog_type' => 'general',
+        'is_active' => true,
+        'show_ozman_products' => true,
+    ];
+
     public function catalogDefinition(): array
     {
         return config('catalog_types.' . ($this->catalog_type ?: 'general'), config('catalog_types.general', []));

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DistributorMarketer;
+use App\Models\Distributor;
 use App\Models\Shop;
 use App\Models\User;
 use App\Models\VisitorRegistration;
@@ -34,30 +35,29 @@ class VisitorRegistrationController extends Controller
             'map_link' => ['required', 'string', 'max:1000'],
         ]);
 
-        $registration = DB::transaction(function () use ($validated) {
-            $marketer = null;
+        $referral = $this->resolvedQrReferral($request);
 
-            if (! empty($validated['distributor_marketer_id'])) {
-                $marketer = DistributorMarketer::query()
-                    ->whereKey($validated['distributor_marketer_id'])
-                    ->where('is_active', true)
-                    ->with('distributor')
-                    ->first();
-
-                if ($marketer?->distributor?->is_active) {
-                    $validated['distributor_id'] = $marketer->distributor_id;
-                    $validated['marketing_source'] = 'marketer';
-                } else {
-                    unset($validated['distributor_marketer_id']);
-                }
+        $registration = DB::transaction(function () use ($validated, $referral) {
+            if ($referral) {
+                $validated['distributor_id'] = $referral['distributor_id'];
+                $validated['distributor_marketer_id'] = $referral['distributor_marketer_id'];
+                $validated['marketing_source'] = $referral['distributor_marketer_id'] ? 'marketer' : 'distributor';
             }
+
+            $autoApprove = ($validated['type'] ?? null) === 'merchant' && $referral;
 
             $registration = VisitorRegistration::create([
                 ...$validated,
-                'status' => ($validated['type'] ?? null) === 'merchant' ? 'pending' : 'approved',
+                'status' => ($validated['type'] ?? null) === 'merchant' && ! $autoApprove ? 'pending' : 'approved',
                 'public_token' => Str::random(64),
-                'approved_at' => ($validated['type'] ?? null) === 'merchant' ? null : now(),
+                'approved_at' => ($validated['type'] ?? null) === 'merchant' && ! $autoApprove ? null : now(),
             ]);
+
+            if ($autoApprove) {
+                $shop = $this->createOrUpdateMerchantShop($registration, $referral);
+                $registration->update(['shop_id' => $shop->id]);
+                $registration->setRelation('shop', $shop);
+            }
 
             return $registration;
         });
@@ -101,7 +101,39 @@ class VisitorRegistrationController extends Controller
         ]);
     }
 
-    private function createOrUpdateMerchantShop(VisitorRegistration $registration, DistributorMarketer $marketer): Shop
+    private function resolvedQrReferral(Request $request): ?array
+    {
+        $sessionReferral = $request->session()->get('merchant_referral');
+        if (! is_array($sessionReferral)) {
+            return null;
+        }
+
+        $marketerId = (int) ($sessionReferral['distributor_marketer_id'] ?? 0);
+        if ($marketerId > 0) {
+            $marketer = DistributorMarketer::query()
+                ->whereKey($marketerId)
+                ->where('is_active', true)
+                ->whereHas('distributor', fn ($query) => $query->where('is_active', true))
+                ->first();
+
+            return $marketer ? [
+                'distributor_id' => $marketer->distributor_id,
+                'distributor_marketer_id' => $marketer->id,
+            ] : null;
+        }
+
+        $distributor = Distributor::query()
+            ->whereKey((int) ($sessionReferral['distributor_id'] ?? 0))
+            ->where('is_active', true)
+            ->first();
+
+        return $distributor ? [
+            'distributor_id' => $distributor->id,
+            'distributor_marketer_id' => null,
+        ] : null;
+    }
+
+    private function createOrUpdateMerchantShop(VisitorRegistration $registration, array $referral): Shop
     {
         $phoneDigits = preg_replace('/\D+/', '', (string) $registration->phone);
         $ownerEmail = $phoneDigits
@@ -118,30 +150,31 @@ class VisitorRegistrationController extends Controller
                 'is_active' => true,
             ]
         );
+        $owner->update([
+            'name' => $registration->name,
+            'phone' => $registration->phone,
+            'role' => 'shop_owner',
+            'is_active' => true,
+        ]);
 
         $shopName = $registration->shop_name ?: $registration->name;
         $shop = Shop::query()
-            ->where('distributor_marketer_id', $marketer->id)
-            ->where(function ($query) use ($registration, $shopName) {
-                $query->where('name', $shopName);
-
-                if (filled($registration->phone)) {
-                    $query->orWhere('phone', $registration->phone);
-                    $query->orWhere('whatsapp', $registration->phone);
-                }
-            })
+            ->where('user_id', $owner->id)
             ->first();
 
         $data = [
             'user_id' => $owner->id,
-            'distributor_marketer_id' => $marketer->id,
+            'distributor_id' => $referral['distributor_id'],
+            'distributor_marketer_id' => $referral['distributor_marketer_id'],
             'name' => $shopName,
+            'catalog_type' => $shop?->catalog_type ?: 'general',
             'phone' => $registration->phone,
             'whatsapp' => $registration->phone,
             'address' => $registration->business_location ?: $registration->residence_address,
             'latitude' => $registration->latitude,
             'longitude' => $registration->longitude,
             'is_active' => true,
+            'show_ozman_products' => true,
         ];
 
         if ($shop) {

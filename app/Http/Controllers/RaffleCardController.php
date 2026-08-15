@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Shop;
 use App\Models\RaffleCard;
 use App\Models\RaffleEntry;
+use App\Models\VisitorRegistration;
 use App\Rules\ValidPhoneNumber;
 use ArPHP\I18N\Arabic;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -509,6 +510,15 @@ class RaffleCardController extends Controller
             ? $request->user()->shops()->where('is_active', true)->first()
             : null;
 
+        $approvedMerchant = null;
+        if (! $merchantShop && filled($request->input('merchant_registration_token'))) {
+            $approvedMerchant = VisitorRegistration::query()
+                ->where('public_token', $request->input('merchant_registration_token'))
+                ->where('type', 'merchant')
+                ->where('status', 'approved')
+                ->first();
+        }
+
         if ($merchantShop) {
             $request->merge([
                 'customer' => [
@@ -518,10 +528,20 @@ class RaffleCardController extends Controller
                     'address' => $merchantShop->address,
                 ],
             ]);
+        } elseif ($approvedMerchant) {
+            $request->merge([
+                'customer' => [
+                    'name' => $approvedMerchant->shop_name ?: $approvedMerchant->name,
+                    'phone' => $approvedMerchant->phone,
+                    'whatsapp' => $approvedMerchant->phone,
+                    'address' => $approvedMerchant->business_location ?: $approvedMerchant->residence_address,
+                ],
+            ]);
         }
 
         $data = $request->validate([
             'card_number' => ['required', 'digits:6'],
+            'merchant_registration_token' => ['nullable', 'string', 'size:64'],
             'customer.name' => ['required', 'string', 'max:255'],
             'customer.phone' => ['nullable', 'required_without:customer.whatsapp', 'string', 'max:60', new ValidPhoneNumber()],
             'customer.whatsapp' => ['nullable', 'string', 'max:60', new ValidPhoneNumber()],

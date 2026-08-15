@@ -1066,7 +1066,7 @@
                                 </span>
                             </div>
                             <label class="switch" for="show_ozman_products">
-                                <input type="checkbox" id="show_ozman_products" name="show_ozman_products" value="1" @checked(old('show_ozman_products'))>
+                                <input type="checkbox" id="show_ozman_products" name="show_ozman_products" value="1" @checked(old('show_ozman_products', true))>
                                 <span class="slider"></span>
                             </label>
                         </div>

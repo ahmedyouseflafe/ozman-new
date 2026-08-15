@@ -189,6 +189,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 && hasSavedCustomerProfile();
         }
 
+        function hasApprovedMerchantRegistration() {
+            return localStorage.getItem(VISITOR_TYPE_STORAGE_KEY) === 'merchant'
+                && localStorage.getItem(MERCHANT_APPROVAL_STATUS_KEY) === 'approved'
+                && Boolean(localStorage.getItem(MERCHANT_REGISTRATION_TOKEN_KEY));
+        }
+
         function loadCustomerLocation() {
             try {
                 const parsed = JSON.parse(localStorage.getItem(CUSTOMER_LOCATION_STORAGE_KEY) || '{}');
@@ -4288,6 +4294,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     return true;
                 }
 
+                if (hasApprovedMerchantRegistration()) {
+                    return true;
+                }
+
                 if (hasCompletedCustomerRegistration()) {
                     return true;
                 }
@@ -4462,14 +4472,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         renderCart();
                         setVisitorMessage(result?.message || 'تم حفظ بياناتك بنجاح.');
                         showCartToast(result?.message || 'تم حفظ بياناتك بنجاح.');
-                        if (registrationType === 'merchant') {
+                        if (registrationType === 'merchant' && result.status !== 'approved') {
                             setVisitorMessage('تم حفظ طلبك وفتح واتساب لإرسال البيانات. لن تتمكن من الشراء حتى نتحقق من حسابك ونقبل الطلب.');
                             return;
                         }
                         window.setTimeout(() => {
                             hideVisitorRegistrationModal();
                             const pendingRaffleCard = sessionStorage.getItem('ozman_pending_raffle_card');
-                            if (registrationType === 'customer' && pendingRaffleCard && typeof openRaffleCardModal === 'function') {
+                            if (pendingRaffleCard && typeof openRaffleCardModal === 'function') {
                                 sessionStorage.removeItem('ozman_pending_raffle_card');
                                 if (typeof raffleCardNumber !== 'undefined' && raffleCardNumber) {
                                     raffleCardNumber.value = pendingRaffleCard;
@@ -5317,6 +5327,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({
                             card_number: raffleCardNumber.value,
                             customer: authenticatedMerchantProfile() || loadCustomerProfile(),
+                            merchant_registration_token: hasApprovedMerchantRegistration()
+                                ? localStorage.getItem(MERCHANT_REGISTRATION_TOKEN_KEY)
+                                : null,
                         }),
                     });
                     const payload = await response.json().catch(() => ({}));

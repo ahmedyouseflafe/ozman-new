@@ -9,6 +9,7 @@ use App\Models\FrontOrder;
 use App\Models\RaffleCard;
 use App\Models\Shop;
 use App\Models\User;
+use App\Models\VisitorRegistration;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -175,6 +176,81 @@ class MerchantOrderingTest extends TestCase
         $this->assertSame($merchantShop->name, $card->used_customer_name);
         $this->assertSame($merchantShop->phone, $card->used_customer_phone);
         $this->assertSame('عنوان المتجر الثابت', $card->used_customer_payload['address']);
+    }
+
+    public function test_approved_qr_merchant_can_check_raffle_card_without_customer_form(): void
+    {
+        $registration = VisitorRegistration::create([
+            'type' => 'merchant',
+            'status' => 'approved',
+            'public_token' => str_repeat('a', 64),
+            'name' => 'Approved merchant',
+            'shop_name' => 'Approved QR shop',
+            'phone' => '0591234567',
+            'residence_address' => 'Merchant residence',
+            'business_location' => 'Merchant shop location',
+            'latitude' => 31.5,
+            'longitude' => 34.4,
+            'map_link' => 'https://www.google.com/maps?q=31.5,34.4',
+            'approved_at' => now(),
+        ]);
+        $card = RaffleCard::create([
+            'card_number' => '654322',
+            'prize_title' => 'Approved merchant prize',
+            'is_active' => true,
+        ]);
+
+        $this->postJson(route('raffle.check'), [
+            'card_number' => $card->card_number,
+            'merchant_registration_token' => $registration->public_token,
+        ])->assertOk();
+
+        $card->refresh();
+        $this->assertSame('Approved QR shop', $card->used_customer_name);
+        $this->assertSame('0591234567', $card->used_customer_phone);
+        $this->assertSame('Merchant shop location', $card->used_customer_payload['address']);
+    }
+
+    public function test_distributor_and_marketer_qr_visitors_are_auto_approved_and_published(): void
+    {
+        [, , $distributor] = $this->merchantLinkedToDistributor('auto-approve');
+        $marketer = DistributorMarketer::create([
+            'distributor_id' => $distributor->id,
+            'name' => 'Auto approval marketer',
+            'tracking_code' => 'auto-approval-marketer',
+            'is_active' => true,
+        ]);
+
+        $referralUrls = [
+            [route('front.distributor', $distributor), null, '0591234567'],
+            [route('front.marketer', $marketer), $marketer->id, '0591234568'],
+        ];
+
+        foreach ($referralUrls as $index => [$referralUrl, $marketerId, $phone]) {
+            $this->get($referralUrl)->assertOk();
+            $response = $this->postJson(route('visitor-registrations.store'), [
+                'type' => 'merchant',
+                'name' => "QR Merchant {$index}",
+                'phone' => $phone,
+                'shop_name' => "Published QR Shop {$index}",
+                'tax_file' => "TAX-{$index}",
+                'business_location' => "Business location {$index}",
+                'residence_address' => "Residence {$index}",
+                'latitude' => 31.5 + ($index / 10),
+                'longitude' => 34.4 + ($index / 10),
+                'map_link' => 'https://www.google.com/maps?q=31.5,34.4',
+            ])->assertCreated()->assertJsonPath('status', 'approved');
+
+            $shop = Shop::query()->where('name', "Published QR Shop {$index}")->firstOrFail();
+            $this->assertTrue($shop->is_active);
+            $this->assertTrue($shop->show_ozman_products);
+            $this->assertSame($distributor->id, $shop->distributor_id);
+            $this->assertSame($marketerId, $shop->distributor_marketer_id);
+            $this->assertSame($shop->id, $response->json('shop_id'));
+
+            $centerIds = collect($this->get(route('home'))->viewData('frontData')['centersData'])->pluck('id');
+            $this->assertTrue($centerIds->contains($shop->id));
+        }
     }
 
     public function test_authenticated_merchant_order_ignores_spoofed_distributor_and_shop(): void
