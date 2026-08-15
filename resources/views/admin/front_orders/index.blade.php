@@ -536,7 +536,7 @@
                         <section class="profile-panel">
                             <img
                                 class="profile-photo"
-                                src="{{ $distributorProfile->image ? asset($distributorProfile->image) : asset('images/logo.jpg') }}"
+                                src="{{ $distributorProfile->image ? asset($distributorProfile->image) : asset('images/logo.svg') }}"
                                 alt="{{ $distributorProfile->name }}"
                             >
                             <div>

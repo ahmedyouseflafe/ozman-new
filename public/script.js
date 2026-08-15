@@ -41,11 +41,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const centersData = ozmanFrontData.centersData || [
             {
                 title: 'متجر Ozman',
-                img: 'images/logo.jpg',
+                img: 'images/logo.svg',
                 departments: [
-                    { title: 'العناية بالجسم', img: 'images/logo.jpg' },
-                    { title: 'العناية بالشعر', img: 'images/logo.jpg' },
-                    { title: 'العناية بالوجه', img: 'images/logo.jpg' }
+                    { title: 'العناية بالجسم', img: 'images/logo.svg' },
+                    { title: 'العناية بالشعر', img: 'images/logo.svg' },
+                    { title: 'العناية بالوجه', img: 'images/logo.svg' }
                 ]
             }
         ];
@@ -60,14 +60,14 @@ document.addEventListener('DOMContentLoaded', () => {
             'منتج تجريبي': {
                 name: 'منتج تجريبي',
                 price: '0',
-                img: 'images/logo.jpg',
-                gallery: ['images/logo.jpg']
+                img: 'images/logo.svg',
+                gallery: ['images/logo.svg']
             }
         };
 
         const productsDb = ozmanFrontData.productsDb || {
             'العناية بالجسم': [
-                { name: 'منتج تجريبي', price: '0', img: 'images/logo.jpg', gallery: ['images/logo.jpg'] }
+                { name: 'منتج تجريبي', price: '0', img: 'images/logo.svg', gallery: ['images/logo.svg'] }
             ]
         };
         let activeProductsDb = productsDb;
@@ -928,7 +928,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button type="button" class="sub-item agent-item" data-person-shop-id="${escapeCartHtml(person.shop_id || shop.id || '')}" data-person-id="${escapeCartHtml(person.id || '')}" data-person-type="${escapeCartHtml(person.type || '')}">
                             <div class="agent-main">
                                 <div class="agent-logo-wrapper">
-                                    <img src="${escapeCartHtml(person.image || shop.logo || shop.img || 'images/logo.jpg')}" alt="${escapeCartHtml(person.name || title)}" class="agent-img-logo ${borderClass}">
+                                    <img src="${escapeCartHtml(person.image || shop.logo || shop.img || 'images/logo.svg')}" alt="${escapeCartHtml(person.name || title)}" class="agent-img-logo ${borderClass}">
                                 </div>
                                 <span class="agent-name">${escapeCartHtml(person.name || '')}</span>
                             </div>
@@ -1235,7 +1235,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const display = document.getElementById('activeShopDisplay');
 
             if (logo) {
-                logo.src = shop.logo || shop.img || 'images/logo.jpg';
+                logo.src = shop.logo || shop.img || 'images/logo.svg';
                 logo.alt = `${shop.title || 'المحل'} Logo`;
             }
 
@@ -1954,7 +1954,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             itemsEl.innerHTML = ozmanCart.map((item, index) => `
                 <div class="cart-item" data-cart-index="${index}">
-                    <img src="${escapeCartHtml(item.img || 'images/logo.jpg')}" alt="${escapeCartHtml(item.name)}">
+                    <img src="${escapeCartHtml(item.img || 'images/logo.svg')}" alt="${escapeCartHtml(item.name)}">
                     <div class="cart-item-main">
                         <div class="cart-item-name">${escapeCartHtml(item.name)}</div>
                         ${item.unit_label ? `<div class="cart-item-unit">${escapeCartHtml(item.unit_label)}</div>` : ''}
@@ -3844,7 +3844,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 nearestShopsList.innerHTML = sortedShops.map(({ shop, index, distance }) => `
                     <button type="button" class="nearest-shop-card ${index === nearestSelectedIndex ? 'active' : ''}" data-nearest-shop-index="${index}">
-                        <img src="${escapeCartHtml(shop.img || shop.logo || 'images/logo.jpg')}" alt="${escapeCartHtml(shop.title || 'المحل')}">
+                        <img src="${escapeCartHtml(shop.img || shop.logo || 'images/logo.svg')}" alt="${escapeCartHtml(shop.title || 'المحل')}">
                         <span>
                             <strong>${escapeCartHtml(shop.title || 'المحل')}</strong>
                             <span>${escapeCartHtml(shop.address || `${(shop.departments || []).length} ${frontLabel('departments', 'أقسام')}`)}</span>

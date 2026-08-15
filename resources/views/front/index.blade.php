@@ -21,9 +21,9 @@
 <body>
     @php
         $shopName = $shop?->name ?? 'Ozman';
-        $shopLogo = $shop?->logo ? asset($shop->logo) : asset('images/logo.jpg');
+        $shopLogo = $shop?->logo ? asset($shop->logo) : asset('images/logo.svg');
         $ozmanName = $ozmanShop?->name ?? 'Ozman';
-        $ozmanLogo = $ozmanShop?->logo ? asset($ozmanShop->logo) : asset('images/logo.jpg');
+        $ozmanLogo = $ozmanShop?->logo ? asset($ozmanShop->logo) : asset('images/logo.svg');
         $locale = app()->getLocale();
         $ozmanWelcomeText = __('أهلا بك في Ozman - اكتشف فئاتنا ومنتجاتنا المميزة');
         $welcomeText = __('أهلا بك في :shop - اكتشف أقسام ومنتجات المتجر', ['shop' => $shopName]);
@@ -188,32 +188,45 @@
         if ($shop?->id && $ozmanShop?->id && (int) $shop->id === (int) $ozmanShop->id) {
             $shopDisplaySource = $bottomOzmanScreens->merge($shopDisplaySource);
         }
-        $shopDisplayItems = $shopDisplaySource
-            ->filter(fn($item) => filled($item->media))
-            ->values();
+        $shopDisplayItems = $shopDisplaySource->filter(fn($item) => filled($item->media))->values();
         $authenticatedMerchantShop = auth()->user()?->isShopOwner()
-            ? auth()->user()->shops()->where('is_active', true)->with(['distributor', 'distributorMarketer.distributor'])->first()
+            ? auth()
+                ->user()
+                ->shops()
+                ->where('is_active', true)
+                ->with(['distributor', 'distributorMarketer.distributor'])
+                ->first()
             : null;
-        $authenticatedMerchantDistributor = $authenticatedMerchantShop?->distributor
-            ?: $authenticatedMerchantShop?->distributorMarketer?->distributor;
-        $authenticatedMerchantWhatsapp = preg_replace('/\D+/', '', $authenticatedMerchantDistributor?->whatsapp ?: $authenticatedMerchantDistributor?->phone ?: '');
-        $authenticatedMerchantPayload = $authenticatedMerchantShop ? [
-            'authenticated' => true,
-            'shop_id' => $authenticatedMerchantShop->id,
-            'shop_name' => $authenticatedMerchantShop->name,
-            'distributor_id' => $authenticatedMerchantDistributor?->id,
-            'distributor_name' => $authenticatedMerchantDistributor?->name,
-            'whatsapp_number' => $authenticatedMerchantWhatsapp,
-            'customer_name' => auth()->user()?->name ?: $authenticatedMerchantShop->name,
-            'customer_phone' => auth()->user()?->phone ?: $authenticatedMerchantShop->phone,
-            'customer_whatsapp' => $authenticatedMerchantShop->whatsapp ?: $authenticatedMerchantShop->phone,
-            'customer_address' => $authenticatedMerchantShop->address,
-            'customer_latitude' => $authenticatedMerchantShop->latitude,
-            'customer_longitude' => $authenticatedMerchantShop->longitude,
-            'customer_map_link' => $authenticatedMerchantShop->latitude !== null && $authenticatedMerchantShop->longitude !== null
-                ? 'https://www.google.com/maps?q=' . $authenticatedMerchantShop->latitude . ',' . $authenticatedMerchantShop->longitude
-                : null,
-        ] : null;
+        $authenticatedMerchantDistributor =
+            $authenticatedMerchantShop?->distributor ?: $authenticatedMerchantShop?->distributorMarketer?->distributor;
+        $authenticatedMerchantWhatsapp = preg_replace(
+            '/\D+/',
+            '',
+            $authenticatedMerchantDistributor?->whatsapp ?: $authenticatedMerchantDistributor?->phone ?: '',
+        );
+        $authenticatedMerchantPayload = $authenticatedMerchantShop
+            ? [
+                'authenticated' => true,
+                'shop_id' => $authenticatedMerchantShop->id,
+                'shop_name' => $authenticatedMerchantShop->name,
+                'distributor_id' => $authenticatedMerchantDistributor?->id,
+                'distributor_name' => $authenticatedMerchantDistributor?->name,
+                'whatsapp_number' => $authenticatedMerchantWhatsapp,
+                'customer_name' => auth()->user()?->name ?: $authenticatedMerchantShop->name,
+                'customer_phone' => auth()->user()?->phone ?: $authenticatedMerchantShop->phone,
+                'customer_whatsapp' => $authenticatedMerchantShop->whatsapp ?: $authenticatedMerchantShop->phone,
+                'customer_address' => $authenticatedMerchantShop->address,
+                'customer_latitude' => $authenticatedMerchantShop->latitude,
+                'customer_longitude' => $authenticatedMerchantShop->longitude,
+                'customer_map_link' =>
+                    $authenticatedMerchantShop->latitude !== null && $authenticatedMerchantShop->longitude !== null
+                        ? 'https://www.google.com/maps?q=' .
+                            $authenticatedMerchantShop->latitude .
+                            ',' .
+                            $authenticatedMerchantShop->longitude
+                        : null,
+            ]
+            : null;
     @endphp
 
     @unless ($isDashboardPreview ?? false)
@@ -301,14 +314,14 @@
                         <div class="carousel-item-3d prod-item" data-index="{{ $loop->index }}"
                             data-ozman-category="{{ $categoryTitle }}" data-product-name="{{ $categoryTitle }}">
                             <div class="card-3d">
-                                <img src="{{ $category->image ? asset($category->image) : asset('images/logo.jpg') }}"
+                                <img src="{{ $category->image ? asset($category->image) : asset('images/logo.svg') }}"
                                     alt="{{ $categoryTitle }}">
                             </div>
                             <span>{{ $categoryTitle }}</span>
                         </div>
                     @empty
                         <div class="carousel-item-3d prod-item" data-index="0" data-product-name="Ozman">
-                            <div class="card-3d"><img src="{{ asset('images/logo.jpg') }}" alt="Ozman"></div>
+                            <div class="card-3d"><img src="{{ asset('images/logo.svg') }}" alt="Ozman"></div>
                             <span>Ozman</span>
                         </div>
                     @endforelse
@@ -482,10 +495,11 @@
                     style="color: #25d366; text-decoration: none; display: flex; align-items: center;">
                     <i class="fab fa-whatsapp"></i>
                 </a>
-                @if($authenticatedMerchantShop)
+                @if ($authenticatedMerchantShop)
                     <form method="POST" action="{{ route('logout') }}" style="display:flex">
                         @csrf
-                        <button type="submit" class="nav-btn" title="{{ __('تسجيل خروج صاحب المتجر') }}" style="border:0;background:none;color:#00e5ff">
+                        <button type="submit" class="nav-btn" title="{{ __('تسجيل خروج صاحب المتجر') }}"
+                            style="border:0;background:none;color:#00e5ff">
                             <i class="fas fa-store-circle-xmark"></i>
                         </button>
                     </form>
@@ -623,7 +637,8 @@
 
                         <label class="customer-field">
                             <span>{{ __('رقم الهاتف') }}</span>
-                            <input type="tel" name="phone" placeholder="05xxxxxxxx" inputmode="tel" maxlength="16"
+                            <input type="tel" name="phone" placeholder="05xxxxxxxx" inputmode="tel"
+                                maxlength="16"
                                 pattern="(?:05[02345689][0-9]{7}|(?:\+|00)?9705[69][0-9]{7}|(?:\+|00)?9725[023458][0-9]{7})"
                                 title="{{ __('أدخل رقم جوال صحيح مثل 0591234567') }}" dir="ltr" required>
                         </label>
@@ -688,7 +703,8 @@
                             <span>{{ __('بعد حفظ البيانات سيتم فتح واتساب لإرسال طلبك. سنقوم بالتحقق من حساب صاحب المتجر، ولن تتمكن من الشراء حتى نقبل الطلب.') }}</span>
                         </div>
 
-                        <a class="cart-checkout-btn" id="merchantApprovalWhatsapp" href="#" target="_blank" rel="noopener noreferrer" hidden>
+                        <a class="cart-checkout-btn" id="merchantApprovalWhatsapp" href="#" target="_blank"
+                            rel="noopener noreferrer" hidden>
                             <i class="fab fa-whatsapp"></i>
                             {{ __('فتح واتساب لاعتماد حساب صاحب المتجر') }}
                         </a>
@@ -766,7 +782,8 @@
 
                         <label class="customer-field">
                             <span>{{ __('رقم الهاتف') }}</span>
-                            <input type="tel" id="customerPhone" name="phone" placeholder="05xxxxxxxx" inputmode="tel" maxlength="16"
+                            <input type="tel" id="customerPhone" name="phone" placeholder="05xxxxxxxx"
+                                inputmode="tel" maxlength="16"
                                 pattern="(?:05[02345689][0-9]{7}|(?:\+|00)?9705[69][0-9]{7}|(?:\+|00)?9725[023458][0-9]{7})"
                                 title="{{ __('أدخل رقم جوال صحيح مثل 0591234567') }}" dir="ltr" required>
                         </label>
@@ -798,9 +815,8 @@
                                 {{ __('حدد موقعي') }}
                             </button>
                         </div>
-                        <iframe id="customerMapFrame"
-                            src="https://www.google.com/maps?q=31.50655845,34.46089335&z=13&output=embed"
-                            width="100%" height="230" style="border:0;" loading="lazy" allowfullscreen></iframe>
+                        <iframe id="customerMapFrame" src="about:blank" width="100%" height="230"
+                            style="border:0;" loading="lazy" allowfullscreen></iframe>
                         <input type="hidden" id="customerLatitude" name="latitude">
                         <input type="hidden" id="customerLongitude" name="longitude">
                         <input type="hidden" id="customerMapLink" name="map_link">
@@ -958,7 +974,10 @@
                 arabicTtsUrl: @json(route('tts.arabic')),
                 orderStoreUrl: @json(route('front-orders.store')),
                 raffleCheckUrl: @json(route('raffle.check')),
-                raffleWhatsapp: @json(preg_replace('/\D+/', '', ($raffleSettings['whatsapp'] ?? '') ?: ($shop?->whatsapp ?: $shop?->phone ?: '970599000000'))),
+                raffleWhatsapp: @json(preg_replace(
+                        '/\D+/',
+                        '',
+                        $raffleSettings['whatsapp'] ?? '' ?: ($shop?->whatsapp ?: $shop?->phone ?: '970599000000'))),
                 raffleSocialLinks: @json($ozmanSocialLinks->reject(fn($link) => ($link['icon'] ?? '') === 'fab fa-whatsapp')->values()),
                 orderRewardUrlTemplate: @json(url('/front-orders/__ORDER__/reward')),
                 orderSpinRewardUrlTemplate: @json(url('/front-orders/__ORDER__/spin-reward')),
@@ -991,9 +1010,8 @@
                     </div>
                     <div class="nearest-gps-layout">
                         <div class="nearest-map-card">
-                            <iframe id="nearestMapFrame"
-                                src="https://maps.google.com/maps?q=31.50655845,34.46089335&z=13&output=embed"
-                                title="{{ __('خريطة الوصول للمحل') }}" loading="lazy" allowfullscreen></iframe>
+                            <iframe id="nearestMapFrame" src="about:blank" title="{{ __('خريطة الوصول للمحل') }}"
+                                loading="lazy" allowfullscreen></iframe>
                             <div class="nearest-route-overlay" id="nearestRouteOverlay" hidden>
                                 <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
                                     <path class="nearest-route-shadow" d="M18 78 C28 48, 55 58, 82 22"></path>

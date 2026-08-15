@@ -611,6 +611,10 @@ class FrontController extends Controller
 
     private function imageUrl(?string $path, string $fallback): string
     {
+        if ($fallback === 'images/logo.jpg') {
+            $fallback = 'images/logo.svg';
+        }
+
         if (!$path) {
             if ($fallback === '') {
                 return '';

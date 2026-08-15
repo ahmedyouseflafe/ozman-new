@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Ozman</title>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#00e5ff"/>
+      <stop offset="1" stop-color="#705cff"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="#071018"/>
+  <circle cx="256" cy="256" r="188" fill="none" stroke="url(#g)" stroke-width="18" opacity=".9"/>
+  <path d="M158 176h196v46L228 336h132v50H150v-47l127-113H158z" fill="url(#g)"/>
+</svg>

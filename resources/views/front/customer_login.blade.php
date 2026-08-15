@@ -60,7 +60,7 @@
                             حدد موقعي
                         </button>
                     </div>
-                    <iframe id="customerMapFrame" src="https://www.google.com/maps?q=31.50655845,34.46089335&z=13&output=embed" width="100%" height="260" style="border:0;" loading="lazy" allowfullscreen></iframe>
+                    <iframe id="customerMapFrame" src="about:blank" width="100%" height="260" style="border:0;" loading="lazy" allowfullscreen></iframe>
                     <input type="hidden" id="customerLatitude">
                     <input type="hidden" id="customerLongitude">
                     <input type="hidden" id="customerMapLink">
