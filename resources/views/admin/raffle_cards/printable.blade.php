@@ -263,12 +263,12 @@
                 margin: 0;
                 box-shadow: none;
                 overflow: hidden;
-                break-after: page;
-                page-break-after: always;
-            }
-            .sheet:last-child {
                 break-after: auto;
                 page-break-after: auto;
+            }
+            .sheet + .sheet {
+                break-before: page;
+                page-break-before: always;
             }
             .sheet.cards-24 {
                 width: 210mm;
