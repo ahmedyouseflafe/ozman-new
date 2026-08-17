@@ -185,13 +185,16 @@
 
         .menu-browser {
             display: grid;
-            grid-template-columns: 205px minmax(0, 1fr);
+            grid-template-columns: minmax(0, 1fr) 205px;
             gap: 4px;
             align-items: start;
+            direction: ltr;
             min-height: 520px
         }
 
         .category-rail {
+            grid-column: 2;
+            direction: rtl;
             position: sticky;
             top: 18px;
             display: flex;
@@ -204,6 +207,13 @@
             scrollbar-width: none;
             padding: 0 2px 0 8px;
             background: transparent
+        }
+
+        .category-content {
+            grid-column: 1;
+            grid-row: 1;
+            direction: rtl;
+            min-width: 0
         }
 
         .category-rail::before,
@@ -828,7 +838,7 @@
             }
 
             .menu-browser {
-                grid-template-columns: 146px minmax(0, 1fr);
+                grid-template-columns: minmax(0, 1fr) 146px;
                 gap: 3px;
                 min-height: 480px
             }
