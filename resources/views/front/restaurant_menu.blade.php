@@ -627,6 +627,35 @@
             font-size: 23px
         }
 
+        .table-context {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            margin-bottom: 12px;
+            padding: 13px 14px;
+            border: 1px solid rgba(8, 222, 244, .36);
+            border-radius: 14px;
+            background: var(--cyan-soft);
+            color: #fff
+        }
+
+        .table-context i {
+            color: var(--cyan);
+            font-size: 24px
+        }
+
+        .table-context small {
+            display: block;
+            color: var(--muted);
+            font-size: 11px
+        }
+
+        .table-context strong {
+            display: block;
+            color: var(--cyan);
+            font-size: 16px
+        }
+
         .field {
             width: 100%;
             min-height: 47px;
@@ -1112,6 +1141,12 @@
                 </div>
                 <div class="cart-items" id="cartItems"></div>
                 <div class="cart-total"><span>المجموع</span><strong><span id="total">0.00</span> ₪</strong></div>
+                @if($table)
+                    <div class="table-context">
+                        <i class="ti ti-table" aria-hidden="true"></i>
+                        <span><small>الطلب مسجل على</small><strong>{{ $table->name }}</strong></span>
+                    </div>
+                @endif
                 @unless ($table)
                     <select class="field" id="type">
                         <option value="delivery">توصيل إلى العنوان</option>

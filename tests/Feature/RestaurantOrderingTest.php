@@ -213,6 +213,28 @@ class RestaurantOrderingTest extends TestCase
         $this->assertSame('https://www.google.com/maps?q=32.2211,35.2544', $order->map_link);
     }
 
+    public function test_valid_table_qr_forces_table_order_and_dashboard_shows_table_name(): void
+    {
+        [$shop, $product, $table] = $this->restaurant('qr-table');
+
+        $response = $this->postJson(route('restaurant.orders.store', $shop), [
+            'order_type' => 'pickup',
+            'table_code' => $table->code,
+            'customer_name' => 'QR Customer',
+            'items' => [['product_id' => $product->id, 'qty' => 1]],
+        ])->assertOk();
+
+        $order = FrontOrder::findOrFail($response->json('order_id'));
+        $this->assertSame('dine_in', $order->order_type);
+        $this->assertSame($table->id, $order->restaurant_table_id);
+
+        $this->actingAs($shop->user)
+            ->get(route('restaurant.dashboard', $shop))
+            ->assertOk()
+            ->assertSee('طلب طاولة')
+            ->assertSee($table->name);
+    }
+
     private function restaurant(string $suffix = 'main'): array
     {
         $owner = User::create(['name' => 'Owner', 'email' => "$suffix@restaurant.test", 'password' => 'password', 'role' => 'shop_owner', 'is_active' => true]);

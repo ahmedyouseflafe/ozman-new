@@ -104,7 +104,7 @@
             <span class="live" id="live-status"><i class="live-dot"></i> متصل وتحديث مباشر</span>
         </div>
         <form class="filters" method="get" style="margin:22px 0 16px">
-            <select class="field" name="type"><option value="">كل أنواع الطلب</option>@foreach(['dine_in'=>'داخل المطعم','delivery'=>'توصيل','pickup'=>'استلام'] as $key=>$label)<option value="{{ $key }}" @selected($selectedType===$key)>{{ $label }}</option>@endforeach</select>
+            <select class="field" name="type"><option value="">كل أنواع الطلب</option>@foreach(['dine_in'=>'طلبات الطاولات','delivery'=>'توصيل','pickup'=>'استلام'] as $key=>$label)<option value="{{ $key }}" @selected($selectedType===$key)>{{ $label }}</option>@endforeach</select>
             <select class="field" name="status"><option value="">كل الحالات</option>@foreach(['new'=>'جديد','preparing'=>'قيد التحضير','ready'=>'جاهز','completed'=>'مكتمل','cancelled'=>'ملغي'] as $key=>$label)<option value="{{ $key }}" @selected($selectedStatus===$key)>{{ $label }}</option>@endforeach</select>
             <button class="btn btn-primary"><i class="ti ti-filter"></i> فلترة</button>
         </form>

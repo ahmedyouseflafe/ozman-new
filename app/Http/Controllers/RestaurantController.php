@@ -160,8 +160,14 @@ class RestaurantController extends Controller
         ]);
 
         $table = null;
-        if ($data['order_type'] === 'dine_in') {
-            $table = $shop->restaurantTables()->where('code', $data['table_code'] ?? '')->where('is_active', true)->firstOrFail();
+        if (filled($data['table_code'] ?? null)) {
+            $table = $shop->restaurantTables()
+                ->where('code', $data['table_code'])
+                ->where('is_active', true)
+                ->firstOrFail();
+            $data['order_type'] = 'dine_in';
+        } elseif ($data['order_type'] === 'dine_in') {
+            return response()->json(['message' => 'امسح QR الطاولة لإرسال طلب من داخل المطعم.'], 422);
         } elseif (!filled($data['customer_phone'])) {
             return response()->json(['message' => 'رقم الهاتف مطلوب لطلبات التوصيل والاستلام.'], 422);
         }

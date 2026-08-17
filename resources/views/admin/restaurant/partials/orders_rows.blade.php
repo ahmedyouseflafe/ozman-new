@@ -1,8 +1,15 @@
 @forelse($orders as $order)
     <tr data-order-id="{{ $order->id }}">
         <td>{{ $order->order_number }}<br><small>{{ $order->created_at }}</small></td>
-        <td><span class="tag">{{ ['dine_in'=>'داخل المطعم','delivery'=>'توصيل','pickup'=>'استلام'][$order->order_type] ?? $order->order_type }}</span></td>
-        <td>{{ $order->restaurantTable?->name ?: $order->customer_name }}<br>{{ $order->customer_phone }}
+        <td><span class="tag">{{ ['dine_in'=>'طلب طاولة','delivery'=>'توصيل','pickup'=>'استلام'][$order->order_type] ?? $order->order_type }}</span></td>
+        <td>
+            @if($order->restaurantTable)
+                <strong><i class="ti ti-table"></i> {{ $order->restaurantTable->name }}</strong>
+                <br><small>العميل: {{ $order->customer_name }}</small>
+            @else
+                {{ $order->customer_name }}
+            @endif
+            <br>{{ $order->customer_phone }}
             @if($order->order_type === 'delivery' && $order->map_link)<br><a href="{{ $order->map_link }}" target="_blank" rel="noopener"><i class="ti ti-map-pin"></i> موقع التوصيل</a>@endif
         </td>
         <td>
