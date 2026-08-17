@@ -173,6 +173,17 @@
                             </div>
 
                             <div class="form-group full">
+                                <label class="upload-box">
+                                    <input type="file" name="background_video" accept="video/mp4,video/webm">
+                                    <span class="card-icon"><i class="ti ti-video-plus" aria-hidden="true"></i></span>
+                                    <span>
+                                        <span class="card-title">فيديو خلفية الفئة</span>
+                                        <span class="card-sub">MP4 أو WebM حتى 20MB — اختياري ويظهر متحركًا خلف منتجات الفئة</span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div class="form-group full">
                                 <div class="switch-card">
                                     <div class="card-copy">
                                         <span class="card-icon"><i class="ti ti-circle-check" aria-hidden="true"></i></span>

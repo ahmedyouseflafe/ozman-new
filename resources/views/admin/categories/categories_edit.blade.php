@@ -35,6 +35,7 @@
         .upload-box input { position:absolute; inset:0; opacity:0; cursor:pointer; }
         .preview { display:flex; align-items:center; gap:12px; margin-top:12px; color:var(--muted); font-size:12px; font-weight:700; }
         .preview img { width:72px; height:72px; object-fit:cover; border-radius:16px; border:1px solid var(--border); }
+        .preview video { width:min(320px,100%); aspect-ratio:16/9; object-fit:cover; border-radius:16px; border:1px solid var(--border); background:#000; }
         .switch-card { display:flex; align-items:center; justify-content:space-between; gap:16px; border:1px solid var(--border); border-radius:22px; background:rgba(0,0,0,.22); padding:16px; }
         .card-copy { display:flex; align-items:center; gap:13px; }
         .card-title { display:block; font-size:14px; font-weight:900; }
@@ -141,6 +142,26 @@
                                     <div class="preview">
                                         <img src="{{ asset($category->image) }}" alt="{{ $category->name }}">
                                         <span>الصورة الحالية</span>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <div class="form-group full">
+                                <label class="upload-box">
+                                    <input type="file" name="background_video" accept="video/mp4,video/webm">
+                                    <span class="card-icon"><i class="ti ti-video-plus" aria-hidden="true"></i></span>
+                                    <span>
+                                        <span class="card-title">فيديو خلفية الفئة</span>
+                                        <span class="card-sub">MP4 أو WebM حتى 20MB — اتركه فارغًا للاحتفاظ بالفيديو الحالي</span>
+                                    </span>
+                                </label>
+                                @if($category->background_video)
+                                    <div class="preview">
+                                        <video src="{{ asset($category->background_video) }}" controls muted preload="metadata"></video>
+                                        <label>
+                                            <input type="checkbox" name="remove_background_video" value="1">
+                                            حذف فيديو الخلفية الحالي
+                                        </label>
                                     </div>
                                 @endif
                             </div>

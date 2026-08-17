@@ -7,11 +7,41 @@ use App\Models\Product;
 use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class CatalogTypeCustomizationTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_restaurant_category_can_upload_a_menu_background_video(): void
+    {
+        Storage::fake('public');
+        $owner = User::create([
+            'name' => 'Video Owner', 'email' => 'video-owner@example.com', 'password' => 'secret123',
+            'role' => 'shop_owner', 'is_active' => true,
+        ]);
+        $shop = Shop::create([
+            'user_id' => $owner->id, 'name' => 'Video Restaurant', 'slug' => 'video-restaurant',
+            'catalog_type' => 'restaurant', 'is_active' => true,
+        ]);
+
+        $this->actingAs($owner)->post(route('categories.store'), [
+            'shop_id' => $shop->id,
+            'name' => 'مشاوي',
+            'is_active' => 1,
+            'background_video' => UploadedFile::fake()->create('grills.mp4', 512, 'video/mp4'),
+        ])->assertRedirect(route('categories'));
+
+        $category = Category::where('shop_id', $shop->id)->firstOrFail();
+        $this->assertNotNull($category->background_video);
+        Storage::disk('public')->assertExists(str_replace('storage/', '', $category->background_video));
+
+        $this->get(route('restaurant.menu', $shop))
+            ->assertOk()
+            ->assertSee($category->background_video, false);
+    }
 
     public function test_product_keeps_only_attributes_defined_for_its_shop_type(): void
     {

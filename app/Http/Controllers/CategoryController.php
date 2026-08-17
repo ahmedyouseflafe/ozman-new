@@ -64,6 +64,10 @@ class CategoryController extends Controller
             $data['image'] = $this->storeUpload($request, 'image', 'categories');
         }
 
+        if ($request->hasFile('background_video')) {
+            $data['background_video'] = $this->storeUpload($request, 'background_video', 'categories/backgrounds');
+        }
+
         $category = Category::create($data);
 
         $this->notifySuperAdmin(
@@ -114,6 +118,14 @@ class CategoryController extends Controller
             $data['image'] = $this->storeUpload($request, 'image', 'categories');
         }
 
+        if ($request->hasFile('background_video')) {
+            $this->deleteUpload($category->background_video);
+            $data['background_video'] = $this->storeUpload($request, 'background_video', 'categories/backgrounds');
+        } elseif ($request->boolean('remove_background_video')) {
+            $this->deleteUpload($category->background_video);
+            $data['background_video'] = null;
+        }
+
         $category->update($data);
 
         return redirect()
@@ -126,6 +138,7 @@ class CategoryController extends Controller
         $this->authorizeShopAccess($category);
         $this->authorizeCategoryManagement($category);
         $this->deleteUpload($category->image);
+        $this->deleteUpload($category->background_video);
         $category->delete();
 
         return redirect()
@@ -147,6 +160,8 @@ class CategoryController extends Controller
                 Rule::unique('categories', 'slug')->ignore($category?->id),
             ],
             'image' => ['nullable', 'image', 'max:2048'],
+            'background_video' => ['nullable', 'file', 'mimes:mp4,webm', 'max:20480'],
+            'remove_background_video' => ['nullable', 'boolean'],
         ]);
     }
 

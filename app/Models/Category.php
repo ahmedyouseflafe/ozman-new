@@ -17,6 +17,7 @@ class Category extends Model
         'name_translations',
         'slug',
         'image',
+        'background_video',
         'is_active',
     ];
 

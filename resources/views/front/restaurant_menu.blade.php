@@ -984,19 +984,6 @@
 
 <body>
     @php
-        $categoryBackground = function ($name) {
-            $name = mb_strtolower((string) $name);
-
-            if (str_contains($name, 'مشاوي') || str_contains($name, 'مشوي') || str_contains($name, 'شواء')) {
-                return asset('videos/restaurant/grills.mp4');
-            }
-
-            if (str_contains($name, 'ساندويش') || str_contains($name, 'سندويش')) {
-                return asset('videos/restaurant/sandwiches.mp4');
-            }
-
-            return null;
-        };
         $restaurantProducts = $products
             ->map(function ($product) {
                 $attributes = $product->catalog_attributes ?? [];
@@ -1011,12 +998,12 @@
             })
             ->values();
         $restaurantCategories = $categories
-            ->map(function ($category) use ($products, $categoryBackground) {
+            ->map(function ($category) use ($products) {
                 return [
                     'key' => (string) $category->id,
                     'name' => $category->name,
                     'image' => $category->image ?: $products->first(fn($product) => $product->category_id === $category->id && filled($product->main_image))?->main_image,
-                    'background' => $categoryBackground($category->name),
+                    'background' => $category->background_video ? asset($category->background_video) : null,
                     'products' => $products->where('category_id', $category->id)->values(),
                 ];
             })
