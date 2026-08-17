@@ -802,18 +802,25 @@
                 ];
             })
             ->values();
-        $restaurantCategories = $products
-            ->groupBy(fn($product) => $product->category_id ?: 'uncategorized')
-            ->map(function ($categoryProducts, $key) {
-                $category = $categoryProducts->first()->category;
+        $restaurantCategories = $categories
+            ->map(function ($category) use ($products) {
                 return [
-                    'key' => (string) $key,
-                    'name' => $category?->name ?: 'الوجبات',
-                    'image' => $category?->image ?: $categoryProducts->first(fn($product) => filled($product->main_image))?->main_image,
-                    'products' => $categoryProducts,
+                    'key' => (string) $category->id,
+                    'name' => $category->name,
+                    'image' => $category->image ?: $products->first(fn($product) => $product->category_id === $category->id && filled($product->main_image))?->main_image,
+                    'products' => $products->where('category_id', $category->id)->values(),
                 ];
             })
             ->values();
+        $uncategorizedProducts = $products->whereNull('category_id')->values();
+        if ($uncategorizedProducts->isNotEmpty()) {
+            $restaurantCategories->push([
+                'key' => 'uncategorized',
+                'name' => 'الوجبات',
+                'image' => $uncategorizedProducts->first(fn($product) => filled($product->main_image))?->main_image,
+                'products' => $uncategorizedProducts,
+            ]);
+        }
     @endphp
     <div class="shell">
         <header class="hero">
@@ -860,7 +867,7 @@
                                 <section class="category category-pane" data-category-pane="{{ $category['key'] }}" @if(!$loop->first) hidden @endif>
                                     <h3 class="category-title">{{ $category['name'] }}</h3>
                                     <div class="meals">
-                            @foreach ($category['products'] as $product)
+                            @forelse ($category['products'] as $product)
                                 <article class="meal">
                                     @if ($product->main_image)
                                         <img class="meal-image" src="{{ asset($product->main_image) }}"
@@ -877,7 +884,9 @@
                                                 إضافة</button></div>
                                     </div>
                                 </article>
-                            @endforeach
+                            @empty
+                                <div class="empty"><i class="ti ti-tools-kitchen-off"></i>لا توجد وجبات في هذا القسم حالياً.</div>
+                            @endforelse
                                     </div>
                                 </section>
                             @endforeach

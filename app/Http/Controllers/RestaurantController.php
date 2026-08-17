@@ -124,8 +124,16 @@ class RestaurantController extends Controller
     {
         abort_unless($shop->is_active && $shop->catalog_type === 'restaurant', 404);
         $table = $tableCode ? $shop->restaurantTables()->where('code', $tableCode)->where('is_active', true)->firstOrFail() : null;
-        $products = Product::with('category')->where('shop_id', $shop->id)->where('is_active', true)->get();
-        return view('front.restaurant_menu', compact('shop', 'table', 'products'));
+        $categories = $shop->categories()->where('is_active', true)->orderBy('name')->get();
+        $products = Product::with('category')
+            ->where('shop_id', $shop->id)
+            ->where('is_active', true)
+            ->where(function ($query) {
+                $query->whereNull('category_id')
+                    ->orWhereHas('category', fn($categoryQuery) => $categoryQuery->where('is_active', true));
+            })
+            ->get();
+        return view('front.restaurant_menu', compact('shop', 'table', 'products', 'categories'));
     }
 
     public function storeOrder(Request $request, Shop $shop): JsonResponse

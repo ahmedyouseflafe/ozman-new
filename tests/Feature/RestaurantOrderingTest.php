@@ -171,6 +171,22 @@ class RestaurantOrderingTest extends TestCase
             ->assertDontSee('العبوة');
     }
 
+    public function test_restaurant_menu_shows_active_categories_without_products(): void
+    {
+        [$shop] = $this->restaurant('empty-category');
+        Category::create([
+            'shop_id' => $shop->id,
+            'name' => 'Empty restaurant category',
+            'slug' => 'empty-restaurant-category',
+            'is_active' => true,
+        ]);
+
+        $this->get(route('restaurant.menu', $shop))
+            ->assertOk()
+            ->assertSee('Empty restaurant category')
+            ->assertSee('data-category-key=', false);
+    }
+
     public function test_delivery_order_requires_and_stores_customer_location(): void
     {
         [$shop, $product] = $this->restaurant('delivery-location');
