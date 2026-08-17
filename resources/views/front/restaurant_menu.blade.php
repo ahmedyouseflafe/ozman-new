@@ -47,7 +47,7 @@
         }
 
         .shell {
-            width: min(1380px, calc(100% - 32px));
+            width: min(1740px, calc(100% - 24px));
             margin: auto;
             padding: 20px 0 55px
         }
@@ -189,7 +189,7 @@
             gap: 4px;
             align-items: start;
             direction: ltr;
-            min-height: 520px
+            min-height: clamp(700px, 68vh, 940px)
         }
 
         .category-rail {
@@ -201,7 +201,7 @@
             flex-direction: column;
             align-items: stretch;
             gap: 14px;
-            height: min(720px, calc(100vh - 70px));
+            height: min(860px, calc(100vh - 70px));
             overflow-y: auto;
             overscroll-behavior: contain;
             scroll-snap-type: y mandatory;
@@ -217,7 +217,7 @@
             position: relative;
             isolation: isolate;
             min-width: 0;
-            min-height: 520px;
+            min-height: clamp(700px, 68vh, 940px);
             overflow: hidden;
             border-radius: 22px
         }
@@ -875,7 +875,7 @@
             .menu-browser {
                 grid-template-columns: minmax(0, 1fr) 110px;
                 gap: 3px;
-                min-height: 480px
+                min-height: 560px
             }
 
             .category-rail {
@@ -1235,7 +1235,7 @@
                 const cardHeight = 225;
                 const columns = Math.max(1, Math.floor(width / 215));
                 const rows = Math.max(2, Math.ceil(cards.length / columns));
-                const height = Math.max(500, rows * 265);
+                const height = Math.max(700, Math.round(window.innerHeight * .68), rows * 265);
                 const cellWidth = width / columns;
                 const cellHeight = height / rows;
                 const random = seededRandom(hashText(pane.dataset.categoryPane));
