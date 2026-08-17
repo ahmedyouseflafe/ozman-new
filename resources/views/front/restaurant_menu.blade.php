@@ -128,9 +128,7 @@
         }
 
         .layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 365px;
-            gap: 20px;
+            display: block;
             margin-top: 22px
         }
 
@@ -140,6 +138,10 @@
             border-radius: 25px;
             background: linear-gradient(145deg, rgba(17, 21, 27, .94), rgba(8, 13, 16, .94));
             padding: 22px
+        }
+
+        .menu-panel {
+            min-height: calc(100vh - 315px)
         }
 
         .section-head {
@@ -179,8 +181,8 @@
 
         .menu-browser {
             display: grid;
-            grid-template-columns: 112px minmax(0, 1fr);
-            gap: 18px;
+            grid-template-columns: 128px minmax(0, 1fr);
+            gap: 26px;
             align-items: start;
             min-height: 520px
         }
@@ -191,14 +193,20 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            max-height: calc(100vh - 36px);
+            height: min(720px, calc(100vh - 70px));
             overflow-y: auto;
             overscroll-behavior: contain;
             scroll-snap-type: y mandatory;
             scrollbar-width: none;
-            padding: calc(50vh - 100px) 5px;
+            padding: 0 7px;
             border-radius: 22px;
             background: rgba(3, 7, 10, .58)
+        }
+
+        .category-rail::before,
+        .category-rail::after {
+            content: "";
+            flex: 0 0 calc(50% - 58px)
         }
 
         .category-rail::-webkit-scrollbar {
@@ -285,15 +293,15 @@
 
         .meals {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 14px
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px
         }
 
         .meal {
-            display: grid;
-            grid-template-columns: 130px minmax(0, 1fr);
+            display: flex;
+            flex-direction: column;
             gap: 15px;
-            min-height: 165px;
+            min-height: 350px;
             border: 1px solid var(--border);
             border-radius: 19px;
             background: rgba(5, 9, 12, .75);
@@ -308,8 +316,8 @@
         }
 
         .meal-image {
-            width: 130px;
-            height: 140px;
+            width: 100%;
+            height: 210px;
             border-radius: 15px;
             object-fit: cover;
             background: #161d23
@@ -368,9 +376,51 @@
         }
 
         .cart {
-            position: sticky;
+            position: fixed;
+            z-index: 40;
             top: 18px;
-            height: max-content
+            bottom: 18px;
+            left: 18px;
+            width: min(390px, calc(100% - 36px));
+            overflow-y: auto;
+            transform: translateX(calc(-100% - 30px));
+            transition: transform .32s ease;
+            box-shadow: 20px 0 80px rgba(0, 0, 0, .55)
+        }
+
+        body.cart-open {
+            overflow: hidden
+        }
+
+        body.cart-open .cart {
+            transform: translateX(0)
+        }
+
+        .cart-backdrop {
+            position: fixed;
+            z-index: 35;
+            inset: 0;
+            border: 0;
+            background: rgba(0, 3, 6, .74);
+            backdrop-filter: blur(5px);
+            opacity: 0;
+            visibility: hidden;
+            transition: .25s
+        }
+
+        body.cart-open .cart-backdrop {
+            opacity: 1;
+            visibility: visible
+        }
+
+        .cart-close {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            background: #070b0f;
+            color: #fff;
+            cursor: pointer
         }
 
         .cart-title {
@@ -630,10 +680,12 @@
         }
 
         .mobile-cart {
-            display: none;
+            display: block;
             position: fixed;
-            right: 12px;
-            left: 12px;
+            right: 50%;
+            left: auto;
+            width: min(480px, calc(100% - 24px));
+            transform: translateX(50%);
             bottom: 12px;
             z-index: 15;
             min-height: 55px;
@@ -646,15 +698,6 @@
         }
 
         @media(max-width:1050px) {
-            .layout {
-                grid-template-columns: 1fr
-            }
-
-            .cart {
-                position: relative;
-                top: auto
-            }
-
             .meals {
                 grid-template-columns: repeat(2, minmax(0, 1fr))
             }
@@ -708,8 +751,8 @@
 
             .category-rail {
                 top: 8px;
-                max-height: calc(100vh - 76px);
-                padding: calc(50vh - 90px) 3px
+                height: calc(100vh - 76px);
+                padding-inline: 3px
             }
 
             .category-tab {
@@ -765,11 +808,7 @@
             }
 
             .cart {
-                margin-bottom: 65px
-            }
-
-            .mobile-cart {
-                display: block
+                margin-bottom: 0
             }
 
             .qty-row {
