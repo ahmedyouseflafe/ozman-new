@@ -1099,9 +1099,16 @@
                 @endif
             </section>
 
-            <aside class="cart" id="cartPanel">
+            <button type="button" class="cart-backdrop" id="cartBackdrop" aria-label="إغلاق الطلب"></button>
+            <aside class="cart" id="cartPanel" aria-hidden="true" aria-label="تفاصيل الطلب">
                 <div class="cart-title">
-                    <h2>طلبك</h2><span class="count" id="cartCount">0</span>
+                    <h2>طلبك</h2>
+                    <div style="display:flex;align-items:center;gap:9px">
+                        <span class="count" id="cartCount">0</span>
+                        <button type="button" class="cart-close" id="cartClose" aria-label="إغلاق الطلب">
+                            <i class="ti ti-x" aria-hidden="true"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="cart-items" id="cartItems"></div>
                 <div class="cart-total"><span>المجموع</span><strong><span id="total">0.00</span> ₪</strong></div>
@@ -1390,12 +1397,18 @@
                 $('cartCount').textContent = $('mobileCount').textContent = cart.reduce((sum, item) => sum + item.qty,
                     0);
             }
-            $('mobileCart').onclick = () => {
-                $('cartPanel').scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                })
+            const setCartOpen = open => {
+                document.body.classList.toggle('cart-open', open);
+                $('cartPanel').setAttribute('aria-hidden', String(!open));
             };
+            $('mobileCart').onclick = () => setCartOpen(true);
+            $('cartClose').onclick = () => setCartOpen(false);
+            $('cartBackdrop').onclick = () => setCartOpen(false);
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && document.body.classList.contains('cart-open')) {
+                    setCartOpen(false);
+                }
+            });
             const type = $('type'),
                 address = $('address'),
                 locationBox = $('locationBox');
