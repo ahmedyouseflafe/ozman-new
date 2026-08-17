@@ -202,7 +202,7 @@
             overscroll-behavior: contain;
             scroll-snap-type: y mandatory;
             scrollbar-width: none;
-            padding: 0 8px;
+            padding: 0 2px 0 8px;
             background: transparent
         }
 
@@ -218,6 +218,8 @@
 
         .category-tab {
             flex: 0 0 auto;
+            display: grid;
+            justify-items: end;
             scroll-snap-align: center;
             border: 0;
             background: transparent;
@@ -236,7 +238,7 @@
             place-items: center;
             width: 68px;
             height: 68px;
-            margin: auto;
+            margin: 0;
             border-radius: 50%;
             object-fit: cover;
             background: #161d23;
@@ -247,6 +249,8 @@
 
         .category-tab span:last-child {
             display: block;
+            width: 68px;
+            text-align: center;
             margin-top: 5px;
             font-size: 11px;
             line-height: 1.45;
@@ -298,11 +302,32 @@
         }
 
         .meals {
+            position: relative;
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
             gap: 34px 22px;
             justify-items: center;
             padding: 12px 4px 22px
+        }
+
+        @media(min-width:721px) {
+            .meals.is-scattered {
+                display: block;
+                min-height: var(--scatter-height, 540px);
+                padding: 0
+            }
+
+            .meals.is-scattered .meal {
+                position: absolute;
+                top: 0;
+                left: 0;
+                transform: translate(var(--scatter-x, 0px), var(--scatter-y, 0px));
+                transition: transform .45s cubic-bezier(.2, .8, .2, 1), filter .28s ease
+            }
+
+            .meals.is-scattered .meal:hover {
+                transform: translate(var(--scatter-x, 0px), calc(var(--scatter-y, 0px) - 5px))
+            }
         }
 
         .meal {
@@ -827,6 +852,7 @@
             }
 
             .category-tab span:last-child {
+                width: 57px;
                 font-size: 10px
             }
 
@@ -844,6 +870,14 @@
                 width: min(138px, 100%);
                 min-height: 190px;
                 padding: 0 3px
+            }
+
+            .meal:nth-child(4n + 2) {
+                transform: translateY(28px)
+            }
+
+            .meal:nth-child(4n + 3) {
+                transform: translateY(10px)
             }
 
             .meal-image {
@@ -1099,6 +1133,56 @@
             let activeCategory = categoryTabs[0]?.dataset.categoryKey;
             let categoryFrame = null;
 
+            const hashText = value => [...String(value)].reduce((hash, char) =>
+                Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0, 2166136261);
+
+            const seededRandom = seed => () => {
+                seed = Math.imul(seed ^ seed >>> 15, seed | 1);
+                seed ^= seed + Math.imul(seed ^ seed >>> 7, seed | 61);
+                return ((seed ^ seed >>> 14) >>> 0) / 4294967296;
+            };
+
+            const scatterMeals = pane => {
+                const meals = pane?.querySelector('.meals');
+                const cards = [...(meals?.querySelectorAll('.meal') || [])];
+                if (!meals || !cards.length || window.innerWidth <= 720) {
+                    meals?.classList.remove('is-scattered');
+                    return;
+                }
+
+                const width = meals.clientWidth;
+                if (!width) return;
+                const cardWidth = 180;
+                const cardHeight = 225;
+                const columns = Math.max(1, Math.floor(width / 215));
+                const rows = Math.max(2, Math.ceil(cards.length / columns));
+                const height = Math.max(500, rows * 265);
+                const cellWidth = width / columns;
+                const cellHeight = height / rows;
+                const random = seededRandom(hashText(pane.dataset.categoryPane));
+                const slots = [];
+
+                for (let row = 0; row < rows; row++) {
+                    for (let column = 0; column < columns; column++) slots.push({ row, column });
+                }
+                for (let index = slots.length - 1; index > 0; index--) {
+                    const swap = Math.floor(random() * (index + 1));
+                    [slots[index], slots[swap]] = [slots[swap], slots[index]];
+                }
+
+                cards.forEach((card, index) => {
+                    const slot = slots[index];
+                    const freeX = Math.max(0, cellWidth - cardWidth);
+                    const freeY = Math.max(0, cellHeight - cardHeight);
+                    const x = slot.column * cellWidth + freeX * (.15 + random() * .7);
+                    const y = slot.row * cellHeight + freeY * random();
+                    card.style.setProperty('--scatter-x', `${Math.round(x)}px`);
+                    card.style.setProperty('--scatter-y', `${Math.round(y)}px`);
+                });
+                meals.style.setProperty('--scatter-height', `${height}px`);
+                meals.classList.add('is-scattered');
+            };
+
             const positionCategoryArc = () => {
                 if (!categoryRail || !categoryTabs.length) return;
                 const railBox = categoryRail.getBoundingClientRect();
@@ -1126,6 +1210,7 @@
                     if (active && centerTab) tab.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 });
                 categoryPanes.forEach(pane => pane.hidden = pane.dataset.categoryPane !== key);
+                requestAnimationFrame(() => scatterMeals(categoryPanes.find(pane => pane.dataset.categoryPane === key)));
             };
 
             categoryTabs.forEach(tab => tab.addEventListener('click', () =>
@@ -1146,8 +1231,14 @@
                 });
             }, { passive: true });
 
-            window.addEventListener('resize', positionCategoryArc, { passive: true });
-            requestAnimationFrame(positionCategoryArc);
+            window.addEventListener('resize', () => {
+                positionCategoryArc();
+                scatterMeals(categoryPanes.find(pane => !pane.hidden));
+            }, { passive: true });
+            requestAnimationFrame(() => {
+                positionCategoryArc();
+                scatterMeals(categoryPanes.find(pane => !pane.hidden));
+            });
 
             const openMeal = productId => {
                 current = products.get(Number(productId));
