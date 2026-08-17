@@ -163,6 +163,10 @@
             margin: 2px 0
         }
 
+        .section-head > .count {
+            display: none
+        }
+
         .count {
             display: inline-grid;
             place-items: center;
@@ -293,7 +297,7 @@
 
         .meals {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(190px, 240px));
             gap: 18px
         }
 
@@ -301,12 +305,21 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
-            min-height: 350px;
+            min-height: 315px;
             border: 1px solid var(--border);
             border-radius: 19px;
             background: rgba(5, 9, 12, .75);
             padding: 12px;
             transition: .25s
+        }
+
+        .meal[data-product-id] {
+            cursor: pointer
+        }
+
+        .meal:focus-visible {
+            outline: 3px solid rgba(8, 222, 244, .55);
+            outline-offset: 3px
         }
 
         .meal:hover {
@@ -317,7 +330,7 @@
 
         .meal-image {
             width: 100%;
-            height: 210px;
+            height: 170px;
             border-radius: 15px;
             object-fit: cover;
             background: #161d23
@@ -699,7 +712,7 @@
 
         @media(max-width:1050px) {
             .meals {
-                grid-template-columns: repeat(2, minmax(0, 1fr))
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))
             }
         }
 
@@ -907,7 +920,8 @@
                                     <h3 class="category-title">{{ $category['name'] }}</h3>
                                     <div class="meals">
                             @forelse ($category['products'] as $product)
-                                <article class="meal">
+                                <article class="meal" data-product-id="{{ $product->id }}" role="button" tabindex="0"
+                                    aria-label="عرض خيارات {{ $product->name }}">
                                     @if ($product->main_image)
                                         <img class="meal-image" src="{{ asset($product->main_image) }}"
                                         alt="{{ $product->name }}">@else<div class="meal-image"></div>
@@ -1050,8 +1064,8 @@
                 });
             }, { passive: true });
 
-            document.querySelectorAll('.add-btn').forEach(button => button.addEventListener('click', () => {
-                current = products.get(Number(button.dataset.productId));
+            const openMeal = productId => {
+                current = products.get(Number(productId));
                 if (!current) return;
                 $('modalName').textContent = current.name;
                 $('qty').value = 1;
@@ -1071,7 +1085,17 @@
                     `<label class="choice"><span><input type="checkbox" value="${escapeHtml(name)}"> بدون ${escapeHtml(name)}</span></label>`
                     ).join('');
                 modal.showModal();
-            }));
+            };
+
+            document.querySelectorAll('.meal[data-product-id]').forEach(card => {
+                card.addEventListener('click', () => openMeal(card.dataset.productId));
+                card.addEventListener('keydown', event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        openMeal(card.dataset.productId);
+                    }
+                });
+            });
             const closeModal = () => modal.close();
             $('modalClose').onclick = closeModal;
             $('modalCancel').onclick = closeModal;
