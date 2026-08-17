@@ -177,6 +177,95 @@
             margin-bottom: 27px
         }
 
+        .menu-browser {
+            display: grid;
+            grid-template-columns: 112px minmax(0, 1fr);
+            gap: 18px;
+            align-items: start;
+            min-height: 520px
+        }
+
+        .category-rail {
+            position: sticky;
+            top: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: calc(100vh - 36px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none;
+            padding: calc(50vh - 100px) 5px;
+            border-radius: 22px;
+            background: rgba(3, 7, 10, .58)
+        }
+
+        .category-rail::-webkit-scrollbar {
+            display: none
+        }
+
+        .category-tab {
+            flex: 0 0 auto;
+            scroll-snap-align: center;
+            border: 1px solid transparent;
+            border-radius: 18px;
+            background: transparent;
+            color: var(--muted);
+            padding: 8px 5px 10px;
+            cursor: pointer;
+            transition: transform .24s, color .24s, background .24s, border-color .24s
+        }
+
+        .category-tab img,
+        .category-tab-icon {
+            display: grid;
+            place-items: center;
+            width: 68px;
+            height: 68px;
+            margin: auto;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #161d23;
+            border: 3px solid rgba(255, 255, 255, .08);
+            font-size: 29px;
+            transition: .24s
+        }
+
+        .category-tab span:last-child {
+            display: block;
+            margin-top: 5px;
+            font-size: 11px;
+            line-height: 1.45;
+            font-weight: 800
+        }
+
+        .category-tab.active {
+            color: #fff;
+            background: var(--cyan-soft);
+            border-color: rgba(8, 222, 244, .35);
+            transform: scale(1.03)
+        }
+
+        .category-tab.active img,
+        .category-tab.active .category-tab-icon {
+            border-color: var(--cyan);
+            box-shadow: 0 0 0 4px rgba(8, 222, 244, .1), 0 0 24px rgba(8, 222, 244, .25)
+        }
+
+        .category-pane {
+            animation: categoryReveal .28s ease
+        }
+
+        .category-pane[hidden] {
+            display: none
+        }
+
+        @keyframes categoryReveal {
+            from { opacity: 0; transform: translateY(10px) }
+            to { opacity: 1; transform: translateY(0) }
+        }
+
         .category-title {
             display: flex;
             align-items: center;
@@ -607,22 +696,68 @@
                 border-radius: 20px
             }
 
+            .menu-panel {
+                padding-inline: 9px
+            }
+
+            .menu-browser {
+                grid-template-columns: 86px minmax(0, 1fr);
+                gap: 9px;
+                min-height: 480px
+            }
+
+            .category-rail {
+                top: 8px;
+                max-height: calc(100vh - 76px);
+                padding: calc(50vh - 90px) 3px
+            }
+
+            .category-tab {
+                border-radius: 15px;
+                padding-inline: 2px
+            }
+
+            .category-tab img,
+            .category-tab-icon {
+                width: 57px;
+                height: 57px;
+                font-size: 24px
+            }
+
+            .category-tab span:last-child {
+                font-size: 10px
+            }
+
+            .category-title {
+                font-size: 17px
+            }
+
             .meals {
                 grid-template-columns: 1fr
             }
 
             .meal {
-                grid-template-columns: 105px 1fr;
-                min-height: 135px
+                grid-template-columns: 1fr;
+                min-height: 0;
+                padding: 9px
             }
 
             .meal-image {
-                width: 105px;
-                height: 112px
+                width: 100%;
+                height: 125px
             }
 
             .meal h3 {
                 font-size: 16px
+            }
+
+            .meal-bottom {
+                align-items: stretch;
+                flex-direction: column
+            }
+
+            .add-btn {
+                width: 100%
             }
 
             .fields-row {
@@ -667,6 +802,18 @@
                 ];
             })
             ->values();
+        $restaurantCategories = $products
+            ->groupBy(fn($product) => $product->category_id ?: 'uncategorized')
+            ->map(function ($categoryProducts, $key) {
+                $category = $categoryProducts->first()->category;
+                return [
+                    'key' => (string) $key,
+                    'name' => $category?->name ?: 'الوجبات',
+                    'image' => $category?->image ?: $categoryProducts->first(fn($product) => filled($product->main_image))?->main_image,
+                    'products' => $categoryProducts,
+                ];
+            })
+            ->values();
     @endphp
     <div class="shell">
         <header class="hero">
@@ -693,11 +840,27 @@
                         <p>اضغط على الوجبة لاختيار الحجم والإضافات.</p>
                     </div><span class="count">{{ $products->count() }}</span>
                 </div>
-                @forelse($products->groupBy(fn($product) => $product->category?->name ?: 'الوجبات') as $categoryName => $categoryProducts)
-                    <section class="category">
-                        <h3 class="category-title">{{ $categoryName }}</h3>
-                        <div class="meals">
-                            @foreach ($categoryProducts as $product)
+                @if($restaurantCategories->isNotEmpty())
+                    <div class="menu-browser" id="menuBrowser">
+                        <nav class="category-rail" id="categoryRail" aria-label="أقسام المنيو">
+                            @foreach($restaurantCategories as $category)
+                                <button type="button" class="category-tab @if($loop->first) active @endif"
+                                    data-category-key="{{ $category['key'] }}" aria-pressed="{{ $loop->first ? 'true' : 'false' }}">
+                                    @if($category['image'])
+                                        <img src="{{ asset($category['image']) }}" alt="" loading="lazy">
+                                    @else
+                                        <span class="category-tab-icon"><i class="ti ti-tools-kitchen-2"></i></span>
+                                    @endif
+                                    <span>{{ $category['name'] }}</span>
+                                </button>
+                            @endforeach
+                        </nav>
+                        <div class="category-content" id="categoryContent">
+                            @foreach($restaurantCategories as $category)
+                                <section class="category category-pane" data-category-pane="{{ $category['key'] }}" @if(!$loop->first) hidden @endif>
+                                    <h3 class="category-title">{{ $category['name'] }}</h3>
+                                    <div class="meals">
+                            @foreach ($category['products'] as $product)
                                 <article class="meal">
                                     @if ($product->main_image)
                                         <img class="meal-image" src="{{ asset($product->main_image) }}"
@@ -715,11 +878,14 @@
                                     </div>
                                 </article>
                             @endforeach
+                                    </div>
+                                </section>
+                            @endforeach
                         </div>
-                    </section>
-                @empty
+                    </div>
+                @else
                     <div class="empty"><i class="ti ti-tools-kitchen-off"></i>لا توجد وجبات متاحة حالياً.</div>
-                @endforelse
+                @endif
             </section>
 
             <aside class="cart" id="cartPanel">
@@ -800,6 +966,41 @@
                 '"': '&quot;',
                 "'": '&#039;'
             } [char]));
+
+            const categoryRail = $('categoryRail');
+            const categoryTabs = [...document.querySelectorAll('.category-tab')];
+            const categoryPanes = [...document.querySelectorAll('[data-category-pane]')];
+            let activeCategory = categoryTabs[0]?.dataset.categoryKey;
+            let categoryFrame = null;
+
+            const activateCategory = (key, centerTab = false) => {
+                if (!key || key === activeCategory && !centerTab) return;
+                activeCategory = key;
+                categoryTabs.forEach(tab => {
+                    const active = tab.dataset.categoryKey === key;
+                    tab.classList.toggle('active', active);
+                    tab.setAttribute('aria-pressed', String(active));
+                    if (active && centerTab) tab.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+                categoryPanes.forEach(pane => pane.hidden = pane.dataset.categoryPane !== key);
+            };
+
+            categoryTabs.forEach(tab => tab.addEventListener('click', () =>
+                activateCategory(tab.dataset.categoryKey, true)));
+
+            categoryRail?.addEventListener('scroll', () => {
+                cancelAnimationFrame(categoryFrame);
+                categoryFrame = requestAnimationFrame(() => {
+                    const railBox = categoryRail.getBoundingClientRect();
+                    const center = railBox.top + railBox.height / 2;
+                    const closest = categoryTabs.reduce((best, tab) => {
+                        const box = tab.getBoundingClientRect();
+                        const distance = Math.abs(box.top + box.height / 2 - center);
+                        return !best || distance < best.distance ? { tab, distance } : best;
+                    }, null);
+                    if (closest) activateCategory(closest.tab.dataset.categoryKey);
+                });
+            }, { passive: true });
 
             document.querySelectorAll('.add-btn').forEach(button => button.addEventListener('click', () => {
                 current = products.get(Number(button.dataset.productId));
