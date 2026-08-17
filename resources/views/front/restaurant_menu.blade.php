@@ -185,8 +185,8 @@
 
         .menu-browser {
             display: grid;
-            grid-template-columns: 154px minmax(0, 1fr);
-            gap: 14px;
+            grid-template-columns: 205px minmax(0, 1fr);
+            gap: 4px;
             align-items: start;
             min-height: 520px
         }
@@ -803,7 +803,7 @@
             }
 
             .menu-browser {
-                grid-template-columns: 106px minmax(0, 1fr);
+                grid-template-columns: 146px minmax(0, 1fr);
                 gap: 3px;
                 min-height: 480px
             }
