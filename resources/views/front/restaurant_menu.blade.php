@@ -185,7 +185,7 @@
 
         .menu-browser {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 205px;
+            grid-template-columns: minmax(0, 1fr) 140px;
             gap: 4px;
             align-items: start;
             direction: ltr;
@@ -843,7 +843,7 @@
             }
 
             .menu-browser {
-                grid-template-columns: minmax(0, 1fr) 146px;
+                grid-template-columns: minmax(0, 1fr) 110px;
                 gap: 3px;
                 min-height: 480px
             }
@@ -1208,7 +1208,7 @@
                     const box = tab.getBoundingClientRect();
                     const distance = Math.min(1, Math.abs(box.top + box.height / 2 - center) / reach);
                     const curve = Math.cos(distance * Math.PI / 2);
-                    const arcDepth = window.innerWidth <= 720 ? 32 : 52;
+                    const arcDepth = window.innerWidth <= 720 ? 14 : 22;
                     tab.style.setProperty('--arc-x', `${-arcDepth * curve}px`);
                     tab.style.setProperty('--arc-scale', String(.78 + curve * .52));
                     tab.style.setProperty('--arc-opacity', String(.38 + curve * .62));
