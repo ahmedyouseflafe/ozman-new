@@ -257,13 +257,14 @@
             color: #fff;
             background: transparent;
             opacity: 1;
-            filter: brightness(1.1)
+            filter: brightness(1.16);
+            z-index: 4
         }
 
         .category-tab.active img,
         .category-tab.active .category-tab-icon {
             border-color: var(--cyan);
-            box-shadow: 0 0 0 4px rgba(8, 222, 244, .1), 0 0 24px rgba(8, 222, 244, .25)
+            box-shadow: 0 0 0 5px rgba(8, 222, 244, .14), 0 0 34px rgba(8, 222, 244, .7)
         }
 
         .category-pane {
@@ -1108,10 +1109,10 @@
                     const box = tab.getBoundingClientRect();
                     const distance = Math.min(1, Math.abs(box.top + box.height / 2 - center) / reach);
                     const curve = Math.cos(distance * Math.PI / 2);
-                    const arcDepth = window.innerWidth <= 720 ? 22 : 38;
+                    const arcDepth = window.innerWidth <= 720 ? 32 : 52;
                     tab.style.setProperty('--arc-x', `${-arcDepth * curve}px`);
-                    tab.style.setProperty('--arc-scale', String(.82 + curve * .22));
-                    tab.style.setProperty('--arc-opacity', String(.42 + curve * .58));
+                    tab.style.setProperty('--arc-scale', String(.78 + curve * .52));
+                    tab.style.setProperty('--arc-opacity', String(.38 + curve * .62));
                 });
             };
 
