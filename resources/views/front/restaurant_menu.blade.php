@@ -185,8 +185,8 @@
 
         .menu-browser {
             display: grid;
-            grid-template-columns: 128px minmax(0, 1fr);
-            gap: 26px;
+            grid-template-columns: 154px minmax(0, 1fr);
+            gap: 14px;
             align-items: start;
             min-height: 520px
         }
@@ -196,15 +196,14 @@
             top: 18px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 14px;
             height: min(720px, calc(100vh - 70px));
             overflow-y: auto;
             overscroll-behavior: contain;
             scroll-snap-type: y mandatory;
             scrollbar-width: none;
-            padding: 0 7px;
-            border-radius: 22px;
-            background: rgba(3, 7, 10, .58)
+            padding: 0 8px;
+            background: transparent
         }
 
         .category-rail::before,
@@ -220,13 +219,15 @@
         .category-tab {
             flex: 0 0 auto;
             scroll-snap-align: center;
-            border: 1px solid transparent;
-            border-radius: 18px;
+            border: 0;
             background: transparent;
             color: var(--muted);
             padding: 8px 5px 10px;
             cursor: pointer;
-            transition: transform .24s, color .24s, background .24s, border-color .24s
+            transform: translateX(var(--arc-x, 0px)) scale(var(--arc-scale, .88));
+            opacity: var(--arc-opacity, .62);
+            transition: transform .2s ease, opacity .2s ease, color .2s ease, filter .2s ease;
+            will-change: transform
         }
 
         .category-tab img,
@@ -254,9 +255,9 @@
 
         .category-tab.active {
             color: #fff;
-            background: var(--cyan-soft);
-            border-color: rgba(8, 222, 244, .35);
-            transform: scale(1.03)
+            background: transparent;
+            opacity: 1;
+            filter: brightness(1.1)
         }
 
         .category-tab.active img,
@@ -801,8 +802,8 @@
             }
 
             .menu-browser {
-                grid-template-columns: 86px minmax(0, 1fr);
-                gap: 9px;
+                grid-template-columns: 106px minmax(0, 1fr);
+                gap: 3px;
                 min-height: 480px
             }
 
@@ -1097,6 +1098,23 @@
             let activeCategory = categoryTabs[0]?.dataset.categoryKey;
             let categoryFrame = null;
 
+            const positionCategoryArc = () => {
+                if (!categoryRail || !categoryTabs.length) return;
+                const railBox = categoryRail.getBoundingClientRect();
+                const center = railBox.top + railBox.height / 2;
+                const reach = Math.max(1, railBox.height / 2);
+
+                categoryTabs.forEach(tab => {
+                    const box = tab.getBoundingClientRect();
+                    const distance = Math.min(1, Math.abs(box.top + box.height / 2 - center) / reach);
+                    const curve = Math.cos(distance * Math.PI / 2);
+                    const arcDepth = window.innerWidth <= 720 ? 22 : 38;
+                    tab.style.setProperty('--arc-x', `${-arcDepth * curve}px`);
+                    tab.style.setProperty('--arc-scale', String(.82 + curve * .22));
+                    tab.style.setProperty('--arc-opacity', String(.42 + curve * .58));
+                });
+            };
+
             const activateCategory = (key, centerTab = false) => {
                 if (!key || key === activeCategory && !centerTab) return;
                 activeCategory = key;
@@ -1115,6 +1133,7 @@
             categoryRail?.addEventListener('scroll', () => {
                 cancelAnimationFrame(categoryFrame);
                 categoryFrame = requestAnimationFrame(() => {
+                    positionCategoryArc();
                     const railBox = categoryRail.getBoundingClientRect();
                     const center = railBox.top + railBox.height / 2;
                     const closest = categoryTabs.reduce((best, tab) => {
@@ -1125,6 +1144,9 @@
                     if (closest) activateCategory(closest.tab.dataset.categoryKey);
                 });
             }, { passive: true });
+
+            window.addEventListener('resize', positionCategoryArc, { passive: true });
+            requestAnimationFrame(positionCategoryArc);
 
             const openMeal = productId => {
                 current = products.get(Number(productId));
