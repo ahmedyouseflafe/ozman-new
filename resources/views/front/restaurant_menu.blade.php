@@ -214,7 +214,37 @@
             grid-column: 1;
             grid-row: 1;
             direction: rtl;
-            min-width: 0
+            position: relative;
+            isolation: isolate;
+            min-width: 0;
+            min-height: 520px;
+            overflow: hidden;
+            border-radius: 22px
+        }
+
+        .category-background {
+            position: absolute;
+            z-index: -2;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            filter: saturate(.85) contrast(1.08);
+            transition: opacity .5s ease
+        }
+
+        .category-content.has-video .category-background {
+            opacity: .34
+        }
+
+        .category-content::after {
+            content: "";
+            position: absolute;
+            z-index: -1;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(90deg, rgba(5, 9, 12, .7), rgba(5, 9, 12, .42) 50%, rgba(5, 9, 12, .78))
         }
 
         .category-rail::before,
@@ -954,6 +984,19 @@
 
 <body>
     @php
+        $categoryBackground = function ($name) {
+            $name = mb_strtolower((string) $name);
+
+            if (str_contains($name, 'مشاوي') || str_contains($name, 'مشوي') || str_contains($name, 'شواء')) {
+                return asset('videos/restaurant/grills.mp4');
+            }
+
+            if (str_contains($name, 'ساندويش') || str_contains($name, 'سندويش')) {
+                return asset('videos/restaurant/sandwiches.mp4');
+            }
+
+            return null;
+        };
         $restaurantProducts = $products
             ->map(function ($product) {
                 $attributes = $product->catalog_attributes ?? [];
@@ -968,11 +1011,12 @@
             })
             ->values();
         $restaurantCategories = $categories
-            ->map(function ($category) use ($products) {
+            ->map(function ($category) use ($products, $categoryBackground) {
                 return [
                     'key' => (string) $category->id,
                     'name' => $category->name,
                     'image' => $category->image ?: $products->first(fn($product) => $product->category_id === $category->id && filled($product->main_image))?->main_image,
+                    'background' => $categoryBackground($category->name),
                     'products' => $products->where('category_id', $category->id)->values(),
                 ];
             })
@@ -983,6 +1027,7 @@
                 'key' => 'uncategorized',
                 'name' => 'الوجبات',
                 'image' => $uncategorizedProducts->first(fn($product) => filled($product->main_image))?->main_image,
+                'background' => null,
                 'products' => $uncategorizedProducts,
             ]);
         }
@@ -1028,8 +1073,12 @@
                             @endforeach
                         </nav>
                         <div class="category-content" id="categoryContent">
+                            <video class="category-background" id="categoryBackground" muted loop playsinline
+                                preload="none" aria-hidden="true"></video>
                             @foreach($restaurantCategories as $category)
-                                <section class="category category-pane" data-category-pane="{{ $category['key'] }}" @if(!$loop->first) hidden @endif>
+                                <section class="category category-pane" data-category-pane="{{ $category['key'] }}"
+                                    @if($category['background']) data-background-video="{{ $category['background'] }}" @endif
+                                    @if(!$loop->first) hidden @endif>
                                     <h3 class="category-title">{{ $category['name'] }}</h3>
                                     <div class="meals">
                             @forelse ($category['products'] as $product)
@@ -1143,10 +1192,38 @@
             } [char]));
 
             const categoryRail = $('categoryRail');
+            const categoryContent = $('categoryContent');
+            const categoryBackground = $('categoryBackground');
             const categoryTabs = [...document.querySelectorAll('.category-tab')];
             const categoryPanes = [...document.querySelectorAll('[data-category-pane]')];
             let activeCategory = categoryTabs[0]?.dataset.categoryKey;
             let categoryFrame = null;
+
+            const setCategoryBackground = pane => {
+                if (!categoryBackground || !categoryContent) return;
+                const source = pane?.dataset.backgroundVideo || '';
+                const currentSource = categoryBackground.getAttribute('src') || '';
+
+                if (!source) {
+                    categoryContent.classList.remove('has-video');
+                    categoryBackground.pause();
+                    categoryBackground.removeAttribute('src');
+                    categoryBackground.load();
+                    return;
+                }
+
+                if (currentSource !== source) {
+                    categoryContent.classList.remove('has-video');
+                    categoryBackground.src = source;
+                    categoryBackground.load();
+                }
+                categoryBackground.play().then(() => categoryContent.classList.add('has-video')).catch(() => {});
+            };
+
+            categoryBackground?.addEventListener('canplay', () => {
+                categoryContent?.classList.add('has-video');
+                categoryBackground.play().catch(() => {});
+            });
 
             const hashText = value => [...String(value)].reduce((hash, char) =>
                 Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0, 2166136261);
@@ -1225,7 +1302,9 @@
                     if (active && centerTab) tab.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 });
                 categoryPanes.forEach(pane => pane.hidden = pane.dataset.categoryPane !== key);
-                requestAnimationFrame(() => scatterMeals(categoryPanes.find(pane => pane.dataset.categoryPane === key)));
+                const activePane = categoryPanes.find(pane => pane.dataset.categoryPane === key);
+                setCategoryBackground(activePane);
+                requestAnimationFrame(() => scatterMeals(activePane));
             };
 
             categoryTabs.forEach(tab => tab.addEventListener('click', () =>
@@ -1252,7 +1331,9 @@
             }, { passive: true });
             requestAnimationFrame(() => {
                 positionCategoryArc();
-                scatterMeals(categoryPanes.find(pane => !pane.hidden));
+                const activePane = categoryPanes.find(pane => !pane.hidden);
+                scatterMeals(activePane);
+                setCategoryBackground(activePane);
             });
 
             const openMeal = productId => {
