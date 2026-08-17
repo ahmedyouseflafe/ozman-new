@@ -206,7 +206,7 @@
             overscroll-behavior: contain;
             scroll-snap-type: y mandatory;
             scrollbar-width: none;
-            padding: 0 2px 0 8px;
+            padding: 0;
             background: transparent
         }
 
@@ -230,7 +230,7 @@
         .category-tab {
             flex: 0 0 auto;
             display: grid;
-            justify-items: end;
+            justify-items: center;
             width: 100%;
             justify-self: stretch;
             scroll-snap-align: center;
@@ -252,7 +252,7 @@
             width: 68px;
             height: 68px;
             margin: 0;
-            justify-self: end;
+            justify-self: center;
             border-radius: 50%;
             object-fit: cover;
             background: #161d23;
@@ -264,7 +264,7 @@
         .category-tab span:last-child {
             display: block;
             width: 68px;
-            justify-self: end;
+            justify-self: center;
             text-align: center;
             margin-top: 5px;
             font-size: 11px;
