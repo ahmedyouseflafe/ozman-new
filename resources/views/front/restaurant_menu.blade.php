@@ -185,7 +185,7 @@
 
         .menu-browser {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 205px;
+            grid-template-columns: 205px minmax(0, 1fr);
             gap: 4px;
             align-items: start;
             direction: ltr;
@@ -193,7 +193,7 @@
         }
 
         .category-rail {
-            grid-column: 2;
+            grid-column: 1;
             direction: rtl;
             position: sticky;
             top: 18px;
@@ -205,12 +205,12 @@
             overscroll-behavior: contain;
             scroll-snap-type: y mandatory;
             scrollbar-width: none;
-            padding: 0 2px 0 8px;
+            padding: 0 8px 0 2px;
             background: transparent
         }
 
         .category-content {
-            grid-column: 1;
+            grid-column: 2;
             grid-row: 1;
             direction: rtl;
             min-width: 0
@@ -229,7 +229,7 @@
         .category-tab {
             flex: 0 0 auto;
             display: grid;
-            justify-items: end;
+            justify-items: start;
             scroll-snap-align: center;
             border: 0;
             background: transparent;
@@ -838,7 +838,7 @@
             }
 
             .menu-browser {
-                grid-template-columns: minmax(0, 1fr) 146px;
+                grid-template-columns: 146px minmax(0, 1fr);
                 gap: 3px;
                 min-height: 480px
             }
@@ -1204,7 +1204,7 @@
                     const distance = Math.min(1, Math.abs(box.top + box.height / 2 - center) / reach);
                     const curve = Math.cos(distance * Math.PI / 2);
                     const arcDepth = window.innerWidth <= 720 ? 32 : 52;
-                    tab.style.setProperty('--arc-x', `${-arcDepth * curve}px`);
+                    tab.style.setProperty('--arc-x', `${arcDepth * curve}px`);
                     tab.style.setProperty('--arc-scale', String(.78 + curve * .52));
                     tab.style.setProperty('--arc-opacity', String(.38 + curve * .62));
                 });
