@@ -72,13 +72,12 @@ class AuthController extends Controller
             'redirect' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $remember = $request->boolean('remember');
         unset($credentials['redirect']);
 
         if (! Auth::attempt(array_merge($credentials, [
             'role' => 'shop_owner',
             'is_active' => true,
-        ]), $remember)) {
+        ]), true)) {
             return back()
                 ->withErrors(['email' => 'بيانات الدخول غير صحيحة أو حساب المتجر غير فعال.'])
                 ->onlyInput('email', 'redirect');
@@ -209,7 +208,7 @@ class AuthController extends Controller
             return [$user, $shop];
         });
 
-        Auth::login($user);
+        Auth::login($user, true);
         $request->session()->regenerate();
         $request->session()->put('merchant_shop_id', $shop->id);
         $request->session()->forget('merchant_referral');

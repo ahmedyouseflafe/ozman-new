@@ -10,6 +10,7 @@ use App\Models\VisitorRegistration;
 use App\Rules\ValidPhoneNumber;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -62,6 +63,20 @@ class VisitorRegistrationController extends Controller
             return $registration;
         });
 
+        $authenticatedMerchant = false;
+        if ($registration->type === 'merchant' && $registration->status === 'approved' && $registration->shop_id) {
+            $shop = $registration->shop()->with('user')->first();
+            $owner = $shop?->user;
+
+            if ($owner?->isShopOwner() && $owner->is_active) {
+                Auth::login($owner, true);
+                $request->session()->regenerate();
+                $request->session()->put('merchant_shop_id', $shop->id);
+                $request->session()->forget('merchant_referral');
+                $authenticatedMerchant = true;
+            }
+        }
+
         return response()->json([
             'message' => __('تم حفظ بيانات التسجيل بنجاح'),
             'registration_id' => $registration->id,
@@ -69,6 +84,7 @@ class VisitorRegistrationController extends Controller
             'type' => $registration->type,
             'status' => $registration->status,
             'registration_token' => $registration->public_token,
+            'authenticated' => $authenticatedMerchant,
             'whatsapp_message' => $registration->type === 'merchant' ? $this->merchantWhatsappMessage($registration) : null,
         ], 201);
     }

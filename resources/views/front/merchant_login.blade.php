@@ -160,10 +160,10 @@
                 <span>كلمة المرور</span>
                 <input type="password" name="password" autocomplete="current-password" dir="ltr" required>
             </label>
-            <label class="merchant-login-remember">
-                <input type="checkbox" name="remember" value="1">
-                <span>تذكر دخولي على هذا الجهاز</span>
-            </label>
+            <div class="merchant-login-remember">
+                <i class="fas fa-shield-halved"></i>
+                <span>سيبقى حساب المتجر مسجلًا على هذا الجهاز</span>
+            </div>
             <button class="merchant-login-submit" type="submit">
                 <i class="fas fa-right-to-bracket"></i>
                 دخول إلى الموقع

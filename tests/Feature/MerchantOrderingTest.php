@@ -155,6 +155,7 @@ class MerchantOrderingTest extends TestCase
         $response->assertRedirect(route('home'));
         $this->assertAuthenticatedAs($merchant);
         $this->assertSame($merchantShop->id, session('merchant_shop_id'));
+        $this->assertNotNull($merchant->fresh()->remember_token);
     }
 
     public function test_authenticated_shop_owner_can_check_raffle_card_without_entering_customer_data_again(): void
@@ -247,6 +248,14 @@ class MerchantOrderingTest extends TestCase
             $this->assertSame($distributor->id, $shop->distributor_id);
             $this->assertSame($marketerId, $shop->distributor_marketer_id);
             $this->assertSame($shop->id, $response->json('shop_id'));
+            $this->assertTrue($response->json('authenticated'));
+            $this->assertAuthenticatedAs($shop->user);
+            $this->assertSame($shop->id, session('merchant_shop_id'));
+
+            $this->get(route('home'))
+                ->assertOk()
+                ->assertViewHas('frontData');
+            $this->assertAuthenticatedAs($shop->user);
 
             $centerIds = collect($this->get(route('home'))->viewData('frontData')['centersData'])->pluck('id');
             $this->assertTrue($centerIds->contains($shop->id));
@@ -457,6 +466,7 @@ class MerchantOrderingTest extends TestCase
         $owner = User::query()->where('email', 'new-qr-shop@example.com')->firstOrFail();
         $shop = Shop::query()->where('user_id', $owner->id)->firstOrFail();
         $this->assertAuthenticatedAs($owner);
+        $this->assertNotNull($owner->fresh()->remember_token);
         $this->assertTrue($owner->isShopOwner());
         $this->assertSame($distributor->id, $shop->distributor_id);
         $this->assertSame($marketer->id, $shop->distributor_marketer_id);
