@@ -26,7 +26,7 @@ class ElectronicsStoreController extends Controller
             ->where('is_active', true);
 
         $this->applyFilters($query, $request);
-        $products = $query->orderByDesc('is_featured')->latest()->paginate(24)->withQueryString();
+        $products = $query->orderByDesc('is_featured')->latest()->get();
         $filterSource = Product::query()->where('shop_id', $shop->id)->where('is_active', true);
         $compareIds = collect($request->session()->get($this->compareKey($shop), []))->map(fn ($id) => (int) $id)->take(3);
 
