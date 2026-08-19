@@ -107,6 +107,20 @@ class ElectronicsStoreTest extends TestCase
         $this->get(route('electronics.compare', $shop))->assertOk()->assertSee('مقارنة الأجهزة')->assertSee('Phone Alpha')->assertSee('Phone Beta')->assertSee('128GB')->assertSee('256GB');
     }
 
+    public function test_iphone_catalog_import_creates_models_colors_and_storage_without_prices(): void
+    {
+        [$shop] = $this->store('iphone-import');
+
+        $this->artisan('catalog:import-iphones', ['shop' => $shop->slug, '--without-images' => true])->assertSuccessful();
+
+        $iphone = Product::where('shop_id', $shop->id)->where('name', 'iPhone 15 Pro')->firstOrFail();
+        $this->assertSame('Apple', $iphone->catalog_attributes['brand']);
+        $this->assertSame('6.1″', $iphone->catalog_attributes['screen_size']);
+        $this->assertTrue($iphone->variants()->where('storage', '1TB')->where('color_name', 'Natural Titanium')->exists());
+        $this->assertSame(0, $iphone->variants()->sum('quantity'));
+        $this->assertGreaterThanOrEqual(29, Product::where('shop_id', $shop->id)->where('catalog_attributes->brand', 'Apple')->count());
+    }
+
     public function test_main_market_exposes_electronics_store_url_and_storefront_shows_empty_categories(): void
     {
         [$shop, $category] = $this->store('navigation');
