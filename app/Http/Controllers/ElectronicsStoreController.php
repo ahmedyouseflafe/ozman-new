@@ -39,6 +39,9 @@ class ElectronicsStoreController extends Controller
                 ->whereNotNull('storage')->distinct()->orderBy('storage')->pluck('storage'),
             'comparisonProducts' => Product::query()->where('shop_id', $shop->id)->whereIn('id', $compareIds)->get()
                 ->sortBy(fn ($product) => $compareIds->search($product->id))->values(),
+            'heroDevices' => Product::query()->with(['variants' => fn ($query) => $query->where('is_active', true)])
+                ->where('shop_id', $shop->id)->where('is_active', true)
+                ->orderByDesc('is_featured')->latest()->get(),
         ]);
     }
 
