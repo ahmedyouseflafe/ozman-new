@@ -13,16 +13,27 @@ use Throwable;
 
 class ImportIphoneCatalog extends Command
 {
-    protected $signature = 'catalog:import-iphones {shop : Store ID or slug} {--images=3 : Maximum licensed Commons images per model} {--without-images : Create catalog without downloading images}';
+    protected $signature = 'catalog:import-iphones {shop? : Store ID, slug, or storefront URL} {--images=3 : Maximum licensed Commons images per model} {--without-images : Create catalog without downloading images}';
     protected $description = 'Import iPhone 11–17 models, colors, capacities, and openly licensed Wikimedia Commons images';
 
     public function handle(): int
     {
-        $shop = Shop::query()->where('id', $this->argument('shop'))->orWhere('slug', $this->argument('shop'))->first();
-        if (! $shop || $shop->catalog_type !== 'electronics') {
-            $this->error('Electronics store not found.');
+        $stores = Shop::query()->where('catalog_type', 'electronics')->where('is_active', true)->orderBy('id')->get();
+        $input = trim((string) $this->argument('shop'));
+        if (filter_var($input, FILTER_VALIDATE_URL)) $input = basename(parse_url($input, PHP_URL_PATH));
+        $shop = $input !== ''
+            ? $stores->first(fn (Shop $store) => (string) $store->id === $input || $store->slug === $input)
+            : ($stores->count() === 1 ? $stores->first() : null);
+        if (! $shop) {
+            $this->error($stores->isEmpty() ? 'No active electronics stores were found.' : 'Choose an electronics store using its ID or exact slug:');
+            if ($stores->isNotEmpty()) {
+                $this->table(['ID', 'Store name', 'Slug', 'Command'], $stores->map(fn (Shop $store) => [
+                    $store->id, $store->name, $store->slug, "php artisan catalog:import-iphones {$store->id} --images=".$this->option('images'),
+                ])->all());
+            }
             return self::FAILURE;
         }
+        $this->info("Importing into: {$shop->name} (ID {$shop->id}, slug {$shop->slug})");
 
         $category = Category::firstOrCreate(
             ['shop_id' => $shop->id, 'slug' => 'iphone'],

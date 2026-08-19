@@ -111,7 +111,7 @@ class ElectronicsStoreTest extends TestCase
     {
         [$shop] = $this->store('iphone-import');
 
-        $this->artisan('catalog:import-iphones', ['shop' => $shop->slug, '--without-images' => true])->assertSuccessful();
+        $this->artisan('catalog:import-iphones', ['--without-images' => true])->assertSuccessful();
 
         $iphone = Product::where('shop_id', $shop->id)->where('name', 'iPhone 15 Pro')->firstOrFail();
         $this->assertSame('Apple', $iphone->catalog_attributes['brand']);
