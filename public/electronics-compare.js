@@ -61,17 +61,23 @@
         document.getElementById('closeCompare').focus();
     };
 
-    document.addEventListener('click', event => {
-        const compareButton = event.target.closest('button.compare');
-        if (!compareButton) return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
+    window.electronicsCompareToggle = (compareButton, event) => {
+        event?.preventDefault();
+        event?.stopPropagation();
         const item = productFrom(compareButton);
-        if (!item) return;
+        if (!item) return false;
         const index = selected.findIndex(saved => Number(saved.id) === Number(item.id));
         if (index >= 0) selected.splice(index, 1);
         else if (selected.length < 3) selected.push(item);
         draw();
+        return false;
+    };
+
+    document.addEventListener('click', event => {
+        const compareButton = event.target.closest('button.compare');
+        if (!compareButton) return;
+        window.electronicsCompareToggle(compareButton, event);
+        event.stopImmediatePropagation();
     }, true);
     list.addEventListener('click', event => {
         const button = event.target.closest('[data-remove]');
