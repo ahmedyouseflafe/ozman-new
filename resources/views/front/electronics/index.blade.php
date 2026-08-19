@@ -105,7 +105,9 @@
  video?.addEventListener('canplay',()=>{content.classList.add('has-video');video.play().catch(()=>{})});addEventListener('resize',()=>{arc();scatter(panes.find(p=>!p.hidden))},{passive:true});requestAnimationFrame(()=>{arc();const pane=panes.find(p=>!p.hidden);scatter(pane);background(pane)});
 })();
 </script>
-<script src="{{ asset('electronics-compare.js') }}?v={{ filemtime(public_path('electronics-compare.js')) }}" defer></script>
+<script>
+@include('front.electronics._compare_script')
+</script>
 <script type="module" src="{{ asset('electronics-3d.js') }}?v={{ filemtime(public_path('electronics-3d.js')) }}"></script>
 </body>
 </html>
