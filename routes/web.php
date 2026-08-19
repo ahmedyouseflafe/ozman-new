@@ -29,6 +29,9 @@ Route::get('/front/shops/{shop}', [FrontController::class, 'index'])->name('fron
 Route::get('/stores/{shop:slug}', [FrontController::class, 'index'])->name('front.shop.slug');
 Route::get('/restaurants/{shop:slug}', [RestaurantController::class, 'menu'])->name('restaurant.menu');
 Route::get('/electronics/{shop:slug}', [ElectronicsStoreController::class, 'index'])->name('electronics.store');
+Route::post('/electronics/{shop:slug}/compare/{product}', [ElectronicsStoreController::class, 'toggleCompare'])->name('electronics.compare.toggle');
+Route::post('/electronics/{shop:slug}/compare-clear', [ElectronicsStoreController::class, 'clearCompare'])->name('electronics.compare.clear');
+Route::get('/electronics/{shop:slug}/compare', [ElectronicsStoreController::class, 'compare'])->name('electronics.compare');
 Route::get('/electronics/{shop:slug}/devices/{product:slug}', [ElectronicsStoreController::class, 'show'])->name('electronics.product');
 Route::post('/electronics/{shop}/orders', [ElectronicsStoreController::class, 'order'])->middleware('throttle:20,1')->name('electronics.orders.store');
 Route::get('/restaurants/{shop:slug}/table/{tableCode}', [RestaurantController::class, 'menu'])->name('restaurant.table');

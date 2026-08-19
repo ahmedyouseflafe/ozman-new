@@ -10,6 +10,7 @@ use App\Rules\ValidPhoneNumber;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -27,6 +28,7 @@ class ElectronicsStoreController extends Controller
         $this->applyFilters($query, $request);
         $products = $query->orderByDesc('is_featured')->latest()->paginate(24)->withQueryString();
         $filterSource = Product::query()->where('shop_id', $shop->id)->where('is_active', true);
+        $compareIds = collect($request->session()->get($this->compareKey($shop), []))->map(fn ($id) => (int) $id)->take(3);
 
         return view('front.electronics.index', [
             'shop' => $shop,
@@ -35,7 +37,47 @@ class ElectronicsStoreController extends Controller
             'brands' => (clone $filterSource)->get()->pluck('catalog_attributes.brand')->filter()->unique()->sort()->values(),
             'storages' => ProductVariant::query()->whereHas('product', fn ($q) => $q->where('shop_id', $shop->id)->where('is_active', true))
                 ->whereNotNull('storage')->distinct()->orderBy('storage')->pluck('storage'),
+            'comparisonProducts' => Product::query()->where('shop_id', $shop->id)->whereIn('id', $compareIds)->get()
+                ->sortBy(fn ($product) => $compareIds->search($product->id))->values(),
         ]);
+    }
+
+    public function toggleCompare(Request $request, Shop $shop, Product $product): RedirectResponse
+    {
+        $this->ensureStore($shop);
+        abort_unless($product->shop_id === $shop->id && $product->is_active, 404);
+        $key = $this->compareKey($shop);
+        $ids = collect($request->session()->get($key, []))->map(fn ($id) => (int) $id)->unique()->values();
+        if ($ids->contains($product->id)) {
+            $ids = $ids->reject(fn ($id) => $id === $product->id)->values();
+        } elseif ($ids->count() < 3) {
+            $ids->push($product->id);
+        }
+        $request->session()->put($key, $ids->all());
+
+        return back()->with('compare_message', $ids->contains($product->id) ? 'تمت إضافة الجهاز للمقارنة.' : 'تمت إزالة الجهاز من المقارنة.');
+    }
+
+    public function clearCompare(Request $request, Shop $shop): RedirectResponse
+    {
+        $this->ensureStore($shop);
+        $request->session()->forget($this->compareKey($shop));
+
+        return back();
+    }
+
+    public function compare(Request $request, Shop $shop): View|RedirectResponse
+    {
+        $this->ensureStore($shop);
+        $ids = collect($request->session()->get($this->compareKey($shop), []))->map(fn ($id) => (int) $id)->take(3);
+        $products = Product::query()->with(['variants' => fn ($query) => $query->where('is_active', true)])
+            ->where('shop_id', $shop->id)->where('is_active', true)->whereIn('id', $ids)->get()
+            ->sortBy(fn ($product) => $ids->search($product->id))->values();
+        if ($products->count() < 2) {
+            return redirect()->route('electronics.store', $shop)->with('compare_message', 'اختر جهازين على الأقل للمقارنة.');
+        }
+
+        return view('front.electronics.compare', compact('shop', 'products'));
     }
 
     public function show(Shop $shop, Product $product): View
@@ -134,5 +176,10 @@ class ElectronicsStoreController extends Controller
     private function ensureStore(Shop $shop): void
     {
         abort_unless($shop->is_active && $shop->catalog_type === 'electronics', 404);
+    }
+
+    private function compareKey(Shop $shop): string
+    {
+        return 'electronics_compare_'.$shop->id;
     }
 }

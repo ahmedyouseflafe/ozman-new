@@ -78,7 +78,7 @@
                                         $compare=['id'=>$product->id,'name'=>$product->localized('name'),'image'=>$mediaUrl($product->main_image) ?: asset('images/logo.svg'),'url'=>route('electronics.product',[$shop,$product]),'brand'=>data_get($attrs,'brand'),'model'=>data_get($attrs,'model'),'condition'=>data_get($attrs,'condition'),'network'=>data_get($attrs,'network'),'screen'=>data_get($attrs,'screen_size'),'processor'=>data_get($attrs,'processor'),'battery'=>data_get($attrs,'battery'),'battery_health'=>data_get($attrs,'battery_health'),'cameras'=>data_get($attrs,'cameras'),'warranty'=>data_get($attrs,'warranty_months'),'storage'=>$available->pluck('storage')->filter()->unique()->values()->implode('، '),'ram'=>$available->pluck('ram')->filter()->unique()->values()->implode('، '),'colors'=>$available->pluck('color_name')->filter()->unique()->values()->implode('، '),'price'=>$from];
                                     @endphp
                                     <article class="device" data-device data-compare="{{ e(json_encode($compare,JSON_UNESCAPED_UNICODE)) }}" tabindex="0">
-                                        <div class="device-actions"><button type="button" class="circle-action compare" aria-label="إضافة للمقارنة" onclick="if(window.electronicsCompareToggle){return window.electronicsCompareToggle(this,event)}event.preventDefault();event.stopPropagation();document.getElementById('compareBar').classList.add('show');document.getElementById('compareCount').textContent='جاري تجهيز المقارنة…';return false"><i class="ti ti-arrows-diff"></i></button></div>
+                                        <form class="device-actions" method="POST" action="{{ route('electronics.compare.toggle', [$shop, $product]) }}">@csrf<button type="submit" class="circle-action compare @if($comparisonProducts->contains('id',$product->id)) selected @endif" aria-label="@if($comparisonProducts->contains('id',$product->id)) إزالة من المقارنة @else إضافة للمقارنة @endif"><i class="ti ti-arrows-diff"></i></button></form>
                                         <a href="{{ route('electronics.product',[$shop,$product]) }}"><span class="device-portrait"><img class="device-image" src="{{ $mediaUrl($product->main_image) ?: asset('images/logo.svg') }}" alt="{{ $product->localized('name') }}" loading="lazy"></span><span class="device-name">{{ $product->localized('name') }}</span><div class="device-meta">{{ data_get($attrs,'brand') }} · {{ data_get($attrs,'condition') }}</div><div class="device-price">من {{ number_format((float)$from,2) }} ₪</div></a>
                                     </article>
                                 @empty<div class="empty"><div><i class="ti ti-device-mobile-off" style="font-size:44px"></i><br>لا توجد أجهزة في هذه الفئة ضمن نتائج البحث الحالية.</div></div>@endforelse
@@ -91,8 +91,9 @@
         <div class="pagination">{{ $products->links() }}</div>
     </section>
 </main>
-<aside class="compare-bar" id="compareBar" data-shop-id="{{ $shop->id }}" aria-live="polite"><div class="compare-summary"><strong>المقارنة</strong><small id="compareCount"></small></div><div class="compare-list" id="compareList"></div><button type="button" class="compare-clear" id="clearCompare">مسح الكل</button><button type="button" class="compare-primary" id="openCompare">قارن الآن</button></aside>
-<div class="compare-modal" id="compareModal" role="dialog" aria-modal="true" aria-labelledby="compareTitle"><section class="compare-dialog"><header class="compare-head"><div><h2 id="compareTitle">مقارنة الأجهزة</h2><small style="color:var(--muted)">الفروقات مميزة بخط سماوي</small></div><button type="button" class="compare-close" id="closeCompare" aria-label="إغلاق"><i class="ti ti-x"></i></button></header><div class="compare-table-wrap" id="compareTable"></div></section></div>
+@if($comparisonProducts->isNotEmpty())
+<aside class="compare-bar show" id="compareBar" aria-live="polite"><div class="compare-summary"><strong>المقارنة</strong><small>{{ $comparisonProducts->count() === 1 ? 'اختر جهازاً آخر' : $comparisonProducts->count().' من 3 أجهزة' }}</small></div><div class="compare-list">@foreach($comparisonProducts as $item)<div class="compare-item"><img src="{{ $mediaUrl($item->main_image) ?: asset('images/logo.svg') }}" alt=""><span><b>{{ $item->localized('name') }}</b></span></div>@endforeach</div><form method="POST" action="{{ route('electronics.compare.clear',$shop) }}">@csrf<button type="submit" class="compare-clear">مسح الكل</button></form>@if($comparisonProducts->count() >= 2)<a class="compare-primary" href="{{ route('electronics.compare',$shop) }}">قارن الآن</a>@else<button type="button" class="compare-primary" disabled>اختر جهازاً آخر</button>@endif</aside>
+@endif
 <script>
 (()=>{
  const rail=document.getElementById('categoryRail'),tabs=[...document.querySelectorAll('.category-tab')],panes=[...document.querySelectorAll('[data-category-pane]')],content=document.getElementById('categoryContent'),video=document.getElementById('categoryBackground');let active=document.querySelector('.category-tab.active')?.dataset.categoryKey,frame;
@@ -104,9 +105,6 @@
  tabs.forEach(tab=>tab.onclick=()=>activate(tab.dataset.categoryKey,true));rail?.addEventListener('scroll',()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{arc();const b=rail.getBoundingClientRect(),center=b.top+b.height/2,closest=tabs.reduce((best,t)=>{const r=t.getBoundingClientRect(),d=Math.abs(r.top+r.height/2-center);return!best||d<best.d?{t,d}:best},null);if(closest&&closest.t.dataset.categoryKey!==active)activate(closest.t.dataset.categoryKey)})},{passive:true});
  video?.addEventListener('canplay',()=>{content.classList.add('has-video');video.play().catch(()=>{})});addEventListener('resize',()=>{arc();scatter(panes.find(p=>!p.hidden))},{passive:true});requestAnimationFrame(()=>{arc();const pane=panes.find(p=>!p.hidden);scatter(pane);background(pane)});
 })();
-</script>
-<script>
-@include('front.electronics._compare_script')
 </script>
 <script type="module" src="{{ asset('electronics-3d.js') }}?v={{ filemtime(public_path('electronics-3d.js')) }}"></script>
 </body>

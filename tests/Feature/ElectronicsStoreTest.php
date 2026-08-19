@@ -93,6 +93,20 @@ class ElectronicsStoreTest extends TestCase
         $this->assertDatabaseCount('front_orders', 0);
     }
 
+    public function test_devices_can_be_compared_without_javascript(): void
+    {
+        [$shop, $category] = $this->store('compare');
+        $first = Product::create(['shop_id' => $shop->id, 'category_id' => $category->id, 'name' => 'Phone Alpha', 'slug' => 'phone-alpha', 'price' => 900, 'quantity' => 1, 'is_active' => true, 'catalog_attributes' => ['brand' => 'Alpha', 'network' => '5G']]);
+        $second = Product::create(['shop_id' => $shop->id, 'category_id' => $category->id, 'name' => 'Phone Beta', 'slug' => 'phone-beta', 'price' => 1200, 'quantity' => 1, 'is_active' => true, 'catalog_attributes' => ['brand' => 'Beta', 'network' => '4G']]);
+        $first->variants()->create(['storage' => '128GB', 'ram' => '8GB', 'price' => 900, 'quantity' => 1, 'is_active' => true]);
+        $second->variants()->create(['storage' => '256GB', 'ram' => '12GB', 'price' => 1200, 'quantity' => 1, 'is_active' => true]);
+
+        $this->post(route('electronics.compare.toggle', [$shop, $first]))->assertRedirect();
+        $this->post(route('electronics.compare.toggle', [$shop, $second]))->assertRedirect();
+        $this->get(route('electronics.store', $shop))->assertOk()->assertSee('قارن الآن')->assertSee('Phone Alpha')->assertSee('Phone Beta');
+        $this->get(route('electronics.compare', $shop))->assertOk()->assertSee('مقارنة الأجهزة')->assertSee('Phone Alpha')->assertSee('Phone Beta')->assertSee('128GB')->assertSee('256GB');
+    }
+
     public function test_main_market_exposes_electronics_store_url_and_storefront_shows_empty_categories(): void
     {
         [$shop, $category] = $this->store('navigation');
