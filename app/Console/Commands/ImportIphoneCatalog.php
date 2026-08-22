@@ -9,11 +9,12 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Throwable;
 
 class ImportIphoneCatalog extends Command
 {
-    protected $signature = 'catalog:import-iphones {shop? : Store ID, slug, or storefront URL} {--images=8 : Maximum licensed Commons images per model} {--without-images : Create catalog without downloading images}';
+    protected $signature = 'catalog:import-iphones {shop? : Store ID, slug, or storefront URL} {--images=8 : Maximum licensed Commons images per model} {--delay=1200 : Delay in milliseconds between Wikimedia requests} {--without-images : Create catalog without downloading images}';
     protected $description = 'Import iPhone 11–17 models, colors, capacities, and openly licensed Wikimedia Commons images';
 
     public function handle(): int
@@ -87,25 +88,22 @@ class ImportIphoneCatalog extends Command
 
     private function importCommonsImages(Product $product, array $model, int $limit): int
     {
-        $queries = collect(array_keys($model['colors'] ?? []))
-            ->map(fn (string $color) => '"'.$product->name.'" "'.$color.'"')
-            ->prepend('intitle:"'.$product->name.'"')
-            ->prepend('"'.$product->name.'" Apple')
-            ->unique()
-            ->values();
+        $queries = collect([
+            '"'.$product->name.'" Apple',
+            'intitle:"'.$product->name.'"',
+        ]);
 
         $pages = collect();
         foreach ($queries as $query) {
-            if ($pages->count() >= $limit * 4) break;
+            if ($pages->isNotEmpty()) break;
             try {
-                $response = Http::withHeaders(['User-Agent' => 'OzmanCatalogImporter/1.1 (catalog administration)'])
-                    ->timeout(25)->retry(2, 500)->get('https://commons.wikimedia.org/w/api.php', [
+                $response = $this->wikimediaGet('https://commons.wikimedia.org/w/api.php', [
                         'action' => 'query', 'generator' => 'search', 'gsrnamespace' => 6,
                         'gsrsearch' => $query, 'gsrlimit' => 30, 'gsrsort' => 'relevance',
                         'prop' => 'imageinfo', 'iiprop' => 'url|mime|extmetadata', 'iiurlwidth' => 1200,
                         'iiextmetadatafilter' => 'LicenseShortName|Artist|ImageDescription',
                         'format' => 'json', 'formatversion' => 2, 'origin' => '*',
-                    ])->throw()->json();
+                    ])->json();
                 $pages = $pages->concat(data_get($response, 'query.pages', []));
             } catch (Throwable $error) {
                 $this->warn("Commons lookup failed for {$product->name}: {$error->getMessage()}");
@@ -140,7 +138,7 @@ class ImportIphoneCatalog extends Command
 
             try {
                 if (! Storage::disk('public')->exists($path)) {
-                    $binary = Http::withHeaders(['User-Agent' => 'OzmanCatalogImporter/1.0'])->timeout(35)->retry(2, 500)->get($url)->throw()->body();
+                    $binary = $this->wikimediaGet($url)->body();
                     Storage::disk('public')->put($path, $binary);
                 }
                 $stored = 'storage/'.$path;
@@ -154,6 +152,32 @@ class ImportIphoneCatalog extends Command
             }
         }
         return $count;
+    }
+
+    private function wikimediaGet(string $url, array $query = [])
+    {
+        $delayMilliseconds = max(500, min(10000, (int) $this->option('delay')));
+
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            $response = Http::withHeaders([
+                    'User-Agent' => 'OzmanCatalogImporter/1.2 (https://ozman.online; catalog administration)',
+                    'Accept' => str_contains($url, '/w/api.php') ? 'application/json' : 'image/*',
+                ])
+                ->timeout(45)
+                ->get($url, $query);
+
+            if ($response->status() !== 429) {
+                usleep($delayMilliseconds * 1000);
+                return $response->throw();
+            }
+
+            $retryAfter = (int) $response->header('Retry-After');
+            $waitSeconds = max(5, min(60, $retryAfter > 0 ? $retryAfter : $attempt * 8));
+            $this->warn("Wikimedia rate limit reached; waiting {$waitSeconds} seconds before retry {$attempt}/5...");
+            sleep($waitSeconds);
+        }
+
+        throw new RuntimeException('Wikimedia rate limit did not clear after 5 retries.');
     }
 
     private function matchesModel(string $title, string $model): bool
