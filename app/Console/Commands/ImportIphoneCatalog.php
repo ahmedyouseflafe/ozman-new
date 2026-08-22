@@ -13,7 +13,7 @@ use Throwable;
 
 class ImportIphoneCatalog extends Command
 {
-    protected $signature = 'catalog:import-iphones {shop? : Store ID, slug, or storefront URL} {--images=3 : Maximum licensed Commons images per model} {--without-images : Create catalog without downloading images}';
+    protected $signature = 'catalog:import-iphones {shop? : Store ID, slug, or storefront URL} {--images=8 : Maximum licensed Commons images per model} {--without-images : Create catalog without downloading images}';
     protected $description = 'Import iPhone 11–17 models, colors, capacities, and openly licensed Wikimedia Commons images';
 
     public function handle(): int
@@ -72,7 +72,7 @@ class ImportIphoneCatalog extends Command
                 }
 
                 if (! $this->option('without-images')) {
-                    $downloaded = $this->importCommonsImages($product, max(1, min(8, (int) $this->option('images'))));
+                    $downloaded = $this->importCommonsImages($product, $model, max(1, min(12, (int) $this->option('images'))));
                     $imageCount += $downloaded;
                     $this->line("{$model['name']}: {$downloaded} licensed image(s)");
                 }
@@ -85,23 +85,40 @@ class ImportIphoneCatalog extends Command
         return self::SUCCESS;
     }
 
-    private function importCommonsImages(Product $product, int $limit): int
+    private function importCommonsImages(Product $product, array $model, int $limit): int
     {
-        try {
-            $response = Http::withHeaders(['User-Agent' => 'OzmanCatalogImporter/1.0 (catalog administration)'])
-                ->timeout(25)->retry(2, 500)->get('https://commons.wikimedia.org/w/api.php', [
-                    'action' => 'query', 'generator' => 'search', 'gsrnamespace' => 6,
-                    'gsrsearch' => 'intitle:"'.$product->name.'" filetype:bitmap', 'gsrlimit' => 25,
-                    'prop' => 'imageinfo', 'iiprop' => 'url|mime|extmetadata', 'iiurlwidth' => 1000,
-                    'format' => 'json', 'origin' => '*',
-                ])->throw()->json();
-        } catch (Throwable $error) {
-            $this->warn("Commons lookup failed for {$product->name}: {$error->getMessage()}");
-            return 0;
+        $queries = collect(array_keys($model['colors'] ?? []))
+            ->map(fn (string $color) => '"'.$product->name.'" "'.$color.'" filetype:bitmap')
+            ->prepend('intitle:"'.$product->name.'" filetype:bitmap')
+            ->prepend('"'.$product->name.'" Apple filetype:bitmap')
+            ->unique()
+            ->values();
+
+        $pages = collect();
+        foreach ($queries as $query) {
+            if ($pages->count() >= $limit * 4) break;
+            try {
+                $response = Http::withHeaders(['User-Agent' => 'OzmanCatalogImporter/1.1 (catalog administration)'])
+                    ->timeout(25)->retry(2, 500)->get('https://commons.wikimedia.org/w/api.php', [
+                        'action' => 'query', 'generator' => 'search', 'gsrnamespace' => 6,
+                        'gsrsearch' => $query, 'gsrlimit' => 30, 'gsrsort' => 'relevance',
+                        'prop' => 'imageinfo', 'iiprop' => 'url|mime|extmetadata', 'iiurlwidth' => 1200,
+                        'iiextmetadatafilter' => 'LicenseShortName|Artist|ImageDescription',
+                        'format' => 'json', 'formatversion' => 2, 'origin' => '*',
+                    ])->throw()->json();
+                $pages = $pages->concat(data_get($response, 'query.pages', []));
+            } catch (Throwable $error) {
+                $this->warn("Commons lookup failed for {$product->name}: {$error->getMessage()}");
+            }
         }
 
+        $pages = $pages
+            ->filter(fn (array $page) => $this->matchesModel((string) data_get($page, 'title'), $product->name))
+            ->unique(fn (array $page) => (string) data_get($page, 'pageid'))
+            ->values();
+
         $count = 0;
-        foreach (data_get($response, 'query.pages', []) as $page) {
+        foreach ($pages as $page) {
             if ($count >= $limit) break;
             $info = data_get($page, 'imageinfo.0', []);
             $license = trim(strip_tags((string) data_get($info, 'extmetadata.LicenseShortName.value')));
@@ -129,6 +146,25 @@ class ImportIphoneCatalog extends Command
             }
         }
         return $count;
+    }
+
+    private function matchesModel(string $title, string $model): bool
+    {
+        $normalize = static fn (string $value) => Str::of($value)
+            ->lower()
+            ->replace(['_', '-', '(', ')'], ' ')
+            ->squish()
+            ->toString();
+        $title = $normalize($title);
+        $model = $normalize($model);
+
+        if (! Str::contains($title, $model)) return false;
+
+        foreach (['pro max', 'pro', 'plus', 'mini', 'air', '16e', '17e', 'se'] as $qualifier) {
+            if (Str::contains($title, $qualifier) !== Str::contains($model, $qualifier)) return false;
+        }
+
+        return ! Str::contains($title, ['case', 'cover', 'screen protector', 'dummy', 'clone']);
     }
 
     private function isOpenLicense(string $license): bool
