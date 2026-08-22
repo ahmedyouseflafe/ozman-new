@@ -88,9 +88,9 @@ class ImportIphoneCatalog extends Command
     private function importCommonsImages(Product $product, array $model, int $limit): int
     {
         $queries = collect(array_keys($model['colors'] ?? []))
-            ->map(fn (string $color) => '"'.$product->name.'" "'.$color.'" filetype:bitmap')
-            ->prepend('intitle:"'.$product->name.'" filetype:bitmap')
-            ->prepend('"'.$product->name.'" Apple filetype:bitmap')
+            ->map(fn (string $color) => '"'.$product->name.'" "'.$color.'"')
+            ->prepend('intitle:"'.$product->name.'"')
+            ->prepend('"'.$product->name.'" Apple')
             ->unique()
             ->values();
 
@@ -123,11 +123,19 @@ class ImportIphoneCatalog extends Command
             $info = data_get($page, 'imageinfo.0', []);
             $license = trim(strip_tags((string) data_get($info, 'extmetadata.LicenseShortName.value')));
             if (! $this->isOpenLicense($license) || ! Str::startsWith((string) data_get($info, 'mime'), 'image/')) continue;
-            $url = data_get($info, 'thumburl') ?: data_get($info, 'url');
+            $mime = (string) data_get($info, 'mime');
+            $url = $mime === 'image/svg+xml'
+                ? data_get($info, 'url')
+                : (data_get($info, 'thumburl') ?: data_get($info, 'url'));
             if (! $url) continue;
             $source = data_get($info, 'descriptionurl') ?: 'https://commons.wikimedia.org/?curid='.data_get($page, 'pageid');
             $author = trim(strip_tags((string) data_get($info, 'extmetadata.Artist.value', 'Wikimedia Commons contributor')));
-            $extension = Str::contains((string) data_get($info, 'mime'), 'png') ? 'png' : 'jpg';
+            $extension = match (true) {
+                $mime === 'image/svg+xml' => 'svg',
+                Str::contains($mime, 'png') => 'png',
+                Str::contains($mime, ['webp']) => 'webp',
+                default => 'jpg',
+            };
             $path = 'products/imported/iphone/'.$product->slug.'-'.substr(sha1($url), 0, 10).'.'.$extension;
 
             try {
