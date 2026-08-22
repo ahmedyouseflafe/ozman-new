@@ -24,6 +24,9 @@ use App\Models\AdminNotification;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [FrontController::class, 'index'])->name('home');
+Route::get('/csrf-token', [FrontController::class, 'csrfToken'])
+    ->middleware('throttle:30,1')
+    ->name('csrf.refresh');
 Route::get('/market', [FrontController::class, 'index'])->name('front.home');
 Route::get('/front/shops/{shop}', [FrontController::class, 'index'])->name('front.shop');
 Route::get('/stores/{shop:slug}', [FrontController::class, 'index'])->name('front.shop.slug');

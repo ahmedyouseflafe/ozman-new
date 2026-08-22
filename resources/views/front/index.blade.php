@@ -954,6 +954,7 @@
                 shopId: @json($shop?->id),
                 shopWhatsapp: @json(preg_replace('/\D+/', '', $shop?->whatsapp ?: $shop?->phone ?: '970599000000')),
                 customerLoginUrl: @json(route('customer.login')),
+                csrfRefreshUrl: @json(route('csrf.refresh')),
                 visitorRegistrationUrl: @json(route('visitor-registrations.store')),
                 visitorRegistrationStatusUrlTemplate: @json(url('/visitor-registrations/status/__TOKEN__')),
                 hebrewTtsUrl: @json(route('tts.hebrew')),

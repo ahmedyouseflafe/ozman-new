@@ -1765,6 +1765,28 @@ document.addEventListener('DOMContentLoaded', () => {
             return document.querySelector('meta[name="csrf-token"]')?.content || '';
         }
 
+        async function refreshCsrfToken() {
+            const response = await fetch(window.OZMAN_FRONT_CONFIG?.csrfRefreshUrl || '/csrf-token', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin',
+                cache: 'no-store'
+            });
+
+            if (!response.ok) throw new Error('csrf_refresh_failed');
+
+            const payload = await response.json();
+            const token = String(payload?.token || '');
+            if (!token) throw new Error('csrf_token_missing');
+
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            if (meta) meta.content = token;
+            return token;
+        }
+
         async function recordFrontOrder(profile, channel, paymentMethod = '', itemsOverride = null, orderContext = null) {
             const urls = window.OZMAN_FRONT_CONFIG || {};
             const marketingContext = orderContext || currentMarketingContext();
@@ -5368,22 +5390,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 try {
-                    const response = await fetch(window.OZMAN_FRONT_CONFIG?.raffleCheckUrl || '/raffle/check', {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken(),
-                        },
-                        body: JSON.stringify({
+                    const requestPayload = JSON.stringify({
                             card_number: raffleCardNumber.value,
                             customer: authenticatedMerchantProfile() || loadCustomerProfile(),
                             merchant_registration_token: hasApprovedMerchantRegistration()
                                 ? localStorage.getItem(MERCHANT_REGISTRATION_TOKEN_KEY)
                                 : null,
-                        }),
+                        });
+                    const sendRaffleCheck = (token) => fetch(window.OZMAN_FRONT_CONFIG?.raffleCheckUrl || '/raffle/check', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': token,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin',
+                        cache: 'no-store',
+                        body: requestPayload,
                     });
-                    const payload = await response.json().catch(() => ({}));
+
+                    let response = await sendRaffleCheck(csrfToken());
+                    if (response.status === 419) {
+                        const freshToken = await refreshCsrfToken();
+                        response = await sendRaffleCheck(freshToken);
+                    }
+
+                    let payload = await response.json().catch(() => ({}));
+                    if (response.status === 419) {
+                        payload = {
+                            title: 'انتهت جلسة الصفحة',
+                            message: 'حدّث الصفحة ثم حاول فحص البطاقة مرة أخرى.'
+                        };
+                    }
                     renderRaffleResult(payload, !response.ok && response.status !== 409);
                 } catch (error) {
                     renderRaffleResult({

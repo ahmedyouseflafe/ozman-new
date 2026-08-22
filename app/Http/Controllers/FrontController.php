@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\RewardWheel;
 use App\Models\Shop;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +18,13 @@ use Illuminate\View\View;
 
 class FrontController extends Controller
 {
+    public function csrfToken(): JsonResponse
+    {
+        return response()
+            ->json(['token' => csrf_token()])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    }
+
     public function index(?Shop $shop = null): View|RedirectResponse
     {
         if ($shop?->exists && $shop->catalog_type === 'restaurant') {
