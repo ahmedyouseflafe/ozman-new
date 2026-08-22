@@ -31,9 +31,9 @@ class VisitorRegistrationController extends Controller
             'tax_file' => ['required_if:type,merchant', 'nullable', 'string', 'max:255'],
             'business_location' => ['required_if:type,merchant', 'nullable', 'string', 'max:1000'],
             'residence_address' => ['required', 'string', 'max:1000'],
-            'latitude' => ['required', 'numeric', 'between:-90,90'],
-            'longitude' => ['required', 'numeric', 'between:-180,180'],
-            'map_link' => ['required', 'string', 'max:1000'],
+            'latitude' => ['required_if:type,merchant', 'nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['required_if:type,merchant', 'nullable', 'numeric', 'between:-180,180'],
+            'map_link' => ['required_if:type,merchant', 'nullable', 'string', 'max:1000'],
         ]);
 
         $referral = $this->resolvedQrReferral($request);

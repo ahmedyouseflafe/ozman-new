@@ -3781,6 +3781,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const locationModal = document.getElementById('locationModal');
             const closeLocationModal = document.getElementById('closeLocationModal');
             const confirmLocationBtn = document.getElementById('confirmLocationBtn');
+            const nearestShopTypePicker = document.getElementById('nearestShopTypePicker');
             const nearestLocationStatus = document.getElementById('nearestLocationStatus');
             const nearestShopsList = document.getElementById('nearestShopsList');
             const nearestMapFrame = document.getElementById('nearestMapFrame');
@@ -3792,6 +3793,46 @@ document.addEventListener('DOMContentLoaded', () => {
             const nearestRouteBadge = document.getElementById('nearestRouteBadge');
             let nearestCurrentLocation = loadCustomerLocation();
             let nearestSelectedIndex = activeCenterIndex;
+            let nearestSelectedType = '';
+
+            const nearestTypeDetails = {
+                restaurant: { label: 'مطاعم ووجبات', icon: 'fa-utensils' },
+                electronics: { label: 'تلفونات وإلكترونيات', icon: 'fa-mobile-screen-button' },
+                general: { label: 'بقالة وسوبرماركت', icon: 'fa-basket-shopping' },
+                clothing: { label: 'ملابس وأزياء', icon: 'fa-shirt' },
+                shoes: { label: 'أحذية', icon: 'fa-shoe-prints' },
+                sweets: { label: 'حلويات ومخبوزات', icon: 'fa-cake-candles' },
+                cosmetics: { label: 'كوزمتكس وعناية', icon: 'fa-spray-can-sparkles' }
+            };
+
+            const availableNearestTypes = () => [...new Set(
+                centersData.map(shop => String(shop.catalog_type || 'general'))
+            )];
+
+            const renderNearestTypes = () => {
+                if (!nearestShopTypePicker) return;
+                nearestShopTypePicker.innerHTML = availableNearestTypes().map(type => {
+                    const details = nearestTypeDetails[type] || { label: 'متاجر أخرى', icon: 'fa-store' };
+                    return `
+                        <button type="button" class="nearest-type-btn ${type === nearestSelectedType ? 'active' : ''}"
+                            data-nearest-shop-type="${escapeCartHtml(type)}" aria-pressed="${type === nearestSelectedType}">
+                            <i class="fas ${details.icon}"></i>
+                            <span>${escapeCartHtml(details.label)}</span>
+                        </button>
+                    `;
+                }).join('');
+
+                nearestShopTypePicker.querySelectorAll('[data-nearest-shop-type]').forEach(button => {
+                    button.addEventListener('click', () => {
+                        nearestSelectedType = button.dataset.nearestShopType || '';
+                        renderNearestTypes();
+                        renderNearestShops(nearestCurrentLocation, true);
+                        updateNearestStatus(nearestCurrentLocation
+                            ? 'تم اختيار النوع. المحلات الظاهرة مرتبة من الأقرب إلى الأبعد.'
+                            : 'تم اختيار النوع. اضغط «حدد موقعي» لترتيب المحلات حسب قربها منك.');
+                    });
+                });
+            };
 
             const updateNearestPreview = (index = nearestSelectedIndex, location = nearestCurrentLocation) => {
                 const shop = centersData[index] || centersData[0];
@@ -3837,9 +3878,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!nearestShopsList) return;
 
                 nearestCurrentLocation = location;
-                const sortedShops = shopsSortedByDistance(location);
-                if ((preferNearest || !centersData[nearestSelectedIndex]) && sortedShops[0]) {
+                if (!nearestSelectedType) {
+                    nearestShopsList.innerHTML = '<div class="nearest-empty-state"><i class="fas fa-hand-pointer"></i><strong>اختر نوع المتجر أولًا</strong><span>لن نعرض المحلات قبل تحديد ما تبحث عنه.</span></div>';
+                    if (nearestMapFrame) nearestMapFrame.src = 'about:blank';
+                    if (nearestSelectedShopTitle) nearestSelectedShopTitle.textContent = 'بانتظار اختيار النوع';
+                    if (nearestSelectedShopMeta) nearestSelectedShopMeta.textContent = 'اختر مطعمًا أو محل تلفونات أو بقالة.';
+                    nearestShowShopBtn?.classList.remove('is-visible');
+                    return;
+                }
+
+                const sortedShops = shopsSortedByDistance(location)
+                    .filter(({ shop }) => String(shop.catalog_type || 'general') === nearestSelectedType);
+                const selectionIsVisible = sortedShops.some(({ index }) => index === nearestSelectedIndex);
+                if ((preferNearest || !selectionIsVisible) && sortedShops[0]) {
                     nearestSelectedIndex = sortedShops[0].index;
+                }
+
+                if (!sortedShops.length) {
+                    nearestShopsList.innerHTML = '<div class="nearest-empty-state"><i class="fas fa-store-slash"></i><strong>لا توجد محلات من هذا النوع حاليًا</strong><span>جرّب اختيار نوع آخر.</span></div>';
+                    nearestShowShopBtn?.classList.remove('is-visible');
+                    return;
                 }
 
                 nearestShopsList.innerHTML = sortedShops.map(({ shop, index, distance }) => `
@@ -3871,6 +3929,11 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             const detectAndRenderNearestShops = () => {
+                if (!nearestSelectedType) {
+                    updateNearestStatus('اختر نوع المتجر أولًا قبل تحديد موقعك.');
+                    nearestShopTypePicker?.querySelector('button')?.focus();
+                    return;
+                }
                 if (!navigator.geolocation) {
                     updateNearestStatus(frontLabel('locationUnsupported', 'المتصفح لا يدعم تحديد الموقع تلقائيا.'));
                     renderNearestShops(null);
@@ -3889,7 +3952,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).then((location) => {
                     saveCustomerLocation(location);
                     const details = [formatLocationAccuracy(location), formatLocationCoordinates(location)].filter(Boolean).join(' - ');
-                    const shopsWithCoordinatesCount = centersData.filter(hasShopCoordinates).length;
+                    const shopsWithCoordinatesCount = centersData.filter(shop =>
+                        String(shop.catalog_type || 'general') === nearestSelectedType && hasShopCoordinates(shop)
+                    ).length;
                     const locationMessage = shopsWithCoordinatesCount > 0
                         ? `تم تحديد موقعك الآن. ${details} اختر المتجر الأقرب لك لعرض أقسامه.`
                         : `تم تحديد موقعك الآن. ${details} لكن المتاجر لا تحتوي إحداثيات، لذلك لا يمكن ترتيبها من الأقرب للأبعد.`;
@@ -3907,12 +3972,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.addEventListener('click', () => {
                     if (!locationModal) return;
                     locationModal.classList.add('show');
+                    nearestSelectedType = '';
+                    renderNearestTypes();
                     const savedLocation = loadCustomerLocation();
                     nearestSelectedIndex = activeCenterIndex;
                     updateNearestStatus(savedLocation
-                        ? `${frontLabel('savedLocationLoaded', 'تم تحميل الموقع المحفوظ مسبقا.')} ${[formatLocationAccuracy(savedLocation), formatLocationCoordinates(savedLocation)].filter(Boolean).join(' - ')} اضغط الزر لتحديث موقعك الآن.`
-                        : 'اضغط على الزر لتحديد موقعك وعرض المتاجر من الأقرب للأبعد.');
-                    renderNearestShops(savedLocation, Boolean(savedLocation));
+                        ? `${frontLabel('savedLocationLoaded', 'تم تحميل الموقع المحفوظ مسبقا.')} اختر نوع المتجر لعرض الأماكن القريبة.`
+                        : 'اختر نوع المتجر أولًا، ثم حدد موقعك لعرض الأماكن الأقرب إليك.');
+                    renderNearestShops(savedLocation, false);
                 });
             });
 
@@ -3923,9 +3990,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (confirmLocationBtn) {
                 confirmLocationBtn.addEventListener('click', () => {
-                    clearCustomerLocation();
-                    sessionStorage.setItem(REFRESH_LOCATION_REQUEST_KEY, '1');
-                    window.location.reload();
+                    detectAndRenderNearestShops();
                 });
             }
             if (nearestShowShopBtn) {
@@ -3942,8 +4007,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 sessionStorage.removeItem(REFRESH_LOCATION_REQUEST_KEY);
                 locationModal?.classList.add('show');
                 nearestSelectedIndex = activeCenterIndex;
+                nearestSelectedType = '';
+                renderNearestTypes();
                 renderNearestShops(null, false);
-                window.setTimeout(detectAndRenderNearestShops, 350);
+                updateNearestStatus('اختر نوع المتجر أولًا، ثم حدد موقعك لعرض الأماكن الأقرب إليك.');
             }
 
             if (locationModal) {
@@ -3961,10 +4028,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const merchantApprovalNotice = document.getElementById('merchantApprovalNotice');
             const visitorMerchantFields = document.getElementById('visitorMerchantFields');
             const visitorRegistrationMessage = document.getElementById('visitorRegistrationMessage');
-            const visitorCustomerLocationField = document.getElementById('visitorCustomerLocationField');
-            const detectVisitorCustomerLocationBtn = document.getElementById('detectVisitorCustomerLocationBtn');
-            const visitorCustomerLocationStatus = document.getElementById('visitorCustomerLocationStatus');
-            const visitorCustomerMapFrame = document.getElementById('visitorCustomerMapFrame');
             const detectVisitorBusinessLocationBtn = document.getElementById('detectVisitorBusinessLocationBtn');
             const visitorBusinessLocation = document.getElementById('visitorBusinessLocation');
             const visitorBusinessLocationStatus = document.getElementById('visitorBusinessLocationStatus');
@@ -4175,7 +4238,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isMerchant = type === 'merchant';
                 if (visitorTypeInput) visitorTypeInput.value = isMerchant ? 'merchant' : 'customer';
                 if (visitorMerchantFields) visitorMerchantFields.hidden = !isMerchant;
-                if (visitorCustomerLocationField) visitorCustomerLocationField.hidden = isMerchant;
 
                 visitorTypeButtons.forEach(button => {
                     button.classList.toggle('active', button.dataset.visitorType === (isMerchant ? 'merchant' : 'customer'));
@@ -4200,13 +4262,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (isMerchant) {
-                    if (visitorCustomerMapFrame) {
-                        visitorCustomerMapFrame.hidden = true;
-                        visitorCustomerMapFrame.removeAttribute('src');
-                    }
-                    if (visitorCustomerLocationStatus) {
-                        visitorCustomerLocationStatus.textContent = 'اضغط لتحديد لوكيشنك من الخريطة';
-                    }
                     if (visitorLatitude) visitorLatitude.value = '';
                     if (visitorLongitude) visitorLongitude.value = '';
                     if (visitorMapLink) visitorMapLink.value = '';
@@ -4366,15 +4421,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.addEventListener('click', () => setVisitorType(button.dataset.visitorType));
             });
 
-            if (detectVisitorCustomerLocationBtn) {
-                detectVisitorCustomerLocationBtn.addEventListener('click', () => {
-                    detectVisitorLocation({
-                        statusEl: visitorCustomerLocationStatus,
-                        mapFrame: visitorCustomerMapFrame
-                    });
-                });
-            }
-
             if (detectVisitorBusinessLocationBtn) {
                 detectVisitorBusinessLocationBtn.addEventListener('click', () => {
                     detectVisitorLocation({
@@ -4394,12 +4440,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         detectVisitorBusinessLocationBtn?.focus();
                         return;
                     }
-                    if (visitorTypeInput?.value === 'customer' && !visitorMapLink?.value) {
-                        setVisitorMessage('لازم تحدد لوكيشنك قبل الحفظ.', true);
-                        detectVisitorCustomerLocationBtn?.focus();
-                        return;
-                    }
-
                     const submitButton = visitorRegistrationForm.querySelector('button[type="submit"]');
                     const previousButtonHtml = submitButton?.innerHTML;
                     const merchantWhatsappWindow = visitorTypeInput?.value === 'merchant'
@@ -4462,9 +4502,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 phone: String(formData.get('phone') || '').trim(),
                                 whatsapp: String(formData.get('phone') || '').trim(),
                                 address: String(formData.get('residence_address') || '').trim(),
-                                latitude: String(formData.get('latitude') || '').trim(),
-                                longitude: String(formData.get('longitude') || '').trim(),
-                                map_link: String(formData.get('map_link') || '').trim(),
                             });
                             localStorage.removeItem(REWARD_DISCOUNT_STORAGE_KEY);
                         }

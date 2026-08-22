@@ -677,20 +677,6 @@
                             <textarea name="residence_address" rows="2" placeholder="{{ __('المدينة، الحي، أقرب علامة') }}" required></textarea>
                         </label>
 
-                        <label class="customer-field visitor-customer-location-field" id="visitorCustomerLocationField">
-                            <span>{{ __('لوكيشن العميل') }}</span>
-                            <div class="visitor-location-row">
-                                <button type="button" class="customer-map-btn" id="detectVisitorCustomerLocationBtn">
-                                    <i class="fas fa-crosshairs"></i>
-                                    {{ __('حدد لوكيشنك') }}
-                                </button>
-                                <span
-                                    id="visitorCustomerLocationStatus">{{ __('اضغط لتحديد لوكيشنك من الخريطة') }}</span>
-                            </div>
-                            <iframe class="visitor-location-map" id="visitorCustomerMapFrame"
-                                title="{{ __('لوكيشن العميل') }}" loading="lazy" hidden></iframe>
-                        </label>
-
                         <input type="hidden" name="latitude" id="visitorLatitude">
                         <input type="hidden" name="longitude" id="visitorLongitude">
                         <input type="hidden" name="map_link" id="visitorMapLink">
@@ -1005,8 +991,13 @@
                     <span class="close-modal" id="closeLocationModal">&times;</span>
                 </div>
                 <div class="modal-body">
+                    <div class="nearest-type-section">
+                        <strong>{{ __('شو بدك تلاقي قريب منك؟') }}</strong>
+                        <div class="nearest-type-picker" id="nearestShopTypePicker" role="group"
+                            aria-label="{{ __('اختر نوع المتجر') }}"></div>
+                    </div>
                     <div class="nearest-location-status" id="nearestLocationStatus">
-                        {{ __('اضغط على الزر لتحديد موقعك وعرض المتاجر من الأقرب للأبعد.') }}
+                        {{ __('اختر نوع المتجر أولًا، ثم حدد موقعك لعرض الأماكن الأقرب إليك.') }}
                     </div>
                     <div class="nearest-gps-layout">
                         <div class="nearest-map-card">
