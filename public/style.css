@@ -4971,6 +4971,185 @@ html[dir="ltr"] .products-scatter-header .back-btn i {
         padding: 6px 9px;
     }
 
+    #locationModal {
+        padding: 7px;
+        align-items: center;
+    }
+
+    #locationModal .nearest-shops-modal {
+        width: 100%;
+        max-width: 430px;
+        max-height: calc(100dvh - 14px);
+        margin: 0;
+        padding: 11px;
+        border-radius: 17px;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #locationModal .modal-header {
+        position: sticky;
+        top: -11px;
+        z-index: 12;
+        min-height: 42px;
+        margin: 0 0 9px;
+        padding: 8px 2px 9px;
+        background: rgba(2, 12, 16, 0.96);
+        backdrop-filter: blur(12px);
+    }
+
+    #locationModal .modal-header h3 {
+        font-size: 1rem;
+        line-height: 1.25;
+    }
+
+    #locationModal .close-modal {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 34px;
+        font-size: 1.45rem;
+    }
+
+    #locationModal .nearest-type-section {
+        margin-bottom: 8px;
+    }
+
+    #locationModal .nearest-type-section > strong {
+        margin-bottom: 7px;
+        font-size: 0.8rem;
+        text-align: center;
+    }
+
+    #locationModal .nearest-type-picker {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+    }
+
+    #locationModal .nearest-type-btn {
+        min-width: 0;
+        min-height: 52px;
+        flex-direction: column;
+        gap: 4px;
+        padding: 6px 3px;
+        border-radius: 11px;
+        font-size: 0.68rem;
+        line-height: 1.25;
+    }
+
+    #locationModal .nearest-location-status {
+        margin-bottom: 8px;
+        padding: 8px 9px;
+        border-radius: 11px;
+        font-size: 0.72rem;
+        line-height: 1.45;
+        text-align: center;
+    }
+
+    #locationModal .nearest-gps-layout {
+        gap: 8px;
+    }
+
+    #locationModal .nearest-map-card,
+    #locationModal .nearest-map-card iframe {
+        min-height: 228px;
+        height: 228px;
+    }
+
+    #locationModal .nearest-map-info {
+        right: 6px;
+        left: 6px;
+        bottom: 6px;
+        flex-direction: row;
+        align-items: center;
+        gap: 7px;
+        padding: 7px;
+        border-radius: 11px;
+    }
+
+    #locationModal .nearest-map-info > div {
+        min-width: 0;
+    }
+
+    #locationModal .nearest-map-info span,
+    #locationModal .nearest-map-info small {
+        display: none;
+    }
+
+    #locationModal .nearest-map-info strong {
+        font-size: 0.72rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    #locationModal .nearest-map-info a {
+        width: auto;
+        flex: 0 0 auto;
+        padding: 8px 10px;
+        font-size: 0.68rem;
+    }
+
+    #locationModal .nearest-shops-list {
+        max-height: 132px;
+        gap: 6px;
+        padding-inline-end: 2px;
+    }
+
+    #locationModal .nearest-shop-card {
+        grid-template-columns: 40px minmax(0, 1fr) auto;
+        gap: 7px;
+        padding: 7px;
+        border-radius: 12px;
+    }
+
+    #locationModal .nearest-shop-card img {
+        width: 38px;
+        height: 38px;
+        border-radius: 9px;
+    }
+
+    #locationModal .nearest-shop-card strong {
+        font-size: 0.76rem;
+    }
+
+    #locationModal .nearest-shop-card span {
+        font-size: 0.62rem;
+    }
+
+    #locationModal .nearest-shop-distance {
+        grid-column: auto;
+        justify-self: auto;
+        padding: 5px 7px;
+        font-size: 0.64rem;
+    }
+
+    #locationModal .nearest-empty-state {
+        min-height: 105px;
+        padding: 10px;
+        font-size: 0.72rem;
+    }
+
+    #locationModal .location-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 7px;
+        margin-top: 8px;
+    }
+
+    #locationModal .location-actions .buy-btn,
+    #locationModal .location-actions .nearest-show-shop-btn {
+        width: 100% !important;
+        max-width: none;
+        min-height: 46px;
+        margin: 0 !important;
+        padding: 9px 12px;
+        border-radius: 13px;
+        font-size: 0.78rem;
+    }
+
     .bottom-nav {
         width: 100%;
         min-height: 66px;

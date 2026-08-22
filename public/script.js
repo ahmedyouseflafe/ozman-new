@@ -29,6 +29,18 @@ function initMediaStorySlider(slider) {
         activateSlide(index);
 }
 
+// Remove legacy same-origin service workers. The current site does not use a PWA
+// worker, and an older registration can cancel navigation preload requests.
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.getRegistrations()
+            .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+            .catch(() => {
+                // Service worker cleanup must never block the storefront.
+            });
+    }, { once: true });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-media-story]').forEach((slider) => {
         initMediaStorySlider(slider);
@@ -3779,6 +3791,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Location Modal Logic
             const locationBtns = document.querySelectorAll('.location-btn-trigger');
             const locationModal = document.getElementById('locationModal');
+            const nearestShopsModal = locationModal?.querySelector('.nearest-shops-modal');
             const closeLocationModal = document.getElementById('closeLocationModal');
             const confirmLocationBtn = document.getElementById('confirmLocationBtn');
             const nearestShopTypePicker = document.getElementById('nearestShopTypePicker');
@@ -3972,6 +3985,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.addEventListener('click', () => {
                     if (!locationModal) return;
                     locationModal.classList.add('show');
+                    if (nearestShopsModal) nearestShopsModal.scrollTop = 0;
                     nearestSelectedType = '';
                     renderNearestTypes();
                     const savedLocation = loadCustomerLocation();
