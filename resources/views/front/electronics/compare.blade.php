@@ -3,7 +3,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-    <title>مقارنة الأجهزة | {{ $shop->name }}</title>
+    @include('front.partials.seo', [
+        'title' => 'مقارنة الأجهزة | '.$shop->name,
+        'description' => 'قارن مواصفات وأسعار الأجهزة في '.$shop->name.'.',
+        'canonical' => route('electronics.store', $shop),
+        'robots' => 'noindex, follow',
+    ])
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--cyan:#21dcff;--bg:#05070c;--panel:#0d1622;--line:#20364a;--muted:#91a8b9}*{box-sizing:border-box}html,body{max-width:100%;margin:0;overflow-x:hidden}body{min-height:100vh;background:radial-gradient(circle at 80% 0,rgba(33,220,255,.1),transparent 30%),var(--bg);color:#fff;font-family:Cairo,Segoe UI,sans-serif}a{color:inherit;text-decoration:none}.wrap{width:min(1180px,calc(100% - 28px));margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:28px 0}.top h1{margin:0;font-size:clamp(27px,5vw,48px)}.back{padding:11px 16px;border:1px solid var(--line);border-radius:12px;color:var(--cyan)}.hint{margin:-12px 0 20px;color:var(--muted)}.table-wrap{overflow:auto;padding-bottom:18px;overscroll-behavior-inline:contain}.compare{width:100%;min-width:720px;border-collapse:separate;border-spacing:0 9px;table-layout:fixed}.compare th,.compare td{padding:14px;text-align:center;background:var(--panel)}.compare th:first-child,.compare td:first-child{position:sticky;z-index:2;right:0;width:145px;border-radius:0 13px 13px 0;background:#111d2a;color:var(--muted);text-align:right}.compare th:last-child,.compare td:last-child{border-radius:13px 0 0 13px}.device img{display:block;width:120px;height:120px;margin:auto;object-fit:contain}.device b{display:block;font-size:17px}.device a{display:inline-block;margin-top:8px;color:var(--cyan);font-size:12px}.different td:not(:first-child){box-shadow:inset 0 -3px rgba(33,220,255,.45)}.price{color:var(--cyan);font-weight:900}.remove{display:inline-block;margin-top:7px;padding:5px 9px;border:0;border-radius:8px;background:#25151c;color:#ff91a0;font:inherit;font-size:10px;cursor:pointer}.legend{display:flex;align-items:center;gap:8px;margin:0 0 14px;color:var(--muted);font-size:12px}.legend i{width:22px;height:3px;background:var(--cyan)}

@@ -3,7 +3,28 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-    <title>{{ $product->localized('name') }} | {{ $shop->name }}</title>
+    @php
+        $productName = $product->localized('name');
+        $productDescription = $product->localized('description') ?: "اشترِ {$productName} من {$shop->name} عبر Ozman.";
+        $productCanonical = route('electronics.product', [$shop, $product]);
+        $productImage = $product->main_image
+            ? asset(\Illuminate\Support\Str::startsWith($product->main_image, 'storage/') ? $product->main_image : 'storage/'.$product->main_image)
+            : asset('images/logo.svg');
+        $productPrice = $product->discount_price ?: $product->price;
+    @endphp
+    @include('front.partials.seo', [
+        'title' => $productName.' | '.$shop->name,
+        'description' => $productDescription,
+        'canonical' => $productCanonical,
+        'image' => $productImage,
+        'type' => 'product',
+        'schema' => [
+            '@context' => 'https://schema.org', '@type' => 'Product', 'name' => $productName,
+            'description' => $productDescription, 'image' => [$productImage], 'sku' => $product->sku,
+            'offers' => ['@type' => 'Offer', 'url' => $productCanonical, 'priceCurrency' => 'ILS',
+                'price' => $productPrice, 'availability' => $product->quantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'],
+        ],
+    ])
     <style>
         :root{--cyan:#22d8ff;--blue:#599cff;--panel:#0d141f;--line:#203347;--muted:#91a7b7}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 80% 0,rgba(34,216,255,.08),transparent 28%),#060910;color:#f7f9fc;font-family:Cairo,"Segoe UI",sans-serif}button,input,textarea{font:inherit}a{color:inherit;text-decoration:none}.wrap{width:min(1180px,calc(100% - 28px));margin:auto}.top{height:72px;display:flex;align-items:center;justify-content:space-between}.back{display:inline-flex;align-items:center;gap:8px;color:#bdeeff}.store-name{font-weight:900;color:var(--cyan)}
         .product{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);gap:26px;background:linear-gradient(145deg,rgba(15,24,37,.96),rgba(7,11,18,.98));border:1px solid var(--line);border-radius:30px;padding:22px;box-shadow:0 35px 100px rgba(0,0,0,.4)}.media-stage{position:relative;display:grid;place-items:center;height:560px;border-radius:22px;overflow:hidden;background:radial-gradient(circle at 50% 45%,rgba(34,216,255,.12),transparent 36%),linear-gradient(145deg,#111d2a,#080c13);cursor:zoom-in}.media-stage:after{content:"اضغط لتكبير الصور";position:absolute;bottom:14px;right:14px;padding:7px 12px;border-radius:999px;background:rgba(2,6,10,.74);border:1px solid rgba(255,255,255,.12);font-size:12px;color:#d9f7ff}.main-img{width:82%;height:82%;object-fit:contain;filter:drop-shadow(0 30px 28px rgba(0,0,0,.55));transition:transform .45s cubic-bezier(.2,.8,.2,1)}.media-stage:hover .main-img{transform:scale(1.035) rotate(-1deg)}.thumbs{display:flex;gap:9px;margin-top:10px;overflow:auto;padding:3px}.thumb{flex:0 0 76px;height:76px;padding:4px;border-radius:14px;border:2px solid transparent;background:#101a26;cursor:pointer}.thumb.active{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(34,216,255,.1)}.thumb img{width:100%;height:100%;object-fit:contain;border-radius:10px;background:#fff}

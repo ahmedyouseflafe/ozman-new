@@ -3,7 +3,24 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>{{ $shop->name }} | متجر التقنية</title>
+    @php
+        $electronicsCanonical = route('electronics.store', $shop);
+        $electronicsDescription = $shop->description ?: "تصفح أحدث الأجهزة والأسعار في {$shop->name} عبر Ozman.";
+        $electronicsImage = $shop->banner
+            ? asset(\Illuminate\Support\Str::startsWith($shop->banner, 'storage/') ? $shop->banner : 'storage/'.$shop->banner)
+            : ($shop->logo ? asset($shop->logo) : asset('images/logo.svg'));
+    @endphp
+    @include('front.partials.seo', [
+        'title' => $shop->name.' | متجر إلكترونيات',
+        'description' => $electronicsDescription,
+        'canonical' => $electronicsCanonical,
+        'image' => $electronicsImage,
+        'schema' => [
+            '@context' => 'https://schema.org', '@type' => 'Store', 'name' => $shop->name,
+            'url' => $electronicsCanonical, 'description' => $electronicsDescription,
+            'image' => $electronicsImage, 'telephone' => $shop->phone, 'address' => $shop->address,
+        ],
+    ])
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">

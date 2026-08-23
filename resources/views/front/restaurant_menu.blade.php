@@ -5,7 +5,25 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>منيو {{ $shop->name }}</title>
+    @php
+        $restaurantCanonical = route('restaurant.menu', $shop);
+        $restaurantDescription = $shop->description ?: "تصفح منيو {$shop->name} والأسعار واطلب مباشرة عبر Ozman.";
+        $restaurantImage = $shop->banner
+            ? asset(\Illuminate\Support\Str::startsWith($shop->banner, 'storage/') ? $shop->banner : 'storage/'.$shop->banner)
+            : ($shop->logo ? asset($shop->logo) : asset('images/logo.svg'));
+    @endphp
+    @include('front.partials.seo', [
+        'title' => 'منيو '.$shop->name.' | Ozman',
+        'description' => $restaurantDescription,
+        'canonical' => $restaurantCanonical,
+        'image' => $restaurantImage,
+        'robots' => $table ? 'noindex, follow' : 'index, follow, max-image-preview:large',
+        'schema' => [
+            '@context' => 'https://schema.org', '@type' => 'Restaurant', 'name' => $shop->name,
+            'url' => $restaurantCanonical, 'description' => $restaurantDescription,
+            'image' => $restaurantImage, 'telephone' => $shop->phone, 'address' => $shop->address,
+        ],
+    ])
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap"

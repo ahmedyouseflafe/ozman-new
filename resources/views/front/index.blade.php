@@ -5,7 +5,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Ozman</title>
+    @php
+        $seoShopName = $shop?->name ?? 'Ozman';
+        $seoDescription = $shop?->description ?: ($shop
+            ? "تصفح منتجات وعروض {$seoShopName} عبر Ozman."
+            : 'اكتشف المتاجر والمنتجات والعروض والمطاعم المحلية عبر منصة Ozman.');
+        $seoImage = $shop?->banner
+            ? asset(\Illuminate\Support\Str::startsWith($shop->banner, 'storage/') ? $shop->banner : 'storage/'.$shop->banner)
+            : ($shop?->logo ? asset($shop->logo) : asset('images/logo.svg'));
+        $seoCanonical = $shop ? route('front.shop.slug', $shop) : route('home');
+        $seoSchema = [
+            '@context' => 'https://schema.org',
+            '@type' => $shop ? 'Store' : 'WebSite',
+            'name' => $seoShopName,
+            'url' => $seoCanonical,
+            'description' => $seoDescription,
+            'image' => $seoImage,
+        ];
+    @endphp
+    @include('front.partials.seo', [
+        'title' => $shop ? $seoShopName.' | Ozman' : 'Ozman | متاجر ومنتجات محلية',
+        'description' => $seoDescription,
+        'canonical' => $seoCanonical,
+        'image' => $seoImage,
+        'schema' => $seoSchema,
+    ])
     <link rel="stylesheet" href="{{ asset('style.css') }}?v={{ filemtime(public_path('style.css')) }}">
     <!-- Font Awesome icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

@@ -14,6 +14,7 @@ use App\Http\Controllers\RaffleCardController;
 use App\Http\Controllers\RestaurantController;
 use App\Http\Controllers\RewardWheelController;
 use App\Http\Controllers\ScreenController;
+use App\Http\Controllers\SeoController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\TranslationController;
@@ -23,6 +24,8 @@ use App\Http\Controllers\VisitorRegistrationController;
 use App\Models\AdminNotification;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 Route::get('/', [FrontController::class, 'index'])->name('home');
 Route::get('/csrf-token', [FrontController::class, 'csrfToken'])
     ->middleware('throttle:30,1')
