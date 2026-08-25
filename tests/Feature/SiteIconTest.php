@@ -13,14 +13,14 @@ class SiteIconTest extends TestCase
     {
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('<link rel="icon" type="image/svg+xml" href="'.asset('favicon.svg').'?v=2">', false);
+            ->assertSee('<link rel="icon" type="image/png" href="'.asset('ozman-favicon.png').'?v=3">', false);
     }
 
     public function test_login_page_has_ozman_favicon(): void
     {
         $this->get(route('login'))
             ->assertOk()
-            ->assertSee('favicon.svg?v=2', false)
+            ->assertSee('ozman-favicon.png?v=3', false)
             ->assertDontSee('laravel.svg', false);
     }
 }

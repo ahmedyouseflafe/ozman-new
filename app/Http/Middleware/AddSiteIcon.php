@@ -23,7 +23,7 @@ class AddSiteIcon
             return $response;
         }
 
-        $icon = '<link rel="icon" type="image/svg+xml" href="'.asset('favicon.svg').'?v=2">';
+        $icon = '<link rel="icon" type="image/png" href="'.asset('ozman-favicon.png').'?v=3">';
         $content = preg_replace('/<\/head>/i', "    {$icon}\n</head>", $content, 1);
         $response->setContent($content);
 
