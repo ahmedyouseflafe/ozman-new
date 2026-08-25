@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\CanonicalDomain::class,
             \App\Http\Middleware\LanguageMiddleware::class,
+            \App\Http\Middleware\AddSiteIcon::class,
         ]);
 
         $middleware->alias([
