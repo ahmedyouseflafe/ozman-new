@@ -107,7 +107,7 @@ return [
             'permissions' => [
                 'real_estate.view' => ['label' => 'عرض لوحة العقارات', 'description' => 'مشاهدة العقارات والإحصائيات والعملاء.', 'routes' => ['real-estate.dashboard', 'real-estate.company.qr']],
                 'real_estate.create' => ['label' => 'إضافة عقارات', 'description' => 'إنشاء عقار جديد ورفع صوره.', 'routes' => ['real-estate.dashboard.properties.create', 'real-estate.dashboard.properties.store']],
-                'real_estate.edit' => ['label' => 'تعديل العقارات والصور', 'description' => 'تعديل البيانات والحالة والصور واختيار الغلاف.', 'routes' => ['real-estate.dashboard.properties.edit', 'real-estate.dashboard.properties.update', 'real-estate.dashboard.images.destroy', 'real-estate.dashboard.images.cover', 'real-estate.dashboard.images.move']],
+                'real_estate.edit' => ['label' => 'تعديل العقارات والصور', 'description' => 'تعديل البيانات والحالة والصور واختيار الغلاف وتجهيز منشور فيسبوك.', 'routes' => ['real-estate.dashboard.properties.edit', 'real-estate.dashboard.properties.update', 'real-estate.dashboard.images.destroy', 'real-estate.dashboard.images.cover', 'real-estate.dashboard.images.move', 'real-estate.dashboard.facebook-images']],
                 'real_estate.delete' => ['label' => 'حذف العقارات', 'description' => 'حذف العقار وجميع صوره؛ صلاحية حساسة.', 'routes' => ['real-estate.dashboard.properties.destroy']],
                 'real_estate.leads' => ['label' => 'إدارة العملاء والمعاينات', 'description' => 'تحديث حالة العميل وموعد المعاينة.', 'routes' => ['real-estate.dashboard.leads.update']],
             ],

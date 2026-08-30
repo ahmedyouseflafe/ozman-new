@@ -102,6 +102,7 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::delete('/shops/{shop}/real-estate/properties/{property}/images/{image}', [RealEstateDashboardController::class, 'destroyImage'])->name('real-estate.dashboard.images.destroy');
     Route::patch('/shops/{shop}/real-estate/properties/{property}/images/{image}/cover', [RealEstateDashboardController::class, 'coverImage'])->name('real-estate.dashboard.images.cover');
     Route::patch('/shops/{shop}/real-estate/properties/{property}/images/{image}/move', [RealEstateDashboardController::class, 'moveImage'])->name('real-estate.dashboard.images.move');
+    Route::get('/shops/{shop}/real-estate/properties/{property}/facebook-images', [RealEstateDashboardController::class, 'facebookImages'])->name('real-estate.dashboard.facebook-images');
     Route::patch('/shops/{shop}/real-estate/leads/{lead}', [RealEstateDashboardController::class, 'updateLead'])->name('real-estate.dashboard.leads.update');
     Route::get('/shops/{shop}/restaurant', [RestaurantController::class, 'dashboard'])->name('restaurant.dashboard');
     Route::get('/shops/{shop}/restaurant/orders-feed', [RestaurantController::class, 'ordersFeed'])->name('restaurant.orders.feed');

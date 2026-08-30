@@ -1,6 +1,6 @@
 @php
     $cover = $property->images->first();
-    $coverUrl = $cover ? asset($cover->path) : null;
+    $coverUrl = $cover ? Storage::url($cover->path) : null;
     $propertyUrl = route('real-estate.property', [$property->shop, $property]);
     $purposeLabel = $property->purpose === 'rent' ? $labels['rent'] : $labels['sale'];
 @endphp

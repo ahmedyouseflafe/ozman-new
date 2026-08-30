@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use ZipArchive;
 
 class RealEstateDashboardController extends Controller
 {
@@ -156,6 +158,38 @@ class RealEstateDashboardController extends Controller
         }
 
         return back()->with('status', 'تم تحديث ترتيب الصور.');
+    }
+
+    public function facebookImages(Request $request, Shop $shop, RealEstateProperty $property): BinaryFileResponse
+    {
+        $this->authorizeProperty($request, $shop, $property);
+        $data = $request->validate([
+            'images' => ['nullable', 'array', 'max:20'],
+            'images.*' => ['integer'],
+        ]);
+        $selectedIds = collect($data['images'] ?? [])->map(fn ($id) => (int) $id)->unique();
+        $images = $property->images()
+            ->when($selectedIds->isNotEmpty(), fn ($query) => $query->whereIn('id', $selectedIds))
+            ->orderBy('position')
+            ->get();
+        abort_if($images->isEmpty(), 422, 'لا توجد صور متاحة للتحميل.');
+
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'ozman-property-');
+        abort_if($temporaryPath === false, 500);
+        $zip = new ZipArchive;
+        abort_unless($zip->open($temporaryPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true, 500);
+        foreach ($images as $index => $image) {
+            if (! Storage::disk('public')->exists($image->path)) {
+                continue;
+            }
+            $extension = pathinfo($image->path, PATHINFO_EXTENSION) ?: 'jpg';
+            $zip->addFile(Storage::disk('public')->path($image->path), sprintf('%02d-%s.%s', $index + 1, $property->slug, $extension));
+        }
+        $zip->close();
+
+        return response()->download($temporaryPath, $property->slug.'-facebook-images.zip', [
+            'Content-Type' => 'application/zip',
+        ])->deleteFileAfterSend(true);
     }
 
     public function updateLead(Request $request, Shop $shop, RealEstateLead $lead): RedirectResponse

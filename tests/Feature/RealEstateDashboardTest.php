@@ -69,6 +69,22 @@ class RealEstateDashboardTest extends TestCase
         $this->assertCount(1, $property->images);
         $this->assertTrue($property->images->first()->is_cover);
         Storage::disk('public')->assertExists($property->images->first()->path);
+
+        $this->actingAs($owner)
+            ->get(route('real-estate.dashboard.properties.edit', [$shop, $property]))
+            ->assertOk()
+            ->assertSee('تجهيز منشور فيسبوك')
+            ->assertSee(route('real-estate.dashboard.facebook-images', [$shop, $property]), false);
+
+        $this->get(route('real-estate.property', [$shop, $property]))
+            ->assertOk()
+            ->assertSee(url(Storage::url($property->images->first()->path)), false);
+
+        $this->actingAs($owner)
+            ->get(route('real-estate.dashboard.facebook-images', [$shop, $property, 'images' => [$property->images->first()->id]]))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/zip')
+            ->assertDownload($property->slug.'-facebook-images.zip');
     }
 
     public function test_owner_can_update_a_lead_belonging_to_his_company_only(): void
