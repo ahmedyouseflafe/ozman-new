@@ -93,7 +93,10 @@ class RealEstateDashboardTest extends TestCase
 
         $this->get(route('real-estate.property', [$shop, $property]))
             ->assertOk()
-            ->assertSee(url(Storage::url($property->images->first()->path)), false);
+            ->assertSee(url(Storage::url($property->images->first()->path)), false)
+            ->assertSee('gallery-stage', false)
+            ->assertSee('calculate-distance', false)
+            ->assertSee('google.com/maps/dir', false);
 
         $this->actingAs($owner)
             ->get(route('real-estate.dashboard.facebook-images', [$shop, $property, 'images' => [$property->images->first()->id]]))
@@ -150,8 +153,10 @@ class RealEstateDashboardTest extends TestCase
             'latitude' => 31.9,
             'longitude' => 35.2,
             'status' => 'draft',
+            'virtual_tour_url' => 'https://missing-tour-domain.invalid/show/123',
         ])->assertSessionHasErrors([
             'slug' => 'حقل رابط العقار المخصص يجب أن يحتوي على أحرف إنجليزية أو أرقام أو شرطات فقط.',
+            'virtual_tour_url',
         ]);
     }
 
