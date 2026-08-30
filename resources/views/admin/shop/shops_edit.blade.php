@@ -803,7 +803,7 @@
                             <div class="form-group">
                                 <label class="form-label" for="open_time"><i class="ti ti-clock-hour-8" aria-hidden="true"></i>وقت الفتح</label>
                                 <div class="field">
-                                    <input type="time" id="open_time" name="open_time" value="{{ old('open_time', data_get($shop, 'open_time')) }}">
+                                    <input type="time" id="open_time" name="open_time" value="{{ old('open_time', filled(data_get($shop, 'open_time')) ? substr(data_get($shop, 'open_time'), 0, 5) : '') }}">
                                     <i class="ti ti-clock field-icon" aria-hidden="true"></i>
                                 </div>
                             </div>
@@ -811,7 +811,7 @@
                             <div class="form-group">
                                 <label class="form-label" for="close_time"><i class="ti ti-clock-hour-5" aria-hidden="true"></i>وقت الإغلاق</label>
                                 <div class="field">
-                                    <input type="time" id="close_time" name="close_time" value="{{ old('close_time', data_get($shop, 'close_time')) }}">
+                                    <input type="time" id="close_time" name="close_time" value="{{ old('close_time', filled(data_get($shop, 'close_time')) ? substr(data_get($shop, 'close_time'), 0, 5) : '') }}">
                                     <i class="ti ti-clock-off field-icon" aria-hidden="true"></i>
                                 </div>
                             </div>

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Shop;
 use App\Models\Distributor;
 use App\Models\DistributorMarketer;
+use App\Models\Shop;
+use App\Models\ShopSocial;
 use App\Models\User;
+use App\Services\ShopOwnerAccountService;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -19,8 +21,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
-use App\Models\ShopSocial;
-use App\Services\ShopOwnerAccountService;
 
 class ShopController extends Controller
 {
@@ -28,7 +28,7 @@ class ShopController extends Controller
     {
         $shops = Shop::query()
             ->where('slug', '!=', 'ozman')
-            ->when(! $this->hasGlobalDashboardAccess(), fn($query) => $query->whereIn('id', $this->ownedShopIds()))
+            ->when(! $this->hasGlobalDashboardAccess(), fn ($query) => $query->whereIn('id', $this->ownedShopIds()))
             ->with('distributor:id,name')
             ->withCount('products')
             ->latest()
@@ -92,6 +92,7 @@ class ShopController extends Controller
                 $group['permissions'] = collect($group['permissions'] ?? [])
                     ->only($allowed)
                     ->all();
+
                 return $group;
             })
             ->filter(fn (array $group) => ! empty($group['permissions']))
@@ -132,7 +133,7 @@ class ShopController extends Controller
 
         return redirect()
             ->route('shops')
-            ->with('status', 'تم حفظ صلاحيات لوحة متجر ' . $shop->name . ' بنجاح.');
+            ->with('status', 'تم حفظ صلاحيات لوحة متجر '.$shop->name.' بنجاح.');
     }
 
     private function ownerPermissionsFor(Shop $shop): array
@@ -150,18 +151,18 @@ class ShopController extends Controller
 
         $shop->load([
             'social',
-            'categories' => fn($query) => $query->withCount('products')->latest(),
-            'agents' => fn($query) => $query->latest(),
-            'distributors' => fn($query) => $query->latest(),
-            'advertisements' => fn($query) => $query->latest(),
+            'categories' => fn ($query) => $query->withCount('products')->latest(),
+            'agents' => fn ($query) => $query->latest(),
+            'distributors' => fn ($query) => $query->latest(),
+            'advertisements' => fn ($query) => $query->latest(),
         ])->loadCount(['products', 'categories', 'agents', 'distributors', 'advertisements']);
 
         $publicShopUrl = $shop->publicUrl();
         $shopQrCodeSvg = (new Writer(new ImageRenderer(
             new RendererStyle(360, 2),
-            new SvgImageBackEnd()
+            new SvgImageBackEnd
         )))->writeString($publicShopUrl);
-        $shopQrCodeDataUri = 'data:image/svg+xml;base64,' . base64_encode($shopQrCodeSvg);
+        $shopQrCodeDataUri = 'data:image/svg+xml;base64,'.base64_encode($shopQrCodeSvg);
         $socialLinks = collect([
             ['label' => 'Facebook', 'icon' => 'ti-brand-facebook', 'value' => optional($shop->social)->facebook],
             ['label' => 'Instagram', 'icon' => 'ti-brand-instagram', 'value' => optional($shop->social)->instagram],
@@ -172,11 +173,11 @@ class ShopController extends Controller
             ['label' => 'YouTube', 'icon' => 'ti-brand-youtube', 'value' => optional($shop->social)->youtube],
             ['label' => 'WhatsApp', 'icon' => 'ti-brand-whatsapp', 'value' => optional($shop->social)->whatsapp],
         ])
-            ->filter(fn($link) => filled($link['value']))
+            ->filter(fn ($link) => filled($link['value']))
             ->map(function ($link) {
                 $link['url'] = Str::startsWith($link['value'], ['http://', 'https://'])
                     ? $link['value']
-                    : 'https://' . ltrim($link['value'], '/');
+                    : 'https://'.ltrim($link['value'], '/');
 
                 return $link;
             })
@@ -265,15 +266,15 @@ class ShopController extends Controller
         }
 
         ShopSocial::create([
-            'shop_id'   => $shop->id,
-            'facebook'  => $request->facebook,
+            'shop_id' => $shop->id,
+            'facebook' => $request->facebook,
             'instagram' => $request->instagram,
-            'tiktok'    => $request->tiktok,
-            'telegram'  => $request->telegram,
-            'snapchat'  => $request->snapchat,
-            'twitter'   => $request->twitter,
-            'youtube'   => $request->youtube,
-            'whatsapp'  => $request->social_whatsapp,
+            'tiktok' => $request->tiktok,
+            'telegram' => $request->telegram,
+            'snapchat' => $request->snapchat,
+            'twitter' => $request->twitter,
+            'youtube' => $request->youtube,
+            'whatsapp' => $request->social_whatsapp,
         ]);
 
         $this->notifySuperAdmin(
@@ -290,13 +291,13 @@ class ShopController extends Controller
             ->with('status', 'تم إضافة المتجر بنجاح.');
     }
 
-   public function edit($id): View
-{
-    $shop = Shop::with(['social', 'user'])->findOrFail($id);
-    $this->authorizeShopAccess($shop);
+    public function edit($id): View
+    {
+        $shop = Shop::with(['social', 'user'])->findOrFail($id);
+        $this->authorizeShopAccess($shop);
 
-    return view('admin.shop.shops_edit', compact('shop'));
-}
+        return view('admin.shop.shops_edit', compact('shop'));
+    }
 
     public function update(Request $request, Shop $shop): RedirectResponse
     {
@@ -326,14 +327,14 @@ class ShopController extends Controller
         $shop->social()->updateOrCreate(
             ['shop_id' => $shop->id],
             [
-                'facebook'  => $request->facebook,
+                'facebook' => $request->facebook,
                 'instagram' => $request->instagram,
-                'tiktok'    => $request->tiktok,
-                'telegram'  => $request->telegram,
-                'snapchat'  => $request->snapchat,
-                'twitter'   => $request->twitter,
-                'youtube'   => $request->youtube,
-                'whatsapp'  => $request->social_whatsapp,
+                'tiktok' => $request->tiktok,
+                'telegram' => $request->telegram,
+                'snapchat' => $request->snapchat,
+                'twitter' => $request->twitter,
+                'youtube' => $request->youtube,
+                'whatsapp' => $request->social_whatsapp,
             ]
         );
 
@@ -366,6 +367,13 @@ class ShopController extends Controller
 
     private function validatedData(Request $request, ?Shop $shop = null): array
     {
+        foreach (['open_time', 'close_time'] as $timeField) {
+            $time = $request->input($timeField);
+            if (is_string($time) && preg_match('/^\d{2}:\d{2}(?::\d{2})?$/', $time)) {
+                $request->merge([$timeField => substr($time, 0, 5)]);
+            }
+        }
+
         $authUser = Auth::user();
         $usesCurrentUserAsOwner = ! $shop && $authUser?->isAgent();
         $ownerPasswordRules = $shop || $usesCurrentUserAsOwner
@@ -523,10 +531,11 @@ class ShopController extends Controller
 
         if ($shop->user) {
             $shop->user->update($ownerData);
+
             return;
         }
 
-        $ownerData['email'] = $ownerData['email'] ?? $data['email'] ?? 'shop-' . $shop->id . '@ozman.local';
+        $ownerData['email'] = $ownerData['email'] ?? $data['email'] ?? 'shop-'.$shop->id.'@ozman.local';
         $ownerData['password'] = $ownerData['password'] ?? Hash::make(Str::random(16));
 
         $owner = User::create($ownerData);
@@ -562,9 +571,9 @@ class ShopController extends Controller
 
         while (
             Shop::query()
-            ->where('slug', $slug)
-            ->when($shop, fn($query) => $query->where('id', '!=', $shop->id))
-            ->exists()
+                ->where('slug', $slug)
+                ->when($shop, fn ($query) => $query->where('id', '!=', $shop->id))
+                ->exists()
         ) {
             $slug = "{$base}-{$counter}";
             $counter++;
@@ -577,12 +586,12 @@ class ShopController extends Controller
     {
         $path = $request->file($field)->store($directory, 'public');
 
-        return 'storage/' . $path;
+        return 'storage/'.$path;
     }
 
     private function deleteUpload(?string $path): void
     {
-        if (!$path) {
+        if (! $path) {
             return;
         }
 
