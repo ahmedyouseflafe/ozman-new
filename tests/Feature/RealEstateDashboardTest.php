@@ -91,6 +91,7 @@ class RealEstateDashboardTest extends TestCase
             ->assertSee('موقعي الحالي')
             ->assertSee('نسخ المواصفات وفتح Facebook')
             ->assertSee('id="open-facebook-share"', false)
+            ->assertSee("document.execCommand('copy')", false)
             ->assertSee("window.open(shareUrl,'_blank')", false)
             ->assertDontSee("window.open('about:blank'", false)
             ->assertSee('Ctrl + V')
