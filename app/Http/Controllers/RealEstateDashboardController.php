@@ -258,7 +258,71 @@ class RealEstateDashboardController extends Controller
             'is_featured' => ['nullable', 'boolean'],
             'images' => ['nullable', 'array', 'max:20'],
             'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
-        ]);
+        ], $this->arabicValidationMessages(), $this->arabicPropertyAttributes());
+    }
+
+    private function arabicValidationMessages(): array
+    {
+        return [
+            'required' => 'حقل :attribute مطلوب.',
+            'string' => 'حقل :attribute يجب أن يكون نصًا.',
+            'numeric' => 'حقل :attribute يجب أن يكون رقمًا.',
+            'integer' => 'حقل :attribute يجب أن يكون عددًا صحيحًا.',
+            'array' => 'حقل :attribute يجب أن يكون قائمة.',
+            'boolean' => 'القيمة المحددة في :attribute غير صحيحة.',
+            'date' => 'حقل :attribute يجب أن يكون تاريخًا صحيحًا.',
+            'url' => 'حقل :attribute يجب أن يكون رابطًا صحيحًا يبدأ بـ http:// أو https://.',
+            'alpha_dash' => 'حقل :attribute يجب أن يحتوي على أحرف إنجليزية أو أرقام أو شرطات فقط.',
+            'unique' => 'قيمة :attribute مستخدمة مسبقًا، اختر قيمة أخرى.',
+            'in' => 'القيمة المحددة في :attribute غير صحيحة.',
+            'between.numeric' => 'قيمة :attribute يجب أن تكون بين :min و:max.',
+            'min.numeric' => 'قيمة :attribute يجب ألا تقل عن :min.',
+            'max.numeric' => 'قيمة :attribute يجب ألا تزيد عن :max.',
+            'max.string' => 'حقل :attribute يجب ألا يتجاوز :max حرفًا.',
+            'max.array' => 'لا يمكن إضافة أكثر من :max عنصرًا في :attribute.',
+            'max.file' => 'حجم كل ملف في :attribute يجب ألا يتجاوز :max كيلوبايت.',
+            'image' => 'الملف المرفوع في :attribute يجب أن يكون صورة.',
+            'mimes' => 'صيغة الصورة في :attribute يجب أن تكون: :values.',
+        ];
+    }
+
+    private function arabicPropertyAttributes(): array
+    {
+        return [
+            'reference' => 'المرجع الداخلي',
+            'slug' => 'رابط العقار المخصص',
+            'purpose' => 'الغرض من العقار',
+            'property_type' => 'نوع العقار',
+            'title' => 'عنوان العقار بالعربية',
+            'title_he' => 'عنوان العقار بالعبرية',
+            'title_en' => 'عنوان العقار بالإنجليزية',
+            'description' => 'الوصف بالعربية',
+            'description_he' => 'الوصف بالعبرية',
+            'description_en' => 'الوصف بالإنجليزية',
+            'price' => 'السعر',
+            'currency' => 'العملة',
+            'monthly_fees' => 'الرسوم الشهرية',
+            'city' => 'المدينة',
+            'neighborhood' => 'المنطقة أو الحي',
+            'address' => 'العنوان',
+            'latitude' => 'موقع العقار على الخريطة',
+            'longitude' => 'موقع العقار على الخريطة',
+            'rooms' => 'عدد الغرف',
+            'bedrooms' => 'غرف النوم',
+            'bathrooms' => 'الحمامات',
+            'area' => 'المساحة',
+            'floor' => 'الطابق',
+            'building_floors' => 'عدد طوابق المبنى',
+            'parking_spaces' => 'مواقف السيارات',
+            'available_from' => 'تاريخ توفر العقار',
+            'status' => 'حالة العقار',
+            'amenities_text' => 'المزايا الإضافية',
+            'nearby_places_text' => 'الأماكن القريبة',
+            'video_url' => 'رابط الفيديو',
+            'virtual_tour_url' => 'رابط الجولة الافتراضية',
+            'images' => 'صور العقار',
+            'images.*' => 'صور العقار',
+        ];
     }
 
     private function normalizePropertyData(array $data, ?RealEstateProperty $property = null): array

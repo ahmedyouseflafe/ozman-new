@@ -124,6 +124,26 @@ class RealEstateDashboardTest extends TestCase
         $this->actingAs($owner)->get(route('real-estate.dashboard', $shop))->assertNotFound();
     }
 
+    public function test_property_validation_messages_and_field_names_are_arabic(): void
+    {
+        [$owner, $shop] = $this->company('arabic-validation');
+
+        $this->actingAs($owner)->post(route('real-estate.dashboard.properties.store', $shop), [
+            'title' => 'عقار تجريبي',
+            'slug' => 'bad slug!',
+            'purpose' => 'sale',
+            'property_type' => 'apartment',
+            'price' => 100000,
+            'currency' => 'ILS',
+            'city' => 'Ramallah',
+            'latitude' => 31.9,
+            'longitude' => 35.2,
+            'status' => 'draft',
+        ])->assertSessionHasErrors([
+            'slug' => 'حقل رابط العقار المخصص يجب أن يحتوي على أحرف إنجليزية أو أرقام أو شرطات فقط.',
+        ]);
+    }
+
     private function company(string $suffix): array
     {
         $owner = User::factory()->create([
