@@ -89,6 +89,9 @@ class RealEstateDashboardTest extends TestCase
             ->assertSee('تجهيز منشور فيسبوك')
             ->assertSee('property-location-map', false)
             ->assertSee('موقعي الحالي')
+            ->assertSee('نسخ المواصفات وفتح Facebook')
+            ->assertSee('id="open-facebook-share"', false)
+            ->assertSee('Ctrl + V')
             ->assertSee(route('real-estate.dashboard.facebook-images', [$shop, $property]), false);
 
         $this->get(route('real-estate.property', [$shop, $property]))
