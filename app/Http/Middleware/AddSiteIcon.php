@@ -25,7 +25,12 @@ class AddSiteIcon
 
         $icon = '<link rel="icon" type="image/png" href="'.asset('ozman-favicon.png').'?v=3">';
         $content = preg_replace('/<\/head>/i', "    {$icon}\n</head>", $content, 1);
+        $original = property_exists($response, 'original') ? $response->original : null;
         $response->setContent($content);
+
+        if ($original !== null) {
+            $response->original = $original;
+        }
 
         return $response;
     }

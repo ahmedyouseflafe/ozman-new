@@ -97,6 +97,14 @@ return [
             'included_accessories' => ['label' => 'الملحقات المرفقة', 'type' => 'list', 'placeholder' => 'مثال: شاحن، كابل، كفر'],
         ],
     ],
+    'real_estate' => [
+        'label' => 'شركة عقارات',
+        'description' => 'بيع وتأجير العقارات بواجهة مستقلة وروابط خاصة بالشركة.',
+        'suggested_categories' => [],
+        'icon' => 'ti-building-community',
+        'uses_products' => false,
+        'fields' => [],
+    ],
     'cosmetics' => [
         'label' => 'كوزماتيكس وعناية',
         'description' => 'درجات، نوع بشرة، حجم، مكونات وطريقة استخدام.',

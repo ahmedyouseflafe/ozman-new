@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Shop;
 use App\Models\Distributor;
 use App\Models\DistributorMarketer;
+use App\Models\Shop;
 use App\Models\User;
-use App\Services\ShopOwnerAccountService;
 use App\Rules\ValidPhoneNumber;
+use App\Services\ShopOwnerAccountService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -148,8 +148,8 @@ class AuthController extends Controller
             'owner_name' => ['required', 'string', 'max:255'],
             'shop_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($orphanOwner?->id)],
-            'phone' => ['required', 'string', 'max:60', new ValidPhoneNumber()],
-            'whatsapp' => ['nullable', 'string', 'max:60', new ValidPhoneNumber()],
+            'phone' => ['required', 'string', 'max:60', new ValidPhoneNumber],
+            'whatsapp' => ['nullable', 'string', 'max:60', new ValidPhoneNumber],
             'address' => ['nullable', 'string', 'max:1000'],
             'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
@@ -172,7 +172,7 @@ class AuthController extends Controller
         $orphanOwner?->delete();
 
         $logoPath = $request->hasFile('logo')
-            ? 'storage/' . $request->file('logo')->store('shops/logos', 'public')
+            ? 'storage/'.$request->file('logo')->store('shops/logos', 'public')
             : null;
 
         [$user, $shop] = DB::transaction(function () use ($data, $referral, $logoPath) {
@@ -227,6 +227,11 @@ class AuthController extends Controller
 
             if ($shop) {
                 app(ShopOwnerAccountService::class)->resolve($shop);
+
+                if ($shop->catalog_type === 'real_estate') {
+                    return redirect()->route('real-estate.dashboard', $shop);
+                }
+
                 return redirect()->route('shops.show', $shop);
             }
         }
@@ -284,7 +289,7 @@ class AuthController extends Controller
 
         return redirect()
             ->route('shops.show', $shop)
-            ->with('success', 'أنت الآن داخل لوحة تحكم متجر ' . $shop->name . '.');
+            ->with('success', 'أنت الآن داخل لوحة تحكم متجر '.$shop->name.'.');
     }
 
     public function returnFromShopDashboard(Request $request): RedirectResponse
@@ -312,7 +317,6 @@ class AuthController extends Controller
             ->with('success', 'تم الرجوع إلى لوحة تحكم الإدارة.');
     }
 
-
     private function redirectAfterLogin(Request $request): RedirectResponse
     {
         $dashboard = $this->dashboard($request);
@@ -339,7 +343,7 @@ class AuthController extends Controller
             return route('home');
         }
 
-        return $path . ($query ? '?' . $query : '');
+        return $path.($query ? '?'.$query : '');
     }
 
     private function captureMerchantReferral(Request $request): void

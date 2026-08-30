@@ -137,7 +137,7 @@ class ElectronicsStoreTest extends TestCase
             ->assertSee($category->name);
 
         $script = file_get_contents(public_path('script.js'));
-        $this->assertStringContainsString("['restaurant', 'electronics'].includes", $script);
+        $this->assertStringContainsString("['restaurant', 'electronics', 'real_estate'].includes", $script);
     }
 
     private function store(string $suffix): array

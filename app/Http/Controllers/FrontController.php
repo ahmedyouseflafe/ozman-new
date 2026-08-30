@@ -33,6 +33,9 @@ class FrontController extends Controller
         if ($shop?->exists && $shop->catalog_type === 'electronics') {
             return redirect()->route('electronics.store', $shop);
         }
+        if ($shop?->exists && $shop->catalog_type === 'real_estate') {
+            return redirect()->route('real-estate.company', $shop);
+        }
 
         $shopSummaries = Shop::query()
             ->where('is_active', true)
@@ -916,11 +919,7 @@ class FrontController extends Controller
 
     private function shopPublicUrl(Shop $shop): string
     {
-        return match ($shop->catalog_type) {
-            'restaurant' => route('restaurant.menu', $shop),
-            'electronics' => route('electronics.store', $shop),
-            default => route('front.shop.slug', $shop),
-        };
+        return $shop->publicUrl();
     }
 
     private function purchaseRewardWheelsPayload(?Shop $shop): array

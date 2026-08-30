@@ -32,6 +32,16 @@ class ShopOwnerAccountService
             }
         }
 
+        if ($applyDefaults) {
+            $requiredPermissions = collect(config('shop_owner_permissions.required', []))
+                ->merge(config("shop_owner_permissions.catalog_type_required.{$shop->catalog_type}", []))
+                ->unique();
+
+            foreach ($requiredPermissions as $permission) {
+                $owner->employeePermissions()->firstOrCreate(['permission' => $permission]);
+            }
+        }
+
         return $owner;
     }
 
@@ -42,11 +52,11 @@ class ShopOwnerAccountService
             : "shop-{$shop->id}@ozman.local";
 
         while (User::query()->where('email', $email)->exists()) {
-            $email = "shop-{$shop->id}-" . Str::lower(Str::random(6)) . '@ozman.local';
+            $email = "shop-{$shop->id}-".Str::lower(Str::random(6)).'@ozman.local';
         }
 
         $owner = User::create([
-            'name' => $shop->name . ' - صاحب المتجر',
+            'name' => $shop->name.' - صاحب المتجر',
             'email' => $email,
             'phone' => $shop->phone,
             'password' => Hash::make(Str::random(32)),

@@ -11,9 +11,11 @@ class SiteIconTest extends TestCase
 
     public function test_public_page_has_ozman_favicon(): void
     {
-        $this->get(route('home'))
+        $response = $this->get(route('home'))
             ->assertOk()
             ->assertSee('<link rel="icon" type="image/png" href="'.asset('ozman-favicon.png').'?v=3">', false);
+
+        $response->assertViewIs('front.index');
     }
 
     public function test_login_page_has_ozman_favicon(): void

@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Shop extends Model
 {
@@ -54,7 +55,7 @@ class Shop extends Model
 
     public function catalogDefinition(): array
     {
-        return config('catalog_types.' . ($this->catalog_type ?: 'general'), config('catalog_types.general', []));
+        return config('catalog_types.'.($this->catalog_type ?: 'general'), config('catalog_types.general', []));
     }
 
     // العلاقات
@@ -69,10 +70,10 @@ class Shop extends Model
         return $this->belongsTo(Distributor::class);
     }
 
-   public function social()
-{
-    return $this->hasOne(ShopSocial::class);
-}
+    public function social()
+    {
+        return $this->hasOne(ShopSocial::class);
+    }
 
     public function categories()
     {
@@ -112,5 +113,35 @@ class Shop extends Model
     public function rewardWheels()
     {
         return $this->hasMany(RewardWheel::class);
+    }
+
+    public function realEstateProperties(): HasMany
+    {
+        return $this->hasMany(RealEstateProperty::class);
+    }
+
+    public function realEstateLeads(): HasMany
+    {
+        return $this->hasMany(RealEstateLead::class);
+    }
+
+    public function realEstateAlerts(): HasMany
+    {
+        return $this->hasMany(RealEstateAlert::class);
+    }
+
+    public function publicRouteName(): string
+    {
+        return match ($this->catalog_type) {
+            'restaurant' => 'restaurant.menu',
+            'electronics' => 'electronics.store',
+            'real_estate' => 'real-estate.company',
+            default => 'front.shop.slug',
+        };
+    }
+
+    public function publicUrl(): string
+    {
+        return route($this->publicRouteName(), $this);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\RealEstateProperty;
 use App\Models\Shop;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
@@ -39,14 +40,8 @@ class SeoController extends Controller
 
         Shop::query()->where('is_active', true)->get(['id', 'slug', 'catalog_type', 'updated_at'])
             ->each(function (Shop $shop) use ($urls): void {
-                $route = match ($shop->catalog_type) {
-                    'restaurant' => 'restaurant.menu',
-                    'electronics' => 'electronics.store',
-                    default => 'front.shop.slug',
-                };
-
                 $urls->push([
-                    'loc' => route($route, $shop),
+                    'loc' => $shop->publicUrl(),
                     'lastmod' => $shop->updated_at?->toDateString(),
                     'priority' => '0.8',
                 ]);
@@ -60,6 +55,17 @@ class SeoController extends Controller
             ->each(fn (Product $product) => $urls->push([
                 'loc' => route('electronics.product', [$product->shop, $product]),
                 'lastmod' => $product->updated_at?->toDateString(),
+                'priority' => '0.7',
+            ]));
+
+        RealEstateProperty::query()
+            ->published()
+            ->whereHas('shop', fn ($query) => $query->where('is_active', true)->where('catalog_type', 'real_estate'))
+            ->with('shop:id,slug')
+            ->get(['id', 'shop_id', 'slug', 'updated_at'])
+            ->each(fn (RealEstateProperty $property) => $urls->push([
+                'loc' => $property->publicUrl(),
+                'lastmod' => $property->updated_at?->toDateString(),
                 'priority' => '0.7',
             ]));
 

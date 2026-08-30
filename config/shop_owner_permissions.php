@@ -18,9 +18,17 @@ return [
             'restaurant.tables.manage',
             'restaurant.orders.manage',
         ],
+        'real_estate' => [
+            'real_estate.view',
+            'real_estate.create',
+            'real_estate.edit',
+            'real_estate.delete',
+            'real_estate.leads',
+        ],
     ],
     'required' => ['dashboard.view', 'shops.view'],
     'catalog_type_required' => [
         'restaurant' => ['restaurant.view'],
+        'real_estate' => ['real_estate.view'],
     ],
 ];

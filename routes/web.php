@@ -5,20 +5,22 @@ use App\Http\Controllers\AgentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DistributorController;
-use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ElectronicsStoreController;
+use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\FrontController;
 use App\Http\Controllers\FrontOrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RaffleCardController;
+use App\Http\Controllers\RealEstateController;
+use App\Http\Controllers\RealEstateDashboardController;
 use App\Http\Controllers\RestaurantController;
 use App\Http\Controllers\RewardWheelController;
 use App\Http\Controllers\ScreenController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShopController;
-use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\TextToSpeechController;
+use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\VisitorRegistrationAdminController;
 use App\Http\Controllers\VisitorRegistrationController;
 use App\Models\AdminNotification;
@@ -39,6 +41,15 @@ Route::post('/electronics/{shop:slug}/compare/{product}', [ElectronicsStoreContr
 Route::post('/electronics/{shop:slug}/compare-clear', [ElectronicsStoreController::class, 'clearCompare'])->name('electronics.compare.clear');
 Route::get('/electronics/{shop:slug}/compare', [ElectronicsStoreController::class, 'compare'])->name('electronics.compare');
 Route::get('/electronics/{shop:slug}/devices/{product:slug}', [ElectronicsStoreController::class, 'show'])->name('electronics.product');
+Route::get('/real-estate/{shop:slug}', [RealEstateController::class, 'company'])->name('real-estate.company');
+Route::get('/real-estate/{shop:slug}/properties/{realEstateProperty:slug}', [RealEstateController::class, 'property'])->name('real-estate.property');
+Route::get('/real-estate', [RealEstateController::class, 'index'])->name('real-estate.index');
+Route::get('/real-estate-compare', [RealEstateController::class, 'compare'])->name('real-estate.compare');
+Route::post('/real-estate/{shop:slug}/properties/{realEstateProperty:slug}/inquiries', [RealEstateController::class, 'inquiry'])
+    ->middleware('throttle:10,1')->name('real-estate.inquiries.store');
+Route::post('/real-estate-alerts', [RealEstateController::class, 'alert'])
+    ->middleware('throttle:5,1')->name('real-estate.alerts.store');
+Route::get('/real-estate/{shop:slug}/qr.svg', [RealEstateDashboardController::class, 'qr'])->name('real-estate.company.qr');
 Route::post('/electronics/{shop}/orders', [ElectronicsStoreController::class, 'order'])->middleware('throttle:20,1')->name('electronics.orders.store');
 Route::get('/restaurants/{shop:slug}/table/{tableCode}', [RestaurantController::class, 'menu'])->name('restaurant.table');
 Route::post('/restaurants/{shop}/orders', [RestaurantController::class, 'storeOrder'])->middleware('throttle:30,1')->name('restaurant.orders.store');
@@ -82,6 +93,16 @@ Route::get('/display', [ScreenController::class, 'mainDisplay'])->name('display.
 Route::get('/display/shop/{shop}', [ScreenController::class, 'shopDisplay'])->name('display.shop');
 
 Route::middleware(['auth', 'admin.access'])->group(function () {
+    Route::get('/shops/{shop}/real-estate', [RealEstateDashboardController::class, 'index'])->name('real-estate.dashboard');
+    Route::get('/shops/{shop}/real-estate/properties/create', [RealEstateDashboardController::class, 'create'])->name('real-estate.dashboard.properties.create');
+    Route::post('/shops/{shop}/real-estate/properties', [RealEstateDashboardController::class, 'store'])->name('real-estate.dashboard.properties.store');
+    Route::get('/shops/{shop}/real-estate/properties/{property}/edit', [RealEstateDashboardController::class, 'edit'])->name('real-estate.dashboard.properties.edit');
+    Route::put('/shops/{shop}/real-estate/properties/{property}', [RealEstateDashboardController::class, 'update'])->name('real-estate.dashboard.properties.update');
+    Route::delete('/shops/{shop}/real-estate/properties/{property}', [RealEstateDashboardController::class, 'destroy'])->name('real-estate.dashboard.properties.destroy');
+    Route::delete('/shops/{shop}/real-estate/properties/{property}/images/{image}', [RealEstateDashboardController::class, 'destroyImage'])->name('real-estate.dashboard.images.destroy');
+    Route::patch('/shops/{shop}/real-estate/properties/{property}/images/{image}/cover', [RealEstateDashboardController::class, 'coverImage'])->name('real-estate.dashboard.images.cover');
+    Route::patch('/shops/{shop}/real-estate/properties/{property}/images/{image}/move', [RealEstateDashboardController::class, 'moveImage'])->name('real-estate.dashboard.images.move');
+    Route::patch('/shops/{shop}/real-estate/leads/{lead}', [RealEstateDashboardController::class, 'updateLead'])->name('real-estate.dashboard.leads.update');
     Route::get('/shops/{shop}/restaurant', [RestaurantController::class, 'dashboard'])->name('restaurant.dashboard');
     Route::get('/shops/{shop}/restaurant/orders-feed', [RestaurantController::class, 'ordersFeed'])->name('restaurant.orders.feed');
     Route::post('/shops/{shop}/restaurant/tables', [RestaurantController::class, 'storeTable'])->name('restaurant.tables.store');

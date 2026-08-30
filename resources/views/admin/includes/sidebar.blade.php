@@ -389,6 +389,9 @@
     $restaurantNavShop = $previewShopId
         ? \App\Models\Shop::query()->whereKey($previewShopId)->where('catalog_type', 'restaurant')->first()
         : null;
+    $realEstateNavShop = $previewShopId
+        ? \App\Models\Shop::query()->whereKey($previewShopId)->where('catalog_type', 'real_estate')->first()
+        : null;
 
     $previewDistributor = null;
     if ($isDistributor) {
@@ -550,6 +553,12 @@
              <i class="ti ti-tools-kitchen-2" aria-hidden="true"></i>
              إدارة المطعم والطلبات
         </a>
+        @elseif($realEstateNavShop && $canSee(['real-estate.dashboard']))
+        <a href="{{ route('real-estate.dashboard', $realEstateNavShop) }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('real-estate.dashboard*') ? 'active' : '' }}">
+             <i class="ti ti-building-estate" aria-hidden="true"></i>
+             إدارة العقارات والعملاء
+        </a>
         @elseif($canSee(['front-orders.index']))
         <a href="{{ route('front-orders.index') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('front-orders.index') ? 'active' : '' }}">
@@ -673,7 +682,7 @@
 @php
     $mobileNavCount = 1
         + ($canSee(['dashboard']) ? 1 : 0)
-        + (($restaurantNavShop && $canSee(['restaurant.dashboard'])) || $canSee(['front-orders.index']) ? 1 : 0)
+        + ((($restaurantNavShop && $canSee(['restaurant.dashboard'])) || ($realEstateNavShop && $canSee(['real-estate.dashboard'])) || $canSee(['front-orders.index'])) ? 1 : 0)
         + ($canSee(['products']) ? 1 : 0)
         + ($canSee(['products.preview']) ? 1 : 0);
 @endphp
@@ -689,6 +698,11 @@
         <a href="{{ route('restaurant.dashboard', $restaurantNavShop) }}" class="admin-mobile-nav-item {{ request()->routeIs('restaurant.*') ? 'active' : '' }}">
             <i class="ti ti-tools-kitchen-2" aria-hidden="true"></i>
             المطعم
+        </a>
+    @elseif($realEstateNavShop && $canSee(['real-estate.dashboard']))
+        <a href="{{ route('real-estate.dashboard', $realEstateNavShop) }}" class="admin-mobile-nav-item {{ request()->routeIs('real-estate.dashboard*') ? 'active' : '' }}">
+            <i class="ti ti-building-estate" aria-hidden="true"></i>
+            العقارات
         </a>
     @elseif($canSee(['front-orders.index']))
         <a href="{{ route('front-orders.index') }}" class="admin-mobile-nav-item {{ request()->routeIs('front-orders.index') ? 'active' : '' }}">
