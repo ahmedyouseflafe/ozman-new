@@ -2,7 +2,7 @@
     $editing=$property->exists;
     $translations=$property->title_translations ?? [];
     $descriptionTranslations=$property->description_translations ?? [];
-    $facebookUrl = $editing ? $property->publicUrl().'?utm_source=facebook&utm_medium=social&utm_campaign=property_share' : '';
+    $facebookUrl = $editing ? $property->publicUrl().'?utm_source=facebook&utm_medium=social&utm_campaign=property_share&v='.($property->updated_at?->timestamp ?? time()) : '';
     $facebookLines = $editing ? array_values(array_filter([
         ($property->purpose === 'sale' ? '🏠 للبيع: ' : '🔑 للإيجار: ').$property->title,
         '',
@@ -56,7 +56,7 @@ dialog.facebook-kit{width:min(920px,calc(100% - 24px));max-height:90vh;padding:0
             </form>
             @else<div class="notice error">أضف صورًا للعقار أولًا حتى تتمكن من تجهيز المنشور.</div>@endif
         </section>
-        <section class="kit-panel"><h3>2. انسخ نص الإعلان</h3><p>يمكنك تعديل النص قبل نسخه.</p><textarea class="kit-text" id="facebook-post-text">{{ $facebookPostText }}</textarea><div class="kit-actions"><button class="btn btn-primary" type="button" id="copy-facebook-post"><i class="ti ti-copy"></i> نسخ نص الإعلان</button><a class="btn facebook-btn" target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode($facebookUrl) }}"><i class="ti ti-brand-facebook"></i> فتح مشاركة فيسبوك</a><span class="copy-feedback" id="copy-feedback">تم النسخ ✓</span></div></section>
+        <section class="kit-panel"><h3>2. انسخ نص الإعلان</h3><p>المواصفات موجودة أيضًا داخل معاينة الرابط. يمكنك تعديل النص قبل نسخه.</p><textarea class="kit-text" id="facebook-post-text">{{ $facebookPostText }}</textarea><div class="kit-actions"><button class="btn btn-primary" type="button" id="copy-facebook-post"><i class="ti ti-copy"></i> نسخ نص الإعلان</button><a class="btn facebook-btn" target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode($facebookUrl) }}&quote={{ urlencode($facebookPostText) }}"><i class="ti ti-brand-facebook"></i> فتح مشاركة فيسبوك</a><span class="copy-feedback" id="copy-feedback">تم النسخ ✓</span></div></section>
     </div></div>
 </dialog>
 <script>

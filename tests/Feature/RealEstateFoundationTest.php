@@ -60,6 +60,29 @@ class RealEstateFoundationTest extends TestCase
         $this->get(route('real-estate.property', [$beta, $property]))->assertNotFound();
     }
 
+    public function test_property_social_preview_contains_its_main_specifications(): void
+    {
+        $company = $this->company('social-preview');
+        $property = $this->property($company, 'social-home', 'Social Home');
+        $property->update([
+            'purpose' => 'sale',
+            'area' => 165,
+            'rooms' => 4,
+            'bathrooms' => 2,
+            'floor' => 3,
+        ]);
+        $this->withSession(['locale' => 'ar'])
+            ->withHeader('User-Agent', 'facebookexternalhit/1.1')
+            ->get($property->publicUrl())
+            ->assertOk()
+            ->assertSee('property="og:type" content="article"', false)
+            ->assertSee('property="og:title" content="للبيع: Social Home — 2,700 ILS"', false)
+            ->assertSee('property="og:description"', false)
+            ->assertSee('165 م²', false)
+            ->assertSee('4.0 غرف', false)
+            ->assertSee('2 حمامات', false);
+    }
+
     public function test_leads_are_owned_by_the_company_and_optionally_linked_to_a_property(): void
     {
         $company = $this->company('alpha');

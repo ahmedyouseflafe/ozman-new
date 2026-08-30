@@ -19,6 +19,9 @@
 <meta property="og:description" content="{{ $seoDescription }}">
 <meta property="og:url" content="{{ $seoCanonical }}">
 <meta property="og:image" content="{{ $seoImage }}">
+<meta property="og:image:secure_url" content="{{ $seoImage }}">
+<meta property="og:image:alt" content="{{ $imageAlt ?? $seoTitle }}">
+@if(!empty($updatedTime))<meta property="og:updated_time" content="{{ $updatedTime }}">@endif
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{{ $seoTitle }}">
 <meta name="twitter:description" content="{{ $seoDescription }}">
