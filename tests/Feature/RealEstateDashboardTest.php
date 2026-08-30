@@ -39,6 +39,17 @@ class RealEstateDashboardTest extends TestCase
         $this->assertDatabaseHas('real_estate_properties', ['id' => $foreignProperty->id]);
     }
 
+    public function test_new_property_form_defaults_to_public_visibility(): void
+    {
+        [$owner, $shop] = $this->company('public-default');
+
+        $this->actingAs($owner)
+            ->get(route('real-estate.dashboard.properties.create', $shop))
+            ->assertOk()
+            ->assertSee('value="published" selected', false)
+            ->assertSee('منشور — يظهر للزوار');
+    }
+
     public function test_owner_can_create_publish_and_upload_images_for_a_property(): void
     {
         Storage::fake('public');
