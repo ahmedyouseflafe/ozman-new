@@ -52,6 +52,8 @@ class RealEstateDashboardTest extends TestCase
             'price' => 350000,
             'currency' => 'ILS',
             'city' => 'Ramallah',
+            'latitude' => 31.9038,
+            'longitude' => 35.2034,
             'status' => 'published',
             'rooms' => 4,
             'area' => 160,
@@ -74,6 +76,8 @@ class RealEstateDashboardTest extends TestCase
             ->get(route('real-estate.dashboard.properties.edit', [$shop, $property]))
             ->assertOk()
             ->assertSee('تجهيز منشور فيسبوك')
+            ->assertSee('property-location-map', false)
+            ->assertSee('موقعي الحالي')
             ->assertSee(route('real-estate.dashboard.facebook-images', [$shop, $property]), false);
 
         $this->get(route('real-estate.property', [$shop, $property]))
