@@ -48,6 +48,10 @@
         @media(max-width:960px){.property-hero{gap:14px}.gallery{border-bottom:1px solid var(--line)}}
         @media(max-width:600px){.property-hero{gap:12px}.gallery,.hero-summary{border-radius:20px}.hero-summary h1,.location{direction:rtl;text-align:right;unicode-bidi:plaintext}}
         @media(max-width:600px){main.wrap,.property-hero,.gallery,.hero-summary,.tabs-card,.lower-grid,.panel{width:100%;min-width:0;max-width:100%}.hero-summary h1{max-width:100%;word-break:break-word;overflow-wrap:anywhere}.badges,.facts,.agent,.contact-links{min-width:0;max-width:100%}}
+        .gallery-lightbox{background:rgba(3,14,28,.84);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+        .gallery-lightbox::backdrop{background:rgba(3,14,28,.2)}
+        .gallery-lightbox img{border-radius:7px;box-shadow:0 24px 80px rgba(0,0,0,.48)}
+        .gallery-lightbox .lightbox-arrow,.gallery-lightbox .lightbox-close{background:rgba(35,52,74,.82);backdrop-filter:blur(10px)}
     </style>
 </head>
 <body>
