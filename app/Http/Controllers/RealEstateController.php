@@ -39,7 +39,7 @@ class RealEstateController extends Controller
         $this->ensurePublicRealEstateCompany($shop);
         abort_unless($realEstateProperty->status === 'published' && $realEstateProperty->published_at, 404);
 
-        $realEstateProperty->load(['images', 'shop']);
+        $realEstateProperty->load(['images', 'shop', 'assignedUser']);
         $similar = RealEstateProperty::query()
             ->published()
             ->where('id', '!=', $realEstateProperty->id)
