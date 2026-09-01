@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'whatsapp_cloud' => [
+        'token' => env('WHATSAPP_CLOUD_TOKEN'),
+        'phone_number_id' => env('WHATSAPP_CLOUD_PHONE_NUMBER_ID'),
+        'graph_version' => env('WHATSAPP_CLOUD_GRAPH_VERSION', 'v23.0'),
+        'property_alert_template' => env('WHATSAPP_PROPERTY_ALERT_TEMPLATE'),
+        'template_language' => env('WHATSAPP_PROPERTY_ALERT_LANGUAGE', 'ar'),
+        'default_country_code' => env('WHATSAPP_DEFAULT_COUNTRY_CODE', '972'),
+    ],
+
 ];

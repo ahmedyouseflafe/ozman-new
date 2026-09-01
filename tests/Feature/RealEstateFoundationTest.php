@@ -2,12 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Mail\RealEstatePropertyAlertMail;
 use App\Models\RealEstateAlert;
+use App\Models\RealEstateAlertDelivery;
 use App\Models\RealEstateLead;
 use App\Models\RealEstateProperty;
 use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class RealEstateFoundationTest extends TestCase
@@ -133,6 +137,36 @@ class RealEstateFoundationTest extends TestCase
             ->assertDontSee('Hidden Villa');
     }
 
+    public function test_market_ajax_request_returns_replaceable_filtered_results(): void
+    {
+        $company = $this->company('ajax-filters');
+        $matching = $this->property($company, 'ajax-match', 'AJAX Matching Home');
+        $matching->update([
+            'purpose' => 'sale',
+            'property_type' => 'villa',
+            'city' => 'Ramallah',
+            'price' => 350000,
+            'parking_spaces' => 1,
+        ]);
+        $this->property($company, 'ajax-wrong', 'AJAX Wrong Home');
+
+        $this->withHeader('X-Requested-With', 'XMLHttpRequest')
+            ->get(route('real-estate.company', [
+                'shop' => $company,
+                'purpose' => 'sale',
+                'property_type' => 'villa',
+                'city' => 'Ramallah',
+                'min_price' => 300000,
+                'max_price' => 400000,
+                'parking' => 1,
+            ]))
+            ->assertOk()
+            ->assertSee('id="market-results"', false)
+            ->assertSee('id="market-map-data"', false)
+            ->assertSee('AJAX Matching Home')
+            ->assertDontSee('AJAX Wrong Home');
+    }
+
     public function test_property_inquiry_is_saved_for_the_property_company(): void
     {
         $company = $this->company('inquiry');
@@ -173,6 +207,45 @@ class RealEstateFoundationTest extends TestCase
         $alert = RealEstateAlert::firstOrFail();
         $this->assertSame($company->id, $alert->shop_id);
         $this->assertSame(['city' => 'Nazareth', 'purpose' => 'rent'], $alert->filters);
+    }
+
+    public function test_matching_property_alert_is_sent_by_email_once(): void
+    {
+        Mail::fake();
+        $company = $this->company('email-delivery');
+        $company->update(['name' => 'البرنس للعقارات', 'email' => 'company@example.test']);
+        $alert = RealEstateAlert::create(['shop_id' => $company->id, 'name' => 'Email User', 'channel' => 'email', 'email' => 'alerts@example.test', 'filters' => ['city' => 'Nazareth', 'purpose' => 'rent'], 'locale' => 'ar']);
+        $property = $this->property($company, 'email-match', 'Email Match');
+
+        $this->artisan('real-estate:send-alerts')->assertSuccessful();
+        $this->artisan('real-estate:send-alerts')->assertSuccessful();
+
+        Mail::assertSent(RealEstatePropertyAlertMail::class, function (RealEstatePropertyAlertMail $mail): bool {
+            $envelope = $mail->envelope();
+
+            return $envelope->from?->address === config('mail.from.address')
+                && $envelope->from?->name === 'البرنس للعقارات عبر Ozman'
+                && $envelope->replyTo[0]?->address === 'company@example.test';
+        });
+        Mail::assertSent(RealEstatePropertyAlertMail::class, 1);
+        $this->assertDatabaseHas('real_estate_alert_deliveries', ['real_estate_alert_id' => $alert->id, 'real_estate_property_id' => $property->id, 'status' => 'sent', 'attempts' => 1]);
+    }
+
+    public function test_matching_property_alert_uses_whatsapp_cloud_template(): void
+    {
+        config()->set('services.whatsapp_cloud', ['token' => 'test-token', 'phone_number_id' => '12345', 'graph_version' => 'v23.0', 'property_alert_template' => 'ozman_property_alert', 'template_language' => 'ar', 'default_country_code' => '972']);
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.test']]], 200)]);
+        $company = $this->company('whatsapp-delivery');
+        $alert = RealEstateAlert::create(['shop_id' => $company->id, 'name' => 'WhatsApp User', 'channel' => 'whatsapp', 'phone' => '0599000000', 'filters' => ['city' => 'Nazareth', 'purpose' => 'rent'], 'locale' => 'ar']);
+        $property = $this->property($company, 'whatsapp-match', 'WhatsApp Match');
+
+        $this->artisan('real-estate:send-alerts')->assertSuccessful();
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://graph.facebook.com/v23.0/12345/messages'
+            && $request['to'] === '972599000000'
+            && $request['template']['name'] === 'ozman_property_alert');
+        $this->assertSame('wamid.test', RealEstateAlertDelivery::where('real_estate_alert_id', $alert->id)->value('provider_reference'));
+        $this->assertSame('sent', RealEstateAlertDelivery::where('real_estate_property_id', $property->id)->value('status'));
     }
 
     public function test_comparison_only_shows_published_properties_from_active_real_estate_companies(): void

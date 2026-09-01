@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RealEstateAlert extends Model
 {
@@ -21,5 +22,10 @@ class RealEstateAlert extends Model
     public function shop(): BelongsTo
     {
         return $this->belongsTo(Shop::class);
+    }
+
+    public function deliveries(): HasMany
+    {
+        return $this->hasMany(RealEstateAlertDelivery::class);
     }
 }

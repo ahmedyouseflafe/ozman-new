@@ -1,1 +1,0 @@
-var e=function(e){return e.Info=`info`,e.Warning=`warning`,e.Error=`error`,e}({});export{e as t};

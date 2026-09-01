@@ -1,1 +1,0 @@
-var e=function(e){return e.ExtraExtraSmall=`extra-extra-small`,e.ExtraSmall=`extra-small`,e.Small=`small`,e.Medium=`medium`,e.Large=`large`,e.ExtraLarge=`extra-large`,e}({});export{e as t};
