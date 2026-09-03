@@ -921,7 +921,7 @@
                             id="backToCustomerDataBtn">{{ __('رجوع للبيانات') }}</button>
                         <button type="submit" class="cart-checkout-btn">
                             <i class="fas fa-lock"></i>
-                            {{ __('تأكيد الدفع') }}
+                            {{ __('تأكيد الدفع') }} 
                         </button>
                     </div>
                 </form>

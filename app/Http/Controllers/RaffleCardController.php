@@ -246,7 +246,7 @@ class RaffleCardController extends Controller
         );
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         abort_unless($this->canAccessCurrentRoute(), 403);
 
@@ -255,6 +255,14 @@ class RaffleCardController extends Controller
             'prize_title' => ['required', 'string', 'max:255'],
             'prize_image' => ['nullable', 'image', 'max:4096'],
             'is_active' => ['nullable', 'boolean'],
+        ], [
+            'card_number.required' => 'أدخل رقم البطاقة.',
+            'card_number.digits' => 'رقم البطاقة يجب أن يتكون من 6 أرقام.',
+            'card_number.unique' => 'رقم البطاقة مستخدم مسبقًا.',
+            'prize_title.required' => 'أدخل اسم الجائزة.',
+            'prize_title.max' => 'اسم الجائزة يجب ألا يتجاوز 255 حرفًا.',
+            'prize_image.image' => 'ملف الجائزة يجب أن يكون صورة.',
+            'prize_image.max' => 'حجم صورة الجائزة يجب ألا يتجاوز 4 ميجابايت.',
         ]);
 
         if ($request->hasFile('prize_image')) {
@@ -264,7 +272,16 @@ class RaffleCardController extends Controller
         $data['is_active'] = $request->boolean('is_active', true);
         $data['created_by'] = Auth::id();
 
-        RaffleCard::create($data);
+        $card = RaffleCard::create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'تمت إضافة بطاقة الربح بنجاح.',
+                'total_cards' => RaffleCard::count(),
+                'row_html' => view('admin.raffle_cards._winning_card_row', compact('card'))->render(),
+            ], 201);
+        }
 
         return back()->with('status', 'تمت إضافة بطاقة الربح بنجاح.');
     }

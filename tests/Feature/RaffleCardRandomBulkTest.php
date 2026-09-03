@@ -12,6 +12,51 @@ class RaffleCardRandomBulkTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_can_create_winning_card_with_ajax(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->postJson(route('raffle-cards.store'), [
+                'card_number' => '456789',
+                'prize_title' => 'جائزة AJAX',
+                'is_active' => 1,
+            ]);
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('total_cards', 1)
+            ->assertJsonPath('message', 'تمت إضافة بطاقة الربح بنجاح.');
+
+        $this->assertStringContainsString('456789', $response->json('row_html'));
+        $this->assertStringContainsString('جائزة AJAX', $response->json('row_html'));
+
+        $this->assertDatabaseHas('raffle_cards', [
+            'card_number' => '456789',
+            'prize_title' => 'جائزة AJAX',
+            'is_active' => true,
+        ]);
+    }
+
+    public function test_ajax_card_creation_returns_arabic_validation_error_for_duplicate_number(): void
+    {
+        RaffleCard::create([
+            'card_number' => '456789',
+            'prize_title' => 'جائزة موجودة',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->postJson(route('raffle-cards.store'), [
+                'card_number' => '456789',
+                'prize_title' => 'جائزة جديدة',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('card_number')
+            ->assertJsonPath('errors.card_number.0', 'رقم البطاقة مستخدم مسبقًا.');
+
+        $this->assertSame(1, RaffleCard::count());
+    }
+
     public function test_admin_can_create_requested_number_of_random_winning_cards_in_range(): void
     {
         $admin = $this->admin();

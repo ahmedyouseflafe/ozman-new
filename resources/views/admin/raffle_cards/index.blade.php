@@ -64,6 +64,10 @@
         .btn-danger:disabled { opacity:.45; cursor:not-allowed; }
         .status { margin-bottom:18px; padding:14px 18px; border:1px solid rgba(37,211,102,.35); background:rgba(37,211,102,.1); border-radius:18px; color:#8dffbd; font-weight:900; }
         .errors { margin-bottom:18px; padding:14px 18px; border:1px solid rgba(255,77,104,.35); background:rgba(255,77,104,.1); border-radius:18px; color:#ff9dac; font-weight:900; }
+        .ajax-feedback { grid-column:1/-1; margin:0; }
+        .ajax-feedback[hidden] { display:none; }
+        .form-grid.is-submitting { opacity:.65; pointer-events:none; }
+        .form-grid.is-submitting button[type=submit] { cursor:wait; }
         .filters { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
         .table-wrap { width:100%; overflow:auto; border:1px solid var(--border); border-radius:22px; }
         table { width:100%; border-collapse:collapse; min-width:920px; }
@@ -274,7 +278,7 @@
                 <div class="panel-head">
                     <div class="panel-title"><i class="ti ti-plus"></i> إضافة بطاقة رابحة يدويًا</div>
                 </div>
-                <form action="{{ route('raffle-cards.store') }}" method="POST" enctype="multipart/form-data" class="form-grid">
+                <form action="{{ route('raffle-cards.store') }}" method="POST" enctype="multipart/form-data" class="form-grid" id="manualRaffleCardForm">
                     @csrf
                     <div>
                         <label for="card_number">رقم البطاقة</label>
@@ -359,7 +363,7 @@
                                 <th>تعديل</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="winningCardsTableBody">
                             @forelse($cards as $card)
                                 <tr>
                                     <td class="select-cell">
@@ -491,6 +495,79 @@
         </div>
     </div>
     <script>
+        const manualRaffleCardForm = document.getElementById('manualRaffleCardForm');
+        const manualRaffleSubmit = manualRaffleCardForm?.querySelector('button[type="submit"]');
+        const manualRaffleDefaultSubmitHtml = manualRaffleSubmit?.innerHTML || '';
+        const manualRaffleFeedback = document.createElement('div');
+        manualRaffleFeedback.className = 'ajax-feedback';
+        manualRaffleFeedback.id = 'manualRaffleCardFeedback';
+        manualRaffleFeedback.setAttribute('role', 'status');
+        manualRaffleFeedback.setAttribute('aria-live', 'polite');
+        manualRaffleFeedback.hidden = true;
+        manualRaffleCardForm?.append(manualRaffleFeedback);
+
+        function showManualRaffleFeedback(message, type) {
+            manualRaffleFeedback.className = `ajax-feedback ${type}`;
+            manualRaffleFeedback.textContent = message;
+            manualRaffleFeedback.hidden = false;
+        }
+
+        manualRaffleCardForm?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (!manualRaffleCardForm.reportValidity()) return;
+
+            manualRaffleFeedback.hidden = true;
+            manualRaffleCardForm.classList.add('is-submitting');
+            if (manualRaffleSubmit) {
+                manualRaffleSubmit.disabled = true;
+                manualRaffleSubmit.innerHTML = '<i class="ti ti-loader-2"></i> جاري الإضافة...';
+            }
+
+            try {
+                const response = await fetch(manualRaffleCardForm.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: new FormData(manualRaffleCardForm),
+                });
+                const payload = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    const errors = Object.values(payload.errors || {}).flat();
+                    throw new Error(errors[0] || payload.message || 'تعذر إضافة البطاقة. حاول مرة أخرى.');
+                }
+
+                const tableBody = document.getElementById('winningCardsTableBody');
+                tableBody?.querySelector('td[colspan="6"]')?.closest('tr')?.remove();
+                tableBody?.insertAdjacentHTML('afterbegin', payload.row_html || '');
+                const insertedCheckbox = tableBody?.querySelector('[data-winning-card-row] [data-winning-card-checkbox]');
+                if (insertedCheckbox) {
+                    winningCardCheckboxes.unshift(insertedCheckbox);
+                    insertedCheckbox.addEventListener('change', syncWinningCardBulkActions);
+                }
+                const totalCards = document.querySelector('.grid .card strong');
+                if (totalCards && Number.isFinite(Number(payload.total_cards))) totalCards.textContent = payload.total_cards;
+
+                manualRaffleCardForm.reset();
+                const activeInput = manualRaffleCardForm.querySelector('[name="is_active"]');
+                if (activeInput) activeInput.checked = true;
+                const imageLabel = manualRaffleCardForm.querySelector('[data-file-label]');
+                if (imageLabel) imageLabel.textContent = 'اختر صورة الجائزة';
+                showManualRaffleFeedback(payload.message || 'تمت إضافة بطاقة الربح بنجاح.', 'status');
+                document.getElementById('card_number')?.focus();
+            } catch (error) {
+                showManualRaffleFeedback(error.message || 'تعذر إضافة البطاقة. حاول مرة أخرى.', 'errors');
+            } finally {
+                manualRaffleCardForm.classList.remove('is-submitting');
+                if (manualRaffleSubmit) {
+                    manualRaffleSubmit.disabled = false;
+                    manualRaffleSubmit.innerHTML = manualRaffleDefaultSubmitHtml;
+                }
+            }
+        });
+
         document.querySelectorAll('[data-file-input]').forEach((input) => {
             input.addEventListener('change', () => {
                 const label = input.closest('div, form')?.querySelector(`label[for="${input.id}"] [data-file-label]`);
