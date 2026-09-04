@@ -44,4 +44,9 @@ return [
         'default_country_code' => env('WHATSAPP_DEFAULT_COUNTRY_CODE', '972'),
     ],
 
+    'firebase' => [
+        'project_id' => env('FIREBASE_PROJECT_ID', 'ozman-app'),
+        'credentials' => env('FIREBASE_CREDENTIALS', storage_path('app/private/firebase-service-account.json')),
+    ],
+
 ];

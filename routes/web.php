@@ -10,6 +10,8 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\FrontController;
 use App\Http\Controllers\FrontOrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PushDeviceController;
+use App\Http\Controllers\PushNotificationController;
 use App\Http\Controllers\RaffleCardController;
 use App\Http\Controllers\RealEstateController;
 use App\Http\Controllers\RealEstateDashboardController;
@@ -29,6 +31,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 Route::get('/', [FrontController::class, 'index'])->name('home');
+Route::post('/app/device-token', [PushDeviceController::class, 'store'])
+    ->middleware('throttle:20,1')
+    ->name('app.device-token.store');
 Route::get('/csrf-token', [FrontController::class, 'csrfToken'])
     ->middleware('throttle:30,1')
     ->name('csrf.refresh');
@@ -93,6 +98,8 @@ Route::get('/display', [ScreenController::class, 'mainDisplay'])->name('display.
 Route::get('/display/shop/{shop}', [ScreenController::class, 'shopDisplay'])->name('display.shop');
 
 Route::middleware(['auth', 'admin.access'])->group(function () {
+    Route::get('/push-notifications', [PushNotificationController::class, 'index'])->name('push-notifications.index');
+    Route::post('/push-notifications', [PushNotificationController::class, 'send'])->name('push-notifications.send');
     Route::get('/shops/{shop}/real-estate', [RealEstateDashboardController::class, 'index'])->name('real-estate.dashboard');
     Route::get('/shops/{shop}/real-estate/properties/create', [RealEstateDashboardController::class, 'create'])->name('real-estate.dashboard.properties.create');
     Route::post('/shops/{shop}/real-estate/properties', [RealEstateDashboardController::class, 'store'])->name('real-estate.dashboard.properties.store');

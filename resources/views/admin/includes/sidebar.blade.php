@@ -660,6 +660,13 @@
              الإعدادات
         </a>
         @endif
+        @if($isSuperAdmin)
+        <a href="{{ route('push-notifications.index') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('push-notifications.*') ? 'active' : '' }}">
+             <i class="ti ti-bell-ringing" aria-hidden="true"></i>
+             إشعارات التطبيق
+        </a>
+        @endif
         @endif
     </nav>
 
