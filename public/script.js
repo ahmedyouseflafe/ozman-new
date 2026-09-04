@@ -4,18 +4,18 @@ let ozmanActiveMediaStory = null;
 
 function refreshActiveMediaStory() {
         let nextSlider = null;
-        let bestRatio = 0;
+        let bestVisibleArea = 0;
 
         if (!document.hidden) {
             ozmanMediaStories.forEach((state, slider) => {
-                if (state.ratio > bestRatio) {
-                    bestRatio = state.ratio;
+                if (state.visibleArea > bestVisibleArea) {
+                    bestVisibleArea = state.visibleArea;
                     nextSlider = slider;
                 }
             });
         }
 
-        if (bestRatio < 0.2) nextSlider = null;
+        if (bestVisibleArea < 1) nextSlider = null;
         if (nextSlider === ozmanActiveMediaStory) return;
 
         ozmanMediaStories.forEach((state, slider) => state.setActive(slider === nextSlider));
@@ -69,7 +69,7 @@ function initMediaStorySlider(slider) {
         };
 
         const state = {
-            ratio: 0,
+            visibleArea: 0,
             setActive(active) {
                 if (isActive === active) return;
                 isActive = active;
@@ -85,7 +85,9 @@ function initMediaStorySlider(slider) {
         ozmanMediaStories.set(slider, state);
 
         const observer = new IntersectionObserver(([entry]) => {
-            state.ratio = entry.isIntersecting ? entry.intersectionRatio : 0;
+            state.visibleArea = entry.isIntersecting
+                ? entry.intersectionRect.width * entry.intersectionRect.height
+                : 0;
             refreshActiveMediaStory();
         }, { threshold: [0, 0.2, 0.4, 0.6, 0.8, 1] });
 
@@ -103,6 +105,7 @@ function initMediaStorySlider(slider) {
             });
         });
 
+        pauseAll();
         observer.observe(slider);
 }
 
