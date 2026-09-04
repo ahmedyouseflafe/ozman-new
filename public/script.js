@@ -1,32 +1,89 @@
 ﻿
 function initMediaStorySlider(slider) {
         const slides = Array.from(slider.querySelectorAll('.media-story-slide'));
-        if (slides.length <= 1) {
-            const video = slides[0]?.querySelector('video');
-            if (video) {
-                video.play().catch(() => {});
-            }
-            return;
-        }
+        if (!slides.length || slider.dataset.mediaStoryReady === 'true') return;
+        slider.dataset.mediaStoryReady = 'true';
 
         let index = Math.max(0, slides.findIndex((slide) => slide.classList.contains('active')));
+        let timer = null;
+        let isVisible = false;
+
+        const pauseSlide = (slide) => {
+            slide?.querySelectorAll('video').forEach((video) => video.pause());
+            slide?.querySelectorAll('iframe[src*="youtube.com/embed"]').forEach((frame) => {
+                frame.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo' }), '*');
+            });
+        };
+
+        const pauseAll = () => slides.forEach(pauseSlide);
+
+        const playActive = () => {
+            if (!isVisible || document.hidden) return;
+            const activeSlide = slides[index];
+            activeSlide?.querySelectorAll('video').forEach((video) => video.play().catch(() => {}));
+            activeSlide?.querySelectorAll('iframe[src*="youtube.com/embed"]').forEach((frame) => {
+                frame.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo' }), '*');
+            });
+        };
+
+        const scheduleNext = () => {
+            window.clearTimeout(timer);
+            if (!isVisible || document.hidden || slides.length <= 1) return;
+            const activeSlide = slides[index];
+            timer = window.setTimeout(() => activateSlide(index + 1), Number(activeSlide?.dataset.duration || 8000));
+        };
 
         const activateSlide = (nextIndex) => {
             slides[index]?.classList.remove('active');
-            slides[index]?.querySelectorAll('video').forEach((video) => video.pause());
+            pauseSlide(slides[index]);
 
             index = nextIndex % slides.length;
             const activeSlide = slides[index];
             activeSlide.classList.add('active');
-            activeSlide.querySelectorAll('video').forEach((video) => {
-                video.currentTime = 0;
-                video.play().catch(() => {});
-            });
-
-            window.setTimeout(() => activateSlide(index + 1), Number(activeSlide.dataset.duration || 8000));
+            activeSlide.querySelectorAll('video').forEach((video) => { video.currentTime = 0; });
+            playActive();
+            scheduleNext();
         };
 
-        activateSlide(index);
+        const observer = new IntersectionObserver(([entry]) => {
+            isVisible = entry.isIntersecting && entry.intersectionRatio >= 0.35;
+            if (isVisible) {
+                document.querySelectorAll('[data-media-story]').forEach((otherSlider) => {
+                    if (otherSlider !== slider && typeof otherSlider.ozmanPauseMedia === 'function') {
+                        otherSlider.ozmanPauseMedia();
+                    }
+                });
+                playActive();
+                scheduleNext();
+            } else {
+                window.clearTimeout(timer);
+                pauseAll();
+            }
+        }, { threshold: [0, 0.35, 0.7] });
+
+        slider.ozmanPauseMedia = () => {
+            window.clearTimeout(timer);
+            pauseAll();
+        };
+
+        slides.forEach((slide) => {
+            slide.querySelectorAll('iframe[src*="youtube.com/embed"]').forEach((frame) => {
+                frame.addEventListener('load', () => {
+                    if (!isVisible || !slide.classList.contains('active')) pauseSlide(slide);
+                });
+            });
+        });
+
+        observer.observe(slider);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                window.clearTimeout(timer);
+                pauseAll();
+            } else if (isVisible) {
+                playActive();
+                scheduleNext();
+            }
+        });
 }
 
 // Remove legacy same-origin service workers. The current site does not use a PWA
@@ -927,7 +984,7 @@ document.addEventListener('DOMContentLoaded', () => {
         function youtubeEmbedUrl(url) {
             const value = String(url || '');
             const match = value.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]+)/);
-            return match ? `https://www.youtube.com/embed/${match[1]}?autoplay=1&mute=1&playsinline=1&rel=0` : value;
+            return match ? `https://www.youtube.com/embed/${match[1]}?autoplay=1&mute=1&playsinline=1&rel=0&enablejsapi=1` : value;
         }
 
         function renderShopPeopleDropdown(shop) {

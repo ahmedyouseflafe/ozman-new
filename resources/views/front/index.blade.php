@@ -193,7 +193,7 @@
                     $matches,
                 )
             ) {
-                return 'https://www.youtube.com/embed/' . $matches[1] . '?autoplay=1&mute=1&playsinline=1&rel=0';
+                return 'https://www.youtube.com/embed/' . $matches[1] . '?autoplay=1&mute=1&playsinline=1&rel=0&enablejsapi=1';
             }
 
             return $url;
