@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PushDevice;
+use App\Models\PushNotification;
 use App\Services\FirebaseMessagingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,11 @@ class PushNotificationController extends Controller
         return view('admin.push_notifications.index', [
             'devicesCount' => PushDevice::query()->count(),
             'firebaseConfigured' => $firebase->isConfigured(),
+            'notifications' => PushNotification::query()
+                ->with('sender:id,name')
+                ->latest()
+                ->limit(30)
+                ->get(),
         ]);
     }
 
@@ -30,9 +36,21 @@ class PushNotificationController extends Controller
             'url' => ['nullable', 'url', 'starts_with:https://ozman.online', 'max:500'],
         ]);
 
+        $notification = PushNotification::query()->create([
+            'sent_by' => $request->user()->id,
+            'title' => $data['title'],
+            'body' => $data['body'],
+            'url' => $data['url'] ?: 'https://ozman.online/',
+        ]);
+
         try {
-            $firebase->sendToAll($data['title'], $data['body'], $data['url'] ?: 'https://ozman.online/');
+            $firebase->sendToAll($notification->title, $notification->body, $notification->url);
+            $notification->update(['status' => 'sent', 'sent_at' => now()]);
         } catch (Throwable $exception) {
+            $notification->update([
+                'status' => 'failed',
+                'error' => substr($exception->getMessage(), 0, 2000),
+            ]);
             report($exception);
 
             return back()->withInput()->withErrors(['firebase' => $exception->getMessage()]);
