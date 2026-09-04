@@ -1,6 +1,15 @@
 ﻿
 const ozmanMediaStories = new Map();
 let ozmanActiveMediaStory = null;
+let ozmanMediaRefreshFrame = null;
+
+function scheduleMediaStoryRefresh() {
+        if (ozmanMediaRefreshFrame !== null) return;
+        ozmanMediaRefreshFrame = window.requestAnimationFrame(() => {
+            ozmanMediaRefreshFrame = null;
+            refreshActiveMediaStory();
+        });
+}
 
 function refreshActiveMediaStory() {
         let nextSlider = null;
@@ -8,8 +17,14 @@ function refreshActiveMediaStory() {
 
         if (!document.hidden) {
             ozmanMediaStories.forEach((state, slider) => {
-                if (state.visibleArea > bestVisibleArea) {
-                    bestVisibleArea = state.visibleArea;
+                const rect = slider.getBoundingClientRect();
+                const visibleWidth = Math.max(0, Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0));
+                const visibleHeight = Math.max(0, Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0));
+                const visibleArea = visibleWidth * visibleHeight;
+                state.visibleArea = visibleArea;
+
+                if (visibleArea > bestVisibleArea) {
+                    bestVisibleArea = visibleArea;
                     nextSlider = slider;
                 }
             });
@@ -88,7 +103,7 @@ function initMediaStorySlider(slider) {
             state.visibleArea = entry.isIntersecting
                 ? entry.intersectionRect.width * entry.intersectionRect.height
                 : 0;
-            refreshActiveMediaStory();
+            scheduleMediaStoryRefresh();
         }, { threshold: [0, 0.2, 0.4, 0.6, 0.8, 1] });
 
         slider.ozmanPauseMedia = () => state.setActive(false);
@@ -117,6 +132,9 @@ document.addEventListener('visibilitychange', () => {
             refreshActiveMediaStory();
         }
 });
+
+window.addEventListener('scroll', scheduleMediaStoryRefresh, { passive: true });
+window.addEventListener('resize', scheduleMediaStoryRefresh, { passive: true });
 
 // Remove legacy same-origin service workers. The current site does not use a PWA
 // worker, and an older registration can cancel navigation preload requests.
