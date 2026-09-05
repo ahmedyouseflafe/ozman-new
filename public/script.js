@@ -1,6 +1,11 @@
 ﻿
 const ozmanMediaStories = new Map();
 let ozmanActiveMediaStory = null;
+let ozmanStoryViewerOpen = false;
+document.addEventListener('ozman:story-viewer', event => {
+    ozmanStoryViewerOpen = Boolean(event.detail?.open);
+    refreshActiveMediaStory();
+});
 let ozmanMediaRefreshFrame = null;
 
 function scheduleMediaStoryRefresh() {
@@ -15,7 +20,7 @@ function refreshActiveMediaStory() {
         let nextSlider = null;
         let bestVisibleArea = 0;
 
-        if (!document.hidden) {
+        if (!document.hidden && !ozmanStoryViewerOpen) {
             ozmanMediaStories.forEach((state, slider) => {
                 const rect = slider.getBoundingClientRect();
                 const visibleWidth = Math.max(0, Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0));
@@ -3781,6 +3786,9 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         function renderShopSectionsCarousel() {
+            const navigation = document.getElementById('shopSectionNavigation');
+            if (navigation) navigation.hidden = true;
+            document.getElementById('sideVCarousel')?.removeAttribute('aria-label');
             const groupedSections = new Map();
 
             centersData.forEach((shop, shopIndex) => {
@@ -3809,19 +3817,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function renderSectionShopsCarousel(sectionTitle, shops) {
-            const items = [
-                {
-                    kind: 'shop-section-back',
-                    title: 'عودة للأقسام',
-                    icon: 'fa-arrow-right',
-                    onSelect: renderShopSectionsCarousel
-                },
-                ...shops.map(({ shop, shopIndex }) => ({
+            const navigation = document.getElementById('shopSectionNavigation');
+            const title = document.getElementById('shopSectionNavigationTitle');
+            const backButton = document.getElementById('backToShopSections');
+            if (title) title.textContent = sectionTitle;
+            if (navigation) navigation.hidden = false;
+            if (backButton) backButton.onclick = () => {
+                renderShopSectionsCarousel();
+                document.querySelector('#sideVTrack .v-item')?.focus();
+            };
+            const items = shops.map(({ shop, shopIndex }) => ({
                     ...shop,
                     kind: 'shop',
                     onSelect: () => selectCategory(shopIndex)
-                }))
-            ];
+                }));
 
             const carousel = document.getElementById('sideVCarousel');
             if (carousel) carousel.setAttribute('aria-label', sectionTitle);
@@ -3845,10 +3854,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.dataset.title = itemData.title;
                     item.dataset.desc = itemData.desc;
                 } else {
+                    item.tabIndex = 0;
+                    item.setAttribute('role', 'button');
+                    item.setAttribute('aria-label', itemData.title || '');
+                    item.onkeydown = (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            item.click();
+                        }
+                    };
                     const visual = itemData.icon
+                        // Story access is separate from opening the store.
                         ? `<i class="fas ${itemData.icon} side-section-icon" aria-hidden="true"></i>`
                         : `<img src="${itemData.img}" alt="${escapeCartHtml(itemData.title || '')}">`;
                     item.classList.toggle('side-section-item', Boolean(itemData.icon));
+                    if (itemData.kind === 'shop' && itemData.id) item.dataset.storyShopId = itemData.id;
                     item.innerHTML = `${visual}<span class="side-shop-name">${escapeCartHtml(itemData.title || '')}</span>`;
                     item.onclick = () => {
                         if (typeof itemData.onSelect === 'function') {

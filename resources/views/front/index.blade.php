@@ -439,6 +439,14 @@
             <hr class="section-divider">
 
             <!-- Radial Category Selection Section -->
+            @include('front.shop_stories')
+            <nav id="shopSectionNavigation" class="shop-section-navigation" aria-label="{{ __('أقسام المتاجر') }}" hidden>
+                <strong id="shopSectionNavigationTitle" aria-live="polite"></strong>
+                <button type="button" id="backToShopSections" aria-controls="sideVTrack">
+                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    {{ __('عودة للأقسام') }}
+                </button>
+            </nav>
             <section class="radial-section animate" style="margin-right: 60px; margin-bottom: 60px;">
                 <div class="side-nav-vertical v-carousel-container" id="sideVCarousel">
                     <div class="side-circles-list v-carousel-track" id="sideVTrack">

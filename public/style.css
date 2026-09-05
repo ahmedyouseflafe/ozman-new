@@ -2787,6 +2787,43 @@ html[dir="ltr"] .display-screen {
     display: block;
 }
 
+.shop-section-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    width: min(900px, calc(100% - 32px));
+    margin: 16px auto;
+    padding: 12px 16px;
+    box-sizing: border-box;
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    background: #061014;
+    color: var(--primary-color);
+}
+
+.shop-section-navigation[hidden] { display: none; }
+
+.shop-section-navigation button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 14px;
+    border: 1px solid var(--primary-color);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--primary-color);
+    font: inherit;
+    cursor: pointer;
+}
+
+.shop-section-navigation button:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+}
+
 .side-section-icon {
     color: var(--primary-color);
     font-size: 2.25rem;

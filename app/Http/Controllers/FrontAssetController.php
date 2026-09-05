@@ -9,7 +9,7 @@ class FrontAssetController extends Controller
 {
     public function show(Request $request, string $file): BinaryFileResponse
     {
-        $types = ['script.js' => 'application/javascript', 'style.css' => 'text/css'];
+        $types = ['script.js' => 'application/javascript', 'style.css' => 'text/css', 'shop-stories.js' => 'application/javascript', 'shop-stories.css' => 'text/css'];
         abort_unless(isset($types[$file]), 404);
 
         // Read the Git-managed assets even when hosting uses a separate public_html.

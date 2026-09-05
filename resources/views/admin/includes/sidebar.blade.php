@@ -502,6 +502,11 @@
         </a>
         @endif
 
+        @if(auth()->user()?->isSuperAdmin() || auth()->user()?->shops()->exists())
+        <a href="{{ route('shop-stories.index') }}" class="admin-sidebar-item nav-item">
+            <i class="ti ti-circle" aria-hidden="true"></i> ستوريات المحل
+        </a>
+        @endif
         @if(! $isCatalogOnlyUser && $canSee(['ads', 'ads.show', 'ads.create', 'ads.edit']))
         <div class="admin-sidebar-section">الإعلانات</div>
 
