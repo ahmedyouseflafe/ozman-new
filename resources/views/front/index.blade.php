@@ -30,7 +30,7 @@
         'image' => $seoImage,
         'schema' => $seoSchema,
     ])
-    <link rel="stylesheet" href="{{ asset('style.css') }}?v={{ filemtime(public_path('style.css')) }}">
+    <link rel="stylesheet" href="{{ route('front.assets', ['file' => 'style.css']) }}?v={{ hash_file('sha256', base_path('public/style.css')) }}">
     <!-- Font Awesome icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
@@ -1006,7 +1006,7 @@
 
             };
         </script>
-        <script src="{{ asset('script.js') }}?v={{ filemtime(public_path('script.js')) }}"></script>
+        <script src="{{ route('front.assets', ['file' => 'script.js']) }}?v={{ hash_file('sha256', base_path('public/script.js')) }}"></script>
 
         <!-- Location Modal -->
         <div class="modal-overlay" id="locationModal">

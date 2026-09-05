@@ -8,6 +8,7 @@ use App\Http\Controllers\DistributorController;
 use App\Http\Controllers\ElectronicsStoreController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\FrontController;
+use App\Http\Controllers\FrontAssetController;
 use App\Http\Controllers\FrontOrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PushDeviceController;
@@ -31,6 +32,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 Route::get('/', [FrontController::class, 'index'])->name('home');
+Route::get('/front-assets/{file}', [FrontAssetController::class, 'show'])
+    ->where('file', 'script\\.js|style\\.css')
+    ->name('front.assets');
 Route::post('/app/device-token', [PushDeviceController::class, 'store'])
     ->middleware('throttle:20,1')
     ->name('app.device-token.store');
