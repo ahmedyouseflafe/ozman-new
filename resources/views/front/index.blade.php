@@ -528,16 +528,14 @@
                     <i class="fab fa-whatsapp"></i>
                 </a>
                 @if ($authenticatedMerchantShop)
-                    <form method="POST" action="{{ route('logout') }}" style="display:flex">
-                        @csrf
-                        <button type="submit" class="nav-btn" title="{{ __('تسجيل خروج صاحب المتجر') }}"
-                            style="border:0;background:none;color:#00e5ff">
-                            <i class="fas fa-store-circle-xmark"></i>
-                        </button>
-                    </form>
+                    <a href="{{ route('dashboard') }}" class="nav-btn" title="{{ __('إدارة متجري') }}"
+                        aria-label="{{ __('إدارة متجري') }}"
+                        style="color:#00e5ff;text-decoration:none;display:flex;align-items:center">
+                        <i class="fas fa-store"></i>
+                    </a>
                 @else
-                    <a href="{{ route('merchant.login', ['redirect' => request()->getRequestUri()]) }}"
-                        class="nav-btn" title="{{ __('دخول صاحب المتجر') }}"
+                    <a href="{{ route('merchant.login', ['redirect' => route('dashboard', absolute: false)]) }}"
+                        class="nav-btn" title="{{ __('دخول صاحب المتجر') }}" aria-label="{{ __('دخول صاحب المتجر') }}"
                         style="color:#00e5ff;text-decoration:none;display:flex;align-items:center">
                         <i class="fas fa-store"></i>
                     </a>

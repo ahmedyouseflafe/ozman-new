@@ -53,9 +53,7 @@ class AuthController extends Controller
         $this->captureMerchantReferral($request);
 
         if (Auth::check()) {
-            return Auth::user()?->isShopOwner()
-                ? redirect()->route('home')
-                : redirect()->route('dashboard');
+            return redirect()->route('dashboard');
         }
 
         return view('front.merchant_login', [
@@ -329,7 +327,7 @@ class AuthController extends Controller
     private function safeMerchantRedirect(?string $redirect): string
     {
         if (! filled($redirect)) {
-            return route('home');
+            return route('dashboard');
         }
 
         if (parse_url($redirect, PHP_URL_HOST) !== null) {
