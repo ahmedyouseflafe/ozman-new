@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>دخول صاحب المتجر - Ozman</title>
+    <title>الدخول إلى لوحة تحكم المتجر - Ozman</title>
     <link rel="stylesheet" href="{{ asset('style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
@@ -139,9 +139,8 @@
     <main class="merchant-login-card">
         <div class="merchant-login-head">
             <div class="merchant-login-icon"><i class="fas fa-store"></i></div>
-            <h1>دخول صاحب المتجر</h1>
-            <p>استخدم البريد وكلمة المرور اللذين أعطاك إياهما الموزع. بعد الدخول ستصل طلباتك تلقائيًا للموزع المرتبط
-                بمتجرك.</p>
+            <h1>لوحة تحكم متجرك</h1>
+            <p>سجّل دخولك لإدارة متجرك، إضافة المنتجات والعروض، نشر الستوريات ومتابعة الطلبات من مكان واحد.</p>
         </div>
 
         @if ($errors->any())
@@ -162,11 +161,11 @@
             </label>
             <div class="merchant-login-remember">
                 <i class="fas fa-shield-halved"></i>
-                <span>سيبقى حساب المتجر مسجلًا على هذا الجهاز</span>
+                <span>سيتم حفظ تسجيل الدخول لتصل إلى لوحة متجرك بسرعة</span>
             </div>
             <button class="merchant-login-submit" type="submit">
                 <i class="fas fa-right-to-bracket"></i>
-                دخول إلى الموقع
+                الدخول إلى لوحة التحكم
             </button>
         </form>
         @if ($canRegister)
