@@ -3769,6 +3769,65 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // --- Infinite Vertical Logic (Manual Scroll) ---
+        const shopSectionDetails = {
+            general: { title: 'متاجر عامة', icon: 'fa-store' },
+            restaurant: { title: 'مطاعم ووجبات', icon: 'fa-utensils' },
+            electronics: { title: 'جوالات وإلكترونيات', icon: 'fa-mobile-screen-button' },
+            real_estate: { title: 'عقارات', icon: 'fa-building' },
+            clothing: { title: 'ملابس وأزياء', icon: 'fa-shirt' },
+            shoes: { title: 'أحذية', icon: 'fa-shoe-prints' },
+            sweets: { title: 'حلويات ومخبوزات', icon: 'fa-cake-candles' },
+            cosmetics: { title: 'تجميل وعناية', icon: 'fa-spray-can-sparkles' }
+        };
+
+        function renderShopSectionsCarousel() {
+            const groupedSections = new Map();
+
+            centersData.forEach((shop, shopIndex) => {
+                const key = String(shop.catalog_type || 'general');
+                if (!groupedSections.has(key)) groupedSections.set(key, []);
+                groupedSections.get(key).push({ shop, shopIndex });
+            });
+
+            const sections = Array.from(groupedSections, ([key, shops]) => {
+                const details = shopSectionDetails[key] || { title: 'متاجر أخرى', icon: 'fa-store' };
+                return {
+                    kind: 'shop-section',
+                    title: details.title,
+                    icon: details.icon,
+                    shops,
+                    onSelect: () => renderSectionShopsCarousel(details.title, shops)
+                };
+            });
+
+            setupInfiniteVertical(
+                document.getElementById('sideVCarousel'),
+                document.getElementById('sideVTrack'),
+                sections,
+                false
+            );
+        }
+
+        function renderSectionShopsCarousel(sectionTitle, shops) {
+            const items = [
+                {
+                    kind: 'shop-section-back',
+                    title: 'عودة للأقسام',
+                    icon: 'fa-arrow-right',
+                    onSelect: renderShopSectionsCarousel
+                },
+                ...shops.map(({ shop, shopIndex }) => ({
+                    ...shop,
+                    kind: 'shop',
+                    onSelect: () => selectCategory(shopIndex)
+                }))
+            ];
+
+            const carousel = document.getElementById('sideVCarousel');
+            if (carousel) carousel.setAttribute('aria-label', sectionTitle);
+            setupInfiniteVertical(carousel, document.getElementById('sideVTrack'), items, false);
+        }
+
         function setupInfiniteVertical(container, track, data, isMain = false) {
             if (!container || !track) return;
             const itemHeight = isMain ? 180 : 120; // approximate height + gap
@@ -3786,8 +3845,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.dataset.title = itemData.title;
                     item.dataset.desc = itemData.desc;
                 } else {
-                    item.innerHTML = `<img src="${itemData.img}" alt="${itemData.title}"><span class="side-shop-name">${escapeCartHtml(itemData.title || '')}</span>`;
-                    item.onclick = () => selectCategory(index % totalCount);
+                    const visual = itemData.icon
+                        ? `<i class="fas ${itemData.icon} side-section-icon" aria-hidden="true"></i>`
+                        : `<img src="${itemData.img}" alt="${escapeCartHtml(itemData.title || '')}">`;
+                    item.classList.toggle('side-section-item', Boolean(itemData.icon));
+                    item.innerHTML = `${visual}<span class="side-shop-name">${escapeCartHtml(itemData.title || '')}</span>`;
+                    item.onclick = () => {
+                        if (typeof itemData.onSelect === 'function') {
+                            itemData.onSelect();
+                        } else {
+                            selectCategory(index % totalCount);
+                        }
+                    };
                 }
                 track.appendChild(item);
             });
@@ -3909,7 +3978,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.addEventListener('load', () => {
             setupInfiniteVertical(document.getElementById('vCarousel'), document.getElementById('vTrack'), vItemsData, true);
-            setupInfiniteVertical(document.getElementById('sideVCarousel'), document.getElementById('sideVTrack'), centersData, false);
+            renderShopSectionsCarousel();
             if (!pendingPurchaseOrder) {
                 if (hasPurchaseWheelSession()) {
                     clearCartState();
