@@ -1,8 +1,14 @@
 ﻿<!DOCTYPE html>
+@php
+    $formShop = $selectedShop ?? $category->shop;
+    $isRestaurantForm = $formShop?->catalog_type === 'restaurant';
+    $categoryName = $isRestaurantForm ? 'قسم المنيو' : 'الفئة';
+    $categoriesName = $isRestaurantForm ? 'أقسام المنيو' : 'الفئات';
+@endphp
 <html lang="ar" dir="rtl">
 
 <head>
-    <title>تعديل الفئة - Ozman</title>
+    <title>تعديل {{ $categoryName }} - Ozman</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,6 +37,10 @@
         input, select { width:100%; border:1px solid var(--border); background:rgba(255,255,255,.055); border-radius:16px; color:#fff; padding:12px 14px; outline:none; font-family:inherit; font-size:13px; font-weight:700; }
         select option { color:#111; }
         input:focus, select:focus { border-color:var(--primary); box-shadow:0 0 18px rgba(0,229,255,.22); }
+        .locked-shop-field { min-height:48px; padding:11px 14px; border:1px solid rgba(0,229,255,.3); border-radius:16px; background:rgba(0,229,255,.07); display:flex; align-items:center; gap:11px; }
+        .locked-shop-field i { color:var(--primary); font-size:21px; }
+        .locked-shop-field strong { display:block; font-size:13px; }
+        .locked-shop-field span { display:block; margin-top:2px; color:var(--dim); font-size:10px; font-weight:700; }
         .upload-box { position:relative; display:flex; align-items:center; gap:14px; min-height:94px; padding:16px; border:1px dashed rgba(0,229,255,.35); border-radius:20px; background:rgba(0,0,0,.22); cursor:pointer; }
         .upload-box input { position:absolute; inset:0; opacity:0; cursor:pointer; }
         .preview { display:flex; align-items:center; gap:12px; margin-top:12px; color:var(--muted); font-size:12px; font-weight:700; }
@@ -60,17 +70,17 @@
         @include('admin.includes.sidebar')
 
         <main class="main">
-            @include('admin.includes.header', ['title' => 'تعديل الفئة'])
+            @include('admin.includes.header', ['title' => 'تعديل '.$categoryName])
 
             <div class="content">
                 <header class="page-head">
                     <div>
-                        <h1>تعديل الفئة</h1>
-                        <p>حدّث بيانات الفئة وحالة ظهورها داخل المتجر.</p>
+                        <h1>تعديل {{ $categoryName }}</h1>
+                        <p>{{ $isRestaurantForm ? 'حدّث بيانات القسم وطريقة ظهوره داخل منيو المطعم.' : 'حدّث بيانات الفئة وحالة ظهورها داخل المتجر.' }}</p>
                     </div>
                     <a href="{{ route('categories') }}" class="btn">
                         <i class="ti ti-arrow-right" aria-hidden="true"></i>
-                        رجوع للفئات
+                        رجوع إلى {{ $categoriesName }}
                     </a>
                 </header>
 
@@ -93,34 +103,46 @@
                         <div class="section-head">
                             <div class="section-icon"><i class="ti ti-category" aria-hidden="true"></i></div>
                             <div>
-                                <h2>بيانات الفئة</h2>
-                                <p>الحقول الأساسية الخاصة بتصنيف المنتجات.</p>
+                                <h2>بيانات {{ $categoryName }}</h2>
+                                <p>{{ $isRestaurantForm ? 'الحقول الأساسية الخاصة بتنظيم وجبات المنيو.' : 'الحقول الأساسية الخاصة بتصنيف المنتجات.' }}</p>
                             </div>
                         </div>
 
                         <div class="form-grid">
                             <div class="form-group">
-                                <label class="form-label" for="shop_id"><i class="ti ti-building-store" aria-hidden="true"></i>المتجر</label>
-                                <select id="shop_id" name="shop_id" required>
-                                    <option value="">اختر المتجر</option>
-                                    @foreach($shops as $shop)
-                                        <option value="{{ $shop->id }}" data-catalog-type="{{ $shop->catalog_type ?: 'general' }}" @selected(old('shop_id', $category->shop_id) == $shop->id)>{{ $shop->name }}</option>
-                                    @endforeach
-                                </select>
+                                @if($lockShopSelection && $formShop)
+                                    <label class="form-label" for="shop_id"><i class="ti ti-building-store" aria-hidden="true"></i>{{ $isRestaurantForm ? 'المطعم الحالي' : 'المتجر الحالي' }}</label>
+                                    <div class="locked-shop-field">
+                                        <i class="ti {{ $isRestaurantForm ? 'ti-tools-kitchen-2' : 'ti-building-store' }}" aria-hidden="true"></i>
+                                        <div>
+                                            <strong>{{ $formShop->name }}</strong>
+                                            <span>{{ $isRestaurantForm ? 'هذا القسم مرتبط بمنيو المطعم الحالي' : 'هذه الفئة مرتبطة بالمتجر الحالي' }}</span>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="shop_id" name="shop_id" value="{{ $formShop->id }}" data-catalog-type="{{ $formShop->catalog_type ?: 'general' }}">
+                                @else
+                                    <label class="form-label" for="shop_id"><i class="ti ti-building-store" aria-hidden="true"></i>المتجر</label>
+                                    <select id="shop_id" name="shop_id" required>
+                                        <option value="">اختر المتجر</option>
+                                        @foreach($shops as $shop)
+                                            <option value="{{ $shop->id }}" data-catalog-type="{{ $shop->catalog_type ?: 'general' }}" @selected(old('shop_id', $category->shop_id) == $shop->id)>{{ $shop->name }}</option>
+                                        @endforeach
+                                    </select>
+                                @endif
                             </div>
 
                             @include('admin.categories._catalog_guidance')
 
                             <div class="form-group">
-                                <label class="form-label" for="name"><i class="ti ti-tag" aria-hidden="true"></i>اسم الفئة</label>
+                                <label class="form-label" for="name"><i class="ti ti-tag" aria-hidden="true"></i>اسم {{ $categoryName }}</label>
                                 <input type="text" id="name" name="name" value="{{ old('name', $category->name) }}" data-auto-translate-source required>
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="name_en">اسم الفئة بالإنجليزي</label>
+                                <label class="form-label" for="name_en">اسم {{ $categoryName }} بالإنجليزي</label>
                                 <input type="text" id="name_en" name="name_en" value="{{ old('name_en', data_get($category->name_translations, 'en')) }}" dir="ltr">
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="name_he">اسم الفئة بالعبري</label>
+                                <label class="form-label" for="name_he">اسم {{ $categoryName }} بالعبري</label>
                                 <input type="text" id="name_he" name="name_he" value="{{ old('name_he', data_get($category->name_translations, 'he')) }}">
                             </div>
 
@@ -134,7 +156,7 @@
                                     <input type="file" name="image" accept="image/*">
                                     <span class="card-icon"><i class="ti ti-photo-up" aria-hidden="true"></i></span>
                                     <span>
-                                        <span class="card-title">تغيير صورة الفئة</span>
+                                        <span class="card-title">تغيير صورة {{ $categoryName }}</span>
                                         <span class="card-sub">اتركها فارغة للاحتفاظ بالصورة الحالية</span>
                                     </span>
                                 </label>
@@ -151,7 +173,7 @@
                                     <input type="file" name="background_video" accept="video/mp4,video/webm">
                                     <span class="card-icon"><i class="ti ti-video-plus" aria-hidden="true"></i></span>
                                     <span>
-                                        <span class="card-title">فيديو خلفية الفئة</span>
+                                        <span class="card-title">فيديو خلفية {{ $categoryName }}</span>
                                         <span class="card-sub">MP4 أو WebM حتى 20MB — اتركه فارغًا للاحتفاظ بالفيديو الحالي</span>
                                     </span>
                                 </label>
@@ -171,8 +193,8 @@
                                     <div class="card-copy">
                                         <span class="card-icon"><i class="ti ti-circle-check" aria-hidden="true"></i></span>
                                         <span>
-                                            <span class="card-title">تفعيل الفئة</span>
-                                            <span class="card-sub">الفئة النشطة تظهر في قوائم التصنيفات.</span>
+                                            <span class="card-title">تفعيل {{ $categoryName }}</span>
+                                            <span class="card-sub">{{ $isRestaurantForm ? 'القسم النشط يظهر داخل منيو المطعم.' : 'الفئة النشطة تظهر في قوائم التصنيفات.' }}</span>
                                         </span>
                                     </div>
                                     <label class="switch" for="is_active">

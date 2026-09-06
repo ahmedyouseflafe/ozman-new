@@ -8,6 +8,7 @@
     $itemLabel = $isRestaurantForm ? 'وجبة' : 'منتج';
     $itemsLabel = $isRestaurantForm ? 'الوجبات' : 'المنتجات';
     $placeLabel = $isRestaurantForm ? 'المطعم' : 'المتجر';
+    $categoryLabel = $isRestaurantForm ? 'قسم المنيو' : 'الفئة';
 @endphp
 
 <head>
@@ -487,7 +488,7 @@
                             <div class="section-icon"><i class="ti ti-package"></i></div>
                             <div>
                                 <h2>بيانات {{ $itemLabel }}</h2>
-                                <p>{{ $placeLabel }} والفئة والاسم والوصف.</p>
+                                <p>{{ $placeLabel }} و{{ $categoryLabel }} والاسم والوصف.</p>
                             </div>
                         </div>
                         <div class="form-grid">
@@ -510,9 +511,9 @@
                                 @endif
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="category_id"><i class="ti ti-category"></i>الفئة</label>
+                                <label class="form-label" for="category_id"><i class="ti ti-category"></i>{{ $categoryLabel }}</label>
                                 <select id="category_id" name="category_id" required>
-                                    <option value="">اختر الفئة</option>
+                                    <option value="">اختر {{ $categoryLabel }}</option>
                                     @foreach ($categories as $category)
                                         <option value="{{ $category->id }}" data-shop-id="{{ $category->shop_id }}"
                                             @selected(old('category_id', $selectedCategoryId) == $category->id)>{{ $category->name }} -

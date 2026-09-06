@@ -14,10 +14,11 @@
         const suggestions = document.getElementById('catalogCategorySuggestions');
 
         function renderGuidance() {
-            const typeKey = select?.selectedOptions?.[0]?.dataset?.catalogType || 'general';
+            const typeKey = select?.selectedOptions?.[0]?.dataset?.catalogType || select?.dataset?.catalogType || 'general';
             const type = types[typeKey] || types.general;
-            title.textContent = `فئات مناسبة لنشاط: ${type.label}`;
-            description.textContent = type.description;
+            const isRestaurant = typeKey === 'restaurant';
+            title.textContent = isRestaurant ? 'أقسام مقترحة لمنيو المطعم' : `فئات مناسبة لنشاط: ${type.label}`;
+            description.textContent = isRestaurant ? 'اختر اسم القسم المناسب أو اكتب اسماً مخصصاً.' : type.description;
             suggestions.innerHTML = '';
             (type.suggested_categories || []).forEach((category) => {
                 const button = document.createElement('button');

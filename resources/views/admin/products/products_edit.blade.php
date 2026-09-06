@@ -7,6 +7,7 @@
     $itemLabel = $isRestaurantForm ? 'وجبة' : 'منتج';
     $itemsLabel = $isRestaurantForm ? 'الوجبات' : 'المنتجات';
     $placeLabel = $isRestaurantForm ? 'المطعم' : 'المتجر';
+    $categoryLabel = $isRestaurantForm ? 'قسم المنيو' : 'الفئة';
 @endphp
 
 <head>
@@ -122,7 +123,7 @@
                     @csrf
                     @method('PUT')
                     <section class="form-section">
-                        <div class="section-head"><div class="section-icon"><i class="ti ti-package"></i></div><div><h2>بيانات {{ $itemLabel }}</h2><p>{{ $placeLabel }} والفئة والاسم والوصف.</p></div></div>
+                        <div class="section-head"><div class="section-icon"><i class="ti ti-package"></i></div><div><h2>بيانات {{ $itemLabel }}</h2><p>{{ $placeLabel }} و{{ $categoryLabel }} والاسم والوصف.</p></div></div>
                         <div class="form-grid">
                             <div class="form-group">
                                 <label class="form-label">{{ $placeLabel }}</label>
@@ -139,9 +140,9 @@
                                 @endif
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="category_id">الفئة</label>
+                                <label class="form-label" for="category_id">{{ $categoryLabel }}</label>
                                 <select id="category_id" name="category_id" required>
-                                    <option value="">اختر الفئة</option>
+                                    <option value="">اختر {{ $categoryLabel }}</option>
                                     @foreach($categories as $category)
                                         <option value="{{ $category->id }}" data-shop-id="{{ $category->shop_id }}" @selected(old('category_id', $product->category_id) == $category->id)>{{ $category->name }} - {{ $category->shop?->name }}</option>
                                     @endforeach

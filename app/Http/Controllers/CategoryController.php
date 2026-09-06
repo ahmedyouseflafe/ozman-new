@@ -15,12 +15,23 @@ use Illuminate\View\View;
 
 class CategoryController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $shops = $this->accessibleShops();
+        $currentShop = null;
+
+        if ($request->user()?->isShopOwner()) {
+            $preferredShopId = $request->integer('shop_id')
+                ?: (int) $request->session()->get('current_shop_id')
+                ?: $this->firstAccessibleShopId();
+            $currentShop = $shops->firstWhere('id', $preferredShopId) ?: $shops->first();
+        }
+
         $categories = Category::query()
             ->with('shop')
             ->withCount('products')
             ->when(! $this->hasGlobalDashboardAccess(), fn($query) => $this->scopeToAccessibleShops($query))
+            ->when($currentShop, fn($query) => $query->where('shop_id', $currentShop->id))
             ->when(
                 auth()->user()?->isAgent() && $this->categoryHasColumn('agent_id'),
                 fn($query) => $query->whereIn('agent_id', $this->currentUserAgentIds())
@@ -36,6 +47,7 @@ class CategoryController extends Controller
 
         return view('admin.categories.categories', [
             'categories' => $categories,
+            'currentShop' => $currentShop,
             'categoriesCount' => $categories->count(),
             'productsInCategoriesCount' => $categories->sum('products_count'),
             'activeCategoriesCount' => $categories->where('is_active', true)->count(),
@@ -45,9 +57,18 @@ class CategoryController extends Controller
 
     public function create(Request $request): View
     {
+        $shops = $this->accessibleShops();
+        $preferredShopId = $request->integer('shop_id')
+            ?: (int) $request->session()->get('current_shop_id')
+            ?: $this->firstAccessibleShopId();
+        $selectedShop = $shops->firstWhere('id', $preferredShopId)
+            ?: ($request->user()?->isShopOwner() ? $shops->first() : null);
+
         return view('admin.categories.categories_create', [
-            'shops' => $this->accessibleShops(),
-            'selectedShopId' => $request->integer('shop_id') ?: $this->firstAccessibleShopId(),
+            'shops' => $shops,
+            'selectedShopId' => $selectedShop?->id,
+            'selectedShop' => $selectedShop,
+            'lockShopSelection' => $request->user()?->isShopOwner() && $selectedShop !== null,
         ]);
     }
 
@@ -69,18 +90,21 @@ class CategoryController extends Controller
         }
 
         $category = Category::create($data);
+        $isRestaurant = $category->shop?->catalog_type === 'restaurant';
 
         $this->notifySuperAdmin(
             'category_created',
             $category,
-            'تمت إضافة فئة جديدة',
-            "المتجر {$category->shop?->name} أضاف فئة: {$category->name}",
+            $isRestaurant ? 'تمت إضافة قسم منيو جديد' : 'تمت إضافة فئة جديدة',
+            $isRestaurant
+                ? "المطعم {$category->shop?->name} أضاف قسم منيو: {$category->name}"
+                : "المتجر {$category->shop?->name} أضاف فئة: {$category->name}",
             route('categories.show', $category)
         );
 
         return redirect()
             ->route('categories')
-            ->with('status', 'تمت إضافة الفئة بنجاح.');
+            ->with('status', $isRestaurant ? 'تمت إضافة قسم المنيو بنجاح.' : 'تمت إضافة الفئة بنجاح.');
     }
 
     public function show(Category $category): View
@@ -100,6 +124,8 @@ class CategoryController extends Controller
         return view('admin.categories.categories_edit', [
             'category' => $category,
             'shops' => $this->accessibleShops(),
+            'selectedShop' => $category->shop,
+            'lockShopSelection' => auth()->user()?->isShopOwner() === true,
         ]);
     }
 
@@ -127,23 +153,26 @@ class CategoryController extends Controller
         }
 
         $category->update($data);
+        $category->load('shop');
+        $isRestaurant = $category->shop?->catalog_type === 'restaurant';
 
         return redirect()
             ->route('categories')
-            ->with('status', 'تم تحديث الفئة بنجاح.');
+            ->with('status', $isRestaurant ? 'تم تحديث قسم المنيو بنجاح.' : 'تم تحديث الفئة بنجاح.');
     }
 
     public function destroy(Category $category): RedirectResponse
     {
         $this->authorizeShopAccess($category);
         $this->authorizeCategoryManagement($category);
+        $isRestaurant = $category->shop?->catalog_type === 'restaurant';
         $this->deleteUpload($category->image);
         $this->deleteUpload($category->background_video);
         $category->delete();
 
         return redirect()
             ->route('categories')
-            ->with('status', 'تم حذف الفئة بنجاح.');
+            ->with('status', $isRestaurant ? 'تم حذف قسم المنيو بنجاح.' : 'تم حذف الفئة بنجاح.');
     }
 
     private function validatedData(Request $request, ?Category $category = null): array

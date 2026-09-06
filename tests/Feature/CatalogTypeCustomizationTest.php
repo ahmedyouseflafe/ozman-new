@@ -177,4 +177,69 @@ class CatalogTypeCustomizationTest extends TestCase
             ->assertSee('لوحة المطعم · مطعم الاختبار')
             ->assertDontSee('نفد المخزون');
     }
+
+    public function test_restaurant_owner_manages_menu_sections_for_the_current_restaurant(): void
+    {
+        $owner = User::create([
+            'name' => 'Menu Owner',
+            'email' => 'menu-owner@example.com',
+            'password' => 'secret123',
+            'role' => 'shop_owner',
+            'is_active' => true,
+        ]);
+        $restaurant = Shop::create([
+            'user_id' => $owner->id,
+            'name' => 'Current Restaurant',
+            'slug' => 'current-restaurant',
+            'catalog_type' => 'restaurant',
+            'is_active' => true,
+        ]);
+        $otherRestaurant = Shop::create([
+            'user_id' => $owner->id,
+            'name' => 'Other Restaurant',
+            'slug' => 'other-restaurant',
+            'catalog_type' => 'restaurant',
+            'is_active' => true,
+        ]);
+        $section = Category::create([
+            'shop_id' => $restaurant->id,
+            'name' => 'Current Menu Section',
+            'slug' => 'current-menu-section',
+            'is_active' => true,
+        ]);
+        Category::create([
+            'shop_id' => $otherRestaurant->id,
+            'name' => 'Other Menu Section',
+            'slug' => 'other-menu-section',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($owner)->withSession(['current_shop_id' => $restaurant->id]);
+
+        $this->get(route('categories.create'))
+            ->assertOk()
+            ->assertSee('إضافة قسم منيو جديد')
+            ->assertSee('المطعم الحالي')
+            ->assertSee('Current Restaurant')
+            ->assertDontSee('اختر المتجر');
+
+        $this->get(route('categories'))
+            ->assertOk()
+            ->assertSee('أقسام المنيو')
+            ->assertSee('الوجبات داخل الأقسام')
+            ->assertSee('Current Menu Section')
+            ->assertDontSee('Other Menu Section');
+
+        $this->get(route('categories.edit', $section))
+            ->assertOk()
+            ->assertSee('تعديل قسم المنيو')
+            ->assertSee('المطعم الحالي')
+            ->assertDontSee('اختر المتجر');
+
+        $this->get(route('categories.show', $section))
+            ->assertOk()
+            ->assertSee('تفاصيل قسم المنيو')
+            ->assertSee('عدد الوجبات')
+            ->assertSee('إضافة وجبة');
+    }
 }

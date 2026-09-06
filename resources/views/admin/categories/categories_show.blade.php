@@ -1,4 +1,9 @@
 <!DOCTYPE html>
+@php
+    $isRestaurantCategory = $category->shop?->catalog_type === 'restaurant';
+    $categoryName = $isRestaurantCategory ? 'قسم المنيو' : 'الفئة';
+    $categoriesName = $isRestaurantCategory ? 'أقسام المنيو' : 'الفئات';
+@endphp
 <html lang="ar" dir="rtl">
 
 <head>
@@ -45,17 +50,17 @@
         @include('admin.includes.sidebar')
 
         <main class="main">
-            @include('admin.includes.header', ['title' => 'عرض الفئة'])
+            @include('admin.includes.header', ['title' => 'عرض '.$categoryName])
 
             <div class="content">
                 <header class="page-head">
                     <div>
                         <h1>{{ $category->name }}</h1>
-                        <p>تفاصيل الفئة وعدد المنتجات المرتبطة بها.</p>
+                        <p>{{ $isRestaurantCategory ? 'تفاصيل قسم المنيو وعدد الوجبات المرتبطة به.' : 'تفاصيل الفئة وعدد المنتجات المرتبطة بها.' }}</p>
                     </div>
-                    <a href="{{ route('categories') }}" class="btn">
+                    <a href="{{ route('categories', ['shop_id' => $category->shop_id]) }}" class="btn">
                         <i class="ti ti-arrow-right" aria-hidden="true"></i>
-                        رجوع للفئات
+                        رجوع إلى {{ $categoriesName }}
                     </a>
                 </header>
 
@@ -79,7 +84,7 @@
 
                     <div class="grid">
                         <div class="item">
-                            <div class="label">المتجر</div>
+                            <div class="label">{{ $isRestaurantCategory ? 'المطعم' : 'المتجر' }}</div>
                             <div class="value">{{ $category->shop?->name ?? '-' }}</div>
                         </div>
                         <div class="item">
@@ -87,8 +92,8 @@
                             <div class="value">{{ $category->slug }}</div>
                         </div>
                         <div class="item">
-                            <div class="label">عدد المنتجات</div>
-                            <div class="value">{{ $category->products_count }} منتج</div>
+                            <div class="label">عدد {{ $isRestaurantCategory ? 'الوجبات' : 'المنتجات' }}</div>
+                            <div class="value">{{ $category->products_count }} {{ $isRestaurantCategory ? 'وجبة' : 'منتج' }}</div>
                         </div>
                         <div class="item">
                             <div class="label">تاريخ الإضافة</div>
@@ -100,16 +105,16 @@
                         @if($canCreateProducts)
                             <a href="{{ route('products.create', ['shop_id' => $category->shop_id, 'category_id' => $category->id]) }}" class="btn btn-primary">
                                 <i class="ti ti-package-plus" aria-hidden="true"></i>
-                                إضافة منتج
+                                إضافة {{ $isRestaurantCategory ? 'وجبة' : 'منتج' }}
                             </a>
                         @endif
                         @if($canEditCategories)
                             <a href="{{ route('categories.edit', $category) }}" class="btn btn-primary">
                                 <i class="ti ti-edit" aria-hidden="true"></i>
-                                تعديل الفئة
+                                تعديل {{ $categoryName }}
                             </a>
                         @endif
-                        <a href="{{ route('categories') }}" class="btn">رجوع</a>
+                        <a href="{{ route('categories', ['shop_id' => $category->shop_id]) }}" class="btn">رجوع</a>
                     </div>
                 </section>
             </div>

@@ -393,6 +393,7 @@
         ? \App\Models\Shop::query()->whereKey($previewShopId)->where('catalog_type', 'real_estate')->first()
         : null;
     $catalogItemsLabel = $restaurantNavShop ? 'الوجبات' : 'المنتجات';
+    $catalogCategoriesLabel = $restaurantNavShop ? 'أقسام المنيو' : 'الفئات';
 
     $previewDistributor = null;
     if ($isDistributor) {
@@ -496,10 +497,10 @@
         @endif
 
         @if($canSee(['categories', 'categories.show', 'categories.create', 'categories.edit']))
-        <a href="{{ route('categories') }}"
+        <a href="{{ route('categories', $previewShopId ? ['shop_id' => $previewShopId] : []) }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('categories*') ? 'active' : '' }}">
              <i class="ti ti-category" aria-hidden="true"></i>
-             الفئات
+             {{ $catalogCategoriesLabel }}
         </a>
         @endif
 

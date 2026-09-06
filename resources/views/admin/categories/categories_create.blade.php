@@ -1,8 +1,14 @@
 ﻿<!DOCTYPE html>
+@php
+    $formShop = $selectedShop ?? $shops->firstWhere('id', (int) old('shop_id', $selectedShopId));
+    $isRestaurantForm = $formShop?->catalog_type === 'restaurant';
+    $categoryName = $isRestaurantForm ? 'قسم المنيو' : 'الفئة';
+    $categoriesName = $isRestaurantForm ? 'أقسام المنيو' : 'الفئات';
+@endphp
 <html lang="ar" dir="rtl">
 
 <head>
-    <title>إضافة فئة جديدة - Ozman</title>
+    <title>إضافة {{ $isRestaurantForm ? 'قسم منيو جديد' : 'فئة جديدة' }} - Ozman</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -60,6 +66,10 @@
         }
         select option { color: #111; }
         input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 18px rgba(0,229,255,.22); }
+        .locked-shop-field { min-height:48px; padding:11px 14px; border:1px solid rgba(0,229,255,.3); border-radius:16px; background:rgba(0,229,255,.07); display:flex; align-items:center; gap:11px; }
+        .locked-shop-field i { color:var(--primary); font-size:21px; }
+        .locked-shop-field strong { display:block; font-size:13px; }
+        .locked-shop-field span { display:block; margin-top:2px; color:var(--dim); font-size:10px; font-weight:700; }
         .upload-box {
             position: relative; display: flex; align-items: center; gap: 14px; min-height: 94px; padding: 16px;
             border: 1px dashed rgba(0,229,255,.35); border-radius: 20px; background: rgba(0,0,0,.22); cursor: pointer;
@@ -93,17 +103,17 @@
         @include('admin.includes.sidebar')
 
         <main class="main">
-            @include('admin.includes.header', ['title' => 'إضافة فئة جديدة'])
+            @include('admin.includes.header', ['title' => $isRestaurantForm ? 'إضافة قسم منيو جديد' : 'إضافة فئة جديدة'])
 
             <div class="content">
                 <header class="page-head">
                     <div>
-                        <h1>إضافة فئة جديدة</h1>
-                        <p>اربط الفئة بمتجر، وحدد اسمها وصورتها وحالة ظهورها.</p>
+                        <h1>إضافة {{ $isRestaurantForm ? 'قسم منيو جديد' : 'فئة جديدة' }}</h1>
+                        <p>{{ $isRestaurantForm ? 'أنشئ قسماً جديداً لتنظيم وجبات منيو المطعم.' : 'اربط الفئة بمتجر، وحدد اسمها وصورتها وحالة ظهورها.' }}</p>
                     </div>
                     <a href="{{ route('categories') }}" class="btn">
                         <i class="ti ti-arrow-right" aria-hidden="true"></i>
-                        رجوع للفئات
+                        رجوع إلى {{ $categoriesName }}
                     </a>
                 </header>
 
@@ -125,34 +135,46 @@
                         <div class="section-head">
                             <div class="section-icon"><i class="ti ti-category-plus" aria-hidden="true"></i></div>
                             <div>
-                                <h2>بيانات الفئة</h2>
-                                <p>الحقول الأساسية الخاصة بتصنيف المنتجات.</p>
+                                <h2>بيانات {{ $categoryName }}</h2>
+                                <p>{{ $isRestaurantForm ? 'الحقول الأساسية الخاصة بتنظيم وجبات المنيو.' : 'الحقول الأساسية الخاصة بتصنيف المنتجات.' }}</p>
                             </div>
                         </div>
 
                         <div class="form-grid">
                             <div class="form-group">
-                                <label class="form-label" for="shop_id"><i class="ti ti-building-store" aria-hidden="true"></i>المتجر</label>
-                                <select id="shop_id" name="shop_id" required>
-                                    <option value="">اختر المتجر</option>
-                                    @foreach($shops as $shop)
-                                        <option value="{{ $shop->id }}" data-catalog-type="{{ $shop->catalog_type ?: 'general' }}" @selected(old('shop_id', $selectedShopId) == $shop->id)>{{ $shop->name }}</option>
-                                    @endforeach
-                                </select>
+                                @if($lockShopSelection && $formShop)
+                                    <label class="form-label" for="shop_id"><i class="ti ti-building-store" aria-hidden="true"></i>{{ $isRestaurantForm ? 'المطعم الحالي' : 'المتجر الحالي' }}</label>
+                                    <div class="locked-shop-field">
+                                        <i class="ti {{ $isRestaurantForm ? 'ti-tools-kitchen-2' : 'ti-building-store' }}" aria-hidden="true"></i>
+                                        <div>
+                                            <strong>{{ $formShop->name }}</strong>
+                                            <span>{{ $isRestaurantForm ? 'سيُضاف القسم مباشرة إلى منيو هذا المطعم' : 'سيتم الحفظ مباشرة داخل هذا المتجر' }}</span>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="shop_id" name="shop_id" value="{{ $formShop->id }}" data-catalog-type="{{ $formShop->catalog_type ?: 'general' }}">
+                                @else
+                                    <label class="form-label" for="shop_id"><i class="ti ti-building-store" aria-hidden="true"></i>المتجر</label>
+                                    <select id="shop_id" name="shop_id" required>
+                                        <option value="">اختر المتجر</option>
+                                        @foreach($shops as $shop)
+                                            <option value="{{ $shop->id }}" data-catalog-type="{{ $shop->catalog_type ?: 'general' }}" @selected(old('shop_id', $selectedShopId) == $shop->id)>{{ $shop->name }}</option>
+                                        @endforeach
+                                    </select>
+                                @endif
                             </div>
 
                             @include('admin.categories._catalog_guidance')
 
                             <div class="form-group">
-                                <label class="form-label" for="name"><i class="ti ti-tag" aria-hidden="true"></i>اسم الفئة</label>
+                                <label class="form-label" for="name"><i class="ti ti-tag" aria-hidden="true"></i>اسم {{ $categoryName }}</label>
                                 <input type="text" id="name" name="name" value="{{ old('name') }}" data-auto-translate-source placeholder="مثال: مشروبات" required>
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="name_en">اسم الفئة بالإنجليزي</label>
+                                <label class="form-label" for="name_en">اسم {{ $categoryName }} بالإنجليزي</label>
                                 <input type="text" id="name_en" name="name_en" value="{{ old('name_en') }}" dir="ltr">
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="name_he">اسم الفئة بالعبري</label>
+                                <label class="form-label" for="name_he">اسم {{ $categoryName }} بالعبري</label>
                                 <input type="text" id="name_he" name="name_he" value="{{ old('name_he') }}">
                             </div>
 
@@ -166,7 +188,7 @@
                                     <input type="file" name="image" accept="image/*">
                                     <span class="card-icon"><i class="ti ti-photo-up" aria-hidden="true"></i></span>
                                     <span>
-                                        <span class="card-title">صورة الفئة</span>
+                                        <span class="card-title">صورة {{ $categoryName }}</span>
                                         <span class="card-sub">PNG أو JPG، اختياري</span>
                                     </span>
                                 </label>
@@ -177,8 +199,8 @@
                                     <input type="file" name="background_video" accept="video/mp4,video/webm">
                                     <span class="card-icon"><i class="ti ti-video-plus" aria-hidden="true"></i></span>
                                     <span>
-                                        <span class="card-title">فيديو خلفية الفئة</span>
-                                        <span class="card-sub">MP4 أو WebM حتى 20MB — اختياري ويظهر متحركًا خلف منتجات الفئة</span>
+                                        <span class="card-title">فيديو خلفية {{ $categoryName }}</span>
+                                        <span class="card-sub">MP4 أو WebM حتى 20MB — اختياري ويظهر متحركًا خلف {{ $isRestaurantForm ? 'وجبات القسم' : 'منتجات الفئة' }}</span>
                                     </span>
                                 </label>
                             </div>
@@ -188,8 +210,8 @@
                                     <div class="card-copy">
                                         <span class="card-icon"><i class="ti ti-circle-check" aria-hidden="true"></i></span>
                                         <span>
-                                            <span class="card-title">تفعيل الفئة</span>
-                                            <span class="card-sub">الفئة النشطة تظهر في قوائم التصنيفات.</span>
+                                            <span class="card-title">تفعيل {{ $categoryName }}</span>
+                                            <span class="card-sub">{{ $isRestaurantForm ? 'القسم النشط يظهر داخل منيو المطعم.' : 'الفئة النشطة تظهر في قوائم التصنيفات.' }}</span>
                                         </span>
                                     </div>
                                     <label class="switch" for="is_active">
@@ -204,7 +226,7 @@
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">
                             <i class="ti ti-device-floppy" aria-hidden="true"></i>
-                            حفظ الفئة
+                            حفظ {{ $categoryName }}
                         </button>
                         <a href="{{ route('categories') }}" class="btn">رجوع</a>
                     </div>
