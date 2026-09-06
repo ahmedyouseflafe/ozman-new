@@ -22,10 +22,18 @@ class ShopOwnerAccountService
             $owner = $this->createOwner($shop);
         }
 
+        $permissionShops = $owner->shops()->where('is_active', true)->get();
+        if (! $permissionShops->contains('id', $shop->id)) {
+            $permissionShops->push($shop);
+        }
+
+        $allowedPermissions = $permissionShops
+            ->flatMap(fn (Shop $ownedShop) => $this->permissionsFor($ownedShop))
+            ->unique()
+            ->values();
+
         if ($applyDefaults && ! $owner->employeePermissions()->exists()) {
-            $permissions = collect(config('shop_owner_permissions.allowed', []))
-                ->merge(config("shop_owner_permissions.catalog_type_permissions.{$shop->catalog_type}", []))
-                ->unique();
+            $permissions = $allowedPermissions;
 
             foreach ($permissions as $permission) {
                 $owner->employeePermissions()->create(['permission' => $permission]);
@@ -33,8 +41,13 @@ class ShopOwnerAccountService
         }
 
         if ($applyDefaults) {
-            $requiredPermissions = collect(config('shop_owner_permissions.required', []))
-                ->merge(config("shop_owner_permissions.catalog_type_required.{$shop->catalog_type}", []))
+            $owner->employeePermissions()
+                ->whereNotIn('permission', $allowedPermissions->all())
+                ->delete();
+
+            $requiredPermissions = $permissionShops
+                ->flatMap(fn (Shop $ownedShop) => config("shop_owner_permissions.catalog_type_required.{$ownedShop->catalog_type}", []))
+                ->merge(config('shop_owner_permissions.required', []))
                 ->unique();
 
             foreach ($requiredPermissions as $permission) {
@@ -43,6 +56,17 @@ class ShopOwnerAccountService
         }
 
         return $owner;
+    }
+
+    public function permissionsFor(Shop $shop): \Illuminate\Support\Collection
+    {
+        $excluded = config("shop_owner_permissions.catalog_type_excluded.{$shop->catalog_type}", []);
+
+        return collect(config('shop_owner_permissions.allowed', []))
+            ->merge(config("shop_owner_permissions.catalog_type_permissions.{$shop->catalog_type}", []))
+            ->reject(fn (string $permission) => in_array($permission, $excluded, true))
+            ->unique()
+            ->values();
     }
 
     private function createOwner(Shop $shop): User

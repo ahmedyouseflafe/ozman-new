@@ -53,6 +53,9 @@
             </div>
             <div class="hero-actions">
                 <a class="btn" href="{{ route('shops.show',$shop) }}"><i class="ti ti-arrow-right"></i> لوحة المتجر</a>
+                @if(auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('products'))
+                    <a class="btn" href="{{ route('products',['shop_id'=>$shop->id]) }}"><i class="ti ti-tools-kitchen-2"></i> إدارة الوجبات</a>
+                @endif
                 <a class="btn btn-primary" href="{{ route('restaurant.menu',$shop) }}" target="_blank"><i class="ti ti-external-link"></i> فتح منيو المطعم</a>
             </div>
         </div>

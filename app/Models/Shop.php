@@ -58,6 +58,30 @@ class Shop extends Model
         return config('catalog_types.'.($this->catalog_type ?: 'general'), config('catalog_types.general', []));
     }
 
+    public function requiresActiveDistributor(): bool
+    {
+        return (bool) ($this->catalogDefinition()['requires_distributor'] ?? true);
+    }
+
+    public function activeDistributionPartner(): ?Distributor
+    {
+        $marketer = $this->distributorMarketer;
+        if ($marketer?->is_active && $marketer->distributor?->is_active) {
+            return $marketer->distributor;
+        }
+
+        return $this->distributor?->is_active ? $this->distributor : null;
+    }
+
+    public function dashboardRouteName(): string
+    {
+        return match ($this->catalog_type) {
+            'real_estate' => 'real-estate.dashboard',
+            'restaurant' => 'restaurant.dashboard',
+            default => 'shops.show',
+        };
+    }
+
     // العلاقات
 
     public function user()

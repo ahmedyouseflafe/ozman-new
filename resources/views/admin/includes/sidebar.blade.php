@@ -392,6 +392,7 @@
     $realEstateNavShop = $previewShopId
         ? \App\Models\Shop::query()->whereKey($previewShopId)->where('catalog_type', 'real_estate')->first()
         : null;
+    $catalogItemsLabel = $restaurantNavShop ? 'الوجبات' : 'المنتجات';
 
     $previewDistributor = null;
     if ($isDistributor) {
@@ -417,7 +418,7 @@
         <div class="admin-sidebar-logo-icon">O</div>
         <div>
             <div class="admin-sidebar-logo-text">Ozman</div>
-            <div class="admin-sidebar-logo-sub">لوحة التحكم</div>
+            <div class="admin-sidebar-logo-sub">{{ $restaurantNavShop ? 'لوحة المطعم' : 'لوحة التحكم' }}</div>
         </div>
         <button type="button" class="admin-mobile-sidebar-close" data-admin-menu-close aria-label="إغلاق قائمة لوحة التحكم" style="display:none;margin-right:auto;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;align-items:center;justify-content:center;cursor:pointer">
             <i class="ti ti-x" aria-hidden="true"></i>
@@ -435,7 +436,7 @@
         </a>
         @endif
 
-        <div class="admin-sidebar-section">المتجر</div>
+        <div class="admin-sidebar-section">{{ $restaurantNavShop ? 'المطعم' : 'المتجر' }}</div>
 
         @if($isMarketer && ! $hasAssignedPermissions)
         @if($canSee(['front-orders.index']))
@@ -479,10 +480,10 @@
         @endif
 
         @if($canSee(['products', 'products.show', 'products.create', 'products.edit']))
-        <a href="{{ route('products') }}"
+        <a href="{{ route('products', $previewShopId ? ['shop_id' => $previewShopId] : []) }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('products') || request()->routeIs('products.create') || request()->routeIs('products.edit') || request()->routeIs('products.show') ? 'active' : '' }}">
              <i class="ti ti-package" aria-hidden="true"></i>
-             المنتجات
+             {{ $catalogItemsLabel }}
         </a>
         @endif
 
@@ -724,9 +725,9 @@
     @endif
 
     @if($canSee(['products']))
-        <a href="{{ route('products') }}" class="admin-mobile-nav-item {{ request()->routeIs('products*') ? 'active' : '' }}">
+        <a href="{{ route('products', $previewShopId ? ['shop_id' => $previewShopId] : []) }}" class="admin-mobile-nav-item {{ request()->routeIs('products*') ? 'active' : '' }}">
             <i class="ti ti-package" aria-hidden="true"></i>
-            المنتجات
+            {{ $catalogItemsLabel }}
         </a>
     @endif
 

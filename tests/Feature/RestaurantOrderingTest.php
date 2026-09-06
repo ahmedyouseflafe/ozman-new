@@ -82,6 +82,15 @@ class RestaurantOrderingTest extends TestCase
             ->assertRedirect(route('restaurant.dashboard', $restaurant));
     }
 
+    public function test_restaurant_owner_dashboard_entry_opens_the_restaurant_dashboard(): void
+    {
+        [$restaurant] = $this->restaurant('dashboard-entry');
+
+        $this->actingAs($restaurant->user)
+            ->get(route('dashboard'))
+            ->assertRedirect(route('restaurant.dashboard', $restaurant));
+    }
+
     public function test_restaurant_status_cannot_move_backwards_or_use_generic_status_route(): void
     {
         [$shop, , $table] = $this->restaurant('status');

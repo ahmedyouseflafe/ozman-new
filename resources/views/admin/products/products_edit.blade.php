@@ -1,8 +1,16 @@
 ﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
+@php
+    $formShop = $shops->firstWhere('id', (int) old('shop_id', $product->shop_id)) ?: $selectedShop;
+    $isRestaurantForm = $formShop?->catalog_type === 'restaurant';
+    $itemLabel = $isRestaurantForm ? 'وجبة' : 'منتج';
+    $itemsLabel = $isRestaurantForm ? 'الوجبات' : 'المنتجات';
+    $placeLabel = $isRestaurantForm ? 'المطعم' : 'المتجر';
+@endphp
+
 <head>
-    <title>تعديل المنتج - Ozman</title>
+    <title>تعديل {{ $itemLabel }} - Ozman</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,6 +50,8 @@
         .visibility-check { display:inline-flex; align-items:center; gap:6px; color:var(--muted); font-size:10px; font-weight:800; cursor:pointer; white-space:nowrap; }
         .visibility-check input { width:16px; height:16px; padding:0; accent-color:var(--primary); }
         .form-label { display:flex; align-items:center; gap:7px; color:rgba(255,255,255,.72); font-size:12px; font-weight:900; margin-bottom:8px; }
+        .locked-shop-field { min-height:52px;display:flex;align-items:center;gap:11px;padding:11px 14px;border:1px solid rgba(0,229,255,.32);border-radius:16px;background:rgba(0,229,255,.07);color:#fff;font-weight:900; }
+        .locked-shop-field i { color:var(--primary);font-size:20px; }.locked-shop-field small { display:block;color:var(--dim);font-size:10px; }
         input, textarea, select { width:100%; border:1px solid var(--border); background:rgba(255,255,255,.055); border-radius:16px; color:#fff; padding:12px 14px; outline:none; font-family:inherit; font-size:13px; font-weight:700; }
         textarea { min-height:120px; resize:vertical; line-height:1.7; }
         select option { color:#111; }
@@ -87,14 +97,14 @@
     <div class="shell">
         @include('admin.includes.sidebar')
         <main class="main">
-            @include('admin.includes.header', ['title' => 'تعديل المنتج'])
+            @include('admin.includes.header', ['title' => 'تعديل ' . $itemLabel])
             <div class="content">
                 <header class="page-head">
                     <div>
-                        <h1>تعديل المنتج</h1>
-                        <p>حدّث بيانات المنتج والسعر والصور وحالة الظهور.</p>
+                        <h1>تعديل {{ $itemLabel }}</h1>
+                        <p>{{ $isRestaurantForm ? 'حدّث بيانات الوجبة وسعرها وصورها وحالة ظهورها في المنيو.' : 'حدّث بيانات المنتج والسعر والصور وحالة الظهور.' }}</p>
                     </div>
-                    <a href="{{ route('products') }}" class="btn"><i class="ti ti-arrow-right"></i>رجوع للمنتجات</a>
+                    <a href="{{ route('products') }}" class="btn"><i class="ti ti-arrow-right"></i>رجوع لـ{{ $itemsLabel }}</a>
                 </header>
 
                 @if($errors->any())
@@ -112,16 +122,21 @@
                     @csrf
                     @method('PUT')
                     <section class="form-section">
-                        <div class="section-head"><div class="section-icon"><i class="ti ti-package"></i></div><div><h2>بيانات المنتج</h2><p>المتجر والفئة والاسم والوصف.</p></div></div>
+                        <div class="section-head"><div class="section-icon"><i class="ti ti-package"></i></div><div><h2>بيانات {{ $itemLabel }}</h2><p>{{ $placeLabel }} والفئة والاسم والوصف.</p></div></div>
                         <div class="form-grid">
                             <div class="form-group">
-                                <label class="form-label" for="shop_id">المتجر</label>
-                                <select id="shop_id" name="shop_id" required>
-                                    <option value="">اختر المتجر</option>
-                                    @foreach($shops as $shop)
-                                        <option value="{{ $shop->id }}" data-catalog-type="{{ $shop->catalog_type ?: 'general' }}" @selected(old('shop_id', $product->shop_id) == $shop->id)>{{ $shop->name }}</option>
-                                    @endforeach
-                                </select>
+                                <label class="form-label">{{ $placeLabel }}</label>
+                                @if($lockShopSelection && $formShop)
+                                    <div class="locked-shop-field"><i class="ti ti-tools-kitchen-2"></i><span><small>{{ $isRestaurantForm ? 'لوحة المطعم الحالية' : 'متجرك الحالي' }}</small>{{ $formShop->name }}</span></div>
+                                    <input type="hidden" id="shop_id" name="shop_id" value="{{ $formShop->id }}" data-catalog-type="{{ $formShop->catalog_type ?: 'general' }}">
+                                @else
+                                    <select id="shop_id" name="shop_id" required>
+                                        <option value="">اختر المتجر</option>
+                                        @foreach($shops as $shop)
+                                            <option value="{{ $shop->id }}" data-catalog-type="{{ $shop->catalog_type ?: 'general' }}" @selected(old('shop_id', $product->shop_id) == $shop->id)>{{ $shop->name }}</option>
+                                        @endforeach
+                                    </select>
+                                @endif
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="category_id">الفئة</label>
@@ -141,9 +156,9 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="form-group"><label class="form-label" for="name">اسم المنتج</label><input type="text" id="name" name="name" value="{{ old('name', $product->name) }}" data-auto-translate-source required></div>
-                            <div class="form-group"><label class="form-label" for="name_en">اسم المنتج بالإنجليزي</label><input type="text" id="name_en" name="name_en" value="{{ old('name_en', data_get($product->name_translations, 'en')) }}" dir="ltr"></div>
-                            <div class="form-group"><label class="form-label" for="name_he">اسم المنتج بالعبري</label><input type="text" id="name_he" name="name_he" value="{{ old('name_he', data_get($product->name_translations, 'he')) }}"></div>
+                            <div class="form-group"><label class="form-label" for="name">اسم {{ $itemLabel }}</label><input type="text" id="name" name="name" value="{{ old('name', $product->name) }}" data-auto-translate-source required></div>
+                            <div class="form-group"><label class="form-label" for="name_en">اسم {{ $itemLabel }} بالإنجليزي</label><input type="text" id="name_en" name="name_en" value="{{ old('name_en', data_get($product->name_translations, 'en')) }}" dir="ltr"></div>
+                            <div class="form-group"><label class="form-label" for="name_he">اسم {{ $itemLabel }} بالعبري</label><input type="text" id="name_he" name="name_he" value="{{ old('name_he', data_get($product->name_translations, 'he')) }}"></div>
                             <div class="form-group"><label class="form-label" for="slug">الرابط المختصر</label><input type="text" id="slug" name="slug" value="{{ old('slug', $product->slug) }}"></div>
                             <div class="form-group full"><label class="form-label" for="description">الوصف</label><textarea id="description" name="description" data-auto-translate-source>{{ old('description', $product->description) }}</textarea></div>
                             <div class="form-group full"><label class="form-label" for="description_en">الوصف بالإنجليزي</label><textarea id="description_en" name="description_en" dir="ltr">{{ old('description_en', data_get($product->description_translations, 'en')) }}</textarea></div>
@@ -185,7 +200,7 @@
                     </section>
 
                     <section class="form-section">
-                        <div class="section-head"><div class="section-icon"><i class="ti ti-photo-up"></i></div><div><h2>الصور والفيديو</h2><p>اترك الملفات فارغة للاحتفاظ بالملفات الحالية.</p></div></div>
+                        <div class="section-head"><div class="section-icon"><i class="ti ti-photo-up"></i></div><div><h2>صور وفيديو {{ $itemLabel }}</h2><p>اترك الملفات فارغة للاحتفاظ بالملفات الحالية.</p></div></div>
                         <div class="upload-grid">
                             <label class="upload-box"><input type="file" name="main_image" accept="image/*,.gif"><span class="card-icon"><i class="ti ti-photo"></i></span><span><span class="card-title">تغيير الصورة الرئيسية</span><span class="card-sub">PNG أو JPG أو GIF</span></span></label>
                             <label class="upload-box"><input type="file" name="video" accept="video/*"><span class="card-icon"><i class="ti ti-video"></i></span><span><span class="card-title">تغيير الفيديو</span><span class="card-sub">MP4 أو WebM</span></span></label>
@@ -458,11 +473,11 @@
                     <section class="form-section">
                         <div class="switch-grid">
                             <div class="switch-card">
-                                <div class="card-copy"><span class="card-icon"><i class="ti ti-star"></i></span><span><span class="card-title">منتج مميز</span><span class="card-sub">يظهر ضمن المنتجات المميزة.</span></span></div>
+                                <div class="card-copy"><span class="card-icon"><i class="ti ti-star"></i></span><span><span class="card-title">{{ $isRestaurantForm ? 'وجبة مميزة' : 'منتج مميز' }}</span><span class="card-sub">{{ $isRestaurantForm ? 'تظهر ضمن الوجبات المميزة.' : 'يظهر ضمن المنتجات المميزة.' }}</span></span></div>
                                 <label class="switch" for="is_featured"><input type="checkbox" id="is_featured" name="is_featured" value="1" @checked(old('is_featured', $product->is_featured))><span class="slider"></span></label>
                             </div>
                             <div class="switch-card">
-                                <div class="card-copy"><span class="card-icon"><i class="ti ti-circle-check"></i></span><span><span class="card-title">تفعيل المنتج</span><span class="card-sub">المنتج النشط يظهر للعرض.</span></span></div>
+                                <div class="card-copy"><span class="card-icon"><i class="ti ti-circle-check"></i></span><span><span class="card-title">تفعيل {{ $itemLabel }}</span><span class="card-sub">{{ $isRestaurantForm ? 'الوجبة النشطة تظهر في المنيو.' : 'المنتج النشط يظهر للعرض.' }}</span></span></div>
                                 <label class="switch" for="is_active"><input type="checkbox" id="is_active" name="is_active" value="1" @checked(old('is_active', $product->is_active))><span class="slider"></span></label>
                             </div>
                         </div>

@@ -18,18 +18,35 @@ use Illuminate\View\View;
 
 class ProductController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $shops = $this->accessibleShops();
+        $currentShop = null;
+
+        if ($request->user()?->isShopOwner()) {
+            $preferredShopId = $request->integer('shop_id')
+                ?: (int) $request->session()->get('current_shop_id')
+                ?: $this->firstAccessibleShopId();
+            $currentShop = $shops->firstWhere('id', $preferredShopId) ?: $shops->first();
+        }
+
         $products = Product::query()
             ->with(['shop', 'category'])
             ->when(! $this->hasGlobalDashboardAccess(), fn($query) => $this->scopeToAccessibleShops($query))
+            ->when($currentShop, fn($query) => $query->where('shop_id', $currentShop->id))
             ->when(auth()->user()?->isAgent(), fn($query) => $query->whereIn('agent_id', $this->currentUserAgentIds()))
             ->latest()
             ->get();
 
+        $categories = $this->scopeToAccessibleShops(Category::query())
+            ->when($currentShop, fn($query) => $query->where('shop_id', $currentShop->id))
+            ->orderBy('name')
+            ->get();
+
         return view('admin.products.products', [
             'products' => $products,
-            'categories' => $this->scopeToAccessibleShops(Category::query())->orderBy('name')->get(),
+            'categories' => $categories,
+            'currentShop' => $currentShop,
             'productsCount' => $products->count(),
             'featuredProductsCount' => $products->where('is_featured', true)->count(),
             'outOfStockProductsCount' => $products->where('quantity', '<=', 0)->count(),
@@ -41,10 +58,19 @@ class ProductController extends Controller
     {
         $this->authorizeProductManagement();
 
+        $options = $this->formOptions();
+        $preferredShopId = $request->integer('shop_id')
+            ?: (int) $request->session()->get('current_shop_id')
+            ?: $this->firstAccessibleShopId();
+        $selectedShop = $options['shops']->firstWhere('id', $preferredShopId)
+            ?: ($request->user()?->isShopOwner() ? $options['shops']->first() : null);
+
         return view('admin.products.products_create', array_merge(
-            $this->formOptions(),
+            $options,
             [
-                'selectedShopId' => $request->integer('shop_id') ?: null,
+                'selectedShopId' => $selectedShop?->id,
+                'selectedShop' => $selectedShop,
+                'lockShopSelection' => $request->user()?->isShopOwner() && $selectedShop !== null,
                 'selectedCategoryId' => $request->integer('category_id') ?: null,
             ]
         ));
@@ -59,13 +85,14 @@ class ProductController extends Controller
         unset($data['images'], $data['campaigns'], $data['variants']);
         $this->normalizeShopId($data);
         $data['catalog_attributes'] = $this->catalogAttributes($request, (int) $data['shop_id']);
+        $isRestaurant = $this->isRestaurantShop((int) $data['shop_id']);
         $this->applyAgentOwnership($data);
         $this->authorizeCategoryForShop((int) $data['category_id'], (int) $data['shop_id']);
         $this->authorizeAgentForShop(isset($data['agent_id']) ? (int) $data['agent_id'] : null, (int) $data['shop_id']);
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name']);
         $data['name_translations'] = $this->localizedInput($request, 'name', $data['name']);
         $data['description_translations'] = $this->localizedInput($request, 'description', $data['description'] ?? null);
-        $data['quantity'] = $data['quantity'] ?? 0;
+        $data['quantity'] = $isRestaurant ? 1 : ($data['quantity'] ?? 0);
         $data['rating'] = $data['rating'] ?? 0;
         $data['is_featured'] = $request->boolean('is_featured');
         $data['is_active'] = $request->boolean('is_active');
@@ -118,7 +145,7 @@ class ProductController extends Controller
 
         return redirect()
             ->route('products')
-            ->with('status', 'تمت إضافة المنتج بنجاح.');
+            ->with('status', $isRestaurant ? 'تمت إضافة الوجبة بنجاح.' : 'تمت إضافة المنتج بنجاح.');
     }
 
     public function show(Product $product): View
@@ -137,7 +164,11 @@ class ProductController extends Controller
         $product->load(['images', 'campaigns', 'variants']);
 
         return view('admin.products.products_edit', array_merge(
-            ['product' => $product],
+            [
+                'product' => $product,
+                'selectedShop' => $product->shop,
+                'lockShopSelection' => auth()->user()?->isShopOwner() === true,
+            ],
             $this->formOptions()
         ));
     }
@@ -161,13 +192,14 @@ class ProductController extends Controller
         );
         $this->normalizeShopId($data);
         $data['catalog_attributes'] = $this->catalogAttributes($request, (int) $data['shop_id']);
+        $isRestaurant = $this->isRestaurantShop((int) $data['shop_id']);
         $this->applyAgentOwnership($data, $product);
         $this->authorizeCategoryForShop((int) $data['category_id'], (int) $data['shop_id']);
         $this->authorizeAgentForShop(isset($data['agent_id']) ? (int) $data['agent_id'] : null, (int) $data['shop_id']);
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name'], $product);
         $data['name_translations'] = $this->localizedInput($request, 'name', $data['name']);
         $data['description_translations'] = $this->localizedInput($request, 'description', $data['description'] ?? null);
-        $data['quantity'] = $data['quantity'] ?? 0;
+        $data['quantity'] = $isRestaurant ? 1 : ($data['quantity'] ?? 0);
         $data['rating'] = $data['rating'] ?? 0;
         $data['is_featured'] = $request->boolean('is_featured');
         $data['is_active'] = $request->boolean('is_active');
@@ -223,13 +255,14 @@ class ProductController extends Controller
 
         return redirect()
             ->route('products')
-            ->with('status', 'تم تحديث المنتج بنجاح.');
+            ->with('status', $isRestaurant ? 'تم تحديث الوجبة بنجاح.' : 'تم تحديث المنتج بنجاح.');
     }
 
     public function destroy(Product $product): RedirectResponse
     {
         $this->authorizeProductManagement($product);
         $this->authorizeShopAccess($product);
+        $isRestaurant = $product->shop?->catalog_type === 'restaurant';
         $product->load(['images', 'campaigns']);
         $this->deleteUpload($product->main_image);
         $this->deleteUpload($product->video);
@@ -246,7 +279,7 @@ class ProductController extends Controller
 
         return redirect()
             ->route('products')
-            ->with('status', 'تم حذف المنتج بنجاح.');
+            ->with('status', $isRestaurant ? 'تم حذف الوجبة بنجاح.' : 'تم حذف المنتج بنجاح.');
     }
 
     private function formOptions(): array
@@ -830,6 +863,11 @@ class ProductController extends Controller
     private function isElectronicsShop(int $shopId): bool
     {
         return Shop::query()->whereKey($shopId)->where('catalog_type', 'electronics')->exists();
+    }
+
+    private function isRestaurantShop(int $shopId): bool
+    {
+        return Shop::query()->whereKey($shopId)->where('catalog_type', 'restaurant')->exists();
     }
 
     private function storeProductImage(UploadedFile $file, string $directory, bool $removeWhiteBackground): string

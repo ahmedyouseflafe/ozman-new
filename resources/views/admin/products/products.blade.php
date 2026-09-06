@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
+@php
+    $isRestaurantContext = ($currentShop ?? null)?->catalog_type === 'restaurant';
+    $itemLabel = $isRestaurantContext ? 'وجبة' : 'منتج';
+    $itemsLabel = $isRestaurantContext ? 'الوجبات' : 'المنتجات';
+@endphp
+
 <head>
-    <title>إدارة المنتجات - Ozman</title>
+    <title>إدارة {{ $itemsLabel }} - Ozman</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -565,28 +571,35 @@
         @include('admin.includes.sidebar')
 
         <main class="main">
-            @include('admin.includes.header', ['title' => 'إدارة المنتجات'])
+            @include('admin.includes.header', ['title' => 'إدارة ' . $itemsLabel])
 
             <div class="content">
-                <section class="hero-strip" aria-label="شريط المنتجات">
+                <section class="hero-strip" aria-label="شريط {{ $itemsLabel }}">
                     <div class="ticker">
-                        <span>إدارة منتجات Ozman بشكل حديث وسريع</span>
-                        <span>تحكم بالفئات والأسعار والمخزون من مكان واحد</span>
-                        <span>منتجات مميزة تظهر بواجهة المتجر مباشرة</span>
-                        <span>إدارة منتجات Ozman بشكل حديث وسريع</span>
+                        @if($isRestaurantContext)
+                            <span>إدارة وجبات {{ $currentShop->name }} من مكان واحد</span>
+                            <span>تحكم بالفئات والأسعار والصور بسهولة</span>
+                            <span>الوجبات النشطة تظهر في منيو المطعم مباشرة</span>
+                            <span>لوحة وجبات مطعم {{ $currentShop->name }}</span>
+                        @else
+                            <span>إدارة منتجات Ozman بشكل حديث وسريع</span>
+                            <span>تحكم بالفئات والأسعار والمخزون من مكان واحد</span>
+                            <span>منتجات مميزة تظهر بواجهة المتجر مباشرة</span>
+                            <span>إدارة منتجات Ozman بشكل حديث وسريع</span>
+                        @endif
                     </div>
                 </section>
 
                 <header class="page-head">
                     <div>
-                        <div class="page-kicker">المتجر</div>
-                        <h1>إدارة المنتجات</h1>
-                        <p>{{ $productsTotal }} منتج في جميع المتاجر مع متابعة الأسعار والمخزون.</p>
+                        <div class="page-kicker">{{ $isRestaurantContext ? 'لوحة المطعم · ' . $currentShop->name : 'المتجر' }}</div>
+                        <h1>إدارة {{ $itemsLabel }}</h1>
+                        <p>{{ $productsTotal }} {{ $isRestaurantContext ? 'وجبة في منيو المطعم مع متابعة الأسعار وحالة الظهور.' : 'منتج في جميع المتاجر مع متابعة الأسعار والمخزون.' }}</p>
                     </div>
                     @if($canCreateProducts)
-                        <a href="{{ route('products.create') }}" class="btn-primary">
+                        <a href="{{ route('products.create', $currentShop ? ['shop_id' => $currentShop->id] : []) }}" class="btn-primary">
                             <i class="ti ti-plus" aria-hidden="true"></i>
-                            منتج جديد
+                            {{ $isRestaurantContext ? 'وجبة جديدة' : 'منتج جديد' }}
                         </a>
                     @endif
                 </header>
@@ -595,24 +608,26 @@
                     <div class="status-alert">{{ session('status') }}</div>
                 @endif
 
-                <section class="stats-grid" aria-label="إحصائيات المنتجات">
+                <section class="stats-grid" aria-label="إحصائيات {{ $itemsLabel }}">
                     <article class="stat-card" style="--card-color: var(--primary)">
-                        <div class="stat-label">إجمالي المنتجات</div>
+                        <div class="stat-label">إجمالي {{ $itemsLabel }}</div>
                         <div class="stat-val">{{ $productsTotal }}</div>
                         <i class="ti ti-package stat-icon" aria-hidden="true"></i>
                     </article>
 
                     <article class="stat-card" style="--card-color: var(--yellow)">
-                        <div class="stat-label">المنتجات المميزة</div>
+                        <div class="stat-label">{{ $itemsLabel }} المميزة</div>
                         <div class="stat-val">{{ $featuredTotal }}</div>
                         <i class="ti ti-star stat-icon" aria-hidden="true"></i>
                     </article>
 
-                    <article class="stat-card" style="--card-color: var(--danger)">
-                        <div class="stat-label">نفد المخزون</div>
-                        <div class="stat-val">{{ $outOfStockTotal }}</div>
-                        <i class="ti ti-alert-triangle stat-icon" aria-hidden="true"></i>
-                    </article>
+                    @unless($isRestaurantContext)
+                        <article class="stat-card" style="--card-color: var(--danger)">
+                            <div class="stat-label">نفد المخزون</div>
+                            <div class="stat-val">{{ $outOfStockTotal }}</div>
+                            <i class="ti ti-alert-triangle stat-icon" aria-hidden="true"></i>
+                        </article>
+                    @endunless
 
                     <article class="stat-card" style="--card-color: var(--accent)">
                         <div class="stat-label">متوسط السعر</div>
@@ -625,7 +640,7 @@
                     <div class="panel-head">
                         <h2 class="panel-title">
                             <i class="ti ti-list-details" aria-hidden="true"></i>
-                            قائمة المنتجات
+                            قائمة {{ $itemsLabel }}
                         </h2>
 
                         <div class="filter-row">
@@ -647,7 +662,7 @@
                         <table id="prodTable">
                             <thead>
                                 <tr>
-                                    <th>المنتج</th>
+                                    <th>{{ $itemLabel }}</th>
                                     <th>الفئة</th>
                                     <th>المتجر</th>
                                     <th>السعر</th>
@@ -656,7 +671,7 @@
                                     <th>سعر العبوة</th>
                                     <th>سعر المشطاح</th>
                                     <th>سعر الكرتونة</th>
-                                    <th>الكمية</th>
+                                    @unless($isRestaurantContext)<th>الكمية</th>@endunless
                                     <th>التقييم</th>
                                     <th>مميز</th>
                                     <th>الحالة</th>
@@ -727,9 +742,9 @@
                                                 -
                                             @endif
                                         </td>
-                                        <td>
-                                            <span class="tag {{ $quantity > 0 ? 'tag-c' : 'tag-r' }}">{{ $quantity }}</span>
-                                        </td>
+                                        @unless($isRestaurantContext)
+                                            <td><span class="tag {{ $quantity > 0 ? 'tag-c' : 'tag-r' }}">{{ $quantity }}</span></td>
+                                        @endunless
                                         <td>
                                             <span class="rating">
                                                 <i class="ti ti-star-filled" aria-hidden="true"></i>
@@ -737,7 +752,7 @@
                                             </span>
                                         </td>
                                         <td><span class="tag {{ $isFeatured ? 'tag-y' : 'tag-r' }}">{{ $isFeatured ? 'نعم' : 'لا' }}</span></td>
-                                        <td><span class="tag {{ $isActive && $quantity > 0 ? 'tag-g' : 'tag-r' }}">{{ $isActive && $quantity > 0 ? 'نشط' : 'متوقف' }}</span></td>
+                                        <td><span class="tag {{ $isActive && ($isRestaurantContext || $quantity > 0) ? 'tag-g' : 'tag-r' }}">{{ $isActive && ($isRestaurantContext || $quantity > 0) ? 'نشط' : 'متوقف' }}</span></td>
                                         <td>
                                             <div class="actions">
                                                 <a href="{{ route('products.show', $product) }}" class="icon-btn" aria-label="عرض">
@@ -749,7 +764,7 @@
                                                     </a>
                                                 @endif
                                                 @if($canManageProduct($product) && $canDeleteProducts)
-                                                    <form action="{{ route('products.destroy', $product) }}" method="POST" onsubmit="return confirm('هل تريد حذف هذا المنتج؟')">
+                                                    <form action="{{ route('products.destroy', $product) }}" method="POST" onsubmit="return confirm('{{ $isRestaurantContext ? 'هل تريد حذف هذه الوجبة؟' : 'هل تريد حذف هذا المنتج؟' }}')">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="icon-btn" aria-label="حذف">
@@ -765,7 +780,7 @@
                                         <td colspan="14">
                                             <div class="empty-state">
                                                 <i class="ti ti-package-off" aria-hidden="true"></i>
-                                                لا توجد منتجات لعرضها حاليا
+                                                لا توجد {{ $itemsLabel }} لعرضها حاليًا
                                             </div>
                                         </td>
                                     </tr>

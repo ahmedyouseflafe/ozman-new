@@ -81,32 +81,13 @@ class AuthController extends Controller
                 ->onlyInput('email', 'redirect');
         }
 
-        $shop = Auth::user()?->shops()
-            ->where('is_active', true)
-            ->first();
-
-        if (! $shop) {
-            Auth::logout();
-
-            return back()
-                ->withErrors(['email' => 'هذا الحساب غير مرتبط بمتجر فعال وموزع. تواصل مع الموزع.'])
-                ->onlyInput('email', 'redirect');
-        }
-
-        $this->applyMerchantReferral($request, $shop);
-        $shop->refresh();
-
-        $linkedDistributor = $shop->distributorMarketer?->distributor ?: $shop->distributor;
-        if (! $linkedDistributor?->is_active) {
-            Auth::logout();
-
-            return back()
-                ->withErrors(['email' => 'هذا الحساب غير مرتبط بمتجر فعال وموزع. امسح QR الموزع أو المروّج ثم سجّل الدخول.'])
-                ->onlyInput('email', 'redirect');
+        [$shop, $merchantError] = $this->resolveMerchantAccess($request, true);
+        if ($merchantError) {
+            return $this->rejectMerchantAccess($request, $merchantError, ['email', 'redirect']);
         }
 
         $request->session()->regenerate();
-        $request->session()->put('merchant_shop_id', $shop->id);
+        $this->rememberMerchantShop($request, $shop);
         $request->session()->forget('merchant_referral');
 
         return redirect()->to($this->safeMerchantRedirect($request->input('redirect')));
@@ -115,9 +96,7 @@ class AuthController extends Controller
     public function showMerchantRegister(Request $request): View|RedirectResponse
     {
         if (Auth::check()) {
-            return Auth::user()?->isShopOwner()
-                ? redirect()->route('home')
-                : redirect()->route('dashboard');
+            return redirect()->route('dashboard');
         }
 
         if (! $this->resolvedMerchantReferral($request)) {
@@ -221,17 +200,18 @@ class AuthController extends Controller
         $user = $request->user();
 
         if ($user?->isShopOwner()) {
-            $shop = $user->shops()->first();
-
-            if ($shop) {
-                app(ShopOwnerAccountService::class)->resolve($shop);
-
-                if ($shop->catalog_type === 'real_estate') {
-                    return redirect()->route('real-estate.dashboard', $shop);
-                }
-
-                return redirect()->route('shops.show', $shop);
+            $shop = $this->activeShopForOwner($request);
+            if (! $shop) {
+                return $this->rejectMerchantAccess(
+                    $request,
+                    'هذا الحساب غير مرتبط بمتجر فعال. تواصل مع إدارة Ozman لتفعيل المتجر.'
+                );
             }
+
+            app(ShopOwnerAccountService::class)->resolve($shop);
+            $this->rememberMerchantShop($request, $shop);
+
+            return redirect()->route($shop->dashboardRouteName(), $shop);
         }
 
         if ($user?->isAgent() || $user?->isDistributor()) {
@@ -286,7 +266,7 @@ class AuthController extends Controller
         ]);
 
         return redirect()
-            ->route('shops.show', $shop)
+            ->route($shop->dashboardRouteName(), $shop)
             ->with('success', 'أنت الآن داخل لوحة تحكم متجر '.$shop->name.'.');
     }
 
@@ -389,12 +369,89 @@ class AuthController extends Controller
 
     private function applyMerchantReferral(Request $request, Shop $shop): void
     {
+        if (! $shop->requiresActiveDistributor()) {
+            return;
+        }
+
         $referral = $this->resolvedMerchantReferral($request);
         if (! $referral) {
             return;
         }
 
         $shop->update($referral);
+    }
+
+    private function resolveMerchantAccess(Request $request, bool $applyReferral = false): array
+    {
+        $user = $request->user();
+        if (! $user?->isShopOwner()) {
+            return [null, null];
+        }
+
+        $shop = $this->activeShopForOwner($request);
+        if (! $shop) {
+            return [null, 'هذا الحساب غير مرتبط بمتجر فعال. تواصل مع إدارة Ozman لتفعيل المتجر.'];
+        }
+
+        if ($applyReferral && $shop->requiresActiveDistributor()) {
+            $this->applyMerchantReferral($request, $shop);
+            $shop->refresh()->load(['distributor', 'distributorMarketer.distributor']);
+        }
+
+        if ($shop->requiresActiveDistributor() && ! $shop->activeDistributionPartner()) {
+            return [$shop, 'هذا المتجر يحتاج إلى موزّع فعال. امسح QR الموزّع أو المروّج ثم سجّل الدخول.'];
+        }
+
+        app(ShopOwnerAccountService::class)->resolve($shop);
+
+        return [$shop, null];
+    }
+
+    private function activeShopForOwner(Request $request): ?Shop
+    {
+        $user = $request->user();
+        if (! $user?->isShopOwner()) {
+            return null;
+        }
+
+        $shops = $user->shops()
+            ->where('is_active', true)
+            ->with(['distributor', 'distributorMarketer.distributor'])
+            ->get();
+
+        $preferredIds = collect([
+            $request->session()->get('merchant_shop_id'),
+            $request->session()->get('current_shop_id'),
+            $request->session()->get('impersonated_shop_id'),
+        ])->filter()->map(fn ($id) => (int) $id);
+
+        return $preferredIds
+            ->map(fn (int $id) => $shops->firstWhere('id', $id))
+            ->first(fn ($candidate) => $candidate instanceof Shop)
+            ?: $shops->first();
+    }
+
+    private function rememberMerchantShop(Request $request, ?Shop $shop): void
+    {
+        if (! $shop) {
+            return;
+        }
+
+        $request->session()->put([
+            'merchant_shop_id' => $shop->id,
+            'current_shop_id' => $shop->id,
+        ]);
+    }
+
+    private function rejectMerchantAccess(Request $request, string $message, array $oldInput = []): RedirectResponse
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return back()
+            ->withErrors(['email' => $message])
+            ->onlyInput(...$oldInput);
     }
 
     private function resolvedMerchantReferral(Request $request): ?array

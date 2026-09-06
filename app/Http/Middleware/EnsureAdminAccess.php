@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Shop;
+use App\Services\ShopOwnerAccountService;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -34,8 +35,15 @@ class EnsureAdminAccess
             return $next($request);
         }
 
-        if ($user->isShopOwner() && $user->hasAssignedPermissions()) {
+        $activeOwnedShopIds = null;
+        if ($user->isShopOwner()) {
+            $activeOwnedShops = $user->shops()->where('is_active', true)->get();
+            abort_if($activeOwnedShops->isEmpty(), 403);
+
+            app(ShopOwnerAccountService::class)->resolve($activeOwnedShops->first());
+
             abort_unless($user->canAccessRouteName($request->route()?->getName()), 403);
+            $activeOwnedShopIds = $activeOwnedShops->pluck('id')->map(fn ($id) => (int) $id)->all();
         }
 
         if ($user->isAgent() || $user->isDistributor()) {
@@ -46,7 +54,7 @@ class EnsureAdminAccess
             }
         }
 
-        $ownedShopIds = $user->accessibleShopIds();
+        $ownedShopIds = $activeOwnedShopIds ?? $user->accessibleShopIds();
         abort_if(empty($ownedShopIds), 403);
 
         if ($request->filled('shop_id')) {

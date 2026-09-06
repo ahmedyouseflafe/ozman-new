@@ -19,12 +19,13 @@
     <div class="section-head">
         <div class="section-icon"><i class="ti ti-adjustments-horizontal"></i></div>
         <div>
-            <h2 id="catalogSpecificTitle">تفاصيل المنتج حسب نوع المتجر</h2>
-            <p id="catalogSpecificDescription">اختر المتجر لعرض الحقول المناسبة لنشاطه.</p>
+            <h2 id="catalogSpecificTitle">{{ ($isRestaurantForm ?? false) ? 'تفاصيل الوجبة' : 'تفاصيل المنتج حسب نوع المتجر' }}</h2>
+            <p id="catalogSpecificDescription">{{ ($isRestaurantForm ?? false) ? 'بيانات الوجبة المخصصة لمنيو المطعم.' : 'اختر المتجر لعرض الحقول المناسبة لنشاطه.' }}</p>
         </div>
     </div>
 
     @foreach($catalogTypes as $typeKey => $type)
+        @continue(($lockShopSelection ?? false) && $formShop && $typeKey !== ($formShop->catalog_type ?: 'general'))
         <div class="catalog-fields form-grid" data-catalog-fields="{{ $typeKey }}" hidden>
             @foreach($type['fields'] ?? [] as $fieldKey => $field)
                 @php
@@ -111,7 +112,6 @@
             ->map(fn($item) => array_pad(explode(':', (string) $item, 2), 2, ''));
         $restaurantRemovable = collect(data_get($savedCatalogAttributes, 'removable_ingredients', []));
         $restaurantBasePrice = old('customer_package_price', isset($product) ? $product->customer_package_price : null);
-        $restaurantQuantity = old('quantity', isset($product) ? $product->quantity : 0);
     @endphp
     <div id="restaurantMenuEditor" hidden style="margin-top:20px;display:none">
         <div class="section-head">
@@ -123,8 +123,7 @@
             <input type="hidden" name="{{ $visibilityField }}" value="0" data-restaurant-input>
         @endforeach
         <div class="form-grid">
-            <div class="form-group"><label class="form-label">السعر الأساسي للوجبة</label><input type="number" step="0.01" min="0" name="customer_package_price" value="{{ $restaurantBasePrice }}" data-restaurant-input required></div>
-            <div class="form-group"><label class="form-label">عدد الوجبات المتوفرة</label><input type="number" min="0" name="quantity" value="{{ $restaurantQuantity }}" data-restaurant-input><small style="color:rgba(255,255,255,.55)">ضع صفراً عندما تكون الوجبة نافدة.</small></div>
+            <div class="form-group full"><label class="form-label">السعر الأساسي للوجبة</label><input type="number" step="0.01" min="0" name="customer_package_price" value="{{ $restaurantBasePrice }}" data-restaurant-input required></div>
         </div>
         <h3 style="color:#00e5ff;margin-top:22px">أحجام الوجبة وأسعارها</h3>
         <div class="form-grid">
@@ -168,7 +167,9 @@
         let variantIndex = variantsList?.querySelectorAll('[data-variant-row]').length || 0;
 
         function updateCatalogFields() {
-            const type = shopSelect?.selectedOptions?.[0]?.dataset?.catalogType || 'general';
+            const type = shopSelect?.selectedOptions?.[0]?.dataset?.catalogType
+                || shopSelect?.dataset?.catalogType
+                || 'general';
             groups.forEach((group) => {
                 const active = group.dataset.catalogFields === type;
                 group.hidden = !active;
@@ -177,8 +178,8 @@
                 group.querySelectorAll('input, select, textarea').forEach((field) => field.disabled = !active);
             });
             if (definitions[type]) {
-                title.textContent = `تفاصيل ${definitions[type].label}`;
-                description.textContent = definitions[type].description;
+                title.textContent = type === 'restaurant' ? 'تفاصيل الوجبة' : `تفاصيل ${definitions[type].label}`;
+                description.textContent = type === 'restaurant' ? 'بيانات الوجبة المخصصة لمنيو المطعم.' : definitions[type].description;
             }
             const usesVariants = ['clothing', 'shoes', 'electronics'].includes(type);
             variantsPanel.hidden = !usesVariants;

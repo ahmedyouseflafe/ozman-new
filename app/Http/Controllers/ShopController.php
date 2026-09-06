@@ -138,11 +138,7 @@ class ShopController extends Controller
 
     private function ownerPermissionsFor(Shop $shop): array
     {
-        return collect(config('shop_owner_permissions.allowed', []))
-            ->merge(config("shop_owner_permissions.catalog_type_permissions.{$shop->catalog_type}", []))
-            ->unique()
-            ->values()
-            ->all();
+        return app(ShopOwnerAccountService::class)->permissionsFor($shop)->all();
     }
 
     public function show(Shop $shop): View

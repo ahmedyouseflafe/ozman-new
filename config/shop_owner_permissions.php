@@ -31,4 +31,12 @@ return [
         'restaurant' => ['restaurant.view'],
         'real_estate' => ['real_estate.view'],
     ],
+    'catalog_type_excluded' => [
+        'real_estate' => [
+            'products.view', 'products.preview', 'products.create', 'products.edit', 'products.delete',
+            'categories.view', 'categories.create', 'categories.edit', 'categories.delete',
+            'front_orders.view', 'front_orders.manage',
+            'reward_wheels.purchase.view', 'reward_wheels.purchase.manage',
+        ],
+    ],
 ];

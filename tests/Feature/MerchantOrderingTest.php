@@ -158,6 +158,30 @@ class MerchantOrderingTest extends TestCase
         $this->assertNotNull($merchant->fresh()->remember_token);
     }
 
+    public function test_distributor_managed_shop_without_a_distributor_is_rejected_on_the_merchant_screen(): void
+    {
+        $merchant = User::create([
+            'name' => 'Unlinked merchant',
+            'email' => 'unlinked-merchant@example.com',
+            'password' => 'secret123',
+            'role' => 'shop_owner',
+            'is_active' => true,
+        ]);
+        Shop::create([
+            'user_id' => $merchant->id,
+            'name' => 'Unlinked merchant shop',
+            'slug' => 'unlinked-merchant-shop',
+            'catalog_type' => 'general',
+            'is_active' => true,
+        ]);
+
+        $this->post(route('merchant.login.store'), [
+            'email' => $merchant->email,
+            'password' => 'secret123',
+        ])->assertSessionHasErrors('email');
+        $this->assertGuest();
+    }
+
     public function test_authenticated_shop_owner_can_check_raffle_card_without_entering_customer_data_again(): void
     {
         [$merchant, $merchantShop] = $this->merchantLinkedToDistributor('raffle-owner');
@@ -332,7 +356,7 @@ class MerchantOrderingTest extends TestCase
 
         $this->get($qrLoginUrl)
             ->assertOk()
-            ->assertSee('دخول صاحب المتجر');
+            ->assertSee('لوحة تحكم متجرك');
 
         $this->post(route('merchant.login.store'), [
             'email' => $merchant->email,

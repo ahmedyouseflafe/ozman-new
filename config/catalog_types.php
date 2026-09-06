@@ -72,7 +72,6 @@ return [
             'calories' => ['label' => 'السعرات الحرارية', 'type' => 'number'],
             'spice_level' => ['label' => 'درجة الحدة', 'type' => 'select', 'options' => ['غير حار', 'خفيف', 'متوسط', 'حار']],
             'dietary' => ['label' => 'التصنيف الغذائي', 'type' => 'select', 'options' => ['عادي', 'نباتي', 'فيغان', 'خالٍ من الجلوتين']],
-            'allergens' => ['label' => 'مسببات الحساسية', 'type' => 'list'],
         ],
     ],
     'electronics' => [
@@ -100,6 +99,7 @@ return [
     'real_estate' => [
         'label' => 'شركة عقارات',
         'description' => 'بيع وتأجير العقارات بواجهة مستقلة وروابط خاصة بالشركة.',
+        'requires_distributor' => false,
         'suggested_categories' => [],
         'icon' => 'ti-building-community',
         'uses_products' => false,

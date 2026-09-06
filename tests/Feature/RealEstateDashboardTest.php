@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Distributor;
 use App\Models\RealEstateLead;
 use App\Models\RealEstateProperty;
 use App\Models\Shop;
@@ -14,6 +15,77 @@ use Tests\TestCase;
 class RealEstateDashboardTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_real_estate_owner_can_login_without_a_distributor_and_reaches_the_correct_dashboard(): void
+    {
+        [$owner, $shop] = $this->company('merchant-login');
+
+        $this->post(route('merchant.login.store'), [
+            'email' => $owner->email,
+            'password' => 'password',
+            'redirect' => route('dashboard', absolute: false),
+        ])
+            ->assertRedirect(route('dashboard', absolute: false))
+            ->assertSessionHasNoErrors();
+
+        $this->assertAuthenticatedAs($owner);
+        $this->assertSame($shop->id, session('merchant_shop_id'));
+        $this->assertSame($shop->id, session('current_shop_id'));
+
+        $this->get(route('dashboard'))
+            ->assertRedirect(route('real-estate.dashboard', $shop));
+    }
+
+    public function test_distributor_referral_is_not_attached_to_a_real_estate_company(): void
+    {
+        [$owner, $company] = $this->company('ignore-distributor');
+        $distributorOwner = User::factory()->create([
+            'email' => 'real-estate-distributor@dashboard.test',
+            'role' => 'distributor',
+            'is_active' => true,
+        ]);
+        $distributorShop = Shop::create([
+            'user_id' => $distributorOwner->id,
+            'name' => 'Distributor Base',
+            'slug' => 'real-estate-distributor-base',
+            'catalog_type' => 'general',
+            'is_active' => true,
+        ]);
+        $distributor = Distributor::create([
+            'shop_id' => $distributorShop->id,
+            'user_id' => $distributorOwner->id,
+            'name' => 'Real Estate Test Distributor',
+            'is_active' => true,
+        ]);
+
+        $this->withSession(['merchant_referral' => [
+            'distributor_id' => $distributor->id,
+            'distributor_marketer_id' => null,
+        ]])->post(route('merchant.login.store'), [
+            'email' => $owner->email,
+            'password' => 'password',
+            'redirect' => route('dashboard', absolute: false),
+        ])->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertNull($company->fresh()->distributor_id);
+        $this->assertNull($company->fresh()->distributor_marketer_id);
+    }
+
+    public function test_real_estate_owner_cannot_access_irrelevant_commerce_sections(): void
+    {
+        [$owner] = $this->company('restricted-sections');
+
+        $this->actingAs($owner)->get(route('products'))->assertForbidden();
+        $this->actingAs($owner)->get(route('categories'))->assertForbidden();
+        $this->assertDatabaseMissing('employee_permissions', [
+            'user_id' => $owner->id,
+            'permission' => 'products.view',
+        ]);
+        $this->assertDatabaseHas('employee_permissions', [
+            'user_id' => $owner->id,
+            'permission' => 'real_estate.view',
+        ]);
+    }
 
     public function test_real_estate_owner_is_redirected_to_and_can_open_his_dashboard(): void
     {
@@ -141,7 +213,7 @@ class RealEstateDashboardTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->actingAs($owner)->get(route('real-estate.dashboard', $shop))->assertNotFound();
+        $this->actingAs($owner)->get(route('real-estate.dashboard', $shop))->assertForbidden();
     }
 
     public function test_property_validation_messages_and_field_names_are_arabic(): void

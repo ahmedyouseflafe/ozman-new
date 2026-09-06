@@ -130,6 +130,7 @@ class CatalogTypeCustomizationTest extends TestCase
                 'removable_ingredients' => 'بصل, مخلل',
                 'ingredients' => 'لحم، خبز، بصل',
                 'preparation_time' => 15,
+                'allergens' => 'حليب, جلوتين',
             ],
         ])->assertRedirect(route('products'));
 
@@ -138,5 +139,42 @@ class CatalogTypeCustomizationTest extends TestCase
         $this->assertSame(['صغير:22', 'كبير:30'], $product->catalog_attributes['meal_size_prices']);
         $this->assertSame(['جبنة:3', 'صوص:2'], $product->catalog_attributes['addon_prices']);
         $this->assertSame(['بصل', 'مخلل'], $product->catalog_attributes['removable_ingredients']);
+        $this->assertSame(1, $product->quantity);
+        $this->assertArrayNotHasKey('allergens', $product->catalog_attributes);
+    }
+
+    public function test_restaurant_owner_sees_a_locked_meal_form_without_stock_or_allergens(): void
+    {
+        $owner = User::create([
+            'name' => 'Restaurant Owner',
+            'email' => 'restaurant-form@example.com',
+            'password' => 'secret123',
+            'role' => 'shop_owner',
+            'is_active' => true,
+        ]);
+        $shop = Shop::create([
+            'user_id' => $owner->id,
+            'name' => 'مطعم الاختبار',
+            'slug' => 'restaurant-form',
+            'catalog_type' => 'restaurant',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($owner)
+            ->withSession(['current_shop_id' => $shop->id])
+            ->get(route('products.create'))
+            ->assertOk()
+            ->assertSee('إضافة وجبة جديدة')
+            ->assertSee('لوحة المطعم الحالية')
+            ->assertSee('مطعم الاختبار')
+            ->assertDontSee('اختر المتجر')
+            ->assertDontSee('عدد الوجبات المتوفرة')
+            ->assertDontSee('مسببات الحساسية');
+
+        $this->get(route('products'))
+            ->assertOk()
+            ->assertSee('إدارة الوجبات')
+            ->assertSee('لوحة المطعم · مطعم الاختبار')
+            ->assertDontSee('نفد المخزون');
     }
 }

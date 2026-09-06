@@ -270,6 +270,10 @@
                 break-before: page;
                 page-break-before: always;
             }
+            .sheet:last-child {
+                break-after: auto;
+                page-break-after: auto;
+            }
             .sheet.cards-24 {
                 width: 210mm;
                 height: 296mm;
