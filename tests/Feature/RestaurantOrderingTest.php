@@ -91,6 +91,19 @@ class RestaurantOrderingTest extends TestCase
             ->assertRedirect(route('restaurant.dashboard', $restaurant));
     }
 
+    public function test_restaurant_dashboard_contains_persistent_new_order_sound_alarm(): void
+    {
+        [$restaurant] = $this->restaurant('sound-alarm');
+
+        $this->actingAs($restaurant->user)
+            ->get(route('restaurant.dashboard', $restaurant))
+            ->assertOk()
+            ->assertSee('id="restaurant-order-alarm"', false)
+            ->assertSee('تفعيل صوت الطلبات')
+            ->assertSee('فتح الطلب الجديد وإيقاف صوت التنبيه')
+            ->assertSee("ozman.restaurant.{$restaurant->id}.acknowledged-order", false);
+    }
+
     public function test_restaurant_status_cannot_move_backwards_or_use_generic_status_route(): void
     {
         [$shop, , $table] = $this->restaurant('status');
@@ -137,7 +150,7 @@ class RestaurantOrderingTest extends TestCase
         [$shop, , $table] = $this->restaurant('live-feed');
         [$otherShop] = $this->restaurant('foreign-live-feed');
         EmployeePermission::create(['user_id' => $shop->user_id, 'permission' => 'restaurant.view']);
-        FrontOrder::create([
+        $ownOrder = FrontOrder::create([
             'shop_id' => $shop->id,
             'restaurant_table_id' => $table->id,
             'order_number' => 'LIVE-OWN-ORDER',
@@ -159,6 +172,8 @@ class RestaurantOrderingTest extends TestCase
             ->getJson(route('restaurant.orders.feed', $shop))
             ->assertOk()
             ->assertJsonPath('stats.new', 1)
+            ->assertJsonPath('latest_id', $ownOrder->id)
+            ->assertJsonPath('latest_order.number', 'LIVE-OWN-ORDER')
             ->assertSee('LIVE-OWN-ORDER')
             ->assertDontSee('LIVE-FOREIGN-SECRET');
 

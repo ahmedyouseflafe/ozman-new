@@ -1,5 +1,5 @@
 @forelse($orders as $order)
-    <tr data-order-id="{{ $order->id }}">
+    <tr id="restaurant-order-{{ $order->id }}" data-order-id="{{ $order->id }}">
         <td>{{ $order->order_number }}<br><small>{{ $order->created_at }}</small></td>
         <td><span class="tag">{{ ['dine_in'=>'طلب طاولة','delivery'=>'توصيل','pickup'=>'استلام'][$order->order_type] ?? $order->order_type }}</span></td>
         <td>

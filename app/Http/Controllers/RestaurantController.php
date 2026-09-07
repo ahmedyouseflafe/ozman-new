@@ -31,6 +31,7 @@ class RestaurantController extends Controller
         $allowedStatuses = ['new', 'preparing', 'ready', 'completed', 'cancelled'];
         $allowedTypes = ['dine_in', 'delivery', 'pickup'];
         $ordersQuery = FrontOrder::with('restaurantTable')->where('shop_id', $shop->id)->whereNotNull('order_type');
+        $latestOrderId = (int) ((clone $ordersQuery)->max('id') ?? 0);
         $stats = [
             'new' => (clone $ordersQuery)->where('status', 'new')->count(),
             'preparing' => (clone $ordersQuery)->where('status', 'preparing')->count(),
@@ -48,6 +49,7 @@ class RestaurantController extends Controller
             'stats' => $stats,
             'selectedStatus' => $status,
             'selectedType' => $type,
+            'latestOrderId' => $latestOrderId,
         ]);
     }
 
@@ -78,9 +80,18 @@ class RestaurantController extends Controller
             'ready' => (clone $statsQuery)->where('status', 'ready')->count(),
             'today' => (clone $statsQuery)->whereDate('created_at', today())->count(),
         ];
+        $latestOrder = (clone $statsQuery)
+            ->latest('id')
+            ->first(['id', 'order_number', 'customer_name', 'order_type']);
 
         return response()->json([
-            'latest_id' => (int) ($orders->max('id') ?? 0),
+            'latest_id' => (int) ($latestOrder?->id ?? 0),
+            'latest_order' => $latestOrder ? [
+                'id' => (int) $latestOrder->id,
+                'number' => $latestOrder->order_number,
+                'customer' => $latestOrder->customer_name,
+                'type' => $latestOrder->order_type,
+            ] : null,
             'stats' => $stats,
             'html' => view('admin.restaurant.partials.orders_rows', [
                 'orders' => $orders,

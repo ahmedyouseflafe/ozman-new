@@ -33,16 +33,27 @@
         .field{width:100%;min-height:49px;border:1px solid var(--border);background:rgba(5,8,13,.75);color:#fff;border-radius:14px;padding:10px 15px;outline:0}.field:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(8,220,244,.1)}.field::placeholder{color:#687583}
         .tables-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:13px;margin-top:16px}.table-card{border:1px solid var(--border);background:rgba(5,8,13,.72);border-radius:18px;padding:15px;text-align:center}.table-card h3{margin:3px 0}.table-card p{color:var(--muted);margin:2px}.qr-box{width:125px;height:125px;padding:7px;background:#fff;border-radius:14px;margin:10px auto}.qr-box img{width:100%;height:100%}.table-actions{display:flex;justify-content:center;gap:7px;flex-wrap:wrap}
         .filters{display:grid;grid-template-columns:minmax(190px,1fr) minmax(190px,1fr) auto;gap:10px;width:min(620px,100%)}.live{display:inline-flex;align-items:center;gap:7px;color:var(--green);font-size:12px;font-weight:800}.live-dot{width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 13px currentColor;animation:pulse 1.6s infinite}@keyframes pulse{50%{opacity:.4}}
+        .live-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.sound-toggle{min-height:38px;padding:6px 12px;font-size:11px}.sound-toggle.enabled{color:var(--green);border-color:rgba(37,223,135,.38);background:rgba(37,223,135,.1)}.sound-toggle.attention{color:var(--yellow);border-color:rgba(255,212,59,.48);animation:soundAttention 1s infinite alternate}@keyframes soundAttention{to{box-shadow:0 0 20px rgba(255,212,59,.3)}}
+        [hidden]{display:none!important}.order-alarm{position:fixed;z-index:1000;top:18px;left:50%;transform:translateX(-50%);width:min(560px,calc(100% - 24px));border:1px solid rgba(255,212,59,.75);border-radius:22px;background:linear-gradient(135deg,rgba(24,14,5,.98),rgba(14,21,25,.98));color:#fff;padding:16px 18px;display:flex;align-items:center;gap:14px;text-align:right;box-shadow:0 18px 65px rgba(0,0,0,.7),0 0 35px rgba(255,212,59,.3);cursor:pointer;font-family:inherit;animation:alarmPulse .85s infinite alternate}.order-alarm:hover{transform:translateX(-50%) translateY(-2px)}@keyframes alarmPulse{to{border-color:var(--red);box-shadow:0 18px 65px rgba(0,0,0,.7),0 0 42px rgba(255,98,116,.43)}}.alarm-icon{width:52px;height:52px;border-radius:17px;display:grid;place-items:center;flex:0 0 auto;background:rgba(255,212,59,.16);color:var(--yellow);font-size:29px}.alarm-copy{min-width:0;flex:1}.alarm-copy strong{display:block;font-size:17px;color:var(--yellow)}.alarm-copy span{display:block;margin-top:3px;color:#d8dee5;font-size:12px;font-weight:700}.alarm-action{flex:0 0 auto;border-radius:999px;padding:8px 13px;background:var(--yellow);color:#171000;font-size:11px;font-weight:900}
         .orders-wrap{overflow:auto;border:1px solid var(--border);border-radius:19px;background:rgba(3,6,10,.55)}table{width:100%;min-width:990px;border-collapse:collapse}th{color:var(--cyan);font-size:13px;background:rgba(8,220,244,.05)}th,td{text-align:right;padding:16px;border-bottom:1px solid rgba(139,160,179,.13);vertical-align:top}tbody tr{transition:.2s}tbody tr:hover{background:rgba(8,220,244,.035)}tbody tr:last-child td{border-bottom:0}small{color:var(--muted)}.tag{display:inline-flex;align-items:center;padding:5px 11px;border-radius:30px;background:var(--cyan-soft);color:var(--cyan);border:1px solid rgba(8,220,244,.24);font-size:12px;font-weight:800}.status-form{display:flex;align-items:center;gap:7px}.status-form .field{min-height:39px;padding:5px 9px}.status-form .btn{min-height:39px;padding:5px 12px}
         .notice{border-radius:16px;padding:14px 18px;margin-bottom:18px}.notice-success{border:1px solid rgba(37,223,135,.35);background:rgba(37,223,135,.09);color:#73f2ae}.notice-error{border:1px solid rgba(255,98,116,.35);background:rgba(255,98,116,.09);color:#ffabb5}.empty{grid-column:1/-1;color:var(--muted);text-align:center;padding:18px}
         nav[role="navigation"]{margin-top:18px}
         @media(max-width:1250px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
-        @media(max-width:900px){.restaurant-page{width:100%;margin:0;padding:18px 14px 100px}.hero{padding:23px}.hero-top,.hero-actions,.section-head,.live-heading{align-items:flex-start;flex-direction:column}.stats-grid{grid-template-columns:repeat(2,1fr)}.section{padding:19px}.form-row,.filters{grid-template-columns:1fr}.form-row .btn,.filters .btn{width:100%}}
+        @media(max-width:900px){.restaurant-page{width:100%;margin:0;padding:18px 14px 100px}.hero{padding:23px}.hero-top,.hero-actions,.section-head,.live-heading{align-items:flex-start;flex-direction:column}.stats-grid{grid-template-columns:repeat(2,1fr)}.section{padding:19px}.form-row,.filters{grid-template-columns:1fr}.form-row .btn,.filters .btn{width:100%}.live-tools{width:100%;justify-content:space-between}}
+        @media(max-width:600px){.order-alarm{top:9px;padding:13px;gap:10px;border-radius:18px}.alarm-icon{width:44px;height:44px;border-radius:14px;font-size:24px}.alarm-copy strong{font-size:14px}.alarm-copy span{font-size:10px}.alarm-action{padding:7px 9px;font-size:9px}}
         @media(max-width:520px){.restaurant-page{padding-inline:10px}.hero{border-radius:21px;padding:19px}.hero h1{font-size:25px}.stats-grid{gap:10px}.stat{min-height:112px;padding:15px}.stat strong{font-size:28px}.stat-icon{width:39px;height:39px}.section{border-radius:21px;padding:15px}.section h2{font-size:20px}.tables-grid{grid-template-columns:1fr}}
     </style>
 </head>
 <body>
 @include('admin.includes.sidebar')
+<button type="button" class="order-alarm" id="restaurant-order-alarm" hidden aria-label="فتح الطلب الجديد وإيقاف صوت التنبيه">
+    <span class="alarm-icon"><i class="ti ti-bell-ringing" aria-hidden="true"></i></span>
+    <span class="alarm-copy">
+        <strong>وصل طلب جديد!</strong>
+        <span id="restaurant-order-alarm-message">اضغط هنا لفتح الطلب وإيقاف صوت التنبيه.</span>
+    </span>
+    <span class="alarm-action">فتح وإيقاف الصوت</span>
+</button>
 <main class="restaurant-page">
     <section class="hero glass">
         <div class="hero-top">
@@ -104,7 +115,10 @@
     <section class="section glass">
         <div class="live-heading">
             <div class="section-title"><span class="section-icon"><i class="ti ti-chef-hat"></i></span><div><h2>شاشة المطبخ والكاشير</h2><div class="section-subtitle">طلبات الصالة والتوصيل والاستلام في مكان واحد.</div></div></div>
-            <span class="live" id="live-status"><i class="live-dot"></i> متصل وتحديث مباشر</span>
+            <div class="live-tools">
+                <button type="button" class="btn sound-toggle" id="restaurant-sound-toggle"><i class="ti ti-volume"></i> تفعيل صوت الطلبات</button>
+                <span class="live" id="live-status"><i class="live-dot"></i> متصل وتحديث مباشر</span>
+            </div>
         </div>
         <form class="filters" method="get" style="margin:22px 0 16px">
             <select class="field" name="type"><option value="">كل أنواع الطلب</option>@foreach(['dine_in'=>'طلبات الطاولات','delivery'=>'توصيل','pickup'=>'استلام'] as $key=>$label)<option value="{{ $key }}" @selected($selectedType===$key)>{{ $label }}</option>@endforeach</select>
@@ -124,12 +138,103 @@
 (() => {
     const body = document.getElementById('restaurant-orders-body');
     const liveStatus = document.getElementById('live-status');
-    if (!body || !liveStatus) return;
+    const alarm = document.getElementById('restaurant-order-alarm');
+    const alarmMessage = document.getElementById('restaurant-order-alarm-message');
+    const soundToggle = document.getElementById('restaurant-sound-toggle');
+    if (!body || !liveStatus || !alarm || !alarmMessage || !soundToggle) return;
     const feedUrl = {{ Illuminate\Support\Js::from(route('restaurant.orders.feed', ['shop'=>$shop,'status'=>$selectedStatus,'type'=>$selectedType])) }};
-    let latestId = Number(body.querySelector('tr[data-order-id]')?.dataset.orderId || 0);
+    const dashboardUrl = {{ Illuminate\Support\Js::from(route('restaurant.dashboard', $shop)) }};
+    const initialLatestId = Number({{ (int) $latestOrderId }});
+    const acknowledgementKey = 'ozman.restaurant.{{ (int) $shop->id }}.acknowledged-order';
+    let acknowledgedId = initialLatestId;
+    try {
+        const savedId = window.localStorage.getItem(acknowledgementKey);
+        if (savedId === null) window.localStorage.setItem(acknowledgementKey, String(initialLatestId));
+        else acknowledgedId = Number(savedId) || 0;
+    } catch (_) {}
+    let pendingOrderId = 0;
+    let audioContext = null;
+    let alarmTimer = null;
+    let soundUnlocked = false;
     let polling = false;
+
+    function playAlarmPulse() {
+        if (!soundUnlocked || !audioContext || audioContext.state !== 'running') return;
+        const now = audioContext.currentTime;
+        [[880, 0], [660, .34]].forEach(([frequency, offset]) => {
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(frequency, now + offset);
+            gain.gain.setValueAtTime(.0001, now + offset);
+            gain.gain.exponentialRampToValueAtTime(.2, now + offset + .04);
+            gain.gain.exponentialRampToValueAtTime(.0001, now + offset + .28);
+            oscillator.connect(gain); gain.connect(audioContext.destination);
+            oscillator.start(now + offset); oscillator.stop(now + offset + .3);
+        });
+    }
+
+    async function enableSound(preview = false) {
+        try {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) throw new Error('unsupported');
+            audioContext ||= new AudioContextClass();
+            if (audioContext.state === 'suspended') await audioContext.resume();
+            soundUnlocked = audioContext.state === 'running';
+            if (soundUnlocked) {
+                soundToggle.classList.add('enabled'); soundToggle.classList.remove('attention');
+                soundToggle.innerHTML = '<i class="ti ti-volume-2"></i> صوت الطلبات مفعّل';
+                if (preview || pendingOrderId) playAlarmPulse();
+            }
+        } catch (_) {
+            soundToggle.innerHTML = '<i class="ti ti-volume-off"></i> اضغط للسماح بالصوت';
+        }
+    }
+
+    function startAlarm() {
+        if (alarmTimer) return;
+        if (!soundUnlocked) soundToggle.classList.add('attention');
+        playAlarmPulse();
+        alarmTimer = window.setInterval(playAlarmPulse, 1200);
+    }
+
+    function stopAlarm() {
+        if (alarmTimer) window.clearInterval(alarmTimer);
+        alarmTimer = null;
+    }
+
+    function showOrderAlarm(order) {
+        const orderId = Number(order?.id || 0);
+        if (!orderId || orderId <= acknowledgedId) return;
+        pendingOrderId = Math.max(pendingOrderId, orderId);
+        const types = {dine_in:'طلب طاولة',delivery:'طلب توصيل',pickup:'طلب استلام'};
+        alarmMessage.textContent = `${order.number || 'طلب جديد'} · ${types[order.type] || 'طلب مطعم'}${order.customer ? ` · ${order.customer}` : ''}`;
+        alarm.hidden = false;
+        document.title = '🔔 طلب جديد — ' + {{ Illuminate\Support\Js::from($shop->name) }};
+        liveStatus.innerHTML = '<i class="live-dot"></i> وصل طلب جديد — بانتظار التأكيد';
+        liveStatus.style.color = 'var(--yellow)';
+        startAlarm();
+    }
+
+    soundToggle.addEventListener('click', () => enableSound(true));
+    const unlockOnFirstInteraction = () => enableSound(false);
+    document.addEventListener('pointerdown', unlockOnFirstInteraction, {once:true, capture:true});
+    document.addEventListener('keydown', unlockOnFirstInteraction, {once:true, capture:true});
+
+    alarm.addEventListener('click', () => {
+        const orderId = pendingOrderId;
+        acknowledgedId = Math.max(acknowledgedId, orderId);
+        try { window.localStorage.setItem(acknowledgementKey, String(acknowledgedId)); } catch (_) {}
+        alarm.hidden = true; pendingOrderId = 0; stopAlarm(); soundToggle.classList.remove('attention');
+        document.title = {{ Illuminate\Support\Js::from('إدارة مطعم '.$shop->name) }};
+        liveStatus.innerHTML = '<i class="live-dot"></i> تم فتح الطلب الجديد'; liveStatus.style.color = 'var(--green)';
+        const row = document.getElementById(`restaurant-order-${orderId}`);
+        if (row) { row.scrollIntoView({behavior:'smooth',block:'center'}); row.style.background='rgba(255,212,59,.12)'; }
+        else if (orderId) window.location.href = `${dashboardUrl}#restaurant-order-${orderId}`;
+    });
+
     async function refreshOrders() {
-        if (polling || document.hidden) return;
+        if (polling) return;
         polling = true;
         try {
             const response = await fetch(feedUrl,{headers:{Accept:'application/json','X-Requested-With':'XMLHttpRequest'},credentials:'same-origin',cache:'no-store'});
@@ -137,8 +242,8 @@
             if (!response.ok) throw new Error('feed');
             const data=await response.json(); body.innerHTML=data.html;
             for(const key of ['today','new','preparing','ready']){const element=document.getElementById(`stat-${key}`);if(element)element.textContent=data.stats[key]??0}
-            liveStatus.innerHTML=Number(data.latest_id)>latestId&&latestId>0?'<i class="live-dot"></i> وصل طلب جديد الآن':'<i class="live-dot"></i> متصل وتحديث مباشر';
-            latestId=Math.max(latestId,Number(data.latest_id)||0);liveStatus.style.color='var(--green)';
+            if (Number(data.latest_id) > acknowledgedId) showOrderAlarm(data.latest_order);
+            else if (!pendingOrderId) { liveStatus.innerHTML='<i class="live-dot"></i> متصل وتحديث مباشر'; liveStatus.style.color='var(--green)'; }
         } catch(_){liveStatus.innerHTML='<i class="live-dot"></i> جاري إعادة الاتصال';liveStatus.style.color='var(--yellow)'} finally{polling=false}
     }
     window.setInterval(refreshOrders,3000);
