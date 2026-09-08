@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
+use Throwable;
 
 class FirebaseMessagingService
 {
@@ -32,6 +33,69 @@ class FirebaseMessagingService
                     ],
                 ],
             ])->throw();
+    }
+
+    public function sendToTokens(iterable $tokens, string $title, string $body, string $url, array $data = []): int
+    {
+        $tokens = collect($tokens)
+            ->filter(fn ($token) => is_string($token) && trim($token) !== '')
+            ->map(fn ($token) => trim($token))
+            ->unique()
+            ->values();
+
+        if ($tokens->isEmpty()) {
+            return 0;
+        }
+
+        $credentials = $this->credentials();
+        $projectId = config('services.firebase.project_id') ?: ($credentials['project_id'] ?? null);
+        if (! $projectId) {
+            throw new RuntimeException('لم يتم ضبط Firebase Project ID.');
+        }
+
+        $accessToken = $this->accessToken($credentials);
+        $sent = 0;
+        $lastFailure = null;
+        $payloadData = collect(array_merge($data, ['url' => $url]))
+            ->mapWithKeys(fn ($value, $key) => [(string) $key => (string) $value])
+            ->all();
+
+        foreach ($tokens as $token) {
+            try {
+                Http::withToken($accessToken)
+                    ->post("https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send", [
+                        'message' => [
+                            'token' => $token,
+                            'notification' => ['title' => $title, 'body' => $body],
+                            'data' => $payloadData,
+                            'android' => [
+                                'priority' => 'high',
+                                'notification' => [
+                                    'channel_id' => 'ozman_notifications',
+                                    'sound' => 'default',
+                                    'visibility' => 'PUBLIC',
+                                    'notification_count' => 1,
+                                    'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                                ],
+                            ],
+                            'apns' => [
+                                'headers' => ['apns-priority' => '10'],
+                                'payload' => ['aps' => ['sound' => 'default', 'badge' => 1]],
+                            ],
+                        ],
+                    ])->throw();
+                $sent++;
+            } catch (Throwable $exception) {
+                $lastFailure = $exception;
+                report($exception);
+            }
+        }
+
+        if ($sent === 0 && $lastFailure) {
+            throw $lastFailure;
+        }
+
+        return $sent;
     }
 
     public function isConfigured(): bool

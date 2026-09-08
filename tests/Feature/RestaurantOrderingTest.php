@@ -6,9 +6,11 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\FrontOrder;
 use App\Models\EmployeePermission;
+use App\Models\PushDevice;
 use App\Models\RestaurantTable;
 use App\Models\Shop;
 use App\Models\User;
+use App\Services\FirebaseMessagingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -37,6 +39,129 @@ class RestaurantOrderingTest extends TestCase
         $this->assertSame('66.00', $order->total);
         $this->assertSame(['جبنة'], $order->items[0]['addons']);
         $this->assertSame(['بصل'], $order->items[0]['excluded']);
+    }
+
+    public function test_new_restaurant_order_push_is_sent_only_to_the_restaurant_owner_devices(): void
+    {
+        [$shop, $product, $table] = $this->restaurant('push-order');
+        $foreignOwner = User::create([
+            'name' => 'Foreign owner', 'email' => 'foreign-push@example.com', 'password' => 'password',
+            'role' => 'shop_owner', 'is_active' => true,
+        ]);
+        PushDevice::create(['user_id' => $shop->user_id, 'token' => 'restaurant-owner-token', 'platform' => 'android']);
+        PushDevice::create(['user_id' => $foreignOwner->id, 'token' => 'foreign-owner-token', 'platform' => 'android']);
+
+        $firebase = \Mockery::mock(FirebaseMessagingService::class);
+        $firebase->shouldReceive('sendToTokens')
+            ->once()
+            ->withArgs(function ($tokens, $title, $body, $url, $data) use ($shop) {
+                return collect($tokens)->values()->all() === ['restaurant-owner-token']
+                    && $title === 'طلب جديد · '.$shop->name
+                    && str_contains($body, 'طلب طاولة')
+                    && str_contains($url, route('restaurant.dashboard', $shop))
+                    && ($data['type'] ?? null) === 'restaurant_order'
+                    && (int) ($data['shop_id'] ?? 0) === $shop->id;
+            })
+            ->andReturn(1);
+        $this->app->instance(FirebaseMessagingService::class, $firebase);
+
+        $this->postJson(route('restaurant.orders.store', $shop), [
+            'order_type' => 'dine_in',
+            'table_code' => $table->code,
+            'customer_name' => 'Push customer',
+            'items' => [['product_id' => $product->id, 'qty' => 1]],
+        ])->assertOk();
+    }
+
+    public function test_customer_gets_secure_live_tracking_and_a_push_on_each_status_change(): void
+    {
+        [$shop, $product, $table] = $this->restaurant('customer-tracking');
+        $this->postJson(route('app.device-token.store'), [
+            'token' => 'restaurant-customer-token',
+            'platform' => 'android',
+        ])->assertOk();
+
+        $response = $this->postJson(route('restaurant.orders.store', $shop), [
+            'order_type' => 'dine_in',
+            'table_code' => $table->code,
+            'customer_name' => 'Tracked customer',
+            'items' => [['product_id' => $product->id, 'qty' => 2]],
+        ])->assertOk()
+            ->assertJsonPath('estimated_preparation_minutes', 15)
+            ->assertJsonPath('tracking.status', 'new')
+            ->assertJsonPath('tracking.step', 1);
+
+        $order = FrontOrder::findOrFail($response->json('order_id'));
+        $trackingUrl = $response->json('tracking_url');
+        $this->assertSame('restaurant-customer-token', $order->customer_push_token);
+        $this->assertSame(15, $order->estimated_preparation_minutes);
+        $this->assertSame(15, $order->items[0]['preparation_time']);
+
+        $this->getJson($trackingUrl)
+            ->assertOk()
+            ->assertJsonPath('tracking.order_number', $order->order_number)
+            ->assertJsonPath('tracking.status', 'new')
+            ->assertJsonMissing(['customer_phone' => $order->customer_phone]);
+        $this->get($trackingUrl)
+            ->assertOk()
+            ->assertSee('تتبّع طلبك')
+            ->assertSee($order->order_number);
+        $this->getJson(route('restaurant.orders.track', $order))->assertForbidden();
+
+        $firebase = \Mockery::mock(FirebaseMessagingService::class);
+        $firebase->shouldReceive('sendToTokens')
+            ->once()
+            ->withArgs(function ($tokens, $title, $body, $url, $data) use ($order) {
+                return collect($tokens)->values()->all() === ['restaurant-customer-token']
+                    && $title === 'بدأ تحضير طلبك 🍳'
+                    && str_contains($body, $order->order_number)
+                    && str_contains($body, '15 دقيقة')
+                    && str_contains($url, '/restaurant-orders/'.$order->id.'/tracking')
+                    && str_contains($url, 'signature=')
+                    && ($data['type'] ?? null) === 'restaurant_order_status'
+                    && ($data['status'] ?? null) === 'preparing';
+            })
+            ->andReturn(1);
+        $this->app->instance(FirebaseMessagingService::class, $firebase);
+
+        $this->actingAs($shop->user)
+            ->patch(route('restaurant.orders.status', $order), ['status' => 'preparing'])
+            ->assertRedirect();
+
+        $this->getJson($trackingUrl)
+            ->assertOk()
+            ->assertJsonPath('tracking.status', 'preparing')
+            ->assertJsonPath('tracking.step', 2)
+            ->assertJsonPath('tracking.estimated_preparation_minutes', 15);
+    }
+
+    public function test_app_device_token_is_attached_after_owner_login_and_detached_on_logout(): void
+    {
+        [$shop] = $this->restaurant('device-login');
+
+        $this->postJson(route('app.device-token.store'), [
+            'token' => 'pending-owner-device-token',
+            'platform' => 'android',
+        ])->assertOk();
+        $this->assertDatabaseHas('push_devices', [
+            'token' => 'pending-owner-device-token',
+            'user_id' => null,
+        ]);
+
+        $this->post(route('login.store'), [
+            'email' => $shop->user->email,
+            'password' => 'password',
+        ])->assertRedirect(route('restaurant.dashboard', $shop));
+        $this->assertDatabaseHas('push_devices', [
+            'token' => 'pending-owner-device-token',
+            'user_id' => $shop->user_id,
+        ]);
+
+        $this->post(route('logout'))->assertRedirect(route('login'));
+        $this->assertDatabaseHas('push_devices', [
+            'token' => 'pending-owner-device-token',
+            'user_id' => null,
+        ]);
     }
 
     public function test_restaurant_order_rejects_forged_addon(): void
@@ -191,6 +316,8 @@ class RestaurantOrderingTest extends TestCase
             ->assertOk()
             ->assertSee('قائمة الطعام')
             ->assertSee('اختر حجم الوجبة')
+            ->assertSee('تجهيز خلال نحو 15 دقيقة')
+            ->assertSee('تتبّع طلبك')
             ->assertDontSee('اختر نوع السعر المناسب قبل إضافة المنتج إلى السلة')
             ->assertDontSee('العبوة');
     }
@@ -270,6 +397,7 @@ class RestaurantOrderingTest extends TestCase
             'catalog_attributes' => [
                 'meal_size_prices' => ['صغير:20', 'كبير:30'],
                 'addon_prices' => ['جبنة:3'],
+                'preparation_time' => 15,
                 'ingredients' => 'بصل، بندورة',
                 'removable_ingredients' => ['بصل'],
             ],

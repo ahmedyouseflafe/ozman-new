@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\FrontOrder;
 use App\Models\Product;
+use App\Models\PushDevice;
 use App\Models\RestaurantTable;
 use App\Models\Shop;
 use App\Rules\ValidPhoneNumber;
+use App\Services\FirebaseMessagingService;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -15,9 +17,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Throwable;
 
 class RestaurantController extends Controller
 {
@@ -147,7 +151,7 @@ class RestaurantController extends Controller
         return view('front.restaurant_menu', compact('shop', 'table', 'products', 'categories'));
     }
 
-    public function storeOrder(Request $request, Shop $shop): JsonResponse
+    public function storeOrder(Request $request, Shop $shop, FirebaseMessagingService $firebase): JsonResponse
     {
         abort_unless($shop->is_active && $shop->catalog_type === 'restaurant', 404);
         $data = $request->validate([
@@ -190,10 +194,13 @@ class RestaurantController extends Controller
             ->whereIn('id', collect($data['items'])->pluck('product_id'))->get()->keyBy('id');
         $items = [];
         $subtotal = 0;
+        $estimatedPreparationMinutes = 0;
         foreach ($data['items'] as $row) {
             $product = $products->get((int) $row['product_id']);
             abort_unless($product, 422, 'إحدى الوجبات غير متاحة.');
             $attributes = $product->catalog_attributes ?? [];
+            $preparationMinutes = min(1440, max(0, (int) ($attributes['preparation_time'] ?? 0)));
+            $estimatedPreparationMinutes = max($estimatedPreparationMinutes, $preparationMinutes);
             $sizePrices = $this->pricedOptions($attributes['meal_size_prices'] ?? []);
             $addonPrices = $this->pricedOptions($attributes['addon_prices'] ?? []);
             $unit = (float) ($product->discount_price ?: $product->price);
@@ -214,7 +221,13 @@ class RestaurantController extends Controller
                 'qty' => (int) $row['qty'], 'size' => $size, 'addons' => $addons->all(),
                 'excluded' => $requestedExcluded->all(),
                 'notes' => $row['notes'] ?? null, 'line_total' => $line,
+                'preparation_time' => $preparationMinutes ?: null,
             ];
+        }
+
+        $customerPushToken = $request->session()->get('app_push_token');
+        if (! is_string($customerPushToken) || ! PushDevice::query()->where('token', $customerPushToken)->exists()) {
+            $customerPushToken = null;
         }
 
         $order = FrontOrder::create([
@@ -228,12 +241,39 @@ class RestaurantController extends Controller
                 : null,
             'items' => $items, 'subtotal' => $subtotal, 'total' => $subtotal, 'discount' => 0,
             'order_channel' => 'restaurant', 'order_type' => $data['order_type'],
+            'estimated_preparation_minutes' => $estimatedPreparationMinutes ?: null,
+            'customer_push_token' => $customerPushToken,
             'payment_status' => 'pending', 'status' => 'new',
         ]);
-        return response()->json(['ok' => true, 'order_id' => $order->id, 'order_number' => $order->order_number]);
+        $this->sendNewOrderPush($shop, $order, $firebase);
+
+        return response()->json([
+            'ok' => true,
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+            'estimated_preparation_minutes' => $order->estimated_preparation_minutes,
+            'tracking_url' => URL::signedRoute('restaurant.orders.track', $order),
+            'tracking' => $this->trackingPayload($order),
+        ]);
     }
 
-    public function status(Request $request, FrontOrder $order): RedirectResponse
+    public function track(Request $request, FrontOrder $order): JsonResponse|View
+    {
+        abort_unless($order->order_type && $order->shop?->catalog_type === 'restaurant', 404);
+        $tracking = $this->trackingPayload($order);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'tracking' => $tracking]);
+        }
+
+        return view('front.restaurant_order_tracking', [
+            'order' => $order,
+            'shop' => $order->shop,
+            'tracking' => $tracking,
+        ]);
+    }
+
+    public function status(Request $request, FrontOrder $order, FirebaseMessagingService $firebase): RedirectResponse
     {
         abort_unless($order->shop && $order->order_type, 404);
         $this->authorizeShop($request, $order->shop);
@@ -246,7 +286,11 @@ class RestaurantController extends Controller
             'cancelled' => ['cancelled'],
         ];
         abort_unless(in_array($data['status'], $transitions[$order->status] ?? [], true), 422, 'لا يمكن إعادة الطلب إلى حالة سابقة.');
+        $previousStatus = $order->status;
         $order->update($data);
+        if ($previousStatus !== $order->status) {
+            $this->sendCustomerStatusPush($order->fresh('shop'), $firebase);
+        }
         return back()->with('status', 'تم تحديث حالة الطلب.');
     }
 
@@ -257,6 +301,124 @@ class RestaurantController extends Controller
             $name = trim($name);
             return $name !== '' && is_numeric($price) ? [$name => max(0, (float) $price)] : [];
         })->all();
+    }
+
+    private function sendNewOrderPush(Shop $shop, FrontOrder $order, FirebaseMessagingService $firebase): void
+    {
+        if (! $shop->user_id) {
+            return;
+        }
+
+        $tokens = PushDevice::query()
+            ->where('user_id', $shop->user_id)
+            ->pluck('token');
+
+        if ($tokens->isEmpty()) {
+            return;
+        }
+
+        $typeLabel = match ($order->order_type) {
+            'dine_in' => 'طلب طاولة',
+            'delivery' => 'طلب توصيل',
+            'pickup' => 'طلب استلام',
+            default => 'طلب جديد',
+        };
+        $url = route('restaurant.dashboard', $shop).'#restaurant-order-'.$order->id;
+
+        try {
+            $firebase->sendToTokens(
+                $tokens,
+                'طلب جديد · '.$shop->name,
+                "{$typeLabel} رقم {$order->order_number} بقيمة {$order->total} شيكل",
+                $url,
+                [
+                    'type' => 'restaurant_order',
+                    'screen' => 'restaurant_dashboard',
+                    'shop_id' => $shop->id,
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                ],
+            );
+        } catch (Throwable $exception) {
+            // لا يجب أن يفشل طلب الزبون بسبب عطل مؤقت في خدمة الإشعارات.
+            report($exception);
+        }
+    }
+
+    private function sendCustomerStatusPush(FrontOrder $order, FirebaseMessagingService $firebase): void
+    {
+        if (! filled($order->customer_push_token) || ! $order->shop) {
+            return;
+        }
+
+        $title = match ($order->status) {
+            'preparing' => 'بدأ تحضير طلبك 🍳',
+            'ready' => $order->order_type === 'delivery' ? 'طلبك جاهز للتوصيل 🛵' : 'طلبك جاهز 🎉',
+            'completed' => 'تم إكمال طلبك ✅',
+            'cancelled' => 'تم إلغاء الطلب',
+            default => 'تحديث على طلبك',
+        };
+        $preparationText = $order->status === 'preparing' && $order->estimated_preparation_minutes
+            ? " ومدة التجهيز المتوقعة {$order->estimated_preparation_minutes} دقيقة"
+            : '';
+        $body = "طلبك {$order->order_number} من {$order->shop->name}: {$order->statusLabel()}{$preparationText}.";
+        $url = URL::signedRoute('restaurant.orders.track', $order);
+
+        try {
+            $firebase->sendToTokens(
+                [$order->customer_push_token],
+                $title,
+                $body,
+                $url,
+                [
+                    'type' => 'restaurant_order_status',
+                    'screen' => 'restaurant_order_tracking',
+                    'shop_id' => $order->shop_id,
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'status' => $order->status,
+                ],
+            );
+        } catch (Throwable $exception) {
+            // تحديث الحالة ينجح حتى لو كانت خدمة الإشعارات متوقفة مؤقتاً.
+            report($exception);
+        }
+    }
+
+    private function trackingPayload(FrontOrder $order): array
+    {
+        $order->loadMissing('shop');
+        $step = match ($order->status) {
+            'new' => 1,
+            'preparing' => 2,
+            'ready' => 3,
+            'completed' => 4,
+            default => 0,
+        };
+        $message = match ($order->status) {
+            'new' => 'استلم المطعم طلبك وسيبدأ العمل عليه قريباً.',
+            'preparing' => 'المطبخ يجهّز وجباتك الآن.',
+            'ready' => $order->order_type === 'delivery'
+                ? 'طلبك جاهز وسيبدأ التوصيل إليك.'
+                : 'طلبك جاهز، يمكنك استلامه الآن.',
+            'completed' => 'اكتمل طلبك، نتمنى لك وجبة شهية.',
+            'cancelled' => 'تم إلغاء الطلب. تواصل مع المطعم لمزيد من التفاصيل.',
+            default => 'يتم الآن تحديث حالة طلبك.',
+        };
+
+        return [
+            'order_number' => $order->order_number,
+            'restaurant_name' => $order->shop?->name,
+            'status' => $order->status,
+            'status_label' => $order->statusLabel(),
+            'status_message' => $message,
+            'step' => $step,
+            'is_cancelled' => $order->status === 'cancelled',
+            'order_type' => $order->order_type,
+            'estimated_preparation_minutes' => $order->estimated_preparation_minutes,
+            'created_at' => $order->created_at?->toIso8601String(),
+            'updated_at' => $order->updated_at?->toIso8601String(),
+        ];
     }
 
     private function authorizeShop(Request $request, Shop $shop): void

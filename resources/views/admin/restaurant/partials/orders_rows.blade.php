@@ -19,6 +19,9 @@
                     <small>إضافات: {{ implode('، ',$item['addons'] ?? []) ?: '-' }} | بدون: {{ implode('، ',$item['excluded'] ?? []) ?: '-' }} {{ $item['notes'] ?? '' }}</small>
                 </div>
             @endforeach
+            @if($order->estimated_preparation_minutes)
+                <div class="tag" style="margin-top:8px"><i class="ti ti-clock"></i> تجهيز متوقع: {{ $order->estimated_preparation_minutes }} دقيقة</div>
+            @endif
         </td>
         <td>{{ $order->total }} ₪</td>
         <td>

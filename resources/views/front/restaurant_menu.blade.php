@@ -751,6 +751,181 @@
             color: #6df0ab
         }
 
+        .meal-prep {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            width: fit-content;
+            margin: 1px 0 9px;
+            color: #b8f8ff;
+            font-size: 11px;
+            font-weight: 800
+        }
+
+        .modal-prep {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin: 0 0 16px;
+            padding: 10px 12px;
+            border: 1px solid rgba(8, 222, 244, .2);
+            border-radius: 12px;
+            background: rgba(8, 222, 244, .07);
+            color: #b8f8ff;
+            font-size: 13px
+        }
+
+        .order-tracking {
+            margin-top: 14px;
+            padding: 15px;
+            border: 1px solid rgba(8, 222, 244, .34);
+            border-radius: 18px;
+            background: linear-gradient(145deg, rgba(8, 222, 244, .1), rgba(104, 61, 255, .08));
+            box-shadow: inset 0 1px rgba(255, 255, 255, .03)
+        }
+
+        .order-tracking.cancelled {
+            border-color: rgba(255, 86, 107, .45);
+            background: rgba(255, 86, 107, .08)
+        }
+
+        .tracking-head,
+        .tracking-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px
+        }
+
+        .tracking-head strong {
+            font-size: 16px
+        }
+
+        .tracking-live {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #6df0ab;
+            font-size: 11px;
+            font-weight: 800
+        }
+
+        .tracking-live::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+            box-shadow: 0 0 10px currentColor
+        }
+
+        .tracking-meta {
+            margin-top: 9px;
+            color: var(--muted);
+            font-size: 11px
+        }
+
+        .tracking-prep {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 12px 0;
+            padding: 10px 11px;
+            border-radius: 12px;
+            background: #07151a;
+            color: #d9fbff;
+            font-size: 12px
+        }
+
+        .tracking-prep i {
+            color: var(--cyan);
+            font-size: 18px
+        }
+
+        .tracking-steps {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            margin: 14px 0 12px;
+            padding: 0;
+            list-style: none
+        }
+
+        .tracking-step {
+            position: relative;
+            display: grid;
+            justify-items: center;
+            gap: 6px;
+            color: #687680;
+            text-align: center;
+            font-size: 9px;
+            font-weight: 800
+        }
+
+        .tracking-step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            z-index: 0;
+            top: 13px;
+            right: 57%;
+            width: 86%;
+            height: 2px;
+            background: #26323a
+        }
+
+        .tracking-step.done:not(:last-child)::after {
+            background: var(--cyan)
+        }
+
+        .tracking-step span {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            place-items: center;
+            width: 28px;
+            height: 28px;
+            border: 2px solid #26323a;
+            border-radius: 50%;
+            background: #080d11
+        }
+
+        .tracking-step.done,
+        .tracking-step.active {
+            color: #eaffff
+        }
+
+        .tracking-step.done span,
+        .tracking-step.active span {
+            border-color: var(--cyan);
+            color: #001114;
+            background: var(--cyan);
+            box-shadow: 0 0 14px rgba(8, 222, 244, .34)
+        }
+
+        .tracking-step.active span {
+            animation: trackingPulse 1.8s infinite
+        }
+
+        .tracking-message {
+            margin: 8px 0 0;
+            color: #d7e1e7;
+            font-size: 12px;
+            line-height: 1.7
+        }
+
+        .tracking-link {
+            display: block;
+            margin-top: 10px;
+            color: var(--cyan);
+            font-size: 12px;
+            font-weight: 800;
+            text-align: center
+        }
+
+        @keyframes trackingPulse {
+            50% { box-shadow: 0 0 0 7px rgba(8, 222, 244, 0) }
+        }
+
         dialog {
             width: min(560px, calc(100% - 24px));
             max-height: 90vh;
@@ -1041,6 +1216,7 @@
                     'sizes' => $attributes['meal_size_prices'] ?? [],
                     'addons' => $attributes['addon_prices'] ?? [],
                     'ingredients' => $attributes['removable_ingredients'] ?? [],
+                    'preparation_time' => max(0, (int) ($attributes['preparation_time'] ?? 0)),
                 ];
             })
             ->values();
@@ -1126,6 +1302,9 @@
                                         <h3>{{ $product->name }}</h3>
                                         <p class="meal-desc">
                                             {{ $product->description ?: 'وجبة طازجة محضرة حسب طلبك.' }}</p>
+                                        @if((int) data_get($product->catalog_attributes, 'preparation_time', 0) > 0)
+                                            <span class="meal-prep"><i class="ti ti-clock"></i> تجهيز خلال نحو {{ (int) data_get($product->catalog_attributes, 'preparation_time') }} دقيقة</span>
+                                        @endif
                                         <div class="meal-bottom"><span class="price">من
                                                 {{ number_format((float) ($product->discount_price ?: $product->price), 2) }}
                                                 ₪</span><button class="add-btn"
@@ -1187,6 +1366,28 @@
                 <textarea class="field" id="orderNotes" placeholder="ملاحظات عامة للمطعم"></textarea>
                 <button class="primary-btn" id="send"><i class="ti ti-send"></i> تأكيد وإرسال الطلب</button>
                 <p class="message" id="message"></p>
+                <section class="order-tracking" id="orderTracking" hidden aria-live="polite">
+                    <div class="tracking-head">
+                        <strong>تتبّع طلبك</strong>
+                        <span class="tracking-live">تحديث مباشر</span>
+                    </div>
+                    <div class="tracking-meta">
+                        <span id="trackingNumber"></span>
+                        <strong id="trackingStatus"></strong>
+                    </div>
+                    <div class="tracking-prep" id="trackingPrep" hidden>
+                        <i class="ti ti-clock-hour-4"></i>
+                        <span>مدة التجهيز المتوقعة: <strong id="trackingMinutes"></strong> دقيقة</span>
+                    </div>
+                    <ol class="tracking-steps">
+                        <li class="tracking-step" data-tracking-step="1"><span><i class="ti ti-receipt"></i></span>تم الاستلام</li>
+                        <li class="tracking-step" data-tracking-step="2"><span><i class="ti ti-tools-kitchen-2"></i></span>قيد التحضير</li>
+                        <li class="tracking-step" data-tracking-step="3"><span><i class="ti ti-bell-check"></i></span>جاهز</li>
+                        <li class="tracking-step" data-tracking-step="4"><span><i class="ti ti-circle-check"></i></span>مكتمل</li>
+                    </ol>
+                    <p class="tracking-message" id="trackingMessage"></p>
+                    <a class="tracking-link" id="trackingLink" href="#" target="_blank" rel="noopener">فتح صفحة التتبّع الكاملة</a>
+                </section>
             </aside>
         </div>
     </div>
@@ -1198,6 +1399,7 @@
             <h3 id="modalName"></h3><button class="close" id="modalClose"><i class="ti ti-x"></i></button>
         </div>
         <div class="modal-body">
+            <p class="modal-prep" id="modalPrep" hidden><i class="ti ti-clock"></i><span></span></p>
             <section class="option-section" id="sizesSection">
                 <h4>اختر حجم الوجبة</h4>
                 <div class="choices" id="sizes"></div>
@@ -1224,6 +1426,9 @@
             const products = new Map(@json($restaurantProducts).map(product => [Number(product.id), product]));
             const cart = [];
             let current = null;
+            let trackingTimer = null;
+            let trackingUrl = null;
+            const trackingStorageKey = @json('ozman.restaurant.'.$shop->id.'.active-order');
             const $ = id => document.getElementById(id);
             const modal = $('mealModal');
             const parseOptions = values => Object.fromEntries((values || []).map(value => {
@@ -1387,6 +1592,10 @@
                 current = products.get(Number(productId));
                 if (!current) return;
                 $('modalName').textContent = current.name;
+                $('modalPrep').hidden = !Number(current.preparation_time);
+                $('modalPrep').querySelector('span').textContent = Number(current.preparation_time)
+                    ? `مدة التجهيز المتوقعة لهذه الوجبة: ${Number(current.preparation_time)} دقيقة`
+                    : '';
                 $('qty').value = 1;
                 $('notes').value = '';
                 const sizes = parseOptions(current.sizes),
@@ -1431,7 +1640,8 @@
                     addons: selectedAddons.map(input => input.value),
                     excluded: [...$('excluded').querySelectorAll(':checked')].map(input => input.value),
                     notes: $('notes').value,
-                    unit: unit + addonTotal
+                    unit: unit + addonTotal,
+                    preparation_time: Number(current.preparation_time) || 0
                 });
                 closeModal();
                 render();
@@ -1443,7 +1653,7 @@
 
             function render() {
                 $('cartItems').innerHTML = cart.length ? cart.map((item, index) =>
-                    `<article class="cart-item"><div class="cart-item-head"><strong>${item.qty}× ${escapeHtml(item.name)}</strong><button class="remove" onclick="removeRestaurantCartItem(${index})"><i class="ti ti-trash"></i></button></div><small>${escapeHtml(item.size||'')} ${item.addons.length?'• '+escapeHtml(item.addons.join('، ')):''}</small><span class="price">${(item.unit*item.qty).toFixed(2)} ₪</span></article>`
+                    `<article class="cart-item"><div class="cart-item-head"><strong>${item.qty}× ${escapeHtml(item.name)}</strong><button class="remove" onclick="removeRestaurantCartItem(${index})"><i class="ti ti-trash"></i></button></div><small>${escapeHtml(item.size||'')} ${item.addons.length?'• '+escapeHtml(item.addons.join('، ')):''}${item.preparation_time?' • نحو '+item.preparation_time+' دقيقة':''}</small><span class="price">${(item.unit*item.qty).toFixed(2)} ₪</span></article>`
                     ).join('') : '<div class="empty"><i class="ti ti-shopping-bag"></i>لم تضف أي وجبة بعد</div>';
                 const total = cart.reduce((sum, item) => sum + item.unit * item.qty, 0);
                 $('total').textContent = $('mobileTotal').textContent = total.toFixed(2);
@@ -1499,6 +1709,63 @@
                     maximumAge: 0
                 });
             });
+
+            const renderTracking = tracking => {
+                if (!tracking) return;
+                const box = $('orderTracking');
+                const step = Number(tracking.step) || 0;
+                box.hidden = false;
+                box.classList.toggle('cancelled', Boolean(tracking.is_cancelled));
+                $('trackingNumber').textContent = `رقم الطلب: ${tracking.order_number}`;
+                $('trackingStatus').textContent = tracking.status_label;
+                $('trackingMessage').textContent = tracking.status_message;
+                $('trackingPrep').hidden = !Number(tracking.estimated_preparation_minutes) || tracking.is_cancelled;
+                $('trackingMinutes').textContent = Number(tracking.estimated_preparation_minutes) || '';
+                document.querySelectorAll('[data-tracking-step]').forEach(item => {
+                    const itemStep = Number(item.dataset.trackingStep);
+                    item.classList.toggle('done', !tracking.is_cancelled && itemStep < step);
+                    item.classList.toggle('active', !tracking.is_cancelled && itemStep === step);
+                });
+            };
+
+            const pollTracking = async () => {
+                if (!trackingUrl) return;
+                try {
+                    const response = await fetch(trackingUrl, {
+                        headers: { 'Accept': 'application/json' },
+                        cache: 'no-store'
+                    });
+                    if (!response.ok) throw new Error('tracking failed');
+                    const data = await response.json();
+                    renderTracking(data.tracking);
+                    if (['completed', 'cancelled'].includes(data.tracking?.status)) {
+                        clearInterval(trackingTimer);
+                        trackingTimer = null;
+                    }
+                } catch (_) {}
+            };
+
+            const activateTracking = data => {
+                trackingUrl = data.tracking_url;
+                $('trackingLink').href = trackingUrl;
+                renderTracking(data.tracking);
+                try {
+                    localStorage.setItem(trackingStorageKey, JSON.stringify({ url: trackingUrl }));
+                } catch (_) {}
+                clearInterval(trackingTimer);
+                trackingTimer = setInterval(pollTracking, 6000);
+            };
+
+            try {
+                const savedTracking = JSON.parse(localStorage.getItem(trackingStorageKey) || 'null');
+                if (savedTracking?.url) {
+                    trackingUrl = savedTracking.url;
+                    $('trackingLink').href = trackingUrl;
+                    pollTracking();
+                    trackingTimer = setInterval(pollTracking, 6000);
+                }
+            } catch (_) {}
+
             $('send').onclick = async () => {
                 const message = $('message');
                 message.className = 'message';
@@ -1543,6 +1810,7 @@
                     render();
                     message.classList.add('success');
                     message.textContent = `تم إرسال طلبك بنجاح. رقم الطلب: ${data.order_number}`;
+                    activateTracking(data);
                 } catch (error) {
                     message.classList.add('error');
                     message.textContent = error.message || 'تعذر إرسال الطلب، حاول مرة أخرى.'

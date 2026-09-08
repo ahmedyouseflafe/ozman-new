@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Distributor;
 use App\Models\DistributorMarketer;
+use App\Models\PushDevice;
 use App\Models\Shop;
 use App\Models\User;
 use App\Rules\ValidPhoneNumber;
@@ -44,6 +45,7 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+        $this->attachAppPushDevice($request);
 
         return $this->redirectAfterLogin($request);
     }
@@ -87,6 +89,7 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+        $this->attachAppPushDevice($request);
         $this->rememberMerchantShop($request, $shop);
         $request->session()->forget('merchant_referral');
 
@@ -187,6 +190,7 @@ class AuthController extends Controller
 
         Auth::login($user, true);
         $request->session()->regenerate();
+        $this->attachAppPushDevice($request);
         $request->session()->put('merchant_shop_id', $shop->id);
         $request->session()->forget('merchant_referral');
 
@@ -443,6 +447,23 @@ class AuthController extends Controller
         ]);
     }
 
+    private function attachAppPushDevice(Request $request): void
+    {
+        $token = $request->session()->get('app_push_token');
+        $user = $request->user();
+
+        if (! $user || ! is_string($token) || $token === '') {
+            return;
+        }
+
+        PushDevice::query()
+            ->where('token', $token)
+            ->update([
+                'user_id' => $user->id,
+                'last_seen_at' => now(),
+            ]);
+    }
+
     private function rejectMerchantAccess(Request $request, string $message, array $oldInput = []): RedirectResponse
     {
         Auth::logout();
@@ -502,6 +523,15 @@ class AuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
+        $token = $request->session()->get('app_push_token');
+        $userId = $request->user()?->id;
+        if ($userId && is_string($token) && $token !== '') {
+            PushDevice::query()
+                ->where('token', $token)
+                ->where('user_id', $userId)
+                ->update(['user_id' => null]);
+        }
+
         Auth::logout();
 
         $request->session()->invalidate();

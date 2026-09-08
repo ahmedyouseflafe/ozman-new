@@ -31,6 +31,8 @@ class FrontOrder extends Model
         'total',
         'order_channel',
         'order_type',
+        'estimated_preparation_minutes',
+        'customer_push_token',
         'payment_method',
         'payment_status',
         'status',
@@ -51,7 +53,10 @@ class FrontOrder extends Model
         'marketer_commission_amount' => 'decimal:2',
         'reward_discount_value' => 'decimal:2',
         'reward_won_at' => 'datetime',
+        'estimated_preparation_minutes' => 'integer',
     ];
+
+    protected $hidden = ['customer_push_token'];
 
     public function shop(): BelongsTo
     {

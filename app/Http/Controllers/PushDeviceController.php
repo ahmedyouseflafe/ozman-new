@@ -24,6 +24,8 @@ class PushDeviceController extends Controller
             ],
         );
 
+        $request->session()->put('app_push_token', $data['token']);
+
         return response()->json(['registered' => true]);
     }
 }

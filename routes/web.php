@@ -70,6 +70,9 @@ Route::get('/real-estate/{shop:slug}/qr.svg', [RealEstateDashboardController::cl
 Route::post('/electronics/{shop}/orders', [ElectronicsStoreController::class, 'order'])->middleware('throttle:20,1')->name('electronics.orders.store');
 Route::get('/restaurants/{shop:slug}/table/{tableCode}', [RestaurantController::class, 'menu'])->name('restaurant.table');
 Route::post('/restaurants/{shop}/orders', [RestaurantController::class, 'storeOrder'])->middleware('throttle:30,1')->name('restaurant.orders.store');
+Route::get('/restaurant-orders/{order}/tracking', [RestaurantController::class, 'track'])
+    ->middleware(['signed', 'throttle:60,1'])
+    ->name('restaurant.orders.track');
 Route::get('/restaurant-tables/{table:code}/qr.svg', [RestaurantController::class, 'tableQr'])->name('restaurant.tables.qr');
 Route::get('/distributor-stores/{distributor}', [FrontController::class, 'distributor'])->name('front.distributor');
 Route::get('/marketer-stores/{marketer:tracking_code}', [FrontController::class, 'marketer'])->name('front.marketer');
