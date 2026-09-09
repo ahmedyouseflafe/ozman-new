@@ -57,7 +57,7 @@
 <body>
 <nav class="wrap topbar">
     <a class="back" href="{{ route('real-estate.company',$shop) }}">← {{ $copy['back'] }}</a>
-    <div class="top-actions"><button type="button" id="favorite">♡ {{ $copy['favorite'] }}</button><button type="button" id="share">↗ {{ $copy['share'] }}</button><a href="{{ route('real-estate.compare',['ids'=>$property->id]) }}">⇄ {{ $copy['compare'] }}</a></div>
+    <div class="top-actions">@include('front.partials.public_language_switcher')<button type="button" id="favorite">♡ {{ $copy['favorite'] }}</button><button type="button" id="share">↗ {{ $copy['share'] }}</button><a href="{{ route('real-estate.compare',['ids'=>$property->id]) }}">⇄ {{ $copy['compare'] }}</a></div>
 </nav>
 <main class="wrap">
     <section class="property-hero">

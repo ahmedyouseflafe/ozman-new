@@ -19,7 +19,10 @@ class LanguageMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Session::has('locale')) {
+        if (in_array($request->cookie('ozman_public_locale'), $this->supportedLocales, true)) {
+            $locale = $request->cookie('ozman_public_locale');
+            Session::put('locale', $locale);
+        } elseif (Session::has('locale')) {
             $locale = Session::get('locale');
         } else {
             $locale = $request->getPreferredLanguage($this->supportedLocales) ?: config('app.locale', 'ar');

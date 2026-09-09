@@ -48,7 +48,7 @@
     </style>
 </head>
 <body>
-<nav class="wrap topbar"><a class="brand" href="{{ $company?route('real-estate.company',$company):route('real-estate.index') }}">@if($company?->logo)<img src="{{ asset($company->logo) }}" alt="{{ $company->name }}">@else<img src="{{ asset('ozman-favicon.png') }}" alt="Ozman">@endif<div><strong>{{ $company?->name ?: 'Ozman' }}</strong><small>{{ $company?$labels['company_properties']:$labels['market'] }}</small></div></a><div class="languages">@foreach(['ar'=>'العربية','he'=>'עברית','en'=>'English'] as $code=>$name)<a href="{{ route('lang.switch',$code) }}">{{ $name }}</a>@endforeach</div></nav>
+<nav class="wrap topbar"><a class="brand" href="{{ $company?route('real-estate.company',$company):route('real-estate.index') }}">@if($company?->logo)<img src="{{ asset($company->logo) }}" alt="{{ $company->name }}">@else<img src="{{ asset('ozman-favicon.png') }}" alt="Ozman">@endif<div><strong>{{ $company?->name ?: 'Ozman' }}</strong><small>{{ $company?$labels['company_properties']:$labels['market'] }}</small></div></a>@include('front.partials.public_language_switcher')</nav>
 <header class="hero"><div class="wrap"><h1>{{ $company?->name ?: $labels['market'] }}</h1><p>{{ $company?->description ?: 'بيع، إيجار، مشاريع جديدة، عقارات تجارية وأراضٍ في مكان واحد.' }}</p></div></header>
 <main class="wrap">
 @if(session('real_estate_success'))<div class="success">{{ session('real_estate_success') }}</div>@endif

@@ -341,6 +341,22 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
 Route::get('/lang/{locale}', function ($locale) {
     if (in_array($locale, ['ar', 'he', 'en'], true)) {
         session(['locale' => $locale]);
+
+        if (request()->query('source') === 'device') {
+            return redirect()->back();
+        }
+
+        return redirect()->back()->withCookie(cookie(
+            'ozman_public_locale',
+            $locale,
+            60 * 24 * 365 * 5,
+            '/',
+            null,
+            request()->isSecure(),
+            false,
+            false,
+            'lax'
+        ));
     }
 
     return redirect()->back();

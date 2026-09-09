@@ -115,7 +115,7 @@ class RestaurantOrderingTest extends TestCase
                 return collect($tokens)->values()->all() === ['restaurant-customer-token']
                     && $title === 'بدأ تحضير طلبك 🍳'
                     && str_contains($body, $order->order_number)
-                    && str_contains($body, '15 دقيقة')
+                    && str_contains($body, '22 دقيقة')
                     && str_contains($url, '/restaurant-orders/'.$order->id.'/tracking')
                     && str_contains($url, 'signature=')
                     && ($data['type'] ?? null) === 'restaurant_order_status'
@@ -125,14 +125,23 @@ class RestaurantOrderingTest extends TestCase
         $this->app->instance(FirebaseMessagingService::class, $firebase);
 
         $this->actingAs($shop->user)
-            ->patch(route('restaurant.orders.status', $order), ['status' => 'preparing'])
+            ->patch(route('restaurant.orders.status', $order), [
+                'status' => 'preparing',
+                'estimated_preparation_minutes' => 22,
+            ])
             ->assertRedirect();
+
+        $this->assertDatabaseHas('front_orders', [
+            'id' => $order->id,
+            'status' => 'preparing',
+            'estimated_preparation_minutes' => 22,
+        ]);
 
         $this->getJson($trackingUrl)
             ->assertOk()
             ->assertJsonPath('tracking.status', 'preparing')
             ->assertJsonPath('tracking.step', 2)
-            ->assertJsonPath('tracking.estimated_preparation_minutes', 15);
+            ->assertJsonPath('tracking.estimated_preparation_minutes', 22);
     }
 
     public function test_app_device_token_is_attached_after_owner_login_and_detached_on_logout(): void
@@ -246,6 +255,31 @@ class RestaurantOrderingTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_restaurant_must_set_preparation_time_before_starting_an_old_order(): void
+    {
+        [$shop, , $table] = $this->restaurant('required-preparation-time');
+        $order = FrontOrder::create([
+            'shop_id' => $shop->id,
+            'restaurant_table_id' => $table->id,
+            'order_number' => 'RST-NO-PREP-TIME',
+            'customer_name' => 'Old customer',
+            'order_channel' => 'restaurant',
+            'order_type' => 'dine_in',
+            'status' => 'new',
+        ]);
+
+        $this->actingAs($shop->user)
+            ->patch(route('restaurant.orders.status', $order), ['status' => 'preparing'])
+            ->assertSessionHasErrors('estimated_preparation_minutes');
+        $this->assertSame('new', $order->fresh()->status);
+
+        $this->actingAs($shop->user)
+            ->get(route('restaurant.dashboard', $shop))
+            ->assertOk()
+            ->assertSee('name="estimated_preparation_minutes"', false)
+            ->assertSee('حفظ وإشعار العميل');
+    }
+
     public function test_general_shop_owner_only_sees_orders_for_owned_shop(): void
     {
         $owner = User::create(['name' => 'Owner A', 'email' => 'owner-a@test.test', 'password' => 'password', 'role' => 'shop_owner', 'is_active' => true]);
@@ -309,10 +343,10 @@ class RestaurantOrderingTest extends TestCase
     {
         [$shop] = $this->restaurant('restaurant-menu');
 
-        $this->get(route('front.shop.slug', $shop))
+        $this->withHeader('Accept-Language', 'ar')->get(route('front.shop.slug', $shop))
             ->assertRedirect(route('restaurant.menu', $shop));
 
-        $this->get(route('restaurant.menu', $shop))
+        $this->withSession(['locale' => 'ar'])->get(route('restaurant.menu', $shop))
             ->assertOk()
             ->assertSee('قائمة الطعام')
             ->assertSee('اختر حجم الوجبة')
@@ -320,6 +354,21 @@ class RestaurantOrderingTest extends TestCase
             ->assertSee('تتبّع طلبك')
             ->assertDontSee('اختر نوع السعر المناسب قبل إضافة المنتج إلى السلة')
             ->assertDontSee('العبوة');
+    }
+
+    public function test_restaurant_menu_uses_device_language_and_shows_language_switcher(): void
+    {
+        [$shop] = $this->restaurant('restaurant-language');
+
+        $this->withHeader('Accept-Language', 'en-US,en;q=0.9')
+            ->get(route('restaurant.menu', $shop))
+            ->assertOk()
+            ->assertSee('<html lang="en" dir="ltr">', false)
+            ->assertSee('Food menu')
+            ->assertSee('Choose meal size')
+            ->assertSee('data-public-locale="ar"', false)
+            ->assertSee('data-public-locale="he"', false)
+            ->assertSee('data-public-locale="en"', false);
     }
 
     public function test_restaurant_menu_shows_active_categories_without_products(): void

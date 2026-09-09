@@ -7,12 +7,20 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @php
         $seoShopName = $shop?->name ?? 'Ozman';
-        $seoDescription = $shop?->description ?: ($shop
-            ? "تصفح منتجات وعروض {$seoShopName} عبر Ozman."
-            : 'اكتشف المتاجر والمنتجات والعروض والمطاعم المحلية عبر منصة Ozman.');
+        $seoDescription =
+            $shop?->description ?:
+            ($shop
+                ? "تصفح منتجات وعروض {$seoShopName} عبر Ozman."
+                : 'اكتشف المتاجر والمنتجات والعروض والمطاعم المحلية عبر منصة Ozman.');
         $seoImage = $shop?->banner
-            ? asset(\Illuminate\Support\Str::startsWith($shop->banner, 'storage/') ? $shop->banner : 'storage/'.$shop->banner)
-            : ($shop?->logo ? asset($shop->logo) : asset('images/logo.svg'));
+            ? asset(
+                \Illuminate\Support\Str::startsWith($shop->banner, 'storage/')
+                    ? $shop->banner
+                    : 'storage/' . $shop->banner,
+            )
+            : ($shop?->logo
+                ? asset($shop->logo)
+                : asset('images/logo.svg'));
         $seoCanonical = $shop ? route('front.shop.slug', $shop) : route('home');
         $seoSchema = [
             '@context' => 'https://schema.org',
@@ -24,13 +32,14 @@
         ];
     @endphp
     @include('front.partials.seo', [
-        'title' => $shop ? $seoShopName.' | Ozman' : 'Ozman | متاجر ومنتجات محلية',
+        'title' => $shop ? $seoShopName . ' | Ozman' : 'Ozman | متاجر ومنتجات محلية',
         'description' => $seoDescription,
         'canonical' => $seoCanonical,
         'image' => $seoImage,
         'schema' => $seoSchema,
     ])
-    <link rel="stylesheet" href="{{ route('front.assets', ['file' => 'style.css']) }}?v={{ hash_file('sha256', base_path('public/style.css')) }}">
+    <link rel="stylesheet"
+        href="{{ route('front.assets', ['file' => 'style.css']) }}?v={{ hash_file('sha256', base_path('public/style.css')) }}">
     <!-- Font Awesome icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
@@ -193,7 +202,9 @@
                     $matches,
                 )
             ) {
-                return 'https://www.youtube.com/embed/' . $matches[1] . '?autoplay=0&mute=1&playsinline=1&rel=0&enablejsapi=1';
+                return 'https://www.youtube.com/embed/' .
+                    $matches[1] .
+                    '?autoplay=0&mute=1&playsinline=1&rel=0&enablejsapi=1';
             }
 
             return $url;
@@ -440,7 +451,8 @@
 
             <!-- Radial Category Selection Section -->
             @include('front.shop_stories')
-            <nav id="shopSectionNavigation" class="shop-section-navigation" aria-label="{{ __('أقسام المتاجر') }}" hidden>
+            <nav id="shopSectionNavigation" class="shop-section-navigation" aria-label="{{ __('أقسام المتاجر') }}"
+                hidden>
                 <strong id="shopSectionNavigationTitle" aria-live="polite"></strong>
                 <button type="button" id="backToShopSections" aria-controls="sideVTrack">
                     <i class="fas fa-arrow-right" aria-hidden="true"></i>
@@ -535,7 +547,8 @@
                     </a>
                 @else
                     <a href="{{ route('merchant.login', ['redirect' => route('dashboard', absolute: false)]) }}"
-                        class="nav-btn" title="{{ __('دخول صاحب المتجر') }}" aria-label="{{ __('دخول صاحب المتجر') }}"
+                        class="nav-btn" title="{{ __('دخول صاحب المتجر') }}"
+                        aria-label="{{ __('دخول صاحب المتجر') }}"
                         style="color:#00e5ff;text-decoration:none;display:flex;align-items:center">
                         <i class="fas fa-store"></i>
                     </a>
@@ -1012,7 +1025,9 @@
 
             };
         </script>
-        <script src="{{ route('front.assets', ['file' => 'script.js']) }}?v={{ hash_file('sha256', base_path('public/script.js')) }}"></script>
+        <script
+            src="{{ route('front.assets', ['file' => 'script.js']) }}?v={{ hash_file('sha256', base_path('public/script.js')) }}">
+        </script>
 
         <!-- Location Modal -->
         <div class="modal-overlay" id="locationModal">

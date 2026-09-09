@@ -277,7 +277,10 @@ class RestaurantController extends Controller
     {
         abort_unless($order->shop && $order->order_type, 404);
         $this->authorizeShop($request, $order->shop);
-        $data = $request->validate(['status' => ['required', 'in:new,preparing,ready,completed,cancelled']]);
+        $data = $request->validate([
+            'status' => ['required', 'in:new,preparing,ready,completed,cancelled'],
+            'estimated_preparation_minutes' => ['nullable', 'integer', 'min:1', 'max:1440'],
+        ]);
         $transitions = [
             'new' => ['new', 'preparing', 'cancelled'],
             'preparing' => ['preparing', 'ready', 'cancelled'],
@@ -286,12 +289,21 @@ class RestaurantController extends Controller
             'cancelled' => ['cancelled'],
         ];
         abort_unless(in_array($data['status'], $transitions[$order->status] ?? [], true), 422, 'لا يمكن إعادة الطلب إلى حالة سابقة.');
-        $previousStatus = $order->status;
-        $order->update($data);
-        if ($previousStatus !== $order->status) {
-            $this->sendCustomerStatusPush($order->fresh('shop'), $firebase);
+        if ($data['status'] === 'preparing' && empty($data['estimated_preparation_minutes']) && ! $order->estimated_preparation_minutes) {
+            return back()->withErrors([
+                'estimated_preparation_minutes' => 'حدد مدة التجهيز المتوقعة قبل نقل الطلب إلى قيد التحضير.',
+            ])->withInput();
         }
-        return back()->with('status', 'تم تحديث حالة الطلب.');
+
+        $previousStatus = $order->status;
+        $previousPreparationMinutes = $order->estimated_preparation_minutes;
+        $order->update($data);
+        $statusChanged = $previousStatus !== $order->status;
+        $preparationTimeChanged = $previousPreparationMinutes !== $order->estimated_preparation_minutes;
+        if ($statusChanged || $preparationTimeChanged) {
+            $this->sendCustomerStatusPush($order->fresh('shop'), $firebase, $statusChanged, $preparationTimeChanged);
+        }
+        return back()->with('status', 'تم حفظ حالة الطلب ومدة التجهيز وإبلاغ العميل.');
     }
 
     private function pricedOptions(array $values): array
@@ -345,20 +357,27 @@ class RestaurantController extends Controller
         }
     }
 
-    private function sendCustomerStatusPush(FrontOrder $order, FirebaseMessagingService $firebase): void
+    private function sendCustomerStatusPush(
+        FrontOrder $order,
+        FirebaseMessagingService $firebase,
+        bool $statusChanged,
+        bool $preparationTimeChanged,
+    ): void
     {
         if (! filled($order->customer_push_token) || ! $order->shop) {
             return;
         }
 
-        $title = match ($order->status) {
+        $title = ! $statusChanged && $preparationTimeChanged
+            ? 'تم تحديث وقت تجهيز طلبك ⏱️'
+            : match ($order->status) {
             'preparing' => 'بدأ تحضير طلبك 🍳',
             'ready' => $order->order_type === 'delivery' ? 'طلبك جاهز للتوصيل 🛵' : 'طلبك جاهز 🎉',
             'completed' => 'تم إكمال طلبك ✅',
             'cancelled' => 'تم إلغاء الطلب',
             default => 'تحديث على طلبك',
         };
-        $preparationText = $order->status === 'preparing' && $order->estimated_preparation_minutes
+        $preparationText = $order->estimated_preparation_minutes && ($order->status === 'preparing' || $preparationTimeChanged)
             ? " ومدة التجهيز المتوقعة {$order->estimated_preparation_minutes} دقيقة"
             : '';
         $body = "طلبك {$order->order_number} من {$order->shop->name}: {$order->statusLabel()}{$preparationText}.";

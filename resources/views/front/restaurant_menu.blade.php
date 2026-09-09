@@ -1,5 +1,72 @@
+@php
+    $locale = app()->getLocale();
+    $isRtl = in_array($locale, ['ar', 'he'], true);
+    $restaurantDictionary = [
+        'ar' => [
+            'menu_kicker' => 'منيو المطعم', 'table_order' => 'أنت تطلب الآن من', 'menu_intro' => 'اختر وجبتك، خصصها وأرسل طلبك للمطعم',
+            'inside_restaurant' => 'طلب من داخل المطعم', 'delivery_pickup' => 'توصيل أو استلام', 'food_menu' => 'قائمة الطعام',
+            'food_hint' => 'اضغط على الوجبة لاختيار الحجم والإضافات.', 'menu_sections' => 'أقسام المنيو', 'meals' => 'الوجبات',
+            'show_options' => 'عرض خيارات', 'fresh_meal' => 'وجبة طازجة محضرة حسب طلبك.', 'prep_around' => 'تجهيز خلال نحو',
+            'minute' => 'دقيقة', 'from' => 'من', 'add' => 'إضافة', 'empty_section' => 'لا توجد وجبات في هذا القسم حالياً.',
+            'empty_menu' => 'لا توجد وجبات متاحة حالياً.', 'close_order' => 'إغلاق الطلب', 'order_details' => 'تفاصيل الطلب',
+            'your_order' => 'طلبك', 'total' => 'المجموع', 'registered_on' => 'الطلب مسجل على', 'delivery_to_address' => 'توصيل إلى العنوان',
+            'pickup' => 'استلام من المطعم', 'customer_name' => 'اسم صاحب الطلب', 'name' => 'الاسم', 'phone' => 'رقم الهاتف',
+            'address' => 'عنوان التوصيل بالتفصيل', 'locate_me' => 'حدد موقعي للتوصيل', 'location_required' => 'يجب تحديد موقعك على الخريطة لإرسال طلب التوصيل.',
+            'notes' => 'ملاحظات عامة للمطعم', 'submit' => 'تأكيد وإرسال الطلب', 'track_order' => 'تتبّع طلبك', 'live_update' => 'تحديث مباشر',
+            'estimated_prep' => 'مدة التجهيز المتوقعة:', 'received' => 'تم الاستلام', 'preparing' => 'قيد التحضير', 'ready' => 'جاهز',
+            'completed' => 'مكتمل', 'full_tracking' => 'فتح صفحة التتبّع الكاملة', 'view_order' => 'عرض الطلب', 'choose_size' => 'اختر حجم الوجبة',
+            'addons' => 'إضافات على الوجبة', 'remove_ingredients' => 'حذف مكونات', 'quantity' => 'الكمية', 'meal_notes' => 'ملاحظات خاصة بهذه الوجبة',
+            'add_to_order' => 'إضافة إلى الطلب', 'cancel' => 'إلغاء', 'empty_cart' => 'لم تضف أي وجبة بعد', 'without' => 'بدون', 'about' => 'نحو',
+            'geo_unsupported' => 'المتصفح لا يدعم تحديد الموقع.', 'locating' => 'جاري تحديد موقعك بدقة...', 'location_success' => 'تم تحديد موقعك بنجاح',
+            'open_location' => 'فتح الموقع', 'location_failed' => 'تعذر تحديد الموقع. اسمح للموقع بالوصول إلى اللوكيشن ثم حاول مجدداً.',
+            'order_number' => 'رقم الطلب:', 'add_meal_error' => 'أضف وجبة واحدة على الأقل.', 'set_location_error' => 'حدد موقعك للتوصيل قبل إرسال الطلب.',
+            'sent_success' => 'تم إرسال طلبك بنجاح. رقم الطلب:', 'send_error' => 'تعذر إرسال الطلب، حاول مرة أخرى.',
+        ],
+        'he' => [
+            'menu_kicker' => 'תפריט המסעדה', 'table_order' => 'ההזמנה שלך משולחן', 'menu_intro' => 'בחרו מנה, התאימו אותה ושלחו את ההזמנה למסעדה',
+            'inside_restaurant' => 'הזמנה בתוך המסעדה', 'delivery_pickup' => 'משלוח או איסוף', 'food_menu' => 'תפריט אוכל',
+            'food_hint' => 'לחצו על מנה לבחירת גודל ותוספות.', 'menu_sections' => 'קטגוריות התפריט', 'meals' => 'מנות',
+            'show_options' => 'אפשרויות עבור', 'fresh_meal' => 'מנה טרייה שמוכנה לפי הזמנתכם.', 'prep_around' => 'מוכן בתוך כ־',
+            'minute' => 'דקות', 'from' => 'החל מ־', 'add' => 'הוספה', 'empty_section' => 'אין כרגע מנות בקטגוריה זו.',
+            'empty_menu' => 'אין כרגע מנות זמינות.', 'close_order' => 'סגירת ההזמנה', 'order_details' => 'פרטי ההזמנה',
+            'your_order' => 'ההזמנה שלך', 'total' => 'סה״כ', 'registered_on' => 'ההזמנה נרשמה על', 'delivery_to_address' => 'משלוח לכתובת',
+            'pickup' => 'איסוף מהמסעדה', 'customer_name' => 'שם המזמין', 'name' => 'שם', 'phone' => 'מספר טלפון',
+            'address' => 'כתובת מלאה למשלוח', 'locate_me' => 'איתור המיקום למשלוח', 'location_required' => 'יש לסמן את המיקום במפה כדי לשלוח את ההזמנה.',
+            'notes' => 'הערות כלליות למסעדה', 'submit' => 'אישור ושליחת ההזמנה', 'track_order' => 'מעקב הזמנה', 'live_update' => 'עדכון חי',
+            'estimated_prep' => 'זמן הכנה משוער:', 'received' => 'התקבלה', 'preparing' => 'בהכנה', 'ready' => 'מוכנה',
+            'completed' => 'הושלמה', 'full_tracking' => 'פתיחת עמוד המעקב המלא', 'view_order' => 'צפייה בהזמנה', 'choose_size' => 'בחירת גודל המנה',
+            'addons' => 'תוספות למנה', 'remove_ingredients' => 'הסרת מרכיבים', 'quantity' => 'כמות', 'meal_notes' => 'הערות למנה זו',
+            'add_to_order' => 'הוספה להזמנה', 'cancel' => 'ביטול', 'empty_cart' => 'עדיין לא הוספתם מנה', 'without' => 'ללא', 'about' => 'כ־',
+            'geo_unsupported' => 'הדפדפן אינו תומך באיתור מיקום.', 'locating' => 'מאתרים את המיקום המדויק...', 'location_success' => 'המיקום אותר בהצלחה',
+            'open_location' => 'פתיחת המיקום', 'location_failed' => 'לא ניתן לאתר את המיקום. אשרו גישה למיקום ונסו שוב.',
+            'order_number' => 'מספר הזמנה:', 'add_meal_error' => 'הוסיפו לפחות מנה אחת.', 'set_location_error' => 'סמנו מיקום למשלוח לפני שליחת ההזמנה.',
+            'sent_success' => 'ההזמנה נשלחה בהצלחה. מספר הזמנה:', 'send_error' => 'לא ניתן לשלוח את ההזמנה. נסו שוב.',
+        ],
+        'en' => [
+            'menu_kicker' => 'Restaurant menu', 'table_order' => 'You are ordering from', 'menu_intro' => 'Choose your meal, customize it and send your order to the restaurant',
+            'inside_restaurant' => 'Dine-in order', 'delivery_pickup' => 'Delivery or pickup', 'food_menu' => 'Food menu',
+            'food_hint' => 'Tap a meal to choose its size and extras.', 'menu_sections' => 'Menu sections', 'meals' => 'Meals',
+            'show_options' => 'View options for', 'fresh_meal' => 'A fresh meal prepared to your order.', 'prep_around' => 'Ready in about',
+            'minute' => 'minutes', 'from' => 'From', 'add' => 'Add', 'empty_section' => 'There are no meals in this section yet.',
+            'empty_menu' => 'There are no meals available yet.', 'close_order' => 'Close order', 'order_details' => 'Order details',
+            'your_order' => 'Your order', 'total' => 'Total', 'registered_on' => 'Order assigned to', 'delivery_to_address' => 'Deliver to address',
+            'pickup' => 'Pickup from restaurant', 'customer_name' => 'Customer name', 'name' => 'Name', 'phone' => 'Phone number',
+            'address' => 'Full delivery address', 'locate_me' => 'Set my delivery location', 'location_required' => 'Set your location on the map to send a delivery order.',
+            'notes' => 'Notes for the restaurant', 'submit' => 'Confirm and send order', 'track_order' => 'Track your order', 'live_update' => 'Live update',
+            'estimated_prep' => 'Estimated preparation time:', 'received' => 'Received', 'preparing' => 'Preparing', 'ready' => 'Ready',
+            'completed' => 'Completed', 'full_tracking' => 'Open full tracking page', 'view_order' => 'View order', 'choose_size' => 'Choose meal size',
+            'addons' => 'Meal extras', 'remove_ingredients' => 'Remove ingredients', 'quantity' => 'Quantity', 'meal_notes' => 'Notes for this meal',
+            'add_to_order' => 'Add to order', 'cancel' => 'Cancel', 'empty_cart' => 'You have not added a meal yet', 'without' => 'Without', 'about' => 'about',
+            'geo_unsupported' => 'Your browser does not support location services.', 'locating' => 'Finding your precise location...', 'location_success' => 'Location set successfully',
+            'open_location' => 'Open location', 'location_failed' => 'Could not find your location. Allow location access and try again.',
+            'order_number' => 'Order number:', 'add_meal_error' => 'Add at least one meal.', 'set_location_error' => 'Set your delivery location before sending the order.',
+            'sent_success' => 'Your order was sent successfully. Order number:', 'send_error' => 'Could not send your order. Please try again.',
+        ],
+    ];
+    $copy = $restaurantDictionary[$locale] ?? $restaurantDictionary['ar'];
+@endphp
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}">
 
 <head>
     <meta charset="utf-8">
@@ -83,6 +150,44 @@
             justify-content: space-between;
             gap: 25px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, .28)
+        }
+
+        .hero-tools {
+            position: absolute;
+            z-index: 4;
+            top: 18px;
+            inset-inline-end: 20px
+        }
+
+        .public-language-switcher {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px;
+            border: 1px solid rgba(8, 222, 244, .24);
+            border-radius: 13px;
+            background: rgba(3, 10, 14, .86);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, .24);
+            backdrop-filter: blur(12px)
+        }
+
+        .public-language-switcher > i {
+            margin-inline: 5px 2px;
+            color: var(--cyan)
+        }
+
+        .public-language-switcher a {
+            padding: 6px 8px;
+            border-radius: 9px;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 800;
+            text-decoration: none
+        }
+
+        .public-language-switcher a.active {
+            background: var(--cyan);
+            color: #001114
         }
 
         .hero:after {
@@ -367,44 +472,26 @@
         .meals {
             position: relative;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-            gap: 34px 22px;
-            justify-items: center;
-            padding: 12px 4px 22px
-        }
-
-        @media(min-width:721px) {
-            .meals.is-scattered {
-                display: block;
-                min-height: var(--scatter-height, 540px);
-                padding: 0
-            }
-
-            .meals.is-scattered .meal {
-                position: absolute;
-                top: 0;
-                left: 0;
-                transform: translate(var(--scatter-x, 0px), var(--scatter-y, 0px));
-                transition: transform .45s cubic-bezier(.2, .8, .2, 1), filter .28s ease
-            }
-
-            .meals.is-scattered .meal:hover {
-                transform: translate(var(--scatter-x, 0px), calc(var(--scatter-y, 0px) - 5px))
-            }
+            grid-template-columns: repeat(auto-fill, minmax(205px, 1fr));
+            gap: 18px;
+            align-items: stretch;
+            padding: 8px 4px 22px
         }
 
         .meal {
             position: relative;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 0;
-            width: min(180px, 100%);
-            min-height: 225px;
-            border: 0;
-            background: transparent;
-            padding: 0 6px;
-            transition: transform .28s ease, filter .28s ease
+            align-items: stretch;
+            width: 100%;
+            min-width: 0;
+            overflow: hidden;
+            border: 1px solid rgba(150, 174, 190, .2);
+            border-radius: 18px;
+            background: linear-gradient(155deg, rgba(20, 27, 33, .98), rgba(7, 11, 15, .98));
+            padding: 7px;
+            box-shadow: 0 14px 34px rgba(0, 0, 0, .28);
+            transition: transform .24s ease, border-color .24s ease, box-shadow .24s ease
         }
 
         .meal[data-product-id] {
@@ -418,58 +505,71 @@
 
         .meal:hover {
             transform: translateY(-5px);
-            filter: brightness(1.08)
+            border-color: rgba(8, 222, 244, .65);
+            box-shadow: 0 18px 42px rgba(0, 0, 0, .42), 0 0 22px rgba(8, 222, 244, .13)
         }
 
         .meal-image {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            border-radius: 13px;
             object-fit: cover;
             background: #050709;
-            border: 3px solid rgba(8, 222, 244, .42);
-            box-shadow: 0 0 18px rgba(8, 222, 244, .2), 0 10px 25px rgba(0, 0, 0, .55);
-            transition: transform .28s ease, border-color .28s ease, box-shadow .28s ease
+            border: 1px solid rgba(8, 222, 244, .24);
+            transition: transform .3s ease, filter .3s ease
         }
 
         .meal:hover .meal-image,
         .meal:focus-visible .meal-image {
-            transform: scale(1.06);
-            border-color: var(--cyan);
-            box-shadow: 0 0 32px rgba(8, 222, 244, .68), 0 12px 30px rgba(0, 0, 0, .7)
+            transform: scale(1.025);
+            filter: brightness(1.06)
         }
 
         .meal-body {
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: stretch;
+            flex: 1;
             width: 100%;
-            min-width: 0
+            min-width: 0;
+            padding: 10px 6px 5px
         }
 
         .meal h3 {
             width: 100%;
-            min-height: 40px;
-            display: grid;
-            place-items: center;
-            margin: 8px 0 4px;
-            padding: 6px 10px;
-            border: 1px solid var(--border);
-            border-radius: 11px;
-            background: rgba(0, 0, 0, .88);
-            font-size: 14px;
-            line-height: 1.35;
-            text-align: center;
-            box-shadow: 0 5px 16px rgba(0, 0, 0, .48)
+            min-height: 0;
+            margin: 0 0 5px;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            font-size: 15px;
+            line-height: 1.5;
+            text-align: start;
+            box-shadow: none
         }
 
         .meal-desc {
-            display: none
+            display: -webkit-box;
+            overflow: hidden;
+            min-height: 38px;
+            margin: 0 0 8px;
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.65;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2
         }
 
         .meal-bottom {
-            display: block;
-            text-align: center
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: auto;
+            padding-top: 8px;
+            border-top: 1px solid rgba(150, 174, 190, .12)
         }
 
         .price {
@@ -479,21 +579,20 @@
         }
 
         .meal .add-btn {
-            position: absolute;
-            z-index: 2;
-            top: -8px;
-            left: 4px;
-            display: grid;
-            place-items: center;
-            width: 42px;
-            height: 42px;
-            padding: 0;
-            border: 2px solid rgba(8, 222, 244, .75);
-            border-radius: 50%;
-            background: rgba(0, 0, 0, .9);
-            color: var(--cyan);
-            font-size: 0;
-            box-shadow: 0 0 18px rgba(8, 222, 244, .35)
+            position: static;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            width: auto;
+            height: 34px;
+            padding: 0 10px;
+            border: 0;
+            border-radius: 10px;
+            background: var(--cyan);
+            color: #001114;
+            font-size: 11px;
+            box-shadow: none
         }
 
         .meal .add-btn i {
@@ -501,9 +600,8 @@
         }
 
         .meal .add-btn:hover {
-            background: var(--cyan);
-            color: #001114;
-            transform: scale(1.1)
+            filter: brightness(1.08);
+            transform: translateY(-1px)
         }
 
         .add-btn,
@@ -1050,7 +1148,7 @@
 
         @media(max-width:1050px) {
             .meals {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr))
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))
             }
         }
 
@@ -1063,7 +1161,12 @@
             .hero {
                 min-height: auto;
                 border-radius: 21px;
-                padding: 20px
+                padding: 64px 20px 20px
+            }
+
+            .hero-tools {
+                top: 12px;
+                inset-inline-end: 12px
             }
 
             .brand {
@@ -1128,39 +1231,26 @@
             }
 
             .meals {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 28px 8px;
+                grid-template-columns: 1fr;
+                gap: 12px;
                 padding-inline: 0
             }
 
             .meal {
-                width: min(138px, 100%);
-                min-height: 190px;
-                padding: 0 3px
-            }
-
-            .meal:nth-child(4n + 2) {
-                transform: translateY(28px)
-            }
-
-            .meal:nth-child(4n + 3) {
-                transform: translateY(10px)
-            }
-
-            .meal-image {
-                width: 112px;
-                height: 112px
+                width: 100%;
+                min-height: 0;
+                padding: 6px
             }
 
             .meal h3 {
-                min-height: 36px;
-                margin-top: 7px;
-                padding: 5px 6px;
-                font-size: 11px
+                min-height: 0;
+                margin: 0 0 4px;
+                padding: 0;
+                font-size: 13px
             }
 
             .meal-bottom {
-                display: block
+                display: flex
             }
 
             .add-btn {
@@ -1168,8 +1258,7 @@
             }
 
             .meal .add-btn {
-                left: 1px;
-                width: 34px;
+                width: auto;
                 height: 34px
             }
 
@@ -1211,7 +1300,7 @@
                 $attributes = $product->catalog_attributes ?? [];
                 return [
                     'id' => $product->id,
-                    'name' => $product->name,
+                    'name' => $product->localized('name'),
                     'price' => (float) ($product->discount_price ?: $product->price),
                     'sizes' => $attributes['meal_size_prices'] ?? [],
                     'addons' => $attributes['addon_prices'] ?? [],
@@ -1224,7 +1313,7 @@
             ->map(function ($category) use ($products) {
                 return [
                     'key' => (string) $category->id,
-                    'name' => $category->name,
+                    'name' => $category->localized('name'),
                     'image' => $category->image ?: $products->first(fn($product) => $product->category_id === $category->id && filled($product->main_image))?->main_image,
                     'background' => $category->background_video ? asset($category->background_video) : null,
                     'products' => $products->where('category_id', $category->id)->values(),
@@ -1235,7 +1324,7 @@
         if ($uncategorizedProducts->isNotEmpty()) {
             $restaurantCategories->push([
                 'key' => 'uncategorized',
-                'name' => 'الوجبات',
+                'name' => $copy['meals'],
                 'image' => $uncategorizedProducts->first(fn($product) => filled($product->main_image))?->main_image,
                 'background' => null,
                 'products' => $uncategorizedProducts,
@@ -1244,18 +1333,21 @@
     @endphp
     <div class="shell">
         <header class="hero">
+            <div class="hero-tools">
+                @include('front.partials.public_language_switcher')
+            </div>
             <div class="brand">
                 @if ($shop->logo)
                     <img class="logo" src="{{ asset($shop->logo) }}" alt="{{ $shop->name }}">
                 @endif
                 <div>
-                    <div class="brand-kicker">منيو المطعم</div>
+                    <div class="brand-kicker">{{ $copy['menu_kicker'] }}</div>
                     <h1>{{ $shop->name }}</h1>
-                    <p>{{ $table ? 'أنت تطلب الآن من ' . $table->name : 'اختر وجبتك، خصصها وأرسل طلبك للمطعم' }}</p>
+                    <p>{{ $table ? $copy['table_order'].' '.$table->name : $copy['menu_intro'] }}</p>
                 </div>
             </div>
             <div class="service-badge"><i
-                    class="ti {{ $table ? 'ti-tools-kitchen-2' : 'ti-truck-delivery' }}"></i>{{ $table ? 'طلب من داخل المطعم' : 'توصيل أو استلام' }}
+                    class="ti {{ $table ? 'ti-tools-kitchen-2' : 'ti-truck-delivery' }}"></i>{{ $table ? $copy['inside_restaurant'] : $copy['delivery_pickup'] }}
             </div>
         </header>
 
@@ -1263,13 +1355,13 @@
             <section class="menu-panel">
                 <div class="section-head">
                     <div>
-                        <h2>قائمة الطعام</h2>
-                        <p>اضغط على الوجبة لاختيار الحجم والإضافات.</p>
+                        <h2>{{ $copy['food_menu'] }}</h2>
+                        <p>{{ $copy['food_hint'] }}</p>
                     </div><span class="count">{{ $products->count() }}</span>
                 </div>
                 @if($restaurantCategories->isNotEmpty())
                     <div class="menu-browser" id="menuBrowser">
-                        <nav class="category-rail" id="categoryRail" aria-label="أقسام المنيو">
+                        <nav class="category-rail" id="categoryRail" aria-label="{{ $copy['menu_sections'] }}">
                             @foreach($restaurantCategories as $category)
                                 <button type="button" class="category-tab @if($loop->first) active @endif"
                                     data-category-key="{{ $category['key'] }}" aria-pressed="{{ $loop->first ? 'true' : 'false' }}">
@@ -1293,27 +1385,27 @@
                                     <div class="meals">
                             @forelse ($category['products'] as $product)
                                 <article class="meal" data-product-id="{{ $product->id }}" role="button" tabindex="0"
-                                    aria-label="عرض خيارات {{ $product->name }}">
+                                    aria-label="{{ $copy['show_options'] }} {{ $product->localized('name') }}">
                                     @if ($product->main_image)
                                         <img class="meal-image" src="{{ asset($product->main_image) }}"
-                                        alt="{{ $product->name }}">@else<div class="meal-image"></div>
+                                        alt="{{ $product->localized('name') }}">@else<div class="meal-image"></div>
                                     @endif
                                     <div class="meal-body">
-                                        <h3>{{ $product->name }}</h3>
+                                        <h3>{{ $product->localized('name') }}</h3>
                                         <p class="meal-desc">
-                                            {{ $product->description ?: 'وجبة طازجة محضرة حسب طلبك.' }}</p>
+                                            {{ $product->localized('description') ?: $copy['fresh_meal'] }}</p>
                                         @if((int) data_get($product->catalog_attributes, 'preparation_time', 0) > 0)
-                                            <span class="meal-prep"><i class="ti ti-clock"></i> تجهيز خلال نحو {{ (int) data_get($product->catalog_attributes, 'preparation_time') }} دقيقة</span>
+                                            <span class="meal-prep"><i class="ti ti-clock"></i> {{ $copy['prep_around'] }} {{ (int) data_get($product->catalog_attributes, 'preparation_time') }} {{ $copy['minute'] }}</span>
                                         @endif
-                                        <div class="meal-bottom"><span class="price">من
+                                        <div class="meal-bottom"><span class="price">{{ $copy['from'] }}
                                                 {{ number_format((float) ($product->discount_price ?: $product->price), 2) }}
                                                 ₪</span><button class="add-btn"
                                                 data-product-id="{{ $product->id }}"><i class="ti ti-plus"></i>
-                                                إضافة</button></div>
+                                                {{ $copy['add'] }}</button></div>
                                     </div>
                                 </article>
                             @empty
-                                <div class="empty"><i class="ti ti-tools-kitchen-off"></i>لا توجد وجبات في هذا القسم حالياً.</div>
+                                <div class="empty"><i class="ti ti-tools-kitchen-off"></i>{{ $copy['empty_section'] }}</div>
                             @endforelse
                                     </div>
                                 </section>
@@ -1321,55 +1413,55 @@
                         </div>
                     </div>
                 @else
-                    <div class="empty"><i class="ti ti-tools-kitchen-off"></i>لا توجد وجبات متاحة حالياً.</div>
+                    <div class="empty"><i class="ti ti-tools-kitchen-off"></i>{{ $copy['empty_menu'] }}</div>
                 @endif
             </section>
 
-            <button type="button" class="cart-backdrop" id="cartBackdrop" aria-label="إغلاق الطلب"></button>
-            <aside class="cart" id="cartPanel" aria-hidden="true" aria-label="تفاصيل الطلب">
+            <button type="button" class="cart-backdrop" id="cartBackdrop" aria-label="{{ $copy['close_order'] }}"></button>
+            <aside class="cart" id="cartPanel" aria-hidden="true" aria-label="{{ $copy['order_details'] }}">
                 <div class="cart-title">
-                    <h2>طلبك</h2>
+                    <h2>{{ $copy['your_order'] }}</h2>
                     <div style="display:flex;align-items:center;gap:9px">
                         <span class="count" id="cartCount">0</span>
-                        <button type="button" class="cart-close" id="cartClose" aria-label="إغلاق الطلب">
+                        <button type="button" class="cart-close" id="cartClose" aria-label="{{ $copy['close_order'] }}">
                             <i class="ti ti-x" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>
                 <div class="cart-items" id="cartItems"></div>
-                <div class="cart-total"><span>المجموع</span><strong><span id="total">0.00</span> ₪</strong></div>
+                <div class="cart-total"><span>{{ $copy['total'] }}</span><strong><span id="total">0.00</span> ₪</strong></div>
                 @if($table)
                     <div class="table-context">
                         <i class="ti ti-table" aria-hidden="true"></i>
-                        <span><small>الطلب مسجل على</small><strong>{{ $table->name }}</strong></span>
+                        <span><small>{{ $copy['registered_on'] }}</small><strong>{{ $table->name }}</strong></span>
                     </div>
                 @endif
                 @unless ($table)
                     <select class="field" id="type">
-                        <option value="delivery">توصيل إلى العنوان</option>
-                        <option value="pickup">استلام من المطعم</option>
+                        <option value="delivery">{{ $copy['delivery_to_address'] }}</option>
+                        <option value="pickup">{{ $copy['pickup'] }}</option>
                 </select>@else<input type="hidden" id="type" value="dine_in">
                 @endunless
                 <div class="fields-row"><input class="field" id="name"
-                        placeholder="{{ $table ? 'اسم صاحب الطلب' : 'الاسم' }}"><input class="field" id="phone"
-                        inputmode="tel" placeholder="رقم الهاتف"></div>
+                        placeholder="{{ $table ? $copy['customer_name'] : $copy['name'] }}"><input class="field" id="phone"
+                        inputmode="tel" placeholder="{{ $copy['phone'] }}"></div>
                 @unless ($table)
-                    <input class="field" id="address" placeholder="عنوان التوصيل بالتفصيل">
+                    <input class="field" id="address" placeholder="{{ $copy['address'] }}">
                     <div class="location-box" id="locationBox"><button class="location-btn" type="button"
-                            id="detectLocation"><i class="ti ti-current-location"></i> حدد موقعي للتوصيل</button>
-                        <p class="location-status" id="locationStatus">يجب تحديد موقعك على الخريطة لإرسال طلب التوصيل.</p>
+                            id="detectLocation"><i class="ti ti-current-location"></i> {{ $copy['locate_me'] }}</button>
+                        <p class="location-status" id="locationStatus">{{ $copy['location_required'] }}</p>
                     </div>
                 @else
                     <input type="hidden" id="address">
                 @endunless
                 <input type="hidden" id="latitude"><input type="hidden" id="longitude">
-                <textarea class="field" id="orderNotes" placeholder="ملاحظات عامة للمطعم"></textarea>
-                <button class="primary-btn" id="send"><i class="ti ti-send"></i> تأكيد وإرسال الطلب</button>
+                <textarea class="field" id="orderNotes" placeholder="{{ $copy['notes'] }}"></textarea>
+                <button class="primary-btn" id="send"><i class="ti ti-send"></i> {{ $copy['submit'] }}</button>
                 <p class="message" id="message"></p>
                 <section class="order-tracking" id="orderTracking" hidden aria-live="polite">
                     <div class="tracking-head">
-                        <strong>تتبّع طلبك</strong>
-                        <span class="tracking-live">تحديث مباشر</span>
+                        <strong>{{ $copy['track_order'] }}</strong>
+                        <span class="tracking-live">{{ $copy['live_update'] }}</span>
                     </div>
                     <div class="tracking-meta">
                         <span id="trackingNumber"></span>
@@ -1377,22 +1469,22 @@
                     </div>
                     <div class="tracking-prep" id="trackingPrep" hidden>
                         <i class="ti ti-clock-hour-4"></i>
-                        <span>مدة التجهيز المتوقعة: <strong id="trackingMinutes"></strong> دقيقة</span>
+                        <span>{{ $copy['estimated_prep'] }} <strong id="trackingMinutes"></strong> {{ $copy['minute'] }}</span>
                     </div>
                     <ol class="tracking-steps">
-                        <li class="tracking-step" data-tracking-step="1"><span><i class="ti ti-receipt"></i></span>تم الاستلام</li>
-                        <li class="tracking-step" data-tracking-step="2"><span><i class="ti ti-tools-kitchen-2"></i></span>قيد التحضير</li>
-                        <li class="tracking-step" data-tracking-step="3"><span><i class="ti ti-bell-check"></i></span>جاهز</li>
-                        <li class="tracking-step" data-tracking-step="4"><span><i class="ti ti-circle-check"></i></span>مكتمل</li>
+                        <li class="tracking-step" data-tracking-step="1"><span><i class="ti ti-receipt"></i></span>{{ $copy['received'] }}</li>
+                        <li class="tracking-step" data-tracking-step="2"><span><i class="ti ti-tools-kitchen-2"></i></span>{{ $copy['preparing'] }}</li>
+                        <li class="tracking-step" data-tracking-step="3"><span><i class="ti ti-bell-check"></i></span>{{ $copy['ready'] }}</li>
+                        <li class="tracking-step" data-tracking-step="4"><span><i class="ti ti-circle-check"></i></span>{{ $copy['completed'] }}</li>
                     </ol>
                     <p class="tracking-message" id="trackingMessage"></p>
-                    <a class="tracking-link" id="trackingLink" href="#" target="_blank" rel="noopener">فتح صفحة التتبّع الكاملة</a>
+                    <a class="tracking-link" id="trackingLink" href="#" target="_blank" rel="noopener">{{ $copy['full_tracking'] }}</a>
                 </section>
             </aside>
         </div>
     </div>
 
-    <button class="mobile-cart" id="mobileCart"><i class="ti ti-shopping-bag"></i> عرض الطلب (<span
+    <button class="mobile-cart" id="mobileCart"><i class="ti ti-shopping-bag"></i> {{ $copy['view_order'] }} (<span
             id="mobileCount">0</span>) — <span id="mobileTotal">0.00</span> ₪</button>
     <dialog id="mealModal">
         <div class="modal-head">
@@ -1401,24 +1493,24 @@
         <div class="modal-body">
             <p class="modal-prep" id="modalPrep" hidden><i class="ti ti-clock"></i><span></span></p>
             <section class="option-section" id="sizesSection">
-                <h4>اختر حجم الوجبة</h4>
+                <h4>{{ $copy['choose_size'] }}</h4>
                 <div class="choices" id="sizes"></div>
             </section>
             <section class="option-section" id="addonsSection">
-                <h4>إضافات على الوجبة</h4>
+                <h4>{{ $copy['addons'] }}</h4>
                 <div class="choices" id="addons"></div>
             </section>
             <section class="option-section" id="excludedSection">
-                <h4>حذف مكونات</h4>
+                <h4>{{ $copy['remove_ingredients'] }}</h4>
                 <div class="choices" id="excluded"></div>
             </section>
-            <div class="qty-row"><label>الكمية<input class="field" id="qty" type="number" min="1"
+            <div class="qty-row"><label>{{ $copy['quantity'] }}<input class="field" id="qty" type="number" min="1"
                         max="100" value="1"></label>
-                <textarea class="field" id="notes" placeholder="ملاحظات خاصة بهذه الوجبة"></textarea>
+                <textarea class="field" id="notes" placeholder="{{ $copy['meal_notes'] }}"></textarea>
             </div>
             <div class="modal-actions"><button class="primary-btn" id="confirm"><i
-                        class="ti ti-shopping-bag-plus"></i> إضافة إلى الطلب</button><button class="secondary"
-                    id="modalCancel">إلغاء</button></div>
+                        class="ti ti-shopping-bag-plus"></i> {{ $copy['add_to_order'] }}</button><button class="secondary"
+                    id="modalCancel">{{ $copy['cancel'] }}</button></div>
         </div>
     </dialog>
     <script>
@@ -1429,6 +1521,7 @@
             let trackingTimer = null;
             let trackingUrl = null;
             const trackingStorageKey = @json('ozman.restaurant.'.$shop->id.'.active-order');
+            const ui = @json($copy);
             const $ = id => document.getElementById(id);
             const modal = $('mealModal');
             const parseOptions = values => Object.fromEntries((values || []).map(value => {
@@ -1477,56 +1570,6 @@
                 categoryBackground.play().catch(() => {});
             });
 
-            const hashText = value => [...String(value)].reduce((hash, char) =>
-                Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0, 2166136261);
-
-            const seededRandom = seed => () => {
-                seed = Math.imul(seed ^ seed >>> 15, seed | 1);
-                seed ^= seed + Math.imul(seed ^ seed >>> 7, seed | 61);
-                return ((seed ^ seed >>> 14) >>> 0) / 4294967296;
-            };
-
-            const scatterMeals = pane => {
-                const meals = pane?.querySelector('.meals');
-                const cards = [...(meals?.querySelectorAll('.meal') || [])];
-                if (!meals || !cards.length || window.innerWidth <= 720) {
-                    meals?.classList.remove('is-scattered');
-                    return;
-                }
-
-                const width = meals.clientWidth;
-                if (!width) return;
-                const cardWidth = 180;
-                const cardHeight = 225;
-                const columns = Math.max(1, Math.floor(width / 215));
-                const rows = Math.max(2, Math.ceil(cards.length / columns));
-                const height = Math.max(500, rows * 265);
-                const cellWidth = width / columns;
-                const cellHeight = height / rows;
-                const random = seededRandom(hashText(pane.dataset.categoryPane));
-                const slots = [];
-
-                for (let row = 0; row < rows; row++) {
-                    for (let column = 0; column < columns; column++) slots.push({ row, column });
-                }
-                for (let index = slots.length - 1; index > 0; index--) {
-                    const swap = Math.floor(random() * (index + 1));
-                    [slots[index], slots[swap]] = [slots[swap], slots[index]];
-                }
-
-                cards.forEach((card, index) => {
-                    const slot = slots[index];
-                    const freeX = Math.max(0, cellWidth - cardWidth);
-                    const freeY = Math.max(0, cellHeight - cardHeight);
-                    const x = slot.column * cellWidth + freeX * (.15 + random() * .7);
-                    const y = slot.row * cellHeight + freeY * random();
-                    card.style.setProperty('--scatter-x', `${Math.round(x)}px`);
-                    card.style.setProperty('--scatter-y', `${Math.round(y)}px`);
-                });
-                meals.style.setProperty('--scatter-height', `${height}px`);
-                meals.classList.add('is-scattered');
-            };
-
             const positionCategoryArc = () => {
                 if (!categoryRail || !categoryTabs.length) return;
                 const railBox = categoryRail.getBoundingClientRect();
@@ -1556,7 +1599,6 @@
                 categoryPanes.forEach(pane => pane.hidden = pane.dataset.categoryPane !== key);
                 const activePane = categoryPanes.find(pane => pane.dataset.categoryPane === key);
                 setCategoryBackground(activePane);
-                requestAnimationFrame(() => scatterMeals(activePane));
             };
 
             categoryTabs.forEach(tab => tab.addEventListener('click', () =>
@@ -1579,12 +1621,10 @@
 
             window.addEventListener('resize', () => {
                 positionCategoryArc();
-                scatterMeals(categoryPanes.find(pane => !pane.hidden));
             }, { passive: true });
             requestAnimationFrame(() => {
                 positionCategoryArc();
                 const activePane = categoryPanes.find(pane => !pane.hidden);
-                scatterMeals(activePane);
                 setCategoryBackground(activePane);
             });
 
@@ -1594,7 +1634,7 @@
                 $('modalName').textContent = current.name;
                 $('modalPrep').hidden = !Number(current.preparation_time);
                 $('modalPrep').querySelector('span').textContent = Number(current.preparation_time)
-                    ? `مدة التجهيز المتوقعة لهذه الوجبة: ${Number(current.preparation_time)} دقيقة`
+                    ? `${ui.estimated_prep} ${Number(current.preparation_time)} ${ui.minute}`
                     : '';
                 $('qty').value = 1;
                 $('notes').value = '';
@@ -1610,7 +1650,7 @@
                     `<label class="choice"><span><input type="checkbox" value="${escapeHtml(name)}" data-price="${price}"> ${escapeHtml(name)}</span><span class="choice-price">+${price.toFixed(2)} ₪</span></label>`
                     ).join('');
                 $('excluded').innerHTML = (current.ingredients || []).map(name =>
-                    `<label class="choice"><span><input type="checkbox" value="${escapeHtml(name)}"> بدون ${escapeHtml(name)}</span></label>`
+                    `<label class="choice"><span><input type="checkbox" value="${escapeHtml(name)}"> ${escapeHtml(ui.without)} ${escapeHtml(name)}</span></label>`
                     ).join('');
                 modal.showModal();
             };
@@ -1653,8 +1693,8 @@
 
             function render() {
                 $('cartItems').innerHTML = cart.length ? cart.map((item, index) =>
-                    `<article class="cart-item"><div class="cart-item-head"><strong>${item.qty}× ${escapeHtml(item.name)}</strong><button class="remove" onclick="removeRestaurantCartItem(${index})"><i class="ti ti-trash"></i></button></div><small>${escapeHtml(item.size||'')} ${item.addons.length?'• '+escapeHtml(item.addons.join('، ')):''}${item.preparation_time?' • نحو '+item.preparation_time+' دقيقة':''}</small><span class="price">${(item.unit*item.qty).toFixed(2)} ₪</span></article>`
-                    ).join('') : '<div class="empty"><i class="ti ti-shopping-bag"></i>لم تضف أي وجبة بعد</div>';
+                    `<article class="cart-item"><div class="cart-item-head"><strong>${item.qty}× ${escapeHtml(item.name)}</strong><button class="remove" onclick="removeRestaurantCartItem(${index})"><i class="ti ti-trash"></i></button></div><small>${escapeHtml(item.size||'')} ${item.addons.length?'• '+escapeHtml(item.addons.join('، ')):''}${item.preparation_time?' • '+escapeHtml(ui.about)+' '+item.preparation_time+' '+escapeHtml(ui.minute):''}</small><span class="price">${(item.unit*item.qty).toFixed(2)} ₪</span></article>`
+                    ).join('') : `<div class="empty"><i class="ti ti-shopping-bag"></i>${escapeHtml(ui.empty_cart)}</div>`;
                 const total = cart.reduce((sum, item) => sum + item.unit * item.qty, 0);
                 $('total').textContent = $('mobileTotal').textContent = total.toFixed(2);
                 $('cartCount').textContent = $('mobileCount').textContent = cart.reduce((sum, item) => sum + item.qty,
@@ -1687,21 +1727,20 @@
             $('detectLocation')?.addEventListener('click', () => {
                 const status = $('locationStatus');
                 if (!navigator.geolocation) {
-                    status.textContent = 'المتصفح لا يدعم تحديد الموقع.';
+                    status.textContent = ui.geo_unsupported;
                     status.classList.remove('ready');
                     return
                 }
-                status.textContent = 'جاري تحديد موقعك بدقة...';
+                status.textContent = ui.locating;
                 status.classList.remove('ready');
                 navigator.geolocation.getCurrentPosition(position => {
                     $('latitude').value = position.coords.latitude.toFixed(7);
                     $('longitude').value = position.coords.longitude.toFixed(7);
                     status.innerHTML =
-                        `<i class="ti ti-circle-check"></i> تم تحديد موقعك بنجاح — <a style="color:var(--cyan)" target="_blank" href="https://www.google.com/maps?q=${$('latitude').value},${$('longitude').value}">فتح الموقع</a>`;
+                        `<i class="ti ti-circle-check"></i> ${escapeHtml(ui.location_success)} — <a style="color:var(--cyan)" target="_blank" href="https://www.google.com/maps?q=${$('latitude').value},${$('longitude').value}">${escapeHtml(ui.open_location)}</a>`;
                     status.classList.add('ready');
                 }, () => {
-                    status.textContent =
-                        'تعذر تحديد الموقع. اسمح للموقع بالوصول إلى اللوكيشن ثم حاول مجدداً.';
+                    status.textContent = ui.location_failed;
                     status.classList.remove('ready')
                 }, {
                     enableHighAccuracy: true,
@@ -1716,7 +1755,7 @@
                 const step = Number(tracking.step) || 0;
                 box.hidden = false;
                 box.classList.toggle('cancelled', Boolean(tracking.is_cancelled));
-                $('trackingNumber').textContent = `رقم الطلب: ${tracking.order_number}`;
+                $('trackingNumber').textContent = `${ui.order_number} ${tracking.order_number}`;
                 $('trackingStatus').textContent = tracking.status_label;
                 $('trackingMessage').textContent = tracking.status_message;
                 $('trackingPrep').hidden = !Number(tracking.estimated_preparation_minutes) || tracking.is_cancelled;
@@ -1772,12 +1811,12 @@
                 message.textContent = '';
                 if (!cart.length) {
                     message.classList.add('error');
-                    message.textContent = 'أضف وجبة واحدة على الأقل.';
+                    message.textContent = ui.add_meal_error;
                     return
                 }
                 if (type.value === 'delivery' && (!$('latitude').value || !$('longitude').value)) {
                     message.classList.add('error');
-                    message.textContent = 'حدد موقعك للتوصيل قبل إرسال الطلب.';
+                    message.textContent = ui.set_location_error;
                     return
                 }
                 const payload = {
@@ -1809,11 +1848,11 @@
                     cart.length = 0;
                     render();
                     message.classList.add('success');
-                    message.textContent = `تم إرسال طلبك بنجاح. رقم الطلب: ${data.order_number}`;
+                    message.textContent = `${ui.sent_success} ${data.order_number}`;
                     activateTracking(data);
                 } catch (error) {
                     message.classList.add('error');
-                    message.textContent = error.message || 'تعذر إرسال الطلب، حاول مرة أخرى.'
+                    message.textContent = error.message || ui.send_error
                 }
             };
             render();
