@@ -96,6 +96,44 @@ class AuthController extends Controller
         return redirect()->to($this->safeMerchantRedirect($request->input('redirect')));
     }
 
+    public function showDriverLogin(): View|RedirectResponse
+    {
+        if (Auth::check()) {
+            return redirect()->route('dashboard');
+        }
+
+        return view('front.driver_login');
+    }
+
+    public function driverLogin(Request $request): RedirectResponse
+    {
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        if (! Auth::attempt(array_merge($credentials, [
+            'role' => 'restaurant_driver',
+            'is_active' => true,
+        ]), true)) {
+            return back()->withErrors(['email' => 'بيانات الدخول غير صحيحة أو حساب المندوب متوقف.'])->onlyInput('email');
+        }
+
+        $driver = $request->user()->restaurantDriver()
+            ->where('is_active', true)
+            ->whereHas('shop', fn ($query) => $query->where('catalog_type', 'restaurant')->where('is_active', true))
+            ->first();
+        if (! $driver) {
+            Auth::logout();
+            return back()->withErrors(['email' => 'حساب المندوب غير مرتبط بمطعم فعال.'])->onlyInput('email');
+        }
+
+        $request->session()->regenerate();
+        $this->attachAppPushDevice($request);
+
+        return redirect()->route('driver.dashboard');
+    }
+
     public function showMerchantRegister(Request $request): View|RedirectResponse
     {
         if (Auth::check()) {
@@ -202,6 +240,10 @@ class AuthController extends Controller
     public function dashboard(Request $request): View|RedirectResponse
     {
         $user = $request->user();
+
+        if ($user?->isRestaurantDriver()) {
+            return redirect()->route('driver.dashboard');
+        }
 
         if ($user?->isShopOwner()) {
             $shop = $this->activeShopForOwner($request);

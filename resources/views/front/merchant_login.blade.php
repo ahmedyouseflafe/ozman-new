@@ -174,6 +174,10 @@
                 ليس لدي حساب — إنشاء متجر جديد
             </a>
         @endif
+        <a class="merchant-register-link" href="{{ route('driver.login') }}">
+            <i class="fas fa-motorcycle"></i>
+            دخول مندوب توصيل المطعم
+        </a>
         <a class="merchant-login-back" href="{{ route('home') }}">العودة إلى الموقع</a>
     </main>
 </body>

@@ -1,0 +1,254 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\FrontOrder;
+use App\Models\PushDevice;
+use App\Models\RestaurantDriver;
+use App\Models\Shop;
+use App\Models\User;
+use App\Rules\ValidPhoneNumber;
+use App\Services\FirebaseMessagingService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
+use Illuminate\View\View;
+use Throwable;
+
+class RestaurantDriverController extends Controller
+{
+    public function store(Request $request, Shop $shop): RedirectResponse
+    {
+        $this->authorizeRestaurantManagement($request, $shop);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+            'phone' => ['required', 'string', 'max:60', new ValidPhoneNumber],
+            'password' => ['required', 'confirmed', Password::min(8)],
+        ]);
+
+        DB::transaction(function () use ($shop, $data): void {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => mb_strtolower(trim($data['email'])),
+                'phone' => $data['phone'],
+                'password' => $data['password'],
+                'role' => 'restaurant_driver',
+                'is_active' => true,
+            ]);
+
+            $shop->restaurantDrivers()->create([
+                'user_id' => $user->id,
+                'is_active' => true,
+            ]);
+        });
+
+        return back()->with('status', 'تم إنشاء حساب المندوب وربطه بهذا المطعم فقط.');
+    }
+
+    public function toggle(Request $request, RestaurantDriver $driver): RedirectResponse
+    {
+        $driver->loadMissing('shop', 'user');
+        $this->authorizeRestaurantManagement($request, $driver->shop);
+        $data = $request->validate(['is_active' => ['required', 'boolean']]);
+
+        DB::transaction(function () use ($driver, $data): void {
+            $active = (bool) $data['is_active'];
+            $driver->update(['is_active' => $active]);
+            $driver->user->update(['is_active' => $active]);
+        });
+
+        return back()->with('status', $driver->fresh()->is_active ? 'تم تفعيل المندوب.' : 'تم إيقاف المندوب ومنع دخوله.');
+    }
+
+    public function assign(
+        Request $request,
+        FrontOrder $order,
+        FirebaseMessagingService $firebase,
+    ): RedirectResponse {
+        $order->loadMissing('shop', 'restaurantDriver.user');
+        abort_unless($order->shop?->catalog_type === 'restaurant' && $order->order_type === 'delivery', 404);
+        $this->authorizeRestaurantManagement($request, $order->shop);
+        abort_if(in_array($order->status, ['completed', 'cancelled'], true), 422, 'لا يمكن تعديل مندوب طلب منتهٍ.');
+
+        $data = $request->validate([
+            'restaurant_driver_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('restaurant_drivers', 'id')->where(fn ($query) => $query
+                    ->where('shop_id', $order->shop_id)
+                    ->where('is_active', true)),
+            ],
+        ]);
+        $driverId = isset($data['restaurant_driver_id']) ? (int) $data['restaurant_driver_id'] : null;
+        $changed = (int) $order->restaurant_driver_id !== (int) $driverId;
+
+        $order->update([
+            'restaurant_driver_id' => $driverId,
+            'driver_assigned_at' => $driverId ? now() : null,
+        ]);
+        $order->refresh()->load('shop', 'restaurantDriver.user');
+
+        if ($changed && $order->restaurantDriver) {
+            $this->sendAssignmentNotifications($order, $firebase);
+        }
+
+        return back()->with('status', $driverId ? 'تم تعيين المندوب وإرسال الإشعارات.' : 'تم إلغاء تعيين المندوب.');
+    }
+
+    public function dashboard(Request $request): View
+    {
+        $driver = $this->activeDriver($request);
+        $ordersQuery = FrontOrder::query()
+            ->with('shop')
+            ->where('restaurant_driver_id', $driver->id)
+            ->where('shop_id', $driver->shop_id)
+            ->where('order_type', 'delivery');
+
+        return view('driver.dashboard', [
+            'driver' => $driver->loadMissing('shop', 'user'),
+            'orders' => (clone $ordersQuery)->latest()->limit(50)->get(),
+            'stats' => [
+                'assigned' => (clone $ordersQuery)->whereIn('status', ['new', 'preparing', 'ready'])->count(),
+                'on_the_way' => (clone $ordersQuery)->where('status', 'out_for_delivery')->count(),
+                'delivered_today' => (clone $ordersQuery)->where('status', 'completed')->whereDate('delivered_at', today())->count(),
+            ],
+        ]);
+    }
+
+    public function feed(Request $request): JsonResponse
+    {
+        $driver = $this->activeDriver($request);
+        $ordersQuery = FrontOrder::query()
+            ->with('shop')
+            ->where('restaurant_driver_id', $driver->id)
+            ->where('shop_id', $driver->shop_id)
+            ->where('order_type', 'delivery');
+
+        return response()->json([
+            'stats' => [
+                'assigned' => (clone $ordersQuery)->whereIn('status', ['new', 'preparing', 'ready'])->count(),
+                'on_the_way' => (clone $ordersQuery)->where('status', 'out_for_delivery')->count(),
+                'delivered_today' => (clone $ordersQuery)->where('status', 'completed')->whereDate('delivered_at', today())->count(),
+            ],
+            'html' => view('driver.partials.orders', [
+                'orders' => (clone $ordersQuery)->latest()->limit(50)->get(),
+            ])->render(),
+        ]);
+    }
+
+    public function updateStatus(
+        Request $request,
+        FrontOrder $order,
+        FirebaseMessagingService $firebase,
+    ): RedirectResponse {
+        $driver = $this->activeDriver($request);
+        abort_unless(
+            (int) $order->restaurant_driver_id === (int) $driver->id
+            && (int) $order->shop_id === (int) $driver->shop_id
+            && $order->order_type === 'delivery',
+            403,
+        );
+
+        $data = $request->validate(['status' => ['required', Rule::in(['out_for_delivery', 'completed'])]]);
+        $allowed = [
+            'ready' => ['out_for_delivery'],
+            'out_for_delivery' => ['completed'],
+        ];
+        abort_unless(in_array($data['status'], $allowed[$order->status] ?? [], true), 422, 'لا يمكن تنفيذ هذه الخطوة الآن.');
+
+        $attributes = ['status' => $data['status']];
+        if ($data['status'] === 'out_for_delivery') {
+            $attributes['picked_up_at'] = now();
+        } else {
+            $attributes['delivered_at'] = now();
+        }
+        $order->update($attributes);
+        $this->sendCustomerDeliveryStatus($order->fresh('shop'), $firebase);
+
+        return back()->with('status', $data['status'] === 'completed'
+            ? 'تم تأكيد تسليم الطلب وإبلاغ العميل.'
+            : 'تم بدء التوصيل وإبلاغ العميل أن طلبه في الطريق.');
+    }
+
+    private function activeDriver(Request $request): RestaurantDriver
+    {
+        $user = $request->user();
+        abort_unless($user?->isRestaurantDriver() && $user->is_active, 403);
+
+        return RestaurantDriver::query()
+            ->where('user_id', $user->id)
+            ->where('is_active', true)
+            ->whereHas('shop', fn ($query) => $query->where('catalog_type', 'restaurant')->where('is_active', true))
+            ->firstOrFail();
+    }
+
+    private function authorizeRestaurantManagement(Request $request, Shop $shop): void
+    {
+        $user = $request->user();
+        abort_unless(
+            $shop->catalog_type === 'restaurant'
+            && $user
+            && ($user->isSuperAdmin() || in_array((int) $shop->id, $user->accessibleShopIds(), true)),
+            403,
+        );
+    }
+
+    private function sendAssignmentNotifications(FrontOrder $order, FirebaseMessagingService $firebase): void
+    {
+        $driver = $order->restaurantDriver;
+        $tokens = PushDevice::query()->where('user_id', $driver->user_id)->pluck('token');
+
+        try {
+            if ($tokens->isNotEmpty()) {
+                $firebase->sendToTokens(
+                    $tokens,
+                    'طلب توصيل جديد · '.$order->shop->name,
+                    "تم تعيين الطلب {$order->order_number} لك بقيمة {$order->total} شيكل",
+                    route('driver.dashboard').'#delivery-order-'.$order->id,
+                    ['type' => 'driver_order_assignment', 'order_id' => $order->id, 'shop_id' => $order->shop_id],
+                );
+            }
+
+            if (filled($order->customer_push_token)) {
+                $firebase->sendToTokens(
+                    [$order->customer_push_token],
+                    'تم تعيين مندوب لطلبك 🛵',
+                    "المندوب {$driver->user->name} سيتولى توصيل طلبك {$order->order_number}.",
+                    URL::signedRoute('restaurant.orders.track', $order),
+                    ['type' => 'restaurant_order_status', 'status' => $order->status, 'order_id' => $order->id],
+                );
+            }
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+    }
+
+    private function sendCustomerDeliveryStatus(FrontOrder $order, FirebaseMessagingService $firebase): void
+    {
+        if (! filled($order->customer_push_token) || ! $order->shop) {
+            return;
+        }
+
+        $title = $order->status === 'completed' ? 'تم تسليم طلبك ✅' : 'طلبك في الطريق إليك 🛵';
+        $body = $order->status === 'completed'
+            ? "تم تسليم طلبك {$order->order_number} من {$order->shop->name}. نتمنى لك وجبة شهية."
+            : "غادر طلبك {$order->order_number} المطعم وهو الآن في الطريق إليك.";
+
+        try {
+            $firebase->sendToTokens(
+                [$order->customer_push_token],
+                $title,
+                $body,
+                URL::signedRoute('restaurant.orders.track', $order),
+                ['type' => 'restaurant_order_status', 'status' => $order->status, 'order_id' => $order->id],
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+    }
+}

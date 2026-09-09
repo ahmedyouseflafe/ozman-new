@@ -63,6 +63,11 @@ class User extends Authenticatable
         return $this->hasMany(EmployeePermission::class);
     }
 
+    public function restaurantDriver()
+    {
+        return $this->hasOne(RestaurantDriver::class);
+    }
+
     public function isSuperAdmin(): bool
     {
         return $this->role === 'super_admin';
@@ -91,6 +96,11 @@ class User extends Authenticatable
     public function isEmployee(): bool
     {
         return $this->role === 'employee';
+    }
+
+    public function isRestaurantDriver(): bool
+    {
+        return $this->role === 'restaurant_driver';
     }
 
     public function hasAssignedPermissions(): bool

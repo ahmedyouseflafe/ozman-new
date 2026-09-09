@@ -114,6 +114,11 @@ class Shop extends Model
         return $this->hasMany(RestaurantTable::class);
     }
 
+    public function restaurantDrivers(): HasMany
+    {
+        return $this->hasMany(RestaurantDriver::class);
+    }
+
     public function agents()
     {
         return $this->hasMany(Agent::class);

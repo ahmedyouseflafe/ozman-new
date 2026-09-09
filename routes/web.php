@@ -18,6 +18,7 @@ use App\Http\Controllers\RaffleCardController;
 use App\Http\Controllers\RealEstateController;
 use App\Http\Controllers\RealEstateDashboardController;
 use App\Http\Controllers\RestaurantController;
+use App\Http\Controllers\RestaurantDriverController;
 use App\Http\Controllers\RewardWheelController;
 use App\Http\Controllers\ScreenController;
 use App\Http\Controllers\SeoController;
@@ -103,11 +104,21 @@ Route::middleware('guest')->group(function () {
     Route::post('/merchant-register', [AuthController::class, 'merchantRegister'])
         ->middleware('throttle:5,1')
         ->name('merchant.register.store');
+    Route::get('/driver-login', [AuthController::class, 'showDriverLogin'])->name('driver.login');
+    Route::post('/driver-login', [AuthController::class, 'driverLogin'])
+        ->middleware('throttle:10,1')
+        ->name('driver.login.store');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/driver', [RestaurantDriverController::class, 'dashboard'])->name('driver.dashboard');
+    Route::get('/driver/orders-feed', [RestaurantDriverController::class, 'feed'])->name('driver.orders.feed');
+    Route::patch('/driver/orders/{order}/status', [RestaurantDriverController::class, 'updateStatus'])->name('driver.orders.status');
+});
 
 Route::get('/display', [ScreenController::class, 'mainDisplay'])->name('display.main');
 Route::get('/display/shop/{shop}', [ScreenController::class, 'shopDisplay'])->name('display.shop');
@@ -131,6 +142,9 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::post('/shops/{shop}/restaurant/tables', [RestaurantController::class, 'storeTable'])->name('restaurant.tables.store');
     Route::delete('/restaurant-tables/{table}', [RestaurantController::class, 'destroyTable'])->name('restaurant.tables.destroy');
     Route::patch('/restaurant-orders/{order}/status', [RestaurantController::class, 'status'])->name('restaurant.orders.status');
+    Route::post('/shops/{shop}/restaurant/drivers', [RestaurantDriverController::class, 'store'])->name('restaurant.drivers.store');
+    Route::patch('/restaurant-drivers/{driver}/status', [RestaurantDriverController::class, 'toggle'])->name('restaurant.drivers.toggle');
+    Route::patch('/restaurant-orders/{order}/driver', [RestaurantDriverController::class, 'assign'])->name('restaurant.orders.driver');
     Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
 
     Route::get('/dashboard/main', function () {

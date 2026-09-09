@@ -10,6 +10,7 @@ class FrontOrder extends Model
     protected $fillable = [
         'shop_id',
         'restaurant_table_id',
+        'restaurant_driver_id',
         'distributor_id',
         'distributor_marketer_id',
         'marketing_source',
@@ -33,6 +34,9 @@ class FrontOrder extends Model
         'order_type',
         'estimated_preparation_minutes',
         'customer_push_token',
+        'driver_assigned_at',
+        'picked_up_at',
+        'delivered_at',
         'payment_method',
         'payment_status',
         'status',
@@ -54,6 +58,9 @@ class FrontOrder extends Model
         'reward_discount_value' => 'decimal:2',
         'reward_won_at' => 'datetime',
         'estimated_preparation_minutes' => 'integer',
+        'driver_assigned_at' => 'datetime',
+        'picked_up_at' => 'datetime',
+        'delivered_at' => 'datetime',
     ];
 
     protected $hidden = ['customer_push_token'];
@@ -66,6 +73,11 @@ class FrontOrder extends Model
     public function restaurantTable(): BelongsTo
     {
         return $this->belongsTo(RestaurantTable::class);
+    }
+
+    public function restaurantDriver(): BelongsTo
+    {
+        return $this->belongsTo(RestaurantDriver::class);
     }
 
     public function distributor(): BelongsTo
@@ -104,6 +116,7 @@ class FrontOrder extends Model
             'preparing' => 'قيد التحضير',
             'ready' => 'جاهز',
             'completed' => 'مكتمل',
+            'out_for_delivery' => 'خرج للتوصيل',
             'cancelled' => 'ملغي',
             'not_delivered' => 'لم يتم التسليم',
             'delivered' => 'تم التسليم',
