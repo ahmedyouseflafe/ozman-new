@@ -238,6 +238,41 @@ class RestaurantOrderingTest extends TestCase
             ->assertSee("ozman.restaurant.{$restaurant->id}.acknowledged-order", false);
     }
 
+    public function test_restaurant_dashboard_totals_only_its_completed_orders_and_updates_the_feed(): void
+    {
+        [$shop] = $this->restaurant('completed-sales-total');
+        [$otherShop] = $this->restaurant('foreign-completed-sales-total');
+
+        foreach ([
+            [$shop->id, 'SALES-COMPLETED-1', 'completed', 125.75],
+            [$shop->id, 'SALES-COMPLETED-2', 'completed', 40.50],
+            [$shop->id, 'SALES-NEW', 'new', 999.00],
+            [$shop->id, 'SALES-CANCELLED', 'cancelled', 777.00],
+            [$otherShop->id, 'SALES-FOREIGN', 'completed', 888.00],
+        ] as [$shopId, $number, $status, $total]) {
+            FrontOrder::create([
+                'shop_id' => $shopId,
+                'order_number' => $number,
+                'customer_name' => 'Sales customer',
+                'order_channel' => 'restaurant',
+                'order_type' => 'delivery',
+                'status' => $status,
+                'subtotal' => $total,
+                'total' => $total,
+            ]);
+        }
+
+        $this->actingAs($shop->user)
+            ->get(route('restaurant.dashboard', $shop))
+            ->assertOk()
+            ->assertSee('إجمالي مبيعات المطعم')
+            ->assertSee('166.25 ₪');
+
+        $this->getJson(route('restaurant.orders.feed', $shop))
+            ->assertOk()
+            ->assertJsonPath('stats.sales_total', 166.25);
+    }
+
     public function test_restaurant_status_cannot_move_backwards_or_use_generic_status_route(): void
     {
         [$shop, , $table] = $this->restaurant('status');

@@ -41,6 +41,7 @@ class RestaurantController extends Controller
             'preparing' => (clone $ordersQuery)->where('status', 'preparing')->count(),
             'ready' => (clone $ordersQuery)->where('status', 'ready')->count(),
             'today' => (clone $ordersQuery)->whereDate('created_at', today())->count(),
+            'sales_total' => (float) (clone $ordersQuery)->where('status', 'completed')->sum('total'),
         ];
 
         return view('admin.restaurant.dashboard', [
@@ -83,6 +84,7 @@ class RestaurantController extends Controller
             'preparing' => (clone $statsQuery)->where('status', 'preparing')->count(),
             'ready' => (clone $statsQuery)->where('status', 'ready')->count(),
             'today' => (clone $statsQuery)->whereDate('created_at', today())->count(),
+            'sales_total' => (float) (clone $statsQuery)->where('status', 'completed')->sum('total'),
         ];
         $latestOrder = (clone $statsQuery)
             ->latest('id')

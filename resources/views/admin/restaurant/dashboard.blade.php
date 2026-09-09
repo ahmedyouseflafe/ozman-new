@@ -24,7 +24,7 @@
         .eyebrow{color:var(--cyan);font-weight:800;font-size:12px}.hero h1{font-size:clamp(24px,2.35vw,36px);line-height:1.35;margin:6px 0}.hero p{color:var(--muted);margin:0;max-width:750px;font-size:14px;font-weight:600}
         .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:45px;padding:9px 18px;border-radius:14px;border:1px solid rgba(8,220,244,.32);background:rgba(8,220,244,.08);color:var(--cyan);text-decoration:none;font-weight:800;cursor:pointer;transition:.2s}
         .btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(8,220,244,.18)}.btn-primary{background:linear-gradient(135deg,#0cd9ec,#22bff1);color:#021014;border:0}.btn-danger{color:#ff9ba6;border-color:rgba(255,98,116,.35);background:rgba(255,98,116,.09)}
-        .stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:18px}
+        .stats-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:13px;margin-bottom:18px}
         .stat{position:relative;overflow:hidden;border-radius:19px;padding:17px 19px;min-height:112px}
         .stat:after{content:"";position:absolute;width:85px;height:85px;border-radius:50%;background:var(--accent);filter:blur(50px);opacity:.27;left:-8px;bottom:-20px}
         .stat-icon{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);font-size:21px}.stat-label{color:#c3cad2;font-size:14px;font-weight:700}.stat strong{display:block;color:var(--accent);font-size:30px;margin-top:5px;line-height:1}
@@ -80,6 +80,7 @@
         <article class="stat glass" style="--accent:var(--green)"><div class="stat-icon"><i class="ti ti-sparkles"></i></div><span class="stat-label">طلبات جديدة</span><strong id="stat-new">{{ $stats['new'] }}</strong></article>
         <article class="stat glass" style="--accent:var(--yellow)"><div class="stat-icon"><i class="ti ti-chef-hat"></i></div><span class="stat-label">قيد التحضير</span><strong id="stat-preparing">{{ $stats['preparing'] }}</strong></article>
         <article class="stat glass" style="--accent:var(--purple)"><div class="stat-icon"><i class="ti ti-bell-check"></i></div><span class="stat-label">جاهزة للتسليم</span><strong id="stat-ready">{{ $stats['ready'] }}</strong></article>
+        <article class="stat glass" style="--accent:#ff9f43" title="يُحسب من الطلبات المكتملة فقط"><div class="stat-icon"><i class="ti ti-cash"></i></div><span class="stat-label">إجمالي مبيعات المطعم</span><strong id="stat-sales-total">{{ number_format((float) $stats['sales_total'], 2) }} ₪</strong></article>
     </section>
 
     <section class="section glass">
@@ -244,6 +245,8 @@
             const editingOrder = body.contains(document.activeElement);
             if (!editingOrder) body.innerHTML=data.html;
             for(const key of ['today','new','preparing','ready']){const element=document.getElementById(`stat-${key}`);if(element)element.textContent=data.stats[key]??0}
+            const salesTotal=document.getElementById('stat-sales-total');
+            if(salesTotal)salesTotal.textContent=`${Number(data.stats.sales_total??0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} ₪`;
             if (Number(data.latest_id) > acknowledgedId) showOrderAlarm(data.latest_order);
             else if (!pendingOrderId) { liveStatus.innerHTML='<i class="live-dot"></i> متصل وتحديث مباشر'; liveStatus.style.color='var(--green)'; }
         } catch(_){liveStatus.innerHTML='<i class="live-dot"></i> جاري إعادة الاتصال';liveStatus.style.color='var(--yellow)'} finally{polling=false}
