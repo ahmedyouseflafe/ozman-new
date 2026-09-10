@@ -211,9 +211,9 @@
         }
 
         .logo {
-            width: 105px;
-            height: 105px;
-            border-radius: 24px;
+            width: 126px;
+            height: 126px;
+            border-radius: 27px;
             object-fit: cover;
             border: 2px solid var(--cyan);
             box-shadow: 0 0 28px rgba(8, 222, 244, .3)
@@ -222,7 +222,10 @@
         .restaurant-story-avatar {
             position: relative;
             flex: 0 0 auto;
-            display: block;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 9px;
             padding: 0;
             border: 0;
             border-radius: 28px;
@@ -234,13 +237,18 @@
             cursor: default
         }
 
+        .restaurant-story-logo-frame,
         .restaurant-story-avatar .logo {
             display: block
         }
 
         .restaurant-story-avatar.has-shop-story {
+            cursor: pointer
+        }
+
+        .restaurant-story-avatar.has-shop-story .restaurant-story-logo-frame {
             padding: 4px;
-            cursor: pointer;
+            border-radius: 32px;
             background: linear-gradient(145deg, #08def4, #27dd86, #7868ff);
             box-shadow: 0 0 0 4px rgba(8, 222, 244, .1), 0 0 30px rgba(8, 222, 244, .42)
         }
@@ -250,27 +258,21 @@
             box-shadow: none
         }
 
-        .restaurant-story-avatar.has-shop-story.seen {
+        .restaurant-story-avatar.has-shop-story.seen .restaurant-story-logo-frame {
             background: #66777d;
             box-shadow: 0 0 0 4px rgba(126, 144, 149, .1)
         }
 
         .restaurant-story-live {
-            position: absolute;
-            z-index: 2;
-            inset-inline-start: 50%;
-            bottom: -13px;
-            transform: translateX(-50%);
             display: none;
-            min-width: max-content;
-            padding: 4px 10px;
-            border: 2px solid #061014;
-            border-radius: 999px;
-            background: var(--cyan);
-            color: #001114;
-            font-size: 10px;
+            width: 190px;
+            max-width: 100%;
+            color: var(--cyan);
+            font-size: 11px;
             font-weight: 900;
-            line-height: 1.2
+            line-height: 1.5;
+            text-align: center;
+            text-wrap: balance
         }
 
         .restaurant-story-avatar.has-shop-story .restaurant-story-live {
@@ -289,13 +291,14 @@
         }
 
         .hero h1 {
-            font-size: clamp(28px, 4vw, 48px);
+            font-size: clamp(36px, 5vw, 60px);
             margin: 3px 0 5px
         }
 
         .hero p {
             color: var(--muted);
             margin: 0;
+            font-size: 16px;
             font-weight: 600
         }
 
@@ -1233,23 +1236,35 @@
             }
 
             .brand {
-                align-items: flex-start
+                align-items: center;
+                gap: 14px;
+                width: 100%
             }
 
             .logo {
-                width: 75px;
-                height: 75px;
-                border-radius: 18px
-            }
-
-            .restaurant-story-avatar {
+                width: 96px;
+                height: 96px;
                 border-radius: 22px
             }
 
+            .restaurant-story-avatar {
+                width: 128px;
+                border-radius: 25px
+            }
+
+            .restaurant-story-avatar.has-shop-story .restaurant-story-logo-frame {
+                border-radius: 27px
+            }
+
             .restaurant-story-live {
-                bottom: -11px;
-                padding: 3px 8px;
-                font-size: 8px
+                width: 128px;
+                padding: 0;
+                font-size: 9px
+            }
+
+            .hero h1 {
+                font-size: clamp(30px, 9vw, 38px);
+                line-height: 1.12
             }
 
             .service-badge {
@@ -1406,9 +1421,9 @@
     @endphp
     @php
         $storyLabel = match ($locale) {
-            'he' => 'צפו בסטורי',
-            'en' => 'View story',
-            default => 'شاهد الستوري',
+            'he' => 'פתחו את הסטורי לצפייה במבצעים האחרונים',
+            'en' => 'Open the story to view the latest offers',
+            default => 'افتح الستوري لمشاهدة آخر العروض',
         };
     @endphp
     <div class="shell">
@@ -1423,7 +1438,9 @@
                         data-shop-story-trigger data-story-shop-id="{{ $shop->id }}"
                         aria-label="{{ $storyLabel }} — {{ $shop->name }}"
                         @disabled(! $hasActiveStories)>
-                        <img class="logo" src="{{ asset($shop->logo) }}" alt="{{ $shop->name }}">
+                        <span class="restaurant-story-logo-frame">
+                            <img class="logo" src="{{ asset($shop->logo) }}" alt="{{ $shop->name }}">
+                        </span>
                         <span class="restaurant-story-live"><i class="ti ti-player-play-filled" aria-hidden="true"></i> {{ $storyLabel }}</span>
                     </button>
                 @endif
