@@ -24,8 +24,26 @@ use Illuminate\View\View;
 
 class ShopController extends Controller
 {
-    public function index(): View
+    public function index(): View|RedirectResponse
     {
+        $user = Auth::user();
+
+        // A shop owner never needs the global shops directory. The mobile app
+        // and the web dashboard both land directly on the owner's active shop.
+        if ($user?->isShopOwner()) {
+            $shop = $user->shops()
+                ->where('is_active', true)
+                ->orderBy('id')
+                ->firstOrFail();
+
+            request()->session()->put([
+                'merchant_shop_id' => $shop->id,
+                'current_shop_id' => $shop->id,
+            ]);
+
+            return redirect()->route($shop->dashboardRouteName(), $shop);
+        }
+
         $shops = Shop::query()
             ->where('slug', '!=', 'ozman')
             ->when(! $this->hasGlobalDashboardAccess(), fn ($query) => $query->whereIn('id', $this->ownedShopIds()))

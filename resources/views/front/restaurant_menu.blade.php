@@ -219,6 +219,69 @@
             box-shadow: 0 0 28px rgba(8, 222, 244, .3)
         }
 
+        .restaurant-story-avatar {
+            position: relative;
+            flex: 0 0 auto;
+            display: block;
+            padding: 0;
+            border: 0;
+            border-radius: 28px;
+            background: transparent;
+            color: #fff
+        }
+
+        .restaurant-story-avatar:disabled {
+            cursor: default
+        }
+
+        .restaurant-story-avatar .logo {
+            display: block
+        }
+
+        .restaurant-story-avatar.has-shop-story {
+            padding: 4px;
+            cursor: pointer;
+            background: linear-gradient(145deg, #08def4, #27dd86, #7868ff);
+            box-shadow: 0 0 0 4px rgba(8, 222, 244, .1), 0 0 30px rgba(8, 222, 244, .42)
+        }
+
+        .restaurant-story-avatar.has-shop-story .logo {
+            border-color: #06151a;
+            box-shadow: none
+        }
+
+        .restaurant-story-avatar.has-shop-story.seen {
+            background: #66777d;
+            box-shadow: 0 0 0 4px rgba(126, 144, 149, .1)
+        }
+
+        .restaurant-story-live {
+            position: absolute;
+            z-index: 2;
+            inset-inline-start: 50%;
+            bottom: -13px;
+            transform: translateX(-50%);
+            display: none;
+            min-width: max-content;
+            padding: 4px 10px;
+            border: 2px solid #061014;
+            border-radius: 999px;
+            background: var(--cyan);
+            color: #001114;
+            font-size: 10px;
+            font-weight: 900;
+            line-height: 1.2
+        }
+
+        .restaurant-story-avatar.has-shop-story .restaurant-story-live {
+            display: block
+        }
+
+        .restaurant-story-avatar.has-shop-story:focus-visible {
+            outline: 3px solid #fff;
+            outline-offset: 5px
+        }
+
         .brand-kicker {
             color: var(--cyan);
             font-size: 13px;
@@ -1179,6 +1242,16 @@
                 border-radius: 18px
             }
 
+            .restaurant-story-avatar {
+                border-radius: 22px
+            }
+
+            .restaurant-story-live {
+                bottom: -11px;
+                padding: 3px 8px;
+                font-size: 8px
+            }
+
             .service-badge {
                 display: none
             }
@@ -1331,6 +1404,13 @@
             ]);
         }
     @endphp
+    @php
+        $storyLabel = match ($locale) {
+            'he' => 'צפו בסטורי',
+            'en' => 'View story',
+            default => 'شاهد الستوري',
+        };
+    @endphp
     <div class="shell">
         <header class="hero">
             <div class="hero-tools">
@@ -1338,7 +1418,14 @@
             </div>
             <div class="brand">
                 @if ($shop->logo)
-                    <img class="logo" src="{{ asset($shop->logo) }}" alt="{{ $shop->name }}">
+                    <button type="button"
+                        class="restaurant-story-avatar {{ $hasActiveStories ? 'has-shop-story' : '' }}"
+                        data-shop-story-trigger data-story-shop-id="{{ $shop->id }}"
+                        aria-label="{{ $storyLabel }} — {{ $shop->name }}"
+                        @disabled(! $hasActiveStories)>
+                        <img class="logo" src="{{ asset($shop->logo) }}" alt="{{ $shop->name }}">
+                        <span class="restaurant-story-live"><i class="ti ti-player-play-filled" aria-hidden="true"></i> {{ $storyLabel }}</span>
+                    </button>
                 @endif
                 <div>
                     <div class="brand-kicker">{{ $copy['menu_kicker'] }}</div>
@@ -1513,6 +1600,7 @@
                     id="modalCancel">{{ $copy['cancel'] }}</button></div>
         </div>
     </dialog>
+    @include('front.shop_stories', ['showStoryList' => false])
     <script>
         (() => {
             const products = new Map(@json($restaurantProducts).map(product => [Number(product.id), product]));

@@ -50,6 +50,27 @@ class AdminShopDashboardImpersonationTest extends TestCase
         $this->assertAuthenticatedAs($ownerA);
     }
 
+    public function test_shop_owner_is_sent_directly_to_only_their_shop_and_cannot_open_another_shop(): void
+    {
+        [$owner, $shop] = $this->shopOwner('private-restaurant');
+        $shop->update(['catalog_type' => 'restaurant']);
+        [, $otherShop] = $this->shopOwner('another-owner');
+
+        $this->actingAs($owner)
+            ->get(route('shops'))
+            ->assertRedirect(route('restaurant.dashboard', $shop))
+            ->assertSessionHas('merchant_shop_id', $shop->id)
+            ->assertSessionHas('current_shop_id', $shop->id);
+
+        $this->get(route('shops.show', $otherShop))->assertForbidden();
+        $this->get(route('restaurant.dashboard', $otherShop))->assertForbidden();
+
+        $this->get(route('restaurant.dashboard', $shop))
+            ->assertOk()
+            ->assertSee('بيانات متجري')
+            ->assertDontSee('href="'.route('shops').'"', false);
+    }
+
     public function test_entering_legacy_admin_owned_shop_creates_a_dedicated_shop_owner(): void
     {
         $admin = User::create([

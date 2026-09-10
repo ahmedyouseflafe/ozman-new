@@ -17,7 +17,7 @@
             button.classList.toggle('seen', shop.stories.filter(alive).every(story => seen.has(story.id)));
             button.append(img, title); button.onclick = () => open(i, button); list.append(button);
         });
-        section.hidden = !list.children.length;
+        section.hidden = section.dataset.showList === '0' || !list.children.length;
     }
     function stop() {
         cancelAnimationFrame(frame);
@@ -102,7 +102,7 @@
     dialog.addEventListener('close', () => {
         ++generation; stop(); document.body.style.overflow = overflow;
         document.dispatchEvent(new CustomEvent('ozman:story-viewer', { detail: { open: false } }));
-        renderList(); if (opener?.isConnected) opener.focus(); else list.querySelector('button')?.focus();
+        renderList(); decorate(); if (opener?.isConnected) opener.focus(); else list.querySelector('button')?.focus();
     });
     document.addEventListener('visibilitychange', () => { if (dialog.open && document.hidden) setPaused(true); });
     window.addEventListener('pagehide', () => { if (dialog.open) dialog.close(); });
@@ -116,9 +116,21 @@
             badge.onclick = event => { event.stopPropagation(); open(i, badge); };
             badge.onkeydown = event => event.stopPropagation(); item.append(badge);
         });
+        document.querySelectorAll('[data-shop-story-trigger][data-story-shop-id]').forEach(trigger => {
+            const i = shops.findIndex(shop => String(shop.id) === trigger.dataset.storyShopId && shop.stories.some(alive));
+            const available = i >= 0;
+            trigger.classList.toggle('has-shop-story', available);
+            trigger.classList.toggle('seen', available && shops[i].stories.filter(alive).every(story => seen.has(story.id)));
+            trigger.disabled = !available;
+            trigger.onclick = available ? event => {
+                event.preventDefault();
+                event.stopPropagation();
+                open(i, trigger);
+            } : null;
+        });
     }
     fetch(section.dataset.feed, { headers: { Accept: 'application/json' } })
         .then(response => { if (!response.ok) throw new Error('feed'); return response.json(); })
         .then(data => { shops = data; renderList(); decorate(); const track = byId('sideVTrack'); if (track) new MutationObserver(decorate).observe(track, { childList: true }); })
-        .catch(() => { section.hidden = true; });
+        .catch(() => { shops = []; section.hidden = true; decorate(); });
 })();

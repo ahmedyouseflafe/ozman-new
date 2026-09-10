@@ -66,4 +66,27 @@ class ShopStoriesTest extends TestCase
         ])->assertSessionHasErrors('media');
         $this->assertDatabaseCount('shop_stories', 0);
     }
+
+    public function test_active_restaurant_story_turns_the_menu_logo_into_a_story_button(): void
+    {
+        $owner = User::factory()->create(['role' => 'shop_owner', 'is_active' => true]);
+        $shop = $this->shop($owner, 'story-restaurant');
+        $shop->update([
+            'catalog_type' => 'restaurant',
+            'logo' => 'images/logo.jpg',
+        ]);
+        ShopStory::create([
+            'shop_id' => $shop->id,
+            'media' => 'shop-stories/menu-story.jpg',
+            'type' => 'image',
+            'expires_at' => now()->addHour(),
+        ]);
+
+        $this->get(route('restaurant.menu', $shop))
+            ->assertOk()
+            ->assertSee('data-shop-story-trigger', false)
+            ->assertSee('data-story-shop-id="'.$shop->id.'"', false)
+            ->assertSee('class="restaurant-story-avatar has-shop-story"', false)
+            ->assertSee('data-show-list="0"', false);
+    }
 }

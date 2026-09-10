@@ -473,10 +473,10 @@
         @endif
 
         @if(! $isCatalogOnlyUser && $canSee(['shops', 'shops.show', 'shops.create', 'shops.edit']))
-        <a href="{{ route('shops') }}"
+        <a href="{{ $isShopOwner && $previewShopId ? route('shops.show', $previewShopId) : route('shops') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('shops') || request()->routeIs('shops.*') ? 'active' : '' }}">
              <i class="ti ti-building-store" aria-hidden="true"></i>
-             المتاجر
+             {{ $isShopOwner ? 'بيانات متجري' : 'المتاجر' }}
         </a>
         @endif
 
