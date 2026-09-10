@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ShopStory extends Model
 {
@@ -10,4 +11,9 @@ class ShopStory extends Model
     protected $casts = ['expires_at' => 'datetime'];
 
     public function shop() { return $this->belongsTo(Shop::class); }
+
+    public function views(): HasMany
+    {
+        return $this->hasMany(ShopStoryView::class);
+    }
 }

@@ -89,4 +89,52 @@ class ShopStoriesTest extends TestCase
             ->assertSee('class="restaurant-story-avatar has-shop-story"', false)
             ->assertSee('data-show-list="0"', false);
     }
+
+    public function test_story_views_are_unique_and_the_owner_preview_is_not_counted(): void
+    {
+        $owner = User::factory()->create([
+            'name' => 'Story Owner',
+            'role' => 'shop_owner',
+            'is_active' => true,
+        ]);
+        $viewer = User::factory()->create([
+            'name' => 'Story Customer',
+            'role' => 'shop_owner',
+            'is_active' => true,
+        ]);
+        $shop = $this->shop($owner, 'viewed-story');
+        $story = ShopStory::create([
+            'shop_id' => $shop->id,
+            'media' => 'shop-stories/viewed.jpg',
+            'type' => 'image',
+            'expires_at' => now()->addHour(),
+        ]);
+
+        $this->actingAs($owner)
+            ->postJson(route('shop-stories.view', $story))
+            ->assertOk()
+            ->assertJsonPath('recorded', false);
+
+        $this->actingAs($viewer)
+            ->withHeader('User-Agent', 'OzmanApp/1.0 Android')
+            ->postJson(route('shop-stories.view', $story))
+            ->assertOk()
+            ->assertJsonPath('recorded', true);
+        $this->postJson(route('shop-stories.view', $story))->assertOk();
+
+        $this->assertDatabaseCount('shop_story_views', 1);
+        $this->assertDatabaseHas('shop_story_views', [
+            'shop_story_id' => $story->id,
+            'user_id' => $viewer->id,
+            'viewer_name' => 'Story Customer',
+            'source' => 'app',
+        ]);
+
+        $this->actingAs($owner)
+            ->get(route('shop-stories.index'))
+            ->assertOk()
+            ->assertSee('>1</strong>', false)
+            ->assertSee('مشاهدة فريدة')
+            ->assertSee('Story Customer');
+    }
 }

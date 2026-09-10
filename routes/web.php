@@ -36,6 +36,9 @@ Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap
 Route::get('/', [FrontController::class, 'index'])->name('home');
 Route::get('/shop-stories/feed', [ShopStoryController::class, 'feed'])->name('shop-stories.feed');
 Route::get('/shop-stories/media/{story}', [ShopStoryController::class, 'media'])->name('shop-stories.media');
+Route::post('/shop-stories/{story}/view', [ShopStoryController::class, 'recordView'])
+    ->middleware('throttle:120,1')
+    ->name('shop-stories.view');
 Route::middleware('auth')->group(function () {
     Route::get('/shop-stories/manage', [ShopStoryController::class, 'index'])->name('shop-stories.index');
     Route::post('/shop-stories/manage', [ShopStoryController::class, 'store'])->middleware('throttle:20,1')->name('shop-stories.store');

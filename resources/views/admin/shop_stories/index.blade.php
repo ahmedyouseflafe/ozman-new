@@ -56,6 +56,24 @@
         </div><div class="history-details"><span class="story-state {{ $story->expires_at->isFuture() ? 'is-live' : '' }}">{{ $story->expires_at->isFuture() ? '● ظاهرة الآن' : 'منتهية' }}</span><strong>{{ $story->shop->name }}</strong> — {{ $story->type === 'video' ? 'فيديو' : 'صورة' }}
             <p>{{ $story->caption }}</p>
             <p>{{ $story->expires_at->isFuture() ? 'ظاهرة حتى' : 'انتهت في' }} {{ $story->expires_at->format('Y-m-d H:i') }}</p>
+            <div class="story-view-summary">
+                <span class="story-view-count"><strong>{{ $story->views_count }}</strong> مشاهدة فريدة</span>
+                <details class="story-viewers">
+                    <summary>عرض من شاهد الستوري</summary>
+                    @forelse($story->views as $view)
+                        <div class="story-viewer-row">
+                            <span class="story-viewer-avatar">{{ mb_substr($view->viewer_name ?: 'ز', 0, 1) }}</span>
+                            <span><strong>{{ $view->viewer_name ?: 'زائر' }}</strong><small>{{ $view->source === 'app' ? 'من التطبيق' : 'من الموقع' }}</small></span>
+                            <time datetime="{{ $view->last_viewed_at?->toIso8601String() }}">{{ $view->last_viewed_at?->format('Y-m-d H:i') }}</time>
+                        </div>
+                    @empty
+                        <p class="story-no-views">لم يشاهد أحد هذه الستوري بعد.</p>
+                    @endforelse
+                    @if($story->views_count > 100)
+                        <p class="story-no-views">يتم عرض آخر 100 مشاهد من أصل {{ $story->views_count }}.</p>
+                    @endif
+                </details>
+            </div>
             @if($story->expires_at->isFuture())<a href="{{ route('shop-stories.media', $story) }}" target="_blank" rel="noopener">معاينة</a>@endif
             <form method="POST" action="{{ route('shop-stories.destroy', $story) }}">@csrf @method('DELETE')<button type="submit">حذف الستوري</button></form>
         </div></article>

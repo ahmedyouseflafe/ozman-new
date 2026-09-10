@@ -7,7 +7,20 @@
     let paused = false, ready = false, video = null, opener = null, overflow = '';
     const alive = story => Date.parse(story.expires_at) > Date.now();
     const seen = new Set();
+    const recorded = new Set();
     try { JSON.parse(localStorage.getItem('ozman_seen_stories') || '[]').forEach(id => seen.add(id)); } catch (_) {}
+    function recordView(story) {
+        if (!story.view_url || recorded.has(story.id)) return;
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (!csrf) return;
+        recorded.add(story.id);
+        fetch(story.view_url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+            keepalive: true,
+        }).catch(() => recorded.delete(story.id));
+    }
     function renderList() {
         list.replaceChildren();
         shops.forEach((shop, i) => {
@@ -56,6 +69,7 @@
         const loaded = () => {
             if (version !== generation) return;
             ready = true; seen.add(story.id);
+            recordView(story);
             try { localStorage.setItem('ozman_seen_stories', JSON.stringify([...seen].slice(-1000))); } catch (_) {}
         };
         element.onerror = () => { if (version === generation) { ready = false; byId('shopStoryCaption').textContent = 'تعذر تحميل الستوري. انتقل للتالية أو أعد المحاولة.'; } };

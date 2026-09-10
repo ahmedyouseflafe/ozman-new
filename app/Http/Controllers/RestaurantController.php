@@ -248,6 +248,9 @@ class RestaurantController extends Controller
             'customer_push_token' => $customerPushToken,
             'payment_status' => 'pending', 'status' => 'new',
         ]);
+        $request->session()->put([
+            'restaurant_customer_names.'.$shop->id => $data['customer_name'],
+        ]);
         $this->sendNewOrderPush($shop, $order, $firebase);
 
         return response()->json([
