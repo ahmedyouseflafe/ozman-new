@@ -162,7 +162,8 @@
             position: absolute;
             z-index: 4;
             top: 18px;
-            inset-inline-end: 20px
+            right: 20px;
+            left: auto
         }
 
         .public-language-switcher {
@@ -1356,7 +1357,8 @@
 
             .hero-tools {
                 top: 12px;
-                inset-inline-end: 12px
+                right: 12px;
+                left: auto
             }
 
             .brand {
@@ -1386,13 +1388,6 @@
                 width: 146px;
                 padding: 0;
                 font-size: 9px
-            }
-
-            .hero h1 {
-                font-size: clamp(30px, 9vw, 38px);
-                line-height: 1.12;
-                margin: 0 0 40px;
-                max-width: 165px
             }
 
             .service-badge {
@@ -1596,7 +1591,6 @@
                         </button>
                     @endif
                 </div>
-                <h1>{{ $shop->name }}</h1>
             </div>
             <div class="service-badge"><i
                     class="ti {{ $table ? 'ti-tools-kitchen-2' : 'ti-truck-delivery' }}"></i>{{ $table ? $copy['inside_restaurant'] : $copy['delivery_pickup'] }}
