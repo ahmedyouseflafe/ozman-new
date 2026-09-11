@@ -24,6 +24,7 @@
         .eyebrow{color:var(--cyan);font-weight:800;font-size:12px}.hero h1{font-size:clamp(24px,2.35vw,36px);line-height:1.35;margin:6px 0}.hero p{color:var(--muted);margin:0;max-width:750px;font-size:14px;font-weight:600}
         .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:45px;padding:9px 18px;border-radius:14px;border:1px solid rgba(8,220,244,.32);background:rgba(8,220,244,.08);color:var(--cyan);text-decoration:none;font-weight:800;cursor:pointer;transition:.2s}
         .btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(8,220,244,.18)}.btn-primary{background:linear-gradient(135deg,#0cd9ec,#22bff1);color:#021014;border:0}.btn-danger{color:#ff9ba6;border-color:rgba(255,98,116,.35);background:rgba(255,98,116,.09)}
+        .availability-form{margin:0}.availability-toggle{min-width:225px}.availability-toggle.is-open{color:#74f2ae;border-color:rgba(37,223,135,.48);background:rgba(37,223,135,.12);box-shadow:0 0 24px rgba(37,223,135,.09)}.availability-toggle.is-closed{color:#ff9ba6;border-color:rgba(255,98,116,.5);background:rgba(255,98,116,.12);box-shadow:0 0 24px rgba(255,98,116,.1)}.availability-toggle .availability-dot{width:9px;height:9px;border-radius:50%;background:currentColor;box-shadow:0 0 12px currentColor}
         .stats-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:13px;margin-bottom:18px}
         .stat{position:relative;overflow:hidden;border-radius:19px;padding:17px 19px;min-height:112px}
         .stat:after{content:"";position:absolute;width:85px;height:85px;border-radius:50%;background:var(--accent);filter:blur(50px);opacity:.27;left:-8px;bottom:-20px}
@@ -39,7 +40,7 @@
         .notice{border-radius:16px;padding:14px 18px;margin-bottom:18px}.notice-success{border:1px solid rgba(37,223,135,.35);background:rgba(37,223,135,.09);color:#73f2ae}.notice-error{border:1px solid rgba(255,98,116,.35);background:rgba(255,98,116,.09);color:#ffabb5}.empty{grid-column:1/-1;color:var(--muted);text-align:center;padding:18px}
         nav[role="navigation"]{margin-top:18px}
         @media(max-width:1250px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
-        @media(max-width:900px){.restaurant-page{width:100%;margin:0;padding:18px 14px 100px}.hero{padding:23px}.hero-top,.hero-actions,.section-head,.live-heading{align-items:flex-start;flex-direction:column}.stats-grid{grid-template-columns:repeat(2,1fr)}.section{padding:19px}.form-row,.filters{grid-template-columns:1fr}.form-row .btn,.filters .btn{width:100%}.live-tools{width:100%;justify-content:space-between}}
+        @media(max-width:900px){.restaurant-page{width:100%;margin:0;padding:18px 14px 100px}.hero{padding:23px}.hero-top,.hero-actions,.section-head,.live-heading{align-items:flex-start;flex-direction:column}.hero-actions,.availability-form,.availability-toggle{width:100%}.stats-grid{grid-template-columns:repeat(2,1fr)}.section{padding:19px}.form-row,.filters{grid-template-columns:1fr}.form-row .btn,.filters .btn{width:100%}.live-tools{width:100%;justify-content:space-between}}
         @media(max-width:600px){.order-alarm{top:9px;padding:13px;gap:10px;border-radius:18px}.alarm-icon{width:44px;height:44px;border-radius:14px;font-size:24px}.alarm-copy strong{font-size:14px}.alarm-copy span{font-size:10px}.alarm-action{padding:7px 9px;font-size:9px}}
         @media(max-width:520px){.restaurant-page{padding-inline:10px}.hero{border-radius:21px;padding:19px}.hero h1{font-size:25px}.stats-grid{gap:10px}.stat{min-height:112px;padding:15px}.stat strong{font-size:28px}.stat-icon{width:39px;height:39px}.section{border-radius:21px;padding:15px}.section h2{font-size:20px}.tables-grid{grid-template-columns:1fr}}
     </style>
@@ -63,6 +64,22 @@
                 <p>لوحة موحّدة لإدارة الطاولات، طلبات الصالة، الطلبات الأونلاين، المطبخ والكاشير.</p>
             </div>
             <div class="hero-actions">
+                @if(auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.availability'))
+                    <form class="availability-form" method="post" action="{{ route('restaurant.availability', $shop) }}">
+                        @csrf
+                        @method('patch')
+                        <input type="hidden" name="is_accepting_orders" value="{{ $shop->is_accepting_orders ? 0 : 1 }}">
+                        <button class="btn availability-toggle {{ $shop->is_accepting_orders ? 'is-open' : 'is-closed' }}" type="submit">
+                            <span class="availability-dot" aria-hidden="true"></span>
+                            {{ $shop->is_accepting_orders ? 'المطعم مفتوح — إغلاق المطعم' : 'المطعم مغلق — فتح المطعم' }}
+                        </button>
+                    </form>
+                @else
+                    <span class="btn availability-toggle {{ $shop->is_accepting_orders ? 'is-open' : 'is-closed' }}">
+                        <span class="availability-dot" aria-hidden="true"></span>
+                        {{ $shop->is_accepting_orders ? 'المطعم مفتوح' : 'المطعم مغلق' }}
+                    </span>
+                @endif
                 <a class="btn" href="{{ route('shops.show',$shop) }}"><i class="ti ti-arrow-right"></i> لوحة المتجر</a>
                 @if(auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('products'))
                     <a class="btn" href="{{ route('products',['shop_id'=>$shop->id]) }}"><i class="ti ti-tools-kitchen-2"></i> إدارة الوجبات</a>

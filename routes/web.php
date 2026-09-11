@@ -142,6 +142,7 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::patch('/shops/{shop}/real-estate/leads/{lead}', [RealEstateDashboardController::class, 'updateLead'])->name('real-estate.dashboard.leads.update');
     Route::get('/shops/{shop}/restaurant', [RestaurantController::class, 'dashboard'])->name('restaurant.dashboard');
     Route::get('/shops/{shop}/restaurant/orders-feed', [RestaurantController::class, 'ordersFeed'])->name('restaurant.orders.feed');
+    Route::patch('/shops/{shop}/restaurant/availability', [RestaurantController::class, 'availability'])->name('restaurant.availability');
     Route::post('/shops/{shop}/restaurant/tables', [RestaurantController::class, 'storeTable'])->name('restaurant.tables.store');
     Route::delete('/restaurant-tables/{table}', [RestaurantController::class, 'destroyTable'])->name('restaurant.tables.destroy');
     Route::patch('/restaurant-orders/{order}/status', [RestaurantController::class, 'status'])->name('restaurant.orders.status');

@@ -39,9 +39,18 @@
     top: 24px;
     inset-inline: 12px;
     display: flex;
+    grid-template-columns: none;
     align-items: center;
+    justify-content: flex-start;
     gap: 8px;
+    width: auto;
+    min-height: 0;
+    margin: 0;
     padding: 10px 0;
+    border: 0;
+    background: transparent;
+    backdrop-filter: none;
+    overflow: visible;
     text-shadow: 0 2px 8px #000;
 }
 

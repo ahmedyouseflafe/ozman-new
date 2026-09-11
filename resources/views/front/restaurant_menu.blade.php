@@ -4,6 +4,8 @@
     $restaurantDictionary = [
         'ar' => [
             'menu_kicker' => 'منيو المطعم', 'table_order' => 'أنت تطلب الآن من', 'menu_intro' => 'اختر وجبتك، خصصها وأرسل طلبك للمطعم',
+            'restaurant_open' => 'المطعم مفتوح ويستقبل الطلبات', 'restaurant_closed' => 'المطعم مغلق حالياً',
+            'closed_detail' => 'يمكنك تصفح المنيو الآن، وسيعود استقبال الطلبات فور فتح المطعم.',
             'inside_restaurant' => 'طلب من داخل المطعم', 'delivery_pickup' => 'توصيل أو استلام', 'food_menu' => 'قائمة الطعام',
             'food_hint' => 'اضغط على الوجبة لاختيار الحجم والإضافات.', 'menu_sections' => 'أقسام المنيو', 'meals' => 'الوجبات',
             'show_options' => 'عرض خيارات', 'fresh_meal' => 'وجبة طازجة محضرة حسب طلبك.', 'prep_around' => 'تجهيز خلال نحو',
@@ -24,6 +26,8 @@
         ],
         'he' => [
             'menu_kicker' => 'תפריט המסעדה', 'table_order' => 'ההזמנה שלך משולחן', 'menu_intro' => 'בחרו מנה, התאימו אותה ושלחו את ההזמנה למסעדה',
+            'restaurant_open' => 'המסעדה פתוחה ומקבלת הזמנות', 'restaurant_closed' => 'המסעדה סגורה כעת',
+            'closed_detail' => 'אפשר לעיין בתפריט כעת. קבלת ההזמנות תחזור כשהמסעדה תיפתח.',
             'inside_restaurant' => 'הזמנה בתוך המסעדה', 'delivery_pickup' => 'משלוח או איסוף', 'food_menu' => 'תפריט אוכל',
             'food_hint' => 'לחצו על מנה לבחירת גודל ותוספות.', 'menu_sections' => 'קטגוריות התפריט', 'meals' => 'מנות',
             'show_options' => 'אפשרויות עבור', 'fresh_meal' => 'מנה טרייה שמוכנה לפי הזמנתכם.', 'prep_around' => 'מוכן בתוך כ־',
@@ -44,6 +48,8 @@
         ],
         'en' => [
             'menu_kicker' => 'Restaurant menu', 'table_order' => 'You are ordering from', 'menu_intro' => 'Choose your meal, customize it and send your order to the restaurant',
+            'restaurant_open' => 'The restaurant is open and accepting orders', 'restaurant_closed' => 'The restaurant is currently closed',
+            'closed_detail' => 'You can browse the menu now. Ordering will resume when the restaurant opens.',
             'inside_restaurant' => 'Dine-in order', 'delivery_pickup' => 'Delivery or pickup', 'food_menu' => 'Food menu',
             'food_hint' => 'Tap a meal to choose its size and extras.', 'menu_sections' => 'Menu sections', 'meals' => 'Meals',
             'show_options' => 'View options for', 'fresh_meal' => 'A fresh meal prepared to your order.', 'prep_around' => 'Ready in about',
@@ -314,6 +320,72 @@
             border: 1px solid rgba(8, 222, 244, .25);
             color: var(--cyan);
             font-weight: 800
+        }
+
+        .restaurant-availability {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            width: fit-content;
+            margin-top: 12px;
+            padding: 7px 12px;
+            border: 1px solid currentColor;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 900
+        }
+
+        .restaurant-availability i {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            box-shadow: 0 0 12px currentColor
+        }
+
+        .restaurant-availability.is-open {
+            color: var(--green);
+            background: rgba(39, 221, 134, .09)
+        }
+
+        .restaurant-availability.is-closed {
+            color: var(--red);
+            background: rgba(255, 102, 120, .1)
+        }
+
+        .restaurant-closed-notice {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-top: 16px;
+            padding: 16px 18px;
+            border: 1px solid rgba(255, 102, 120, .38);
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(255, 102, 120, .14), rgba(16, 20, 25, .95));
+            color: #fff
+        }
+
+        .restaurant-closed-notice > i {
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto;
+            width: 45px;
+            height: 45px;
+            border-radius: 14px;
+            background: rgba(255, 102, 120, .14);
+            color: var(--red);
+            font-size: 24px
+        }
+
+        .restaurant-closed-notice strong,
+        .restaurant-closed-notice span {
+            display: block
+        }
+
+        .restaurant-closed-notice span {
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 12px
         }
 
         .layout {
@@ -684,6 +756,13 @@
         .add-btn:hover,
         .primary-btn:hover {
             filter: brightness(1.08)
+        }
+
+        .add-btn:disabled,
+        .primary-btn:disabled {
+            cursor: not-allowed;
+            filter: grayscale(.7);
+            opacity: .52
         }
 
         .cart {
@@ -1448,12 +1527,26 @@
                     <div class="brand-kicker">{{ $copy['menu_kicker'] }}</div>
                     <h1>{{ $shop->name }}</h1>
                     <p>{{ $table ? $copy['table_order'].' '.$table->name : $copy['menu_intro'] }}</p>
+                    <span class="restaurant-availability {{ $shop->is_accepting_orders ? 'is-open' : 'is-closed' }}">
+                        <i aria-hidden="true"></i>
+                        {{ $shop->is_accepting_orders ? $copy['restaurant_open'] : $copy['restaurant_closed'] }}
+                    </span>
                 </div>
             </div>
             <div class="service-badge"><i
                     class="ti {{ $table ? 'ti-tools-kitchen-2' : 'ti-truck-delivery' }}"></i>{{ $table ? $copy['inside_restaurant'] : $copy['delivery_pickup'] }}
             </div>
         </header>
+
+        @unless($shop->is_accepting_orders)
+            <div class="restaurant-closed-notice" role="status">
+                <i class="ti ti-door-off" aria-hidden="true"></i>
+                <div>
+                    <strong>{{ $copy['restaurant_closed'] }}</strong>
+                    <span>{{ $copy['closed_detail'] }}</span>
+                </div>
+            </div>
+        @endunless
 
         <div class="layout">
             <section class="menu-panel">
@@ -1504,7 +1597,7 @@
                                         <div class="meal-bottom"><span class="price">{{ $copy['from'] }}
                                                 {{ number_format((float) ($product->discount_price ?: $product->price), 2) }}
                                                 ₪</span><button class="add-btn"
-                                                data-product-id="{{ $product->id }}"><i class="ti ti-plus"></i>
+                                                data-product-id="{{ $product->id }}" @disabled(! $shop->is_accepting_orders)><i class="ti ti-plus"></i>
                                                 {{ $copy['add'] }}</button></div>
                                     </div>
                                 </article>
@@ -1560,7 +1653,7 @@
                 @endunless
                 <input type="hidden" id="latitude"><input type="hidden" id="longitude">
                 <textarea class="field" id="orderNotes" placeholder="{{ $copy['notes'] }}"></textarea>
-                <button class="primary-btn" id="send"><i class="ti ti-send"></i> {{ $copy['submit'] }}</button>
+                <button class="primary-btn" id="send" @disabled(! $shop->is_accepting_orders)><i class="ti ti-send"></i> {{ $shop->is_accepting_orders ? $copy['submit'] : $copy['restaurant_closed'] }}</button>
                 <p class="message" id="message"></p>
                 <section class="order-tracking" id="orderTracking" hidden aria-live="polite">
                     <div class="tracking-head">
@@ -1612,8 +1705,8 @@
                         max="100" value="1"></label>
                 <textarea class="field" id="notes" placeholder="{{ $copy['meal_notes'] }}"></textarea>
             </div>
-            <div class="modal-actions"><button class="primary-btn" id="confirm"><i
-                        class="ti ti-shopping-bag-plus"></i> {{ $copy['add_to_order'] }}</button><button class="secondary"
+            <div class="modal-actions"><button class="primary-btn" id="confirm" @disabled(! $shop->is_accepting_orders)><i
+                        class="ti ti-shopping-bag-plus"></i> {{ $shop->is_accepting_orders ? $copy['add_to_order'] : $copy['restaurant_closed'] }}</button><button class="secondary"
                     id="modalCancel">{{ $copy['cancel'] }}</button></div>
         </div>
     </dialog>

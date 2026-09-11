@@ -107,6 +107,26 @@ class RestaurantController extends Controller
         ]);
     }
 
+    public function availability(Request $request, Shop $shop): RedirectResponse
+    {
+        $this->authorizeShop($request, $shop);
+        abort_unless($shop->catalog_type === 'restaurant', 404);
+
+        $data = $request->validate([
+            'is_accepting_orders' => ['required', 'boolean'],
+        ]);
+
+        $isAcceptingOrders = (bool) $data['is_accepting_orders'];
+        $shop->update(['is_accepting_orders' => $isAcceptingOrders]);
+
+        return back()->with(
+            'status',
+            $isAcceptingOrders
+                ? 'تم فتح المطعم، ويمكن للعملاء إرسال طلبات جديدة الآن.'
+                : 'تم إغلاق المطعم، وتم إيقاف استقبال الطلبات الجديدة.'
+        );
+    }
+
     public function storeTable(Request $request, Shop $shop): RedirectResponse
     {
         $this->authorizeShop($request, $shop);
@@ -157,6 +177,16 @@ class RestaurantController extends Controller
     public function storeOrder(Request $request, Shop $shop, FirebaseMessagingService $firebase): JsonResponse
     {
         abort_unless($shop->is_active && $shop->catalog_type === 'restaurant', 404);
+        if (! $shop->is_accepting_orders) {
+            $message = match (app()->getLocale()) {
+                'he' => 'המסעדה סגורה כעת ואינה מקבלת הזמנות חדשות.',
+                'en' => 'The restaurant is currently closed and is not accepting new orders.',
+                default => 'المطعم مغلق حالياً ولا يستقبل طلبات جديدة.',
+            };
+
+            return response()->json(['message' => $message], 409);
+        }
+
         $data = $request->validate([
             'order_type' => ['required', 'in:dine_in,delivery,pickup'],
             'table_code' => ['nullable', 'string', 'max:50'],

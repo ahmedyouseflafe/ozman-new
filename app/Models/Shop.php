@@ -39,17 +39,20 @@ class Shop extends Model
         'payment_wallet_number',
         'payment_notes',
         'is_active',
+        'is_accepting_orders',
         'show_ozman_products',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_accepting_orders' => 'boolean',
         'show_ozman_products' => 'boolean',
     ];
 
     protected $attributes = [
         'catalog_type' => 'general',
         'is_active' => true,
+        'is_accepting_orders' => true,
         'show_ozman_products' => true,
     ];
 

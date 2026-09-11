@@ -238,6 +238,42 @@ class RestaurantOrderingTest extends TestCase
             ->assertSee("ozman.restaurant.{$restaurant->id}.acknowledged-order", false);
     }
 
+    public function test_restaurant_owner_can_open_and_close_only_their_restaurant(): void
+    {
+        [$restaurant, $product] = $this->restaurant('availability');
+        [$otherRestaurant] = $this->restaurant('other-availability');
+
+        $this->actingAs($restaurant->user)
+            ->patch(route('restaurant.availability', $restaurant), ['is_accepting_orders' => false])
+            ->assertRedirect();
+
+        $this->assertFalse($restaurant->fresh()->is_accepting_orders);
+
+        $this->withSession(['locale' => 'ar'])
+            ->get(route('restaurant.menu', $restaurant))
+            ->assertOk()
+            ->assertSee('المطعم مغلق حالياً')
+            ->assertSee('id="send" disabled', false);
+
+        $this->postJson(route('restaurant.orders.store', $restaurant), [
+            'order_type' => 'pickup',
+            'customer_name' => 'Closed customer',
+            'customer_phone' => '0591234567',
+            'items' => [['product_id' => $product->id, 'qty' => 1]],
+        ])->assertStatus(409)
+            ->assertJsonPath('message', 'المطعم مغلق حالياً ولا يستقبل طلبات جديدة.');
+
+        $this->assertDatabaseMissing('front_orders', ['shop_id' => $restaurant->id]);
+
+        $this->patch(route('restaurant.availability', $restaurant), ['is_accepting_orders' => true])
+            ->assertRedirect();
+        $this->assertTrue($restaurant->fresh()->is_accepting_orders);
+
+        $this->patch(route('restaurant.availability', $otherRestaurant), ['is_accepting_orders' => false])
+            ->assertForbidden();
+        $this->assertTrue($otherRestaurant->fresh()->is_accepting_orders);
+    }
+
     public function test_restaurant_dashboard_totals_only_its_completed_orders_and_updates_the_feed(): void
     {
         [$shop] = $this->restaurant('completed-sales-total');
@@ -337,6 +373,10 @@ class RestaurantOrderingTest extends TestCase
         $this->actingAs($shop->user)->post(route('restaurant.tables.store', $shop), [
             'name' => 'طاولة محظورة', 'capacity' => 4,
         ])->assertForbidden();
+        $this->actingAs($shop->user)
+            ->patch(route('restaurant.availability', $shop), ['is_accepting_orders' => false])
+            ->assertForbidden();
+        $this->assertTrue($shop->fresh()->is_accepting_orders);
     }
 
     public function test_restaurant_view_permission_can_poll_only_its_own_live_orders(): void
