@@ -145,6 +145,7 @@
 
         .hero {
             position: relative;
+            isolation: isolate;
             overflow: hidden;
             min-height: 235px;
             border: 1px solid var(--border);
@@ -156,6 +157,29 @@
             justify-content: space-between;
             gap: 25px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, .28)
+        }
+
+        .hero-background-video {
+            position: absolute;
+            z-index: 0;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center 48%;
+            opacity: .62;
+            filter: saturate(1.12) contrast(1.08);
+            transform: scale(1.02);
+            pointer-events: none
+        }
+
+        .hero.has-background-video::before {
+            content: "";
+            position: absolute;
+            z-index: 1;
+            inset: 0;
+            background: linear-gradient(105deg, rgba(4, 9, 14, .78), rgba(3, 18, 22, .5) 48%, rgba(3, 13, 18, .76));
+            pointer-events: none
         }
 
         .hero-tools {
@@ -204,6 +228,8 @@
             border-radius: 50%;
             background: rgba(8, 222, 244, .12);
             filter: blur(70px);
+            z-index: 1;
+            pointer-events: none;
             left: -100px;
             top: -180px
         }
@@ -213,7 +239,7 @@
             align-items: center;
             gap: 20px;
             position: relative;
-            z-index: 1
+            z-index: 2
         }
 
         .logo {
@@ -310,7 +336,7 @@
 
         .service-badge {
             position: relative;
-            z-index: 1;
+            z-index: 2;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -1313,6 +1339,15 @@
         }
 
         @media(max-width:720px) {
+            .hero-background-video {
+                object-position: center 48%;
+                opacity: .7
+            }
+
+            .hero.has-background-video::before {
+                background: linear-gradient(180deg, rgba(3, 12, 17, .5), rgba(3, 10, 15, .76))
+            }
+
             .category-background {
                 top: 0;
                 height: 100svh;
@@ -1541,6 +1576,9 @@
                 'products' => $uncategorizedProducts,
             ]);
         }
+        $heroBackgroundVideo = $restaurantCategories
+            ->pluck('background')
+            ->first(fn ($background) => filled($background));
     @endphp
     @php
         $storyLabel = match ($locale) {
@@ -1550,7 +1588,13 @@
         };
     @endphp
     <div class="shell">
-        <header class="hero">
+        <header class="hero {{ $heroBackgroundVideo ? 'has-background-video' : '' }}" id="restaurantHero">
+            @if($heroBackgroundVideo)
+                <video class="hero-background-video" id="heroBackgroundVideo" src="{{ $heroBackgroundVideo }}"
+                    muted loop autoplay playsinline preload="metadata" disablepictureinpicture
+                    @if($isSushiRestaurant) data-fallback-src="{{ $remoteSushiBackground }}" @endif
+                    aria-hidden="true"></video>
+            @endif
             <div class="hero-tools">
                 @include('front.partials.public_language_switcher')
             </div>
@@ -1780,6 +1824,43 @@
                 '"': '&quot;',
                 "'": '&#039;'
             } [char]));
+
+            const restaurantHero = $('restaurantHero');
+            const heroBackgroundVideo = $('heroBackgroundVideo');
+            let heroIsVisible = true;
+
+            const syncHeroVideo = () => {
+                if (!heroBackgroundVideo) return;
+                if (heroIsVisible && !document.hidden) {
+                    heroBackgroundVideo.play().catch(() => {});
+                } else {
+                    heroBackgroundVideo.pause();
+                }
+            };
+
+            heroBackgroundVideo?.addEventListener('error', () => {
+                const fallbackSource = heroBackgroundVideo.dataset.fallbackSrc || '';
+                const currentSource = heroBackgroundVideo.getAttribute('src') || '';
+
+                if (fallbackSource && currentSource !== fallbackSource) {
+                    heroBackgroundVideo.src = fallbackSource;
+                    heroBackgroundVideo.load();
+                    syncHeroVideo();
+                    return;
+                }
+
+                restaurantHero?.classList.remove('has-background-video');
+            });
+
+            if (restaurantHero && heroBackgroundVideo && 'IntersectionObserver' in window) {
+                const heroObserver = new IntersectionObserver(entries => {
+                    heroIsVisible = entries[0]?.isIntersecting ?? false;
+                    syncHeroVideo();
+                }, { threshold: .08 });
+                heroObserver.observe(restaurantHero);
+            }
+
+            document.addEventListener('visibilitychange', syncHeroVideo);
 
             const categoryRail = $('categoryRail');
             const categoryContent = $('categoryContent');
