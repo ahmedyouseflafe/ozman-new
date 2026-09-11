@@ -479,24 +479,34 @@
             isolation: isolate;
             min-width: 0;
             min-height: 520px;
-            overflow: hidden;
+            overflow: clip;
             border-radius: 22px
         }
 
-        .category-background {
+        .category-background-stage {
             position: absolute;
             z-index: -2;
             inset: 0;
+            pointer-events: none
+        }
+
+        .category-background {
+            position: sticky;
+            top: 12px;
+            display: block;
             width: 100%;
-            height: 100%;
+            height: min(760px, calc(100svh - 24px));
+            min-height: 520px;
             object-fit: cover;
+            object-position: center center;
             opacity: 0;
-            filter: saturate(.85) contrast(1.08);
+            filter: saturate(1.08) contrast(1.08);
+            transform: scale(1.015);
             transition: opacity .5s ease
         }
 
         .category-content.has-video .category-background {
-            opacity: .34
+            opacity: .52
         }
 
         .category-content::after {
@@ -505,7 +515,12 @@
             z-index: -1;
             inset: 0;
             pointer-events: none;
-            background: linear-gradient(90deg, rgba(5, 9, 12, .7), rgba(5, 9, 12, .42) 50%, rgba(5, 9, 12, .78))
+            background: linear-gradient(90deg, rgba(5, 9, 12, .66), rgba(5, 9, 12, .36) 50%, rgba(5, 9, 12, .7))
+        }
+
+        .category-content.has-video .meal {
+            background: linear-gradient(155deg, rgba(20, 27, 33, .93), rgba(7, 11, 15, .94));
+            backdrop-filter: blur(3px)
         }
 
         .category-rail::before,
@@ -1298,6 +1313,22 @@
         }
 
         @media(max-width:720px) {
+            .category-background {
+                top: 0;
+                height: 100svh;
+                min-height: 460px;
+                object-position: 50% 50%;
+                transform: scale(1.02)
+            }
+
+            .category-content.has-video .category-background {
+                opacity: .6
+            }
+
+            .category-content::after {
+                background: linear-gradient(180deg, rgba(4, 8, 11, .34), rgba(4, 8, 11, .5) 48%, rgba(4, 8, 11, .68))
+            }
+
             .shell {
                 width: calc(100% - 18px);
                 padding-top: 9px
@@ -1476,13 +1507,22 @@
                 ];
             })
             ->values();
+        $restaurantIdentity = strtolower($shop->name.' '.$shop->slug);
+        $isSushiRestaurant = str_contains($restaurantIdentity, 'sushi')
+            || str_contains($restaurantIdentity, 'سوشي')
+            || str_contains($restaurantIdentity, 'סושי');
+        $defaultCategoryBackground = $isSushiRestaurant
+            ? asset('media/restaurant/sushi-background-vertical.mp4')
+            : null;
         $restaurantCategories = $categories
-            ->map(function ($category) use ($products) {
+            ->map(function ($category) use ($products, $defaultCategoryBackground) {
                 return [
                     'key' => (string) $category->id,
                     'name' => $category->localized('name'),
                     'image' => $category->image ?: $products->first(fn($product) => $product->category_id === $category->id && filled($product->main_image))?->main_image,
-                    'background' => $category->background_video ? asset($category->background_video) : null,
+                    'background' => $category->background_video
+                        ? asset($category->background_video)
+                        : $defaultCategoryBackground,
                     'products' => $products->where('category_id', $category->id)->values(),
                 ];
             })
@@ -1493,7 +1533,7 @@
                 'key' => 'uncategorized',
                 'name' => $copy['meals'],
                 'image' => $uncategorizedProducts->first(fn($product) => filled($product->main_image))?->main_image,
-                'background' => null,
+                'background' => $defaultCategoryBackground,
                 'products' => $uncategorizedProducts,
             ]);
         }
@@ -1572,8 +1612,10 @@
                             @endforeach
                         </nav>
                         <div class="category-content" id="categoryContent">
-                            <video class="category-background" id="categoryBackground" muted loop playsinline
-                                preload="none" aria-hidden="true"></video>
+                            <div class="category-background-stage" aria-hidden="true">
+                                <video class="category-background" id="categoryBackground" muted loop playsinline
+                                    preload="metadata" disablepictureinpicture></video>
+                            </div>
                             @foreach($restaurantCategories as $category)
                                 <section class="category category-pane" data-category-pane="{{ $category['key'] }}"
                                     @if($category['background']) data-background-video="{{ $category['background'] }}" @endif

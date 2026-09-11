@@ -200,7 +200,7 @@
                                     <span class="card-icon"><i class="ti ti-video-plus" aria-hidden="true"></i></span>
                                     <span>
                                         <span class="card-title">فيديو خلفية {{ $categoryName }}</span>
-                                        <span class="card-sub">MP4 أو WebM حتى 20MB — اختياري ويظهر متحركًا خلف {{ $isRestaurantForm ? 'وجبات القسم' : 'منتجات الفئة' }}</span>
+                                        <span class="card-sub">MP4 أو WebM حتى 20MB — {{ $isRestaurantForm ? 'يفضّل فيديو عمودي 9:16 ليظهر بوضوح على الجوال، وسيُقص تلقائيًا بما يناسب باقي الشاشات' : 'اختياري ويظهر متحركًا خلف منتجات الفئة' }}</span>
                                     </span>
                                 </label>
                             </div>

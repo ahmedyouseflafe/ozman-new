@@ -174,7 +174,7 @@
                                     <span class="card-icon"><i class="ti ti-video-plus" aria-hidden="true"></i></span>
                                     <span>
                                         <span class="card-title">فيديو خلفية {{ $categoryName }}</span>
-                                        <span class="card-sub">MP4 أو WebM حتى 20MB — اتركه فارغًا للاحتفاظ بالفيديو الحالي</span>
+                                        <span class="card-sub">MP4 أو WebM حتى 20MB — {{ $isRestaurantForm ? 'يفضّل فيديو عمودي 9:16 للجوال؛ اتركه فارغًا للاحتفاظ بالفيديو الحالي' : 'اتركه فارغًا للاحتفاظ بالفيديو الحالي' }}</span>
                                     </span>
                                 </label>
                                 @if($category->background_video)
