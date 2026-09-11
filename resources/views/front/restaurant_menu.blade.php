@@ -145,41 +145,17 @@
 
         .hero {
             position: relative;
-            isolation: isolate;
             overflow: hidden;
-            min-height: 235px;
+            min-height: 310px;
             border: 1px solid var(--border);
             border-radius: 28px;
             background: linear-gradient(110deg, rgba(15, 18, 28, .96), rgba(5, 25, 28, .9));
             padding: 30px;
             display: flex;
-            align-items: center;
+            align-items: flex-end;
             justify-content: space-between;
             gap: 25px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, .28)
-        }
-
-        .hero-background-video {
-            position: absolute;
-            z-index: 0;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center 48%;
-            opacity: .62;
-            filter: saturate(1.12) contrast(1.08);
-            transform: scale(1.02);
-            pointer-events: none
-        }
-
-        .hero.has-background-video::before {
-            content: "";
-            position: absolute;
-            z-index: 1;
-            inset: 0;
-            background: linear-gradient(105deg, rgba(4, 9, 14, .78), rgba(3, 18, 22, .5) 48%, rgba(3, 13, 18, .76));
-            pointer-events: none
         }
 
         .hero-tools {
@@ -236,16 +212,26 @@
 
         .brand {
             display: flex;
+            align-items: flex-end;
+            gap: 28px;
+            position: absolute;
+            z-index: 2;
+            right: 30px;
+            bottom: 24px;
+            direction: rtl
+        }
+
+        .restaurant-logo-stack {
+            display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 20px;
-            position: relative;
-            z-index: 2
+            gap: 10px
         }
 
         .logo {
-            width: 126px;
-            height: 126px;
-            border-radius: 27px;
+            width: 166px;
+            height: 166px;
+            border-radius: 34px;
             object-fit: cover;
             border: 2px solid var(--cyan);
             box-shadow: 0 0 28px rgba(8, 222, 244, .3)
@@ -324,7 +310,7 @@
 
         .hero h1 {
             font-size: clamp(36px, 5vw, 60px);
-            margin: 3px 0 5px
+            margin: 0 0 42px
         }
 
         .hero p {
@@ -335,8 +321,10 @@
         }
 
         .service-badge {
-            position: relative;
+            position: absolute;
             z-index: 2;
+            left: 30px;
+            bottom: 30px;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -353,11 +341,11 @@
             align-items: center;
             gap: 7px;
             width: fit-content;
-            margin-top: 12px;
-            padding: 7px 12px;
+            margin-top: 0;
+            padding: 8px 15px;
             border: 1px solid currentColor;
             border-radius: 999px;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 900
         }
 
@@ -1339,15 +1327,6 @@
         }
 
         @media(max-width:720px) {
-            .hero-background-video {
-                object-position: center 48%;
-                opacity: .7
-            }
-
-            .hero.has-background-video::before {
-                background: linear-gradient(180deg, rgba(3, 12, 17, .5), rgba(3, 10, 15, .76))
-            }
-
             .category-background {
                 top: 0;
                 height: 100svh;
@@ -1370,9 +1349,9 @@
             }
 
             .hero {
-                min-height: auto;
+                min-height: 340px;
                 border-radius: 21px;
-                padding: 64px 20px 20px
+                padding: 64px 16px 18px
             }
 
             .hero-tools {
@@ -1381,19 +1360,21 @@
             }
 
             .brand {
-                align-items: center;
+                align-items: flex-end;
                 gap: 14px;
-                width: 100%
+                right: 14px;
+                bottom: 16px;
+                max-width: calc(100% - 28px)
             }
 
             .logo {
-                width: 96px;
-                height: 96px;
-                border-radius: 22px
+                width: 138px;
+                height: 138px;
+                border-radius: 29px
             }
 
             .restaurant-story-avatar {
-                width: 128px;
+                width: 146px;
                 border-radius: 25px
             }
 
@@ -1402,14 +1383,16 @@
             }
 
             .restaurant-story-live {
-                width: 128px;
+                width: 146px;
                 padding: 0;
                 font-size: 9px
             }
 
             .hero h1 {
                 font-size: clamp(30px, 9vw, 38px);
-                line-height: 1.12
+                line-height: 1.12;
+                margin: 0 0 40px;
+                max-width: 165px
             }
 
             .service-badge {
@@ -1576,9 +1559,6 @@
                 'products' => $uncategorizedProducts,
             ]);
         }
-        $heroBackgroundVideo = $restaurantCategories
-            ->pluck('background')
-            ->first(fn ($background) => filled($background));
     @endphp
     @php
         $storyLabel = match ($locale) {
@@ -1586,40 +1566,37 @@
             'en' => 'Open the story to view the latest offers',
             default => 'افتح الستوري لمشاهدة آخر العروض',
         };
+        $availabilityShortLabel = match ($locale) {
+            'he' => $shop->is_accepting_orders ? 'פתוח' : 'סגור',
+            'en' => $shop->is_accepting_orders ? 'Open' : 'Closed',
+            default => $shop->is_accepting_orders ? 'مفتوح' : 'مغلق',
+        };
     @endphp
     <div class="shell">
-        <header class="hero {{ $heroBackgroundVideo ? 'has-background-video' : '' }}" id="restaurantHero">
-            @if($heroBackgroundVideo)
-                <video class="hero-background-video" id="heroBackgroundVideo" src="{{ $heroBackgroundVideo }}"
-                    muted loop autoplay playsinline preload="metadata" disablepictureinpicture
-                    @if($isSushiRestaurant) data-fallback-src="{{ $remoteSushiBackground }}" @endif
-                    aria-hidden="true"></video>
-            @endif
+        <header class="hero">
             <div class="hero-tools">
                 @include('front.partials.public_language_switcher')
             </div>
             <div class="brand">
-                @if ($shop->logo)
-                    <button type="button"
-                        class="restaurant-story-avatar {{ $hasActiveStories ? 'has-shop-story' : '' }}"
-                        data-shop-story-trigger data-story-shop-id="{{ $shop->id }}"
-                        aria-label="{{ $storyLabel }} — {{ $shop->name }}"
-                        @disabled(! $hasActiveStories)>
-                        <span class="restaurant-story-logo-frame">
-                            <img class="logo" src="{{ asset($shop->logo) }}" alt="{{ $shop->name }}">
-                        </span>
-                        <span class="restaurant-story-live"><i class="ti ti-player-play-filled" aria-hidden="true"></i> {{ $storyLabel }}</span>
-                    </button>
-                @endif
-                <div>
-                    <div class="brand-kicker">{{ $copy['menu_kicker'] }}</div>
-                    <h1>{{ $shop->name }}</h1>
-                    <p>{{ $table ? $copy['table_order'].' '.$table->name : $copy['menu_intro'] }}</p>
+                <div class="restaurant-logo-stack">
                     <span class="restaurant-availability {{ $shop->is_accepting_orders ? 'is-open' : 'is-closed' }}">
                         <i aria-hidden="true"></i>
-                        {{ $shop->is_accepting_orders ? $copy['restaurant_open'] : $copy['restaurant_closed'] }}
+                        {{ $availabilityShortLabel }}
                     </span>
+                    @if ($shop->logo)
+                        <button type="button"
+                            class="restaurant-story-avatar {{ $hasActiveStories ? 'has-shop-story' : '' }}"
+                            data-shop-story-trigger data-story-shop-id="{{ $shop->id }}"
+                            aria-label="{{ $storyLabel }} — {{ $shop->name }}"
+                            @disabled(! $hasActiveStories)>
+                            <span class="restaurant-story-logo-frame">
+                                <img class="logo" src="{{ asset($shop->logo) }}" alt="{{ $shop->name }}">
+                            </span>
+                            <span class="restaurant-story-live"><i class="ti ti-player-play-filled" aria-hidden="true"></i> {{ $storyLabel }}</span>
+                        </button>
+                    @endif
                 </div>
+                <h1>{{ $shop->name }}</h1>
             </div>
             <div class="service-badge"><i
                     class="ti {{ $table ? 'ti-tools-kitchen-2' : 'ti-truck-delivery' }}"></i>{{ $table ? $copy['inside_restaurant'] : $copy['delivery_pickup'] }}
@@ -1824,43 +1801,6 @@
                 '"': '&quot;',
                 "'": '&#039;'
             } [char]));
-
-            const restaurantHero = $('restaurantHero');
-            const heroBackgroundVideo = $('heroBackgroundVideo');
-            let heroIsVisible = true;
-
-            const syncHeroVideo = () => {
-                if (!heroBackgroundVideo) return;
-                if (heroIsVisible && !document.hidden) {
-                    heroBackgroundVideo.play().catch(() => {});
-                } else {
-                    heroBackgroundVideo.pause();
-                }
-            };
-
-            heroBackgroundVideo?.addEventListener('error', () => {
-                const fallbackSource = heroBackgroundVideo.dataset.fallbackSrc || '';
-                const currentSource = heroBackgroundVideo.getAttribute('src') || '';
-
-                if (fallbackSource && currentSource !== fallbackSource) {
-                    heroBackgroundVideo.src = fallbackSource;
-                    heroBackgroundVideo.load();
-                    syncHeroVideo();
-                    return;
-                }
-
-                restaurantHero?.classList.remove('has-background-video');
-            });
-
-            if (restaurantHero && heroBackgroundVideo && 'IntersectionObserver' in window) {
-                const heroObserver = new IntersectionObserver(entries => {
-                    heroIsVisible = entries[0]?.isIntersecting ?? false;
-                    syncHeroVideo();
-                }, { threshold: .08 });
-                heroObserver.observe(restaurantHero);
-            }
-
-            document.addEventListener('visibilitychange', syncHeroVideo);
 
             const categoryRail = $('categoryRail');
             const categoryContent = $('categoryContent');
