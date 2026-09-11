@@ -1511,8 +1511,12 @@
         $isSushiRestaurant = str_contains($restaurantIdentity, 'sushi')
             || str_contains($restaurantIdentity, 'سوشي')
             || str_contains($restaurantIdentity, 'סושי');
+        $bundledSushiBackground = 'media/restaurant/sushi-background-vertical.mp4';
+        $remoteSushiBackground = 'https://videos.pexels.com/video-files/8908335/8908335-hd_1080_1920_25fps.mp4';
         $defaultCategoryBackground = $isSushiRestaurant
-            ? asset('media/restaurant/sushi-background-vertical.mp4')
+            ? (is_file(public_path($bundledSushiBackground))
+                ? asset($bundledSushiBackground)
+                : $remoteSushiBackground)
             : null;
         $restaurantCategories = $categories
             ->map(function ($category) use ($products, $defaultCategoryBackground) {
@@ -1614,7 +1618,8 @@
                         <div class="category-content" id="categoryContent">
                             <div class="category-background-stage" aria-hidden="true">
                                 <video class="category-background" id="categoryBackground" muted loop playsinline
-                                    preload="metadata" disablepictureinpicture></video>
+                                    preload="metadata" disablepictureinpicture
+                                    @if($isSushiRestaurant) data-fallback-src="{{ $remoteSushiBackground }}" @endif></video>
                             </div>
                             @foreach($restaurantCategories as $category)
                                 <section class="category category-pane" data-category-pane="{{ $category['key'] }}"
@@ -1808,6 +1813,21 @@
             categoryBackground?.addEventListener('canplay', () => {
                 categoryContent?.classList.add('has-video');
                 categoryBackground.play().catch(() => {});
+            });
+
+            categoryBackground?.addEventListener('error', () => {
+                const fallbackSource = categoryBackground.dataset.fallbackSrc || '';
+                const currentSource = categoryBackground.getAttribute('src') || '';
+
+                if (fallbackSource && currentSource !== fallbackSource) {
+                    categoryContent?.classList.remove('has-video');
+                    categoryBackground.src = fallbackSource;
+                    categoryBackground.load();
+                    categoryBackground.play().catch(() => {});
+                    return;
+                }
+
+                categoryContent?.classList.remove('has-video');
             });
 
             const positionCategoryArc = () => {
