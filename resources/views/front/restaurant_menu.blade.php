@@ -1547,7 +1547,7 @@
             || str_contains($restaurantIdentity, 'سوشي')
             || str_contains($restaurantIdentity, 'סושי');
         $bundledSushiBackground = 'media/restaurant/sushi-background-vertical.mp4';
-        $remoteSushiBackground = 'https://videos.pexels.com/video-files/8908335/8908335-hd_1080_1920_25fps.mp4';
+        $remoteSushiBackground = 'https://videos.pexels.com/video-files/19742746/19742746-hd_1080_1920_30fps.mp4';
         $defaultCategoryBackground = $isSushiRestaurant
             ? (is_file(public_path($bundledSushiBackground))
                 ? asset($bundledSushiBackground)
