@@ -143,6 +143,14 @@
             padding: 20px 0 55px
         }
 
+        .restaurant-hero-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(310px, 380px);
+            align-items: stretch;
+            gap: 16px;
+            direction: ltr
+        }
+
         .hero {
             position: relative;
             overflow: hidden;
@@ -156,6 +164,130 @@
             justify-content: space-between;
             gap: 25px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, .28)
+        }
+
+        html[dir="rtl"] .hero {
+            direction: rtl
+        }
+
+        html[dir="ltr"] .hero {
+            direction: ltr
+        }
+
+        .restaurant-display-screen {
+            position: relative;
+            min-width: 0;
+            min-height: 310px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            background: linear-gradient(145deg, #071318, #020608 70%);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .28), inset 0 0 0 5px rgba(8, 222, 244, .025);
+            isolation: isolate
+        }
+
+        .restaurant-display-screen:before {
+            content: "";
+            position: absolute;
+            z-index: 3;
+            inset: 0;
+            border-radius: inherit;
+            border: 5px solid rgba(2, 8, 11, .86);
+            box-shadow: inset 0 0 0 1px rgba(8, 222, 244, .15);
+            pointer-events: none
+        }
+
+        .restaurant-display-slider,
+        .restaurant-display-slide {
+            position: absolute;
+            inset: 0
+        }
+
+        .restaurant-display-slide {
+            opacity: 0;
+            pointer-events: none;
+            background: #020607;
+            transition: opacity .55s ease
+        }
+
+        .restaurant-display-slide.active {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        .restaurant-display-slide img,
+        .restaurant-display-slide video,
+        .restaurant-display-slide iframe {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            background: #020607;
+            object-fit: cover
+        }
+
+        .restaurant-display-shade {
+            position: absolute;
+            z-index: 1;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(1, 7, 9, .04), transparent 58%, rgba(1, 7, 9, .32));
+            pointer-events: none
+        }
+
+        .restaurant-display-status {
+            position: absolute;
+            z-index: 4;
+            top: 17px;
+            left: 18px;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 10px;
+            border: 1px solid rgba(8, 222, 244, .28);
+            border-radius: 999px;
+            background: rgba(2, 10, 13, .72);
+            color: rgba(255, 255, 255, .86);
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: .08em;
+            backdrop-filter: blur(9px)
+        }
+
+        .restaurant-display-status i {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 10px var(--green)
+        }
+
+        .restaurant-display-progress {
+            position: absolute;
+            z-index: 4;
+            top: 12px;
+            right: 18px;
+            width: min(210px, 35%);
+            height: 3px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .22)
+        }
+
+        .restaurant-display-progress span {
+            display: block;
+            width: 0;
+            height: 100%;
+            border-radius: inherit;
+            background: var(--cyan);
+            box-shadow: 0 0 10px var(--cyan)
+        }
+
+        .restaurant-display-progress.is-running span {
+            animation: restaurant-screen-progress var(--screen-duration, 8s) linear forwards
+        }
+
+        @keyframes restaurant-screen-progress {
+            to { width: 100% }
         }
 
         .hero-tools {
@@ -1325,6 +1457,10 @@
             .meals {
                 grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))
             }
+
+            .service-badge {
+                display: none
+            }
         }
 
         @media(max-width:720px) {
@@ -1349,34 +1485,74 @@
                 padding-top: 9px
             }
 
+            .restaurant-hero-layout {
+                grid-template-columns: minmax(0, 1fr) 148px;
+                gap: 7px
+            }
+
             .hero {
                 min-height: 340px;
                 border-radius: 21px;
-                padding: 64px 16px 18px
+                padding: 64px 7px 14px
+            }
+
+            .restaurant-display-screen {
+                min-height: 340px;
+                border-radius: 21px
+            }
+
+            .restaurant-display-status {
+                top: 12px;
+                left: 10px;
+                max-width: calc(100% - 20px);
+                padding: 5px 7px;
+                font-size: 8px;
+                letter-spacing: .04em
+            }
+
+            .restaurant-display-progress {
+                top: auto;
+                right: 10px;
+                bottom: 11px;
+                width: calc(100% - 20px)
             }
 
             .hero-tools {
                 top: 12px;
-                right: 12px;
+                right: 5px;
                 left: auto
+            }
+
+            .public-language-switcher {
+                gap: 2px;
+                padding: 3px
+            }
+
+            .public-language-switcher > i {
+                display: none
+            }
+
+            .public-language-switcher a {
+                padding: 5px 5px;
+                font-size: 8px
             }
 
             .brand {
                 align-items: flex-end;
                 gap: 14px;
-                right: 14px;
+                right: 5px;
                 bottom: 16px;
-                max-width: calc(100% - 28px)
+                max-width: calc(100% - 10px)
             }
 
             .logo {
-                width: 138px;
-                height: 138px;
-                border-radius: 29px
+                width: 118px;
+                height: 118px;
+                border-radius: 25px
             }
 
             .restaurant-story-avatar {
-                width: 146px;
+                width: 126px;
                 border-radius: 25px
             }
 
@@ -1385,9 +1561,14 @@
             }
 
             .restaurant-story-live {
-                width: 146px;
+                width: 126px;
                 padding: 0;
-                font-size: 9px
+                font-size: 8px
+            }
+
+            .restaurant-availability {
+                padding: 7px 11px;
+                font-size: 11px
             }
 
             .service-badge {
@@ -1566,36 +1747,95 @@
             'en' => $shop->is_accepting_orders ? 'Open' : 'Closed',
             default => $shop->is_accepting_orders ? 'مفتوح' : 'مغلق',
         };
+        $displayScreenLabel = match ($locale) {
+            'he' => 'מסך תצוגה',
+            'en' => 'DISPLAY',
+            default => 'شاشة العرض',
+        };
+        $restaurantDisplayItems = collect($displayItems ?? [])->filter(fn ($item) => filled($item->media))->values();
+        $displayMediaUrl = function (?string $path): string {
+            if (! filled($path)) {
+                return '';
+            }
+
+            return preg_match('/^https?:\/\//i', $path) ? $path : asset($path);
+        };
+        $displayYoutubeEmbedUrl = function (?string $url): string {
+            if (! filled($url)) {
+                return '';
+            }
+
+            if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]+)/', $url, $matches)) {
+                return 'https://www.youtube.com/embed/'.$matches[1].'?autoplay=0&mute=1&playsinline=1&rel=0&enablejsapi=1';
+            }
+
+            return $url;
+        };
     @endphp
     <div class="shell">
-        <header class="hero">
-            <div class="hero-tools">
-                @include('front.partials.public_language_switcher')
-            </div>
-            <div class="brand">
-                <div class="restaurant-logo-stack">
-                    <span class="restaurant-availability {{ $shop->is_accepting_orders ? 'is-open' : 'is-closed' }}">
-                        <i aria-hidden="true"></i>
-                        {{ $availabilityShortLabel }}
-                    </span>
-                    @if ($shop->logo)
-                        <button type="button"
-                            class="restaurant-story-avatar {{ $hasActiveStories ? 'has-shop-story' : '' }}"
-                            data-shop-story-trigger data-story-shop-id="{{ $shop->id }}"
-                            aria-label="{{ $storyLabel }} — {{ $shop->name }}"
-                            @disabled(! $hasActiveStories)>
-                            <span class="restaurant-story-logo-frame">
-                                <img class="logo" src="{{ asset($shop->logo) }}" alt="{{ $shop->name }}">
-                            </span>
-                            <span class="restaurant-story-live"><i class="ti ti-player-play-filled" aria-hidden="true"></i> {{ $storyLabel }}</span>
-                        </button>
+        <div class="restaurant-hero-layout">
+            <section class="restaurant-display-screen" aria-label="{{ $displayScreenLabel }}">
+                <div class="restaurant-display-slider" data-restaurant-display>
+                    @if ($restaurantDisplayItems->isNotEmpty())
+                        @foreach ($restaurantDisplayItems as $item)
+                            <article class="restaurant-display-slide {{ $loop->first ? 'active' : '' }}"
+                                data-display-duration="{{ max((int) ($item->duration ?? 8), 1) * 1000 }}">
+                                @if ($item->type === 'video')
+                                    <video src="{{ $displayMediaUrl($item->media) }}" muted playsinline loop preload="metadata"></video>
+                                @elseif ($item->type === 'youtube')
+                                    <iframe src="{{ $displayYoutubeEmbedUrl($item->media) }}"
+                                        title="{{ $item->title ?: $displayScreenLabel }}"
+                                        allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+                                @else
+                                    <img src="{{ $displayMediaUrl($item->media) }}"
+                                        alt="{{ $item->title ?: $displayScreenLabel }}">
+                                @endif
+                            </article>
+                        @endforeach
+                    @elseif ($defaultCategoryBackground)
+                        <article class="restaurant-display-slide active" data-display-duration="14000">
+                            <video src="{{ $defaultCategoryBackground }}" muted playsinline loop preload="metadata"></video>
+                        </article>
+                    @else
+                        <article class="restaurant-display-slide active" data-display-duration="10000">
+                            <img src="{{ $restaurantImage }}" alt="{{ $shop->name }}">
+                        </article>
                     @endif
                 </div>
-            </div>
-            <div class="service-badge"><i
-                    class="ti {{ $table ? 'ti-tools-kitchen-2' : 'ti-truck-delivery' }}"></i>{{ $table ? $copy['inside_restaurant'] : $copy['delivery_pickup'] }}
-            </div>
-        </header>
+                <div class="restaurant-display-shade" aria-hidden="true"></div>
+                <span class="restaurant-display-status"><i aria-hidden="true"></i>{{ $displayScreenLabel }}</span>
+                <span class="restaurant-display-progress" aria-hidden="true"><span></span></span>
+            </section>
+
+            <header class="hero">
+                <div class="hero-tools">
+                    @include('front.partials.public_language_switcher')
+                </div>
+                <div class="brand">
+                    <div class="restaurant-logo-stack">
+                        <span class="restaurant-availability {{ $shop->is_accepting_orders ? 'is-open' : 'is-closed' }}">
+                            <i aria-hidden="true"></i>
+                            {{ $availabilityShortLabel }}
+                        </span>
+                        @if ($shop->logo)
+                            <button type="button"
+                                class="restaurant-story-avatar {{ $hasActiveStories ? 'has-shop-story' : '' }}"
+                                data-shop-story-trigger data-story-shop-id="{{ $shop->id }}"
+                                aria-label="{{ $storyLabel }} — {{ $shop->name }}"
+                                @disabled(! $hasActiveStories)>
+                                <span class="restaurant-story-logo-frame">
+                                    <img class="logo" src="{{ asset($shop->logo) }}" alt="{{ $shop->name }}">
+                                </span>
+                                <span class="restaurant-story-live"><i class="ti ti-player-play-filled" aria-hidden="true"></i> {{ $storyLabel }}</span>
+                            </button>
+                        @endif
+                    </div>
+                </div>
+                <div class="service-badge"><i
+                        class="ti {{ $table ? 'ti-tools-kitchen-2' : 'ti-truck-delivery' }}"></i>{{ $table ? $copy['inside_restaurant'] : $copy['delivery_pickup'] }}
+                </div>
+            </header>
+        </div>
 
         @unless($shop->is_accepting_orders)
             <div class="restaurant-closed-notice" role="status">
@@ -1795,6 +2035,90 @@
                 '"': '&quot;',
                 "'": '&#039;'
             } [char]));
+
+            const displaySlider = document.querySelector('[data-restaurant-display]');
+            const displaySlides = displaySlider ? [...displaySlider.querySelectorAll('.restaurant-display-slide')] : [];
+            const displayProgress = document.querySelector('.restaurant-display-progress span');
+            let displayIndex = Math.max(0, displaySlides.findIndex(slide => slide.classList.contains('active')));
+            let displayTimer = null;
+            let displayVisible = true;
+
+            const pauseDisplaySlide = slide => {
+                slide?.querySelectorAll('video').forEach(video => video.pause());
+                slide?.querySelectorAll('iframe[src*="youtube.com/embed"]').forEach(frame => {
+                    frame.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo' }), '*');
+                });
+            };
+
+            const playDisplaySlide = slide => {
+                if (!displayVisible || document.hidden) return;
+                slide?.querySelectorAll('video').forEach(video => video.play().catch(() => {}));
+                slide?.querySelectorAll('iframe[src*="youtube.com/embed"]').forEach(frame => {
+                    frame.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo' }), '*');
+                });
+            };
+
+            const animateDisplayProgress = duration => {
+                if (!displayProgress) return;
+                displayProgress.style.transition = 'none';
+                displayProgress.style.width = '0';
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    displayProgress.style.transition = displaySlides.length > 1 && displayVisible
+                        ? `width ${duration}ms linear`
+                        : 'none';
+                    displayProgress.style.width = '100%';
+                }));
+            };
+
+            const activateDisplaySlide = nextIndex => {
+                clearTimeout(displayTimer);
+                displaySlides.forEach((slide, index) => {
+                    const active = index === nextIndex;
+                    slide.classList.toggle('active', active);
+                    if (!active) pauseDisplaySlide(slide);
+                });
+                displayIndex = nextIndex;
+                const activeSlide = displaySlides[displayIndex];
+                const duration = Math.max(1000, Number(activeSlide?.dataset.displayDuration) || 8000);
+                playDisplaySlide(activeSlide);
+                animateDisplayProgress(duration);
+                if (displaySlides.length > 1 && displayVisible && !document.hidden) {
+                    displayTimer = setTimeout(() => activateDisplaySlide((displayIndex + 1) % displaySlides.length), duration);
+                }
+            };
+
+            if (displaySlides.length) {
+                displaySlides.forEach(pauseDisplaySlide);
+                displaySlides.forEach(slide => {
+                    slide.querySelectorAll('iframe[src*="youtube.com/embed"]').forEach(frame => {
+                        frame.addEventListener('load', () => {
+                            if (displayVisible && slide.classList.contains('active') && !document.hidden) {
+                                playDisplaySlide(slide);
+                            } else {
+                                pauseDisplaySlide(slide);
+                            }
+                        });
+                    });
+                });
+                const displayObserver = new IntersectionObserver(([entry]) => {
+                    displayVisible = entry.isIntersecting && entry.intersectionRatio > .08;
+                    if (displayVisible) {
+                        activateDisplaySlide(displayIndex);
+                    } else {
+                        clearTimeout(displayTimer);
+                        displaySlides.forEach(pauseDisplaySlide);
+                    }
+                }, { threshold: [0, .08, .25, .5] });
+                displayObserver.observe(displaySlider);
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        clearTimeout(displayTimer);
+                        displaySlides.forEach(pauseDisplaySlide);
+                    } else if (displayVisible) {
+                        activateDisplaySlide(displayIndex);
+                    }
+                });
+            }
 
             const categoryRail = $('categoryRail');
             const categoryContent = $('categoryContent');

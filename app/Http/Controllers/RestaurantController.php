@@ -162,6 +162,13 @@ class RestaurantController extends Controller
         abort_unless($shop->is_active && $shop->catalog_type === 'restaurant', 404);
         $table = $tableCode ? $shop->restaurantTables()->where('code', $tableCode)->where('is_active', true)->firstOrFail() : null;
         $hasActiveStories = $shop->stories()->where('expires_at', '>', now())->exists();
+        $displayItems = $shop->advertisements()
+            ->where('is_active', true)
+            ->whereNotNull('media')
+            ->where('media', '!=', '')
+            ->orderBy('sort_order')
+            ->latest()
+            ->get();
         $categories = $shop->categories()->where('is_active', true)->orderBy('name')->get();
         $products = Product::with('category')
             ->where('shop_id', $shop->id)
@@ -171,7 +178,7 @@ class RestaurantController extends Controller
                     ->orWhereHas('category', fn($categoryQuery) => $categoryQuery->where('is_active', true));
             })
             ->get();
-        return view('front.restaurant_menu', compact('shop', 'table', 'products', 'categories', 'hasActiveStories'));
+        return view('front.restaurant_menu', compact('shop', 'table', 'products', 'categories', 'hasActiveStories', 'displayItems'));
     }
 
     public function storeOrder(Request $request, Shop $shop, FirebaseMessagingService $firebase): JsonResponse
