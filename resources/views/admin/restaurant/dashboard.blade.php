@@ -172,24 +172,59 @@
     } catch (_) {}
     let pendingOrderId = 0;
     let audioContext = null;
+    let alarmOutput = null;
     let alarmTimer = null;
     let soundUnlocked = false;
     let polling = false;
 
+    function getAlarmOutput() {
+        if (alarmOutput) return alarmOutput;
+
+        const compressor = audioContext.createDynamicsCompressor();
+        compressor.threshold.setValueAtTime(-18, audioContext.currentTime);
+        compressor.knee.setValueAtTime(12, audioContext.currentTime);
+        compressor.ratio.setValueAtTime(8, audioContext.currentTime);
+        compressor.attack.setValueAtTime(.003, audioContext.currentTime);
+        compressor.release.setValueAtTime(.18, audioContext.currentTime);
+
+        const masterGain = audioContext.createGain();
+        masterGain.gain.setValueAtTime(.95, audioContext.currentTime);
+        masterGain.connect(compressor);
+        compressor.connect(audioContext.destination);
+        alarmOutput = masterGain;
+
+        return alarmOutput;
+    }
+
     function playAlarmPulse() {
         if (!soundUnlocked || !audioContext || audioContext.state !== 'running') return;
         const now = audioContext.currentTime;
-        [[880, 0], [660, .34]].forEach(([frequency, offset]) => {
-            const oscillator = audioContext.createOscillator();
-            const gain = audioContext.createGain();
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(frequency, now + offset);
-            gain.gain.setValueAtTime(.0001, now + offset);
-            gain.gain.exponentialRampToValueAtTime(.2, now + offset + .04);
-            gain.gain.exponentialRampToValueAtTime(.0001, now + offset + .28);
-            oscillator.connect(gain); gain.connect(audioContext.destination);
-            oscillator.start(now + offset); oscillator.stop(now + offset + .3);
+        const output = getAlarmOutput();
+
+        [[784, 0, .16], [988, .18, .16], [1318, .36, .2], [988, .62, .22]].forEach(([frequency, offset, duration]) => {
+            const noteGain = audioContext.createGain();
+            const startsAt = now + offset;
+            const endsAt = startsAt + duration;
+            noteGain.gain.setValueAtTime(.0001, startsAt);
+            noteGain.gain.exponentialRampToValueAtTime(.42, startsAt + .018);
+            noteGain.gain.setValueAtTime(.42, Math.max(startsAt + .02, endsAt - .055));
+            noteGain.gain.exponentialRampToValueAtTime(.0001, endsAt);
+            noteGain.connect(output);
+
+            [[frequency, 'triangle', 1], [frequency * 2, 'sine', .22]].forEach(([tone, type, level]) => {
+                const oscillator = audioContext.createOscillator();
+                const toneGain = audioContext.createGain();
+                oscillator.type = type;
+                oscillator.frequency.setValueAtTime(tone, startsAt);
+                toneGain.gain.setValueAtTime(level, startsAt);
+                oscillator.connect(toneGain);
+                toneGain.connect(noteGain);
+                oscillator.start(startsAt);
+                oscillator.stop(endsAt + .02);
+            });
         });
+
+        if (document.visibilityState !== 'visible') navigator.vibrate?.([180, 80, 180]);
     }
 
     async function enableSound(preview = false) {

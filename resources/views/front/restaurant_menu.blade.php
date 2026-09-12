@@ -1407,15 +1407,16 @@
             .brand {
                 align-items: flex-end;
                 gap: 14px;
-                top: 47px;
+                top: auto;
                 right: 2px;
-                bottom: auto;
+                bottom: 6px;
                 width: calc(100% - 4px);
                 max-width: calc(100% - 4px)
             }
 
             .restaurant-logo-stack {
                 width: 100%;
+                align-items: flex-end;
                 gap: 8px
             }
 
@@ -1443,7 +1444,8 @@
             .restaurant-story-live {
                 width: 100%;
                 padding: 0;
-                font-size: 8px
+                font-size: 11px;
+                line-height: 1.45
             }
 
             .restaurant-availability {
