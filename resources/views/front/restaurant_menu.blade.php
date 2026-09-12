@@ -1385,8 +1385,8 @@
             }
 
             .hero-tools {
-                top: 12px;
-                right: 5px;
+                top: 0;
+                right: 0;
                 left: auto
             }
 
