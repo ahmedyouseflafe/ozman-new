@@ -1597,6 +1597,7 @@
                 return [
                     'key' => (string) $category->id,
                     'name' => $category->localized('name'),
+                    'identity' => $categoryIdentity,
                     'placement' => $categoryPlacement,
                     'image' => $category->image ?: $products->first(fn($product) => $product->category_id === $category->id && filled($product->main_image))?->main_image,
                     'background' => $category->background_video
@@ -1611,6 +1612,7 @@
             $restaurantCategories->push([
                 'key' => 'uncategorized',
                 'name' => $copy['meals'],
+                'identity' => 'uncategorized',
                 'placement' => 'regular',
                 'image' => $uncategorizedProducts->first(fn($product) => filled($product->main_image))?->main_image,
                 'background' => $defaultCategoryBackground,
@@ -1623,6 +1625,22 @@
             ->concat($restaurantCategories->where('placement', 'sauces'))
             ->concat($restaurantCategories->where('placement', 'drinks'))
             ->values();
+        $newProductsIndex = $restaurantCategories->search(fn ($category) =>
+            str_contains($category['identity'], 'new product')
+            || str_contains($category['identity'], 'منتجات جديدة')
+            || str_contains($category['identity'], 'מוצרים חדשים')
+        );
+        $specialRollsIndex = $restaurantCategories->search(fn ($category) =>
+            str_contains($category['identity'], 'special roll')
+            || str_contains($category['identity'], 'رولات مميزة')
+            || str_contains($category['identity'], 'رول مميز')
+            || str_contains($category['identity'], 'רולים מיוחדים')
+        );
+        if ($newProductsIndex !== false && $specialRollsIndex !== false && $newProductsIndex < $specialRollsIndex) {
+            $newProductsCategory = $restaurantCategories->get($newProductsIndex);
+            $restaurantCategories->put($newProductsIndex, $restaurantCategories->get($specialRollsIndex));
+            $restaurantCategories->put($specialRollsIndex, $newProductsCategory);
+        }
     @endphp
     @php
         $storyLabel = match ($locale) {
