@@ -1699,10 +1699,6 @@
                 </div>
                 <div class="brand">
                     <div class="restaurant-logo-stack">
-                        <span class="restaurant-availability {{ $shop->is_accepting_orders ? 'is-open' : 'is-closed' }}">
-                            <i aria-hidden="true"></i>
-                            {{ $availabilityShortLabel }}
-                        </span>
                         @if ($shop->logo)
                             <button type="button"
                                 class="restaurant-story-avatar {{ $hasActiveStories ? 'has-shop-story' : '' }}"
@@ -1715,6 +1711,10 @@
                                 <span class="restaurant-story-live"><i class="ti ti-player-play-filled" aria-hidden="true"></i> {{ $storyLabel }}</span>
                             </button>
                         @endif
+                        <span class="restaurant-availability {{ $shop->is_accepting_orders ? 'is-open' : 'is-closed' }}">
+                            <i aria-hidden="true"></i>
+                            {{ $availabilityShortLabel }}
+                        </span>
                     </div>
                 </div>
             </header>
