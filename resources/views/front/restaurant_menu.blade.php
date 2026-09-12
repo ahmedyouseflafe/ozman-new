@@ -1409,12 +1409,14 @@
                 gap: 14px;
                 top: 47px;
                 right: 2px;
-                bottom: auto;
+                bottom: 2px;
                 width: calc(100% - 4px);
                 max-width: calc(100% - 4px)
             }
 
             .restaurant-logo-stack {
+                position: relative;
+                height: 100%;
                 width: 100%;
                 align-items: flex-start;
                 gap: 8px
@@ -1449,6 +1451,9 @@
             }
 
             .restaurant-availability {
+                position: absolute;
+                right: 0;
+                bottom: 0;
                 padding: 7px 11px;
                 font-size: 11px
             }
