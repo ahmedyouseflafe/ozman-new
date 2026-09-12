@@ -309,7 +309,8 @@
             width: 166px;
             height: 166px;
             border-radius: 34px;
-            object-fit: cover;
+            object-fit: contain;
+            background: #020607;
             border: 2px solid var(--cyan);
             box-shadow: 0 0 28px rgba(8, 222, 244, .3)
         }
@@ -1406,19 +1407,24 @@
             .brand {
                 align-items: flex-end;
                 gap: 14px;
-                right: 5px;
-                bottom: 16px;
-                max-width: calc(100% - 10px)
+                top: 68px;
+                right: 4px;
+                bottom: auto;
+                max-width: calc(100% - 8px)
+            }
+
+            .restaurant-logo-stack {
+                gap: 8px
             }
 
             .logo {
-                width: 118px;
-                height: 118px;
-                border-radius: 25px
+                width: 132px;
+                height: 132px;
+                border-radius: 28px
             }
 
             .restaurant-story-avatar {
-                width: 126px;
+                width: 140px;
                 border-radius: 25px
             }
 
@@ -1427,7 +1433,7 @@
             }
 
             .restaurant-story-live {
-                width: 126px;
+                width: 140px;
                 padding: 0;
                 font-size: 8px
             }
