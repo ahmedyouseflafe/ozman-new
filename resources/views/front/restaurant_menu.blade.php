@@ -1573,9 +1573,31 @@
             : null;
         $restaurantCategories = $categories
             ->map(function ($category) use ($products, $defaultCategoryBackground) {
+                $categoryIdentity = strtolower(collect([
+                    $category->name,
+                    $category->slug,
+                    ...array_values($category->name_translations ?? []),
+                ])->filter(fn ($value) => is_string($value) && filled($value))->implode(' '));
+                $categoryPlacement = match (true) {
+                    str_contains($categoryIdentity, 'مشروب'),
+                    str_contains($categoryIdentity, 'drink'),
+                    str_contains($categoryIdentity, 'beverage'),
+                    str_contains($categoryIdentity, 'משקאות') => 'drinks',
+                    str_contains($categoryIdentity, 'صوص'),
+                    str_contains($categoryIdentity, 'صلص'),
+                    str_contains($categoryIdentity, 'sauce'),
+                    str_contains($categoryIdentity, 'רטבים') => 'sauces',
+                    str_contains($categoryIdentity, 'مميز'),
+                    str_contains($categoryIdentity, 'featured'),
+                    str_contains($categoryIdentity, 'מיוחד'),
+                    str_contains($categoryIdentity, 'מומלץ') => 'featured',
+                    default => 'regular',
+                };
+
                 return [
                     'key' => (string) $category->id,
                     'name' => $category->localized('name'),
+                    'placement' => $categoryPlacement,
                     'image' => $category->image ?: $products->first(fn($product) => $product->category_id === $category->id && filled($product->main_image))?->main_image,
                     'background' => $category->background_video
                         ? asset($category->background_video)
@@ -1589,11 +1611,18 @@
             $restaurantCategories->push([
                 'key' => 'uncategorized',
                 'name' => $copy['meals'],
+                'placement' => 'regular',
                 'image' => $uncategorizedProducts->first(fn($product) => filled($product->main_image))?->main_image,
                 'background' => $defaultCategoryBackground,
                 'products' => $uncategorizedProducts,
             ]);
         }
+        $restaurantCategories = $restaurantCategories
+            ->where('placement', 'regular')
+            ->concat($restaurantCategories->where('placement', 'featured'))
+            ->concat($restaurantCategories->where('placement', 'sauces'))
+            ->concat($restaurantCategories->where('placement', 'drinks'))
+            ->values();
     @endphp
     @php
         $storyLabel = match ($locale) {
