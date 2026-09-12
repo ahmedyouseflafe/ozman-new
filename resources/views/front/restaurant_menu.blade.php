@@ -234,62 +234,6 @@
             pointer-events: none
         }
 
-        .restaurant-display-status {
-            position: absolute;
-            z-index: 4;
-            top: 17px;
-            left: 18px;
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            padding: 6px 10px;
-            border: 1px solid rgba(8, 222, 244, .28);
-            border-radius: 999px;
-            background: rgba(2, 10, 13, .72);
-            color: rgba(255, 255, 255, .86);
-            font-size: 10px;
-            font-weight: 900;
-            letter-spacing: .08em;
-            backdrop-filter: blur(9px)
-        }
-
-        .restaurant-display-status i {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--green);
-            box-shadow: 0 0 10px var(--green)
-        }
-
-        .restaurant-display-progress {
-            position: absolute;
-            z-index: 4;
-            top: 12px;
-            right: 18px;
-            width: min(210px, 35%);
-            height: 3px;
-            overflow: hidden;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, .22)
-        }
-
-        .restaurant-display-progress span {
-            display: block;
-            width: 0;
-            height: 100%;
-            border-radius: inherit;
-            background: var(--cyan);
-            box-shadow: 0 0 10px var(--cyan)
-        }
-
-        .restaurant-display-progress.is-running span {
-            animation: restaurant-screen-progress var(--screen-duration, 8s) linear forwards
-        }
-
-        @keyframes restaurant-screen-progress {
-            to { width: 100% }
-        }
-
         .hero-tools {
             position: absolute;
             z-index: 4;
@@ -453,22 +397,6 @@
             font-weight: 600
         }
 
-        .service-badge {
-            position: absolute;
-            z-index: 2;
-            left: 30px;
-            bottom: 30px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 13px 17px;
-            border-radius: 16px;
-            background: var(--cyan-soft);
-            border: 1px solid rgba(8, 222, 244, .25);
-            color: var(--cyan);
-            font-weight: 800
-        }
-
         .restaurant-availability {
             display: inline-flex;
             align-items: center;
@@ -537,7 +465,9 @@
 
         .layout {
             display: block;
-            margin-top: 22px
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(150, 174, 190, .16)
         }
 
         .menu-panel,
@@ -549,30 +479,8 @@
         }
 
         .menu-panel {
-            min-height: calc(100vh - 315px)
-        }
-
-        .section-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
-            margin-bottom: 20px
-        }
-
-        .section-head h2 {
-            font-size: 26px;
-            margin: 0
-        }
-
-        .section-head p {
-            color: var(--muted);
-            font-size: 13px;
-            margin: 2px 0
-        }
-
-        .section-head > .count {
-            display: none
+            min-height: calc(100vh - 315px);
+            padding-top: 10px
         }
 
         .count {
@@ -612,7 +520,7 @@
             height: min(720px, calc(100vh - 70px));
             overflow-y: auto;
             overscroll-behavior: contain;
-            scroll-snap-type: y mandatory;
+            scroll-snap-type: y proximity;
             scrollbar-width: none;
             padding: 0;
             background: transparent
@@ -670,12 +578,6 @@
             backdrop-filter: blur(3px)
         }
 
-        .category-rail::before,
-        .category-rail::after {
-            content: "";
-            flex: 0 0 calc(50% - 58px)
-        }
-
         .category-rail::-webkit-scrollbar {
             display: none
         }
@@ -686,16 +588,16 @@
             justify-items: center;
             width: 100%;
             justify-self: stretch;
-            scroll-snap-align: center;
+            scroll-snap-align: start;
             border: 0;
             background: transparent;
             color: var(--muted);
             padding: 8px 5px 10px;
             cursor: pointer;
-            transform: translateX(var(--arc-x, 0px)) scale(var(--arc-scale, .88));
-            opacity: var(--arc-opacity, .62);
+            transform: none;
+            opacity: .72;
             transition: transform .2s ease, opacity .2s ease, color .2s ease, filter .2s ease;
-            will-change: transform
+            will-change: opacity
         }
 
         .category-tab img,
@@ -750,23 +652,6 @@
         @keyframes categoryReveal {
             from { opacity: 0; transform: translateY(10px) }
             to { opacity: 1; transform: translateY(0) }
-        }
-
-        .category-title {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            font-size: 19px;
-            margin: 0 0 13px
-        }
-
-        .category-title:before {
-            content: "";
-            width: 5px;
-            height: 24px;
-            border-radius: 10px;
-            background: var(--cyan);
-            box-shadow: 0 0 12px var(--cyan)
         }
 
         .meals {
@@ -1458,9 +1343,6 @@
                 grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))
             }
 
-            .service-badge {
-                display: none
-            }
         }
 
         @media(max-width:720px) {
@@ -1499,22 +1381,6 @@
             .restaurant-display-screen {
                 min-height: 340px;
                 border-radius: 21px
-            }
-
-            .restaurant-display-status {
-                top: 12px;
-                left: 10px;
-                max-width: calc(100% - 20px);
-                padding: 5px 7px;
-                font-size: 8px;
-                letter-spacing: .04em
-            }
-
-            .restaurant-display-progress {
-                top: auto;
-                right: 10px;
-                bottom: 11px;
-                width: calc(100% - 20px)
             }
 
             .hero-tools {
@@ -1571,12 +1437,9 @@
                 font-size: 11px
             }
 
-            .service-badge {
-                display: none
-            }
-
             .layout {
-                margin-top: 12px
+                margin-top: 7px;
+                padding-top: 7px
             }
 
             .menu-panel,
@@ -1586,7 +1449,7 @@
             }
 
             .menu-panel {
-                padding-inline: 9px
+                padding: 7px 9px 14px
             }
 
             .menu-browser {
@@ -1616,10 +1479,6 @@
             .category-tab span:last-child {
                 width: 57px;
                 font-size: 10px
-            }
-
-            .category-title {
-                font-size: 17px
             }
 
             .meals {
@@ -1803,8 +1662,6 @@
                     @endif
                 </div>
                 <div class="restaurant-display-shade" aria-hidden="true"></div>
-                <span class="restaurant-display-status"><i aria-hidden="true"></i>{{ $displayScreenLabel }}</span>
-                <span class="restaurant-display-progress" aria-hidden="true"><span></span></span>
             </section>
 
             <header class="hero">
@@ -1831,9 +1688,6 @@
                         @endif
                     </div>
                 </div>
-                <div class="service-badge"><i
-                        class="ti {{ $table ? 'ti-tools-kitchen-2' : 'ti-truck-delivery' }}"></i>{{ $table ? $copy['inside_restaurant'] : $copy['delivery_pickup'] }}
-                </div>
             </header>
         </div>
 
@@ -1849,12 +1703,6 @@
 
         <div class="layout">
             <section class="menu-panel">
-                <div class="section-head">
-                    <div>
-                        <h2>{{ $copy['food_menu'] }}</h2>
-                        <p>{{ $copy['food_hint'] }}</p>
-                    </div><span class="count">{{ $products->count() }}</span>
-                </div>
                 @if($restaurantCategories->isNotEmpty())
                     <div class="menu-browser" id="menuBrowser">
                         <nav class="category-rail" id="categoryRail" aria-label="{{ $copy['menu_sections'] }}">
@@ -1880,7 +1728,6 @@
                                 <section class="category category-pane" data-category-pane="{{ $category['key'] }}"
                                     @if($category['background']) data-background-video="{{ $category['background'] }}" @endif
                                     @if(!$loop->first) hidden @endif>
-                                    <h3 class="category-title">{{ $category['name'] }}</h3>
                                     <div class="meals">
                             @forelse ($category['products'] as $product)
                                 <article class="meal" data-product-id="{{ $product->id }}" role="button" tabindex="0"
@@ -2038,7 +1885,6 @@
 
             const displaySlider = document.querySelector('[data-restaurant-display]');
             const displaySlides = displaySlider ? [...displaySlider.querySelectorAll('.restaurant-display-slide')] : [];
-            const displayProgress = document.querySelector('.restaurant-display-progress span');
             let displayIndex = Math.max(0, displaySlides.findIndex(slide => slide.classList.contains('active')));
             let displayTimer = null;
             let displayVisible = true;
@@ -2058,18 +1904,6 @@
                 });
             };
 
-            const animateDisplayProgress = duration => {
-                if (!displayProgress) return;
-                displayProgress.style.transition = 'none';
-                displayProgress.style.width = '0';
-                requestAnimationFrame(() => requestAnimationFrame(() => {
-                    displayProgress.style.transition = displaySlides.length > 1 && displayVisible
-                        ? `width ${duration}ms linear`
-                        : 'none';
-                    displayProgress.style.width = '100%';
-                }));
-            };
-
             const activateDisplaySlide = nextIndex => {
                 clearTimeout(displayTimer);
                 displaySlides.forEach((slide, index) => {
@@ -2081,7 +1915,6 @@
                 const activeSlide = displaySlides[displayIndex];
                 const duration = Math.max(1000, Number(activeSlide?.dataset.displayDuration) || 8000);
                 playDisplaySlide(activeSlide);
-                animateDisplayProgress(duration);
                 if (displaySlides.length > 1 && displayVisible && !document.hidden) {
                     displayTimer = setTimeout(() => activateDisplaySlide((displayIndex + 1) % displaySlides.length), duration);
                 }
@@ -2120,13 +1953,11 @@
                 });
             }
 
-            const categoryRail = $('categoryRail');
             const categoryContent = $('categoryContent');
             const categoryBackground = $('categoryBackground');
             const categoryTabs = [...document.querySelectorAll('.category-tab')];
             const categoryPanes = [...document.querySelectorAll('[data-category-pane]')];
             let activeCategory = categoryTabs[0]?.dataset.categoryKey;
-            let categoryFrame = null;
 
             const setCategoryBackground = pane => {
                 if (!categoryBackground || !categoryContent) return;
@@ -2169,31 +2000,14 @@
                 categoryContent?.classList.remove('has-video');
             });
 
-            const positionCategoryArc = () => {
-                if (!categoryRail || !categoryTabs.length) return;
-                const railBox = categoryRail.getBoundingClientRect();
-                const center = railBox.top + railBox.height / 2;
-                const reach = Math.max(1, railBox.height / 2);
-
-                categoryTabs.forEach(tab => {
-                    const box = tab.getBoundingClientRect();
-                    const distance = Math.min(1, Math.abs(box.top + box.height / 2 - center) / reach);
-                    const curve = Math.cos(distance * Math.PI / 2);
-                    const arcDepth = window.innerWidth <= 720 ? 14 : 22;
-                    tab.style.setProperty('--arc-x', `${-arcDepth * curve}px`);
-                    tab.style.setProperty('--arc-scale', String(.78 + curve * .52));
-                    tab.style.setProperty('--arc-opacity', String(.38 + curve * .62));
-                });
-            };
-
-            const activateCategory = (key, centerTab = false) => {
-                if (!key || key === activeCategory && !centerTab) return;
+            const activateCategory = (key, revealTab = false) => {
+                if (!key || key === activeCategory && !revealTab) return;
                 activeCategory = key;
                 categoryTabs.forEach(tab => {
                     const active = tab.dataset.categoryKey === key;
                     tab.classList.toggle('active', active);
                     tab.setAttribute('aria-pressed', String(active));
-                    if (active && centerTab) tab.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (active && revealTab) tab.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 });
                 categoryPanes.forEach(pane => pane.hidden = pane.dataset.categoryPane !== key);
                 const activePane = categoryPanes.find(pane => pane.dataset.categoryPane === key);
@@ -2203,26 +2017,7 @@
             categoryTabs.forEach(tab => tab.addEventListener('click', () =>
                 activateCategory(tab.dataset.categoryKey, true)));
 
-            categoryRail?.addEventListener('scroll', () => {
-                cancelAnimationFrame(categoryFrame);
-                categoryFrame = requestAnimationFrame(() => {
-                    positionCategoryArc();
-                    const railBox = categoryRail.getBoundingClientRect();
-                    const center = railBox.top + railBox.height / 2;
-                    const closest = categoryTabs.reduce((best, tab) => {
-                        const box = tab.getBoundingClientRect();
-                        const distance = Math.abs(box.top + box.height / 2 - center);
-                        return !best || distance < best.distance ? { tab, distance } : best;
-                    }, null);
-                    if (closest) activateCategory(closest.tab.dataset.categoryKey);
-                });
-            }, { passive: true });
-
-            window.addEventListener('resize', () => {
-                positionCategoryArc();
-            }, { passive: true });
             requestAnimationFrame(() => {
-                positionCategoryArc();
                 const activePane = categoryPanes.find(pane => !pane.hidden);
                 setCategoryBackground(activePane);
             });
