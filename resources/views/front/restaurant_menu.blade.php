@@ -1407,16 +1407,16 @@
             .brand {
                 align-items: flex-end;
                 gap: 14px;
-                top: auto;
+                top: 47px;
                 right: 2px;
-                bottom: 6px;
+                bottom: auto;
                 width: calc(100% - 4px);
                 max-width: calc(100% - 4px)
             }
 
             .restaurant-logo-stack {
                 width: 100%;
-                align-items: flex-end;
+                align-items: flex-start;
                 gap: 8px
             }
 
