@@ -10,7 +10,9 @@
     const userAgent = navigator.userAgent || '';
     const isAndroid = /android/i.test(userAgent);
     const isIos = /iphone|ipad|ipod/i.test(userAgent);
+    const isSamsungInternet = /SamsungBrowser/i.test(userAgent);
     const isEmbeddedBrowser = /(?:;\s*wv\)|\bwv\b|FBAN|FBAV|Instagram|Line\/|OzmanApp)/i.test(userAgent)
+        || isSamsungInternet
         || (isIos && !/Safari/i.test(userAgent));
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     let deferredInstallPrompt = null;
@@ -61,7 +63,9 @@
             button.addEventListener('click', () => setStatus('ثبّت التطبيق من Chrome أو Safari أولاً، ثم فعّل الإشعارات من النسخة المثبّتة.', 'ready'));
         });
         setStatus(
-            isAndroid
+            isSamsungInternet
+                ? 'متصفح Samsung حاول إنشاء نسخة قديمة. اضغط «فتح في Chrome للتثبيت» لتثبيت آمن ومتوافق.'
+                : isAndroid
                 ? 'أنت داخل تطبيق Ozman. اضغط «فتح في Chrome للتثبيت» لإكمال التثبيت.'
                 : 'أنت داخل تطبيق Ozman. افتح الصفحة في Safari ثم أضفها إلى الشاشة الرئيسية.',
             'ready',
