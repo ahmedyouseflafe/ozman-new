@@ -63,7 +63,13 @@ class Shop extends Model
 
     public function requiresActiveDistributor(): bool
     {
-        return (bool) ($this->catalogDefinition()['requires_distributor'] ?? true);
+        if (($this->catalogDefinition()['requires_distributor'] ?? true) === false) {
+            return false;
+        }
+
+        // المتجر الذي أضافته الإدارة مباشرة قد يعمل مستقلاً بلا موزّع.
+        // وجود أحد هذين الربطين يعني أن المتجر تابع لقناة توزيع Ozman.
+        return filled($this->distributor_id) || filled($this->distributor_marketer_id);
     }
 
     public function activeDistributionPartner(): ?Distributor

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Distributor;
 use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -110,26 +109,6 @@ class MerchantPwaTest extends TestCase
 
     private function ownerAndShop(string $name, string $slug): array
     {
-        $distributorOwner = User::create([
-            'name' => $name.' distributor',
-            'email' => $slug.'-distributor@example.com',
-            'password' => 'password',
-            'role' => 'distributor',
-            'is_active' => true,
-        ]);
-        $distributorShop = Shop::create([
-            'user_id' => $distributorOwner->id,
-            'name' => $name.' distributor shop',
-            'slug' => $slug.'-distributor-shop',
-            'catalog_type' => 'general',
-            'is_active' => true,
-        ]);
-        $distributor = Distributor::create([
-            'shop_id' => $distributorShop->id,
-            'user_id' => $distributorOwner->id,
-            'name' => $name.' distributor',
-            'is_active' => true,
-        ]);
         $owner = User::create([
             'name' => $name.' owner',
             'email' => $slug.'@example.com',
@@ -139,7 +118,6 @@ class MerchantPwaTest extends TestCase
         ]);
         $shop = Shop::create([
             'user_id' => $owner->id,
-            'distributor_id' => $distributor->id,
             'name' => $name,
             'slug' => $slug,
             'catalog_type' => 'restaurant',

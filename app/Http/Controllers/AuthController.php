@@ -126,6 +126,7 @@ class AuthController extends Controller
             ->first();
         if (! $driver) {
             Auth::logout();
+
             return back()->withErrors(['email' => 'حساب المندوب غير مرتبط بمطعم فعال.'])->onlyInput('email');
         }
 
@@ -416,7 +417,7 @@ class AuthController extends Controller
 
     private function applyMerchantReferral(Request $request, Shop $shop): void
     {
-        if (! $shop->requiresActiveDistributor()) {
+        if (($shop->catalogDefinition()['requires_distributor'] ?? true) === false) {
             return;
         }
 
@@ -440,7 +441,7 @@ class AuthController extends Controller
             return [null, 'هذا الحساب غير مرتبط بمتجر فعال. تواصل مع إدارة Ozman لتفعيل المتجر.'];
         }
 
-        if ($applyReferral && $shop->requiresActiveDistributor()) {
+        if ($applyReferral) {
             $this->applyMerchantReferral($request, $shop);
             $shop->refresh()->load(['distributor', 'distributorMarketer.distributor']);
         }
