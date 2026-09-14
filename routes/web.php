@@ -49,6 +49,12 @@ Route::middleware('auth')->group(function () {
 Route::get('/front-assets/{file}', [FrontAssetController::class, 'show'])
     ->where('file', 'script\\.js|style\\.css|shop-stories\\.(js|css)')
     ->name('front.assets');
+// Fallback for hosts where Laravel's public directory and public_html are separate.
+// The web server serves these paths directly when copied; otherwise Laravel serves
+// the Git-managed files while preserving the service worker's root scope.
+Route::get('/{file}', [FrontAssetController::class, 'show'])
+    ->where('file', 'merchant-pwa(?:-sw)?\\.js')
+    ->name('merchant-pwa.asset');
 Route::post('/app/device-token', [PushDeviceController::class, 'store'])
     ->middleware('throttle:20,1')
     ->name('app.device-token.store');

@@ -45,13 +45,29 @@ class MerchantPwaTest extends TestCase
             ->assertOk()
             ->assertSee('تطبيق Bankai sushi')
             ->assertSee(route('merchant-app.manifest', $shop), false)
-            ->assertSee(route('merchant-app.icon', ['shop' => $shop, 'size' => 512]), false);
+            ->assertSee(route('merchant-app.icon', ['shop' => $shop, 'size' => 512]), false)
+            ->assertSee(asset('merchant-pwa.js'), false);
 
         $this->get(route('merchant-app.launch', $shop))
             ->assertRedirect($shop->publicUrl());
 
         $this->assertSame($shop->id, session('merchant_shop_id'));
         $this->assertSame($shop->id, session('current_shop_id'));
+    }
+
+    public function test_pwa_runtime_assets_are_served_when_public_html_is_separate(): void
+    {
+        $this->assertFileExists(public_path('merchant-pwa.js'));
+        $this->assertFileExists(public_path('merchant-pwa-sw.js'));
+
+        $this->get('/merchant-pwa.js')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/javascript; charset=UTF-8');
+
+        $this->get('/merchant-pwa-sw.js')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/javascript; charset=UTF-8')
+            ->assertHeader('Service-Worker-Allowed', '/');
     }
 
     public function test_an_owner_cannot_launch_or_subscribe_to_another_shop(): void
