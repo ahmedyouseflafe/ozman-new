@@ -141,18 +141,6 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('scroll', scheduleMediaStoryRefresh, { passive: true });
 window.addEventListener('resize', scheduleMediaStoryRefresh, { passive: true });
 
-// Remove legacy same-origin service workers. The current site does not use a PWA
-// worker, and an older registration can cancel navigation preload requests.
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.getRegistrations()
-            .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
-            .catch(() => {
-                // Service worker cleanup must never block the storefront.
-            });
-    }, { once: true });
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-media-story]').forEach((slider) => {
         initMediaStorySlider(slider);

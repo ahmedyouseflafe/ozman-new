@@ -480,6 +480,14 @@
         </a>
         @endif
 
+        @if($isShopOwner && $previewShopId)
+        <a href="{{ route('merchant-app.index') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('merchant-app.*') ? 'active' : '' }}">
+             <i class="ti ti-device-mobile-down" aria-hidden="true"></i>
+             تثبيت تطبيق محلي
+        </a>
+        @endif
+
         @if($canSee(['products', 'products.show', 'products.create', 'products.edit']))
         <a href="{{ route('products', $previewShopId ? ['shop_id' => $previewShopId] : []) }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('products') || request()->routeIs('products.create') || request()->routeIs('products.edit') || request()->routeIs('products.show') ? 'active' : '' }}">

@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    @include('front.partials.merchant_pwa_head', ['pwaShop' => $shop])
     @php
         $electronicsCanonical = route('electronics.store', $shop);
         $electronicsDescription = $shop->description ?: "تصفح أحدث الأجهزة والأسعار في {$shop->name} عبر Ozman.";

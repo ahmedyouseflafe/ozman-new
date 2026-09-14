@@ -14,6 +14,8 @@ use App\Http\Controllers\FrontOrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PushDeviceController;
 use App\Http\Controllers\PushNotificationController;
+use App\Http\Controllers\MerchantPwaController;
+use App\Http\Controllers\WebPushSubscriptionController;
 use App\Http\Controllers\RaffleCardController;
 use App\Http\Controllers\RealEstateController;
 use App\Http\Controllers\RealEstateDashboardController;
@@ -50,6 +52,21 @@ Route::get('/front-assets/{file}', [FrontAssetController::class, 'show'])
 Route::post('/app/device-token', [PushDeviceController::class, 'store'])
     ->middleware('throttle:20,1')
     ->name('app.device-token.store');
+Route::get('/merchant-app', [MerchantPwaController::class, 'index'])->name('merchant-app.index');
+Route::get('/merchant-app/launch/{shop:slug}', [MerchantPwaController::class, 'launch'])->name('merchant-app.launch');
+Route::get('/merchant-app/manifest/{shop:slug}.webmanifest', [MerchantPwaController::class, 'manifest'])->name('merchant-app.manifest');
+Route::get('/merchant-app/icon/{shop:slug}/{size}.png', [MerchantPwaController::class, 'icon'])
+    ->whereIn('size', [192, 512])
+    ->name('merchant-app.icon');
+Route::get('/merchant-app/push/public-key', [WebPushSubscriptionController::class, 'publicKey'])
+    ->middleware('throttle:30,1')
+    ->name('merchant-app.push.public-key');
+Route::middleware(['auth', 'throttle:30,1'])->group(function () {
+    Route::post('/merchant-app/push/subscription', [WebPushSubscriptionController::class, 'store'])
+        ->name('merchant-app.push.store');
+    Route::delete('/merchant-app/push/subscription', [WebPushSubscriptionController::class, 'destroy'])
+        ->name('merchant-app.push.destroy');
+});
 Route::get('/csrf-token', [FrontController::class, 'csrfToken'])
     ->middleware('throttle:30,1')
     ->name('csrf.refresh');

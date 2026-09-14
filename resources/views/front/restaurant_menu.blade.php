@@ -78,6 +78,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @include('front.partials.merchant_pwa_head', ['pwaShop' => $shop])
     @php
         $restaurantCanonical = route('restaurant.menu', $shop);
         $restaurantDescription = $shop->description ?: "تصفح منيو {$shop->name} والأسعار واطلب مباشرة عبر Ozman.";

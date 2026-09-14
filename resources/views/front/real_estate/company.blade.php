@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    @include('front.partials.merchant_pwa_head', ['pwaShop' => $shop])
     @include('front.partials.seo', [
         'title' => $shop->name.' | عقارات',
         'description' => $shop->description ?: 'تصفح عقارات '.$shop->name.' المتاحة للبيع والإيجار.',

@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @include('front.partials.merchant_pwa_head', ['pwaShop' => $shop ?? null])
     @php
         $seoShopName = $shop?->name ?? 'Ozman';
         $seoDescription =

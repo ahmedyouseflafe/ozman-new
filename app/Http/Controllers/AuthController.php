@@ -7,6 +7,7 @@ use App\Models\DistributorMarketer;
 use App\Models\PushDevice;
 use App\Models\Shop;
 use App\Models\User;
+use App\Models\WebPushSubscription;
 use App\Rules\ValidPhoneNumber;
 use App\Services\ShopOwnerAccountService;
 use Illuminate\Http\RedirectResponse;
@@ -566,12 +567,19 @@ class AuthController extends Controller
     public function logout(Request $request): RedirectResponse
     {
         $token = $request->session()->get('app_push_token');
+        $webPushEndpointHash = $request->session()->get('merchant_web_push_endpoint_hash');
         $userId = $request->user()?->id;
         if ($userId && is_string($token) && $token !== '') {
             PushDevice::query()
                 ->where('token', $token)
                 ->where('user_id', $userId)
                 ->update(['user_id' => null]);
+        }
+        if ($userId && is_string($webPushEndpointHash) && $webPushEndpointHash !== '') {
+            WebPushSubscription::query()
+                ->where('user_id', $userId)
+                ->where('endpoint_hash', $webPushEndpointHash)
+                ->delete();
         }
 
         Auth::logout();

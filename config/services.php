@@ -49,4 +49,11 @@ return [
         'credentials' => env('FIREBASE_CREDENTIALS', storage_path('app/private/firebase-service-account.json')),
     ],
 
+    'web_push' => [
+        'subject' => env('WEB_PUSH_SUBJECT', env('APP_URL', 'https://ozman.online')),
+        'public_key' => env('WEB_PUSH_PUBLIC_KEY'),
+        'private_key' => env('WEB_PUSH_PRIVATE_KEY'),
+        'key_file' => env('WEB_PUSH_KEY_FILE', storage_path('app/private/web-push-vapid.json')),
+    ],
+
 ];

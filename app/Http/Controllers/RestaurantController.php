@@ -9,6 +9,7 @@ use App\Models\RestaurantTable;
 use App\Models\Shop;
 use App\Rules\ValidPhoneNumber;
 use App\Services\FirebaseMessagingService;
+use App\Services\WebPushService;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -368,10 +369,6 @@ class RestaurantController extends Controller
             ->where('user_id', $shop->user_id)
             ->pluck('token');
 
-        if ($tokens->isEmpty()) {
-            return;
-        }
-
         $typeLabel = match ($order->order_type) {
             'dine_in' => 'طلب طاولة',
             'delivery' => 'طلب توصيل',
@@ -380,22 +377,29 @@ class RestaurantController extends Controller
         };
         $url = route('restaurant.dashboard', $shop).'#restaurant-order-'.$order->id;
 
+        $notificationData = [
+            'type' => 'restaurant_order',
+            'screen' => 'restaurant_dashboard',
+            'shop_id' => $shop->id,
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+        ];
+        $title = 'طلب جديد · '.$shop->name;
+        $message = "{$typeLabel} رقم {$order->order_number} بقيمة {$order->total} شيكل";
+
+        if ($tokens->isNotEmpty()) {
+            try {
+                $firebase->sendToTokens($tokens, $title, $message, $url, $notificationData);
+            } catch (Throwable $exception) {
+                // لا يجب أن يفشل طلب الزبون بسبب عطل مؤقت في خدمة الإشعارات.
+                report($exception);
+            }
+        }
+
         try {
-            $firebase->sendToTokens(
-                $tokens,
-                'طلب جديد · '.$shop->name,
-                "{$typeLabel} رقم {$order->order_number} بقيمة {$order->total} شيكل",
-                $url,
-                [
-                    'type' => 'restaurant_order',
-                    'screen' => 'restaurant_dashboard',
-                    'shop_id' => $shop->id,
-                    'order_id' => $order->id,
-                    'order_number' => $order->order_number,
-                ],
-            );
+            app(WebPushService::class)->sendToShop($shop, $title, $message, $url, $notificationData);
         } catch (Throwable $exception) {
-            // لا يجب أن يفشل طلب الزبون بسبب عطل مؤقت في خدمة الإشعارات.
+            // طلب الزبون ينجح حتى لو تعذر إرسال إشعار الويب مؤقتاً.
             report($exception);
         }
     }

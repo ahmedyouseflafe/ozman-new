@@ -11,6 +11,7 @@ use App\Models\RestaurantTable;
 use App\Models\Shop;
 use App\Models\User;
 use App\Services\FirebaseMessagingService;
+use App\Services\WebPushService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -64,6 +65,19 @@ class RestaurantOrderingTest extends TestCase
             })
             ->andReturn(1);
         $this->app->instance(FirebaseMessagingService::class, $firebase);
+
+        $webPush = \Mockery::mock(WebPushService::class);
+        $webPush->shouldReceive('sendToShop')
+            ->once()
+            ->withArgs(function ($targetShop, $title, $body, $url, $data) use ($shop) {
+                return $targetShop->is($shop)
+                    && str_contains($title, $shop->name)
+                    && str_contains($url, route('restaurant.dashboard', $shop))
+                    && ($data['type'] ?? null) === 'restaurant_order'
+                    && (int) ($data['shop_id'] ?? 0) === $shop->id;
+            })
+            ->andReturn(1);
+        $this->app->instance(WebPushService::class, $webPush);
 
         $this->postJson(route('restaurant.orders.store', $shop), [
             'order_type' => 'dine_in',
@@ -423,7 +437,7 @@ class RestaurantOrderingTest extends TestCase
 
         $this->withSession(['locale' => 'ar'])->get(route('restaurant.menu', $shop))
             ->assertOk()
-            ->assertSee('قائمة الطعام')
+            ->assertDontSee('قائمة الطعام')
             ->assertSee('اختر حجم الوجبة')
             ->assertSee('تجهيز خلال نحو 15 دقيقة')
             ->assertSee('تتبّع طلبك')
