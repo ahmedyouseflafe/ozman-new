@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\OfferPushSubscription;
 use App\Models\Shop;
 use App\Models\WebPushSubscription;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\VAPID;
 use Minishlink\WebPush\WebPush;
@@ -45,6 +47,54 @@ class WebPushService
             'data' => $data,
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 
+        return $this->deliver($subscriptions, $payload, WebPushSubscription::class, [
+            'channel' => 'merchant_orders',
+            'shop_id' => $shop->id,
+        ]);
+    }
+
+    public function sendOfferToAll(?Shop $shop, string $title, string $body, string $url, array $data = []): int
+    {
+        if (! Schema::hasTable('offer_push_subscriptions')) {
+            return 0;
+        }
+
+        $subscriptions = OfferPushSubscription::query()->get();
+        if ($subscriptions->isEmpty()) {
+            return 0;
+        }
+
+        try {
+            $icon = $shop
+                ? route('merchant-app.icon', ['shop' => $shop, 'size' => 192])
+                : asset('ozman-favicon.png');
+            $payload = json_encode([
+                'title' => $title,
+                'body' => $body,
+                'url' => $url,
+                'icon' => $icon,
+                'badge' => $icon,
+                'tag' => 'offer-'.($data['offer_id'] ?? $data['story_id'] ?? now()->timestamp),
+                'requireInteraction' => false,
+                'data' => array_merge($data, ['audience' => 'all_offers']),
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+
+            return $this->deliver($subscriptions, $payload, OfferPushSubscription::class, [
+                'channel' => 'all_offers',
+                'shop_id' => $shop?->id,
+            ]);
+        } catch (Throwable $exception) {
+            Log::warning('Unable to broadcast offer Web Push notification.', [
+                'shop_id' => $shop?->id,
+                'reason' => $exception->getMessage(),
+            ]);
+
+            return 0;
+        }
+    }
+
+    private function deliver(iterable $subscriptions, string $payload, string $subscriptionModel, array $logContext): int
+    {
         $webPush = new WebPush(
             ['VAPID' => $this->vapidConfiguration()],
             ['TTL' => 300, 'urgency' => 'high', 'batchSize' => 100],
@@ -72,17 +122,16 @@ class WebPushService
             }
 
             if ($report->isSubscriptionExpired()) {
-                WebPushSubscription::query()
+                $subscriptionModel::query()
                     ->where('endpoint_hash', hash('sha256', $report->getEndpoint()))
                     ->delete();
 
                 continue;
             }
 
-            Log::warning('Web Push notification failed.', [
-                'shop_id' => $shop->id,
+            Log::warning('Web Push notification failed.', array_merge($logContext, [
                 'reason' => $report->getReason(),
-            ]);
+            ]));
         }
 
         return $sent;

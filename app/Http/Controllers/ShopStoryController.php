@@ -8,6 +8,7 @@ use App\Models\FrontOrder;
 use App\Models\PushDevice;
 use App\Models\ShopStoryView;
 use App\Models\User;
+use App\Services\WebPushService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -33,7 +34,7 @@ class ShopStoryController extends Controller
         return view('admin.shop_stories.index', compact('shops', 'stories'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, WebPushService $webPush)
     {
         $data = $request->validate([
             'shop_id' => ['required', 'integer'],
@@ -45,7 +46,7 @@ class ShopStoryController extends Controller
         $path = $file->store('shop-stories', 'local');
         abort_unless($path, 500);
         try {
-            ShopStory::create([
+            $story = ShopStory::create([
                 'shop_id' => $shop->id, 'caption' => $data['caption'] ?? null,
                 'media' => $path, 'type' => str_starts_with($file->getMimeType(), 'video/') ? 'video' : 'image',
                 'expires_at' => now()->addHours(24),
@@ -54,6 +55,15 @@ class ShopStoryController extends Controller
             Storage::disk('local')->delete($path);
             throw $error;
         }
+
+        $webPush->sendOfferToAll(
+            $shop,
+            'عرض جديد من '.$shop->name,
+            $story->caption ?: 'افتح الستوري لمشاهدة آخر العروض.',
+            $shop->publicUrl(),
+            ['type' => 'shop_story', 'story_id' => $story->id],
+        );
+
         return back()->with('status', 'تم نشر الستوري لمدة 24 ساعة.');
     }
 

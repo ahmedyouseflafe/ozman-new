@@ -15,6 +15,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PushDeviceController;
 use App\Http\Controllers\PushNotificationController;
 use App\Http\Controllers\MerchantPwaController;
+use App\Http\Controllers\OfferPushSubscriptionController;
 use App\Http\Controllers\WebPushSubscriptionController;
 use App\Http\Controllers\RaffleCardController;
 use App\Http\Controllers\RealEstateController;
@@ -53,8 +54,14 @@ Route::get('/front-assets/{file}', [FrontAssetController::class, 'show'])
 // The web server serves these paths directly when copied; otherwise Laravel serves
 // the Git-managed files while preserving the service worker's root scope.
 Route::get('/{file}', [FrontAssetController::class, 'show'])
-    ->where('file', 'merchant-pwa(?:-sw)?\\.js')
+    ->where('file', '(?:merchant-pwa(?:-sw)?|offer-notifications)\\.js')
     ->name('merchant-pwa.asset');
+Route::post('/offers/push/subscription', [OfferPushSubscriptionController::class, 'store'])
+    ->middleware('throttle:20,1')
+    ->name('offers.push.store');
+Route::delete('/offers/push/subscription', [OfferPushSubscriptionController::class, 'destroy'])
+    ->middleware('throttle:20,1')
+    ->name('offers.push.destroy');
 Route::post('/app/device-token', [PushDeviceController::class, 'store'])
     ->middleware('throttle:20,1')
     ->name('app.device-token.store');

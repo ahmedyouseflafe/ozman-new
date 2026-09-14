@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Advertisement;
 use App\Models\Shop;
+use App\Services\WebPushService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -48,7 +50,7 @@ class AdvertisementController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, WebPushService $webPush): RedirectResponse
     {
         $data = $this->validatedData($request);
         $this->normalizeShopId($data);
@@ -66,6 +68,10 @@ class AdvertisementController extends Controller
             "المتجر {$ad->shop?->name} أضاف إعلان: {$ad->title}",
             route('ads.show', $ad)
         );
+
+        if ($ad->is_active) {
+            $this->broadcastOffer($ad, $webPush);
+        }
 
         return redirect()
             ->route('ads')
@@ -90,8 +96,9 @@ class AdvertisementController extends Controller
         ]);
     }
 
-    public function update(Request $request, Advertisement $ad): RedirectResponse
+    public function update(Request $request, Advertisement $ad, WebPushService $webPush): RedirectResponse
     {
+        $wasActive = $ad->is_active;
         $data = $this->validatedData($request, $ad);
         $this->normalizeShopId($data);
         $data['duration'] = $data['duration'] ?? 10;
@@ -106,6 +113,10 @@ class AdvertisementController extends Controller
         }
 
         $ad->update($data);
+
+        if (! $wasActive && $ad->is_active) {
+            $this->broadcastOffer($ad, $webPush);
+        }
 
         return redirect()
             ->route('ads')
@@ -190,5 +201,21 @@ class AdvertisementController extends Controller
             'youtube' => 'يوتيوب',
             default => $type,
         };
+    }
+
+    private function broadcastOffer(Advertisement $ad, WebPushService $webPush): void
+    {
+        $ad->loadMissing('shop');
+        $shopName = $ad->shop?->name ?? 'Ozman';
+        $description = trim(strip_tags((string) $ad->description));
+        $body = $ad->title.($description !== '' ? ' — '.Str::limit($description, 120) : '');
+
+        $webPush->sendOfferToAll(
+            $ad->shop,
+            'عرض جديد من '.$shopName,
+            $body,
+            $ad->shop?->publicUrl() ?? route('front.home'),
+            ['type' => 'advertisement', 'offer_id' => $ad->id],
+        );
     }
 }

@@ -4,22 +4,29 @@
     $merchantPwaEnabled = $merchantPwaShop instanceof \App\Models\Shop
         && $merchantPwaUser?->isShopOwner()
         && $merchantPwaUser->shops()->whereKey($merchantPwaShop->id)->exists();
+    $offerNotificationsEnabled = $merchantPwaShop instanceof \App\Models\Shop
+        && $merchantPwaShop->is_active;
+    $webPushPublicKey = ($merchantPwaEnabled || $offerNotificationsEnabled)
+        ? ($vapidPublicKey ?? app(\App\Services\WebPushService::class)->publicKey())
+        : null;
 @endphp
+
+@if($merchantPwaEnabled || $offerNotificationsEnabled)
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+@endif
 
 @if($merchantPwaEnabled)
     @php
         $merchantPwaVersion = $merchantPwaShop->updated_at?->timestamp ?? 1;
-        $merchantPwaPublicKey = $vapidPublicKey ?? app(\App\Services\WebPushService::class)->publicKey();
         $merchantPwaConfig = [
             'shopId' => $merchantPwaShop->id,
             'shopName' => $merchantPwaShop->name,
             'serviceWorkerUrl' => asset('merchant-pwa-sw.js'),
             'subscribeUrl' => route('merchant-app.push.store'),
             'unsubscribeUrl' => route('merchant-app.push.destroy'),
-            'vapidPublicKey' => $merchantPwaPublicKey,
+            'vapidPublicKey' => $webPushPublicKey,
         ];
     @endphp
-    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#071820">
     <meta name="application-name" content="{{ $merchantPwaShop->name }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -31,4 +38,61 @@
         window.OZMAN_MERCHANT_PWA = @json($merchantPwaConfig);
     </script>
     <script defer src="{{ asset('merchant-pwa.js') }}?v={{ filemtime(public_path('merchant-pwa.js')) }}"></script>
+@endif
+
+@if($offerNotificationsEnabled)
+    @php
+        $offerLabels = match (app()->getLocale()) {
+            'he' => [
+                'title' => 'הפעלת התראות למבצעים',
+                'body' => 'אשרו התראות כדי לקבל כל מבצע חדש מכל החנויות ב-Ozman.',
+                'allow' => 'הפעלת התראות',
+                'later' => 'אחר כך',
+                'requesting' => 'מפעיל התראות…',
+                'denied' => 'יש לאשר התראות בהגדרות הדפדפן.',
+                'success' => 'מעולה! מעכשיו תקבלו מבצעים מכל החנויות.',
+                'error' => 'לא ניתן להפעיל התראות. נסו שוב.',
+            ],
+            'en' => [
+                'title' => 'Enable offer notifications',
+                'body' => 'Allow notifications to receive every new offer from all stores on Ozman.',
+                'allow' => 'Enable notifications',
+                'later' => 'Later',
+                'requesting' => 'Enabling notifications…',
+                'denied' => 'Please allow notifications in your browser settings.',
+                'success' => 'Done! You will now receive offers from all stores.',
+                'error' => 'Notifications could not be enabled. Please try again.',
+            ],
+            default => [
+                'title' => 'فعّل إشعارات العروض',
+                'body' => 'اسمح بالإشعارات ليصلك أي عرض جديد من جميع المحلات على Ozman.',
+                'allow' => 'تفعيل الإشعارات',
+                'later' => 'لاحقًا',
+                'requesting' => 'جارٍ تفعيل الإشعارات…',
+                'denied' => 'يجب السماح بالإشعارات من إعدادات المتصفح.',
+                'success' => 'تم! ستصلك الآن عروض جميع المحلات.',
+                'error' => 'تعذر تفعيل الإشعارات. حاول مرة أخرى.',
+            ],
+        };
+        $offerNotificationsConfig = [
+            'sourceShopId' => $merchantPwaShop->id,
+            'serviceWorkerUrl' => asset('merchant-pwa-sw.js'),
+            'subscribeUrl' => route('offers.push.store'),
+            'unsubscribeUrl' => route('offers.push.destroy'),
+            'vapidPublicKey' => $webPushPublicKey,
+            'showPrompt' => ! $merchantPwaEnabled,
+            'title' => $offerLabels['title'],
+            'body' => $offerLabels['body'],
+            'allowLabel' => $offerLabels['allow'],
+            'laterLabel' => $offerLabels['later'],
+            'requestingLabel' => $offerLabels['requesting'],
+            'deniedLabel' => $offerLabels['denied'],
+            'successLabel' => $offerLabels['success'],
+            'errorLabel' => $offerLabels['error'],
+        ];
+    @endphp
+    <script>
+        window.OZMAN_OFFER_NOTIFICATIONS = @json($offerNotificationsConfig);
+    </script>
+    <script defer src="{{ asset('offer-notifications.js') }}?v={{ filemtime(public_path('offer-notifications.js')) }}"></script>
 @endif
