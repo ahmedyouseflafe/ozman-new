@@ -2,11 +2,16 @@
     'use strict';
 
     const config = window.OZMAN_MERCHANT_PWA;
-    if (!config || !('serviceWorker' in navigator)) return;
+    if (!config) return;
 
     const installButtons = [...document.querySelectorAll('[data-pwa-install]')];
     const notificationButtons = [...document.querySelectorAll('[data-pwa-notifications]')];
     const statusElements = [...document.querySelectorAll('[data-pwa-status]')];
+    const userAgent = navigator.userAgent || '';
+    const isAndroid = /android/i.test(userAgent);
+    const isIos = /iphone|ipad|ipod/i.test(userAgent);
+    const isEmbeddedBrowser = /(?:;\s*wv\)|\bwv\b|FBAN|FBAV|Instagram|Line\/|OzmanApp)/i.test(userAgent)
+        || (isIos && !/Safari/i.test(userAgent));
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     let deferredInstallPrompt = null;
 
@@ -35,6 +40,40 @@
             element.dataset.state = state;
         });
     };
+
+    const openInChrome = () => {
+        if (!isAndroid) {
+            setStatus('افتح هذه الصفحة في Safari، ثم اضغط مشاركة واختر «إضافة إلى الشاشة الرئيسية».', 'ready');
+            return;
+        }
+
+        const url = new URL(window.location.href);
+        const scheme = url.protocol.replace(':', '');
+        window.location.href = `intent://${url.host}${url.pathname}${url.search}#Intent;scheme=${scheme};package=com.android.chrome;end`;
+    };
+
+    if (isEmbeddedBrowser) {
+        installButtons.forEach((button) => {
+            button.textContent = isAndroid ? 'فتح في Chrome للتثبيت' : 'طريقة التثبيت على iPhone';
+            button.addEventListener('click', openInChrome);
+        });
+        notificationButtons.forEach((button) => {
+            button.addEventListener('click', () => setStatus('ثبّت التطبيق من Chrome أو Safari أولاً، ثم فعّل الإشعارات من النسخة المثبّتة.', 'ready'));
+        });
+        setStatus(
+            isAndroid
+                ? 'أنت داخل تطبيق Ozman. اضغط «فتح في Chrome للتثبيت» لإكمال التثبيت.'
+                : 'أنت داخل تطبيق Ozman. افتح الصفحة في Safari ثم أضفها إلى الشاشة الرئيسية.',
+            'ready',
+        );
+        return;
+    }
+
+    if (!('serviceWorker' in navigator)) {
+        setStatus('هذا المتصفح لا يدعم تثبيت التطبيق. افتح الصفحة في Chrome أو Safari.', 'error');
+        installButtons.forEach((button) => button.addEventListener('click', openInChrome));
+        return;
+    }
 
     const registrationPromise = navigator.serviceWorker.register(config.serviceWorkerUrl, { scope: '/' });
 
@@ -122,7 +161,6 @@
         }
 
         if (!deferredInstallPrompt) {
-            const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
             setStatus(
                 isIos
                     ? 'على iPhone: اضغط مشاركة ثم «إضافة إلى الشاشة الرئيسية».'
@@ -156,6 +194,19 @@
             subscribeToNotifications(false).catch((error) => {
                 console.error('Unable to refresh merchant PWA subscription.', error);
             });
+        }
+
+        if (!isStandalone && !deferredInstallPrompt) {
+            window.setTimeout(() => {
+                if (!deferredInstallPrompt) {
+                    setStatus(
+                        isIos
+                            ? 'التطبيق جاهز. اضغط مشاركة ثم اختر «إضافة إلى الشاشة الرئيسية».'
+                            : 'تم تجهيز التطبيق. اضغط زر التثبيت، أو اختر «تثبيت التطبيق» من قائمة Chrome.',
+                        'ready',
+                    );
+                }
+            }, 1500);
         }
     }).catch((error) => {
         console.error('Merchant PWA service worker registration failed.', error);
