@@ -16,6 +16,7 @@ class FrontAssetController extends Controller
             'shop-stories.css' => 'text/css',
             'merchant-pwa.js' => 'application/javascript',
             'merchant-pwa-sw.js' => 'application/javascript',
+            'shop-pwa.js' => 'application/javascript',
             'offer-notifications.js' => 'application/javascript',
         ];
         abort_unless(isset($types[$file]), 404);

@@ -16,6 +16,7 @@ use App\Http\Controllers\PushDeviceController;
 use App\Http\Controllers\PushNotificationController;
 use App\Http\Controllers\MerchantPwaController;
 use App\Http\Controllers\OfferPushSubscriptionController;
+use App\Http\Controllers\ShopAppController;
 use App\Http\Controllers\WebPushSubscriptionController;
 use App\Http\Controllers\RaffleCardController;
 use App\Http\Controllers\RealEstateController;
@@ -54,7 +55,7 @@ Route::get('/front-assets/{file}', [FrontAssetController::class, 'show'])
 // The web server serves these paths directly when copied; otherwise Laravel serves
 // the Git-managed files while preserving the service worker's root scope.
 Route::get('/{file}', [FrontAssetController::class, 'show'])
-    ->where('file', '(?:merchant-pwa(?:-sw)?|offer-notifications)\\.js')
+    ->where('file', '(?:merchant-pwa(?:-sw)?|shop-pwa|offer-notifications)\\.js')
     ->name('merchant-pwa.asset');
 Route::post('/offers/push/subscription', [OfferPushSubscriptionController::class, 'store'])
     ->middleware('throttle:20,1')
@@ -65,6 +66,9 @@ Route::delete('/offers/push/subscription', [OfferPushSubscriptionController::cla
 Route::post('/app/device-token', [PushDeviceController::class, 'store'])
     ->middleware('throttle:20,1')
     ->name('app.device-token.store');
+Route::get('/shop-app/{shop:slug}', [ShopAppController::class, 'index'])->name('shop-app.index');
+Route::get('/shop-app/{shop:slug}/launch', [ShopAppController::class, 'launch'])->name('shop-app.launch');
+Route::get('/shop-app/{shop:slug}/manifest.webmanifest', [ShopAppController::class, 'manifest'])->name('shop-app.manifest');
 Route::get('/merchant-app', [MerchantPwaController::class, 'index'])->name('merchant-app.index');
 Route::get('/merchant-app/launch/{shop:slug}', [MerchantPwaController::class, 'launch'])->name('merchant-app.launch');
 Route::get('/merchant-app/manifest/{shop:slug}.webmanifest', [MerchantPwaController::class, 'manifest'])->name('merchant-app.manifest');

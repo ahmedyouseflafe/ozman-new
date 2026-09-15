@@ -6,6 +6,7 @@
         && $merchantPwaUser->shops()->whereKey($merchantPwaShop->id)->exists();
     $offerNotificationsEnabled = $merchantPwaShop instanceof \App\Models\Shop
         && $merchantPwaShop->is_active;
+    $customerPwaEnabled = $offerNotificationsEnabled && ! $merchantPwaEnabled;
     $webPushPublicKey = ($merchantPwaEnabled || $offerNotificationsEnabled)
         ? ($vapidPublicKey ?? app(\App\Services\WebPushService::class)->publicKey())
         : null;
@@ -13,6 +14,43 @@
 
 @if($merchantPwaEnabled || $offerNotificationsEnabled)
     <meta name="csrf-token" content="{{ csrf_token() }}">
+@endif
+
+@if($customerPwaEnabled)
+    @php
+        $customerPwaVersion = $merchantPwaShop->updated_at?->timestamp ?? 1;
+        $customerPwaLabels = [
+            'ready' => 'التطبيق جاهز للتثبيت على جهازك.',
+            'installed' => 'تم تثبيت تطبيق '.$merchantPwaShop->name.' بنجاح.',
+            'browserInstructions' => 'افتح قائمة Chrome واختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».',
+            'iosInstructions' => 'على iPhone: افتح الصفحة في Safari، اضغط مشاركة ثم «إضافة إلى الشاشة الرئيسية».',
+            'openChrome' => 'فتح في Chrome للتثبيت',
+            'iosInstall' => 'طريقة التثبيت على iPhone',
+            'openChromeHelp' => 'اضغط الزر لفتح الرابط في Chrome وإكمال تثبيت التطبيق.',
+            'unsupported' => 'هذا المتصفح لا يدعم تثبيت التطبيق. افتح الرابط في Chrome أو Safari.',
+            'error' => 'تعذر تجهيز التطبيق للتثبيت. تحقق من الاتصال وحاول مجددًا.',
+            'shareText' => 'حمّل تطبيق '.$merchantPwaShop->name.' وافتح المحل مباشرة من جوالك.',
+            'copied' => 'تم نسخ رابط التطبيق.',
+            'copyFailed' => 'تعذر نسخ الرابط. انسخه من شريط العنوان.',
+        ];
+        $customerPwaConfig = [
+            'shopName' => $merchantPwaShop->name,
+            'shareUrl' => route('shop-app.index', $merchantPwaShop),
+            'serviceWorkerUrl' => asset('merchant-pwa-sw.js'),
+            'labels' => $customerPwaLabels,
+        ];
+    @endphp
+    <meta name="theme-color" content="#071820">
+    <meta name="application-name" content="{{ $merchantPwaShop->name }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="{{ $merchantPwaShop->name }}">
+    <link rel="manifest" href="{{ route('shop-app.manifest', $merchantPwaShop) }}">
+    <link rel="apple-touch-icon" href="{{ route('merchant-app.icon', ['shop' => $merchantPwaShop, 'size' => 192, 'v' => $customerPwaVersion]) }}">
+    <script>
+        window.OZMAN_SHOP_PWA = @json($customerPwaConfig);
+    </script>
+    <script defer src="{{ asset('shop-pwa.js') }}?v={{ filemtime(public_path('shop-pwa.js')) }}"></script>
 @endif
 
 @if($merchantPwaEnabled)
@@ -80,7 +118,7 @@
             'subscribeUrl' => route('offers.push.store'),
             'unsubscribeUrl' => route('offers.push.destroy'),
             'vapidPublicKey' => $webPushPublicKey,
-            'showPrompt' => ! $merchantPwaEnabled,
+            'showPrompt' => ($offerNotificationsPrompt ?? true) && ! $merchantPwaEnabled,
             'title' => $offerLabels['title'],
             'body' => $offerLabels['body'],
             'allowLabel' => $offerLabels['allow'],

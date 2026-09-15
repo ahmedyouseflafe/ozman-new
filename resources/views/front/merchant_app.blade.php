@@ -29,6 +29,7 @@
                 <button class="btn btn-primary" type="button" data-pwa-install>تثبيت تطبيق {{ $shop->name }}</button>
                 <button class="btn btn-notifications" type="button" data-pwa-notifications>تفعيل إشعارات الطلبات</button>
                 <a class="btn" href="{{ $shop->publicUrl() }}">فتح واجهة المحل</a>
+                <a class="btn" href="{{ route('shop-app.index', $shop) }}">رابط تطبيق الزبائن</a>
                 <a class="btn" href="{{ route($shop->dashboardRouteName(), $shop) }}">إدارة المحل</a>
             </div>
             <p class="status" data-pwa-status>جارٍ تجهيز التطبيق لهذا الجهاز…</p>
