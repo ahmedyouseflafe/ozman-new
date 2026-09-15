@@ -243,6 +243,46 @@
             left: auto
         }
 
+        .ozman-directory-link {
+            position: absolute;
+            z-index: 4;
+            top: 72px;
+            right: 20px;
+            left: auto;
+            min-height: 43px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 5px 10px;
+            border: 1px solid rgba(8, 222, 244, .24);
+            border-radius: 13px;
+            background: rgba(3, 10, 14, .86);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, .24);
+            backdrop-filter: blur(12px);
+            color: #dcebf1;
+            font-size: 11px;
+            font-weight: 900;
+            line-height: 1.25;
+            text-decoration: none
+        }
+
+        .ozman-directory-link img {
+            width: 30px;
+            height: 30px;
+            flex: 0 0 30px;
+            object-fit: contain;
+            border-radius: 9px;
+            background: #071018
+        }
+
+        .ozman-directory-link:hover,
+        .ozman-directory-link:focus-visible {
+            border-color: rgba(8, 222, 244, .65);
+            color: var(--cyan);
+            outline: none
+        }
+
         .public-language-switcher {
             display: flex;
             align-items: center;
@@ -1405,10 +1445,30 @@
                 font-size: 8px
             }
 
+            .ozman-directory-link {
+                display: inline-flex;
+                top: 38px;
+                right: 0;
+                width: 100%;
+                min-height: 37px;
+                gap: 5px;
+                padding: 3px 5px;
+                border-radius: 12px;
+                font-size: 9px;
+                white-space: nowrap
+            }
+
+            .ozman-directory-link img {
+                width: 27px;
+                height: 27px;
+                flex-basis: 27px;
+                border-radius: 8px
+            }
+
             .brand {
                 align-items: flex-end;
                 gap: 14px;
-                top: 47px;
+                top: 80px;
                 right: 2px;
                 bottom: 2px;
                 width: calc(100% - 4px);
@@ -1680,6 +1740,11 @@
             'en' => 'DISPLAY',
             default => 'شاشة العرض',
         };
+        $browseAllShopsLabel = match ($locale) {
+            'he' => 'לכל החנויות',
+            'en' => 'Browse all stores',
+            default => 'تصفح جميع المحلات',
+        };
         $restaurantDisplayItems = collect($displayItems ?? [])->filter(fn ($item) => filled($item->media))->values();
         $displayMediaUrl = function (?string $path): string {
             if (! filled($path)) {
@@ -1737,6 +1802,11 @@
                 <div class="hero-tools">
                     @include('front.partials.public_language_switcher')
                 </div>
+                <a class="ozman-directory-link" href="{{ route('front.home') }}"
+                    aria-label="{{ $browseAllShopsLabel }}">
+                    <img src="{{ asset('images/logo.svg') }}" alt="" aria-hidden="true">
+                    <span>{{ $browseAllShopsLabel }}</span>
+                </a>
                 <div class="brand">
                     <div class="restaurant-logo-stack">
                         @if ($shop->logo)

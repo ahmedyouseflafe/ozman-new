@@ -441,6 +441,9 @@ class RestaurantOrderingTest extends TestCase
             ->assertSee('اختر حجم الوجبة')
             ->assertSee('تجهيز خلال نحو 15 دقيقة')
             ->assertSee('تتبّع طلبك')
+            ->assertSee('تصفح جميع المحلات')
+            ->assertSee('class="ozman-directory-link"', false)
+            ->assertSee('href="'.route('front.home').'"', false)
             ->assertDontSee('اختر نوع السعر المناسب قبل إضافة المنتج إلى السلة')
             ->assertDontSee('العبوة');
     }
@@ -455,6 +458,7 @@ class RestaurantOrderingTest extends TestCase
             ->assertSee('<html lang="en" dir="ltr">', false)
             ->assertSee('Food menu')
             ->assertSee('Choose meal size')
+            ->assertSee('Browse all stores')
             ->assertSee('data-public-locale="ar"', false)
             ->assertSee('data-public-locale="he"', false)
             ->assertSee('data-public-locale="en"', false);
