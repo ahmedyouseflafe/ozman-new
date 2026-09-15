@@ -105,6 +105,15 @@
                 if (isStandalone) {
                     installButtons.forEach((button) => button.hidden = true);
                     setStatus(config.labels.installed, 'success');
+                    return;
+                }
+
+                if (!isEmbeddedBrowser) {
+                    window.setTimeout(() => {
+                        if (!deferredInstallPrompt) {
+                            setStatus(isIos ? config.labels.iosInstructions : config.labels.browserInstructions, 'ready');
+                        }
+                    }, 1200);
                 }
             })
             .catch((error) => {
