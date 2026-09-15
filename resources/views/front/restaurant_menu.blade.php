@@ -253,17 +253,17 @@
             display: none;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 5px 10px;
+            gap: 7px;
+            padding: 5px 9px;
             border: 1px solid rgba(8, 222, 244, .24);
             border-radius: 13px;
-            background: rgba(3, 10, 14, .86);
+            background: linear-gradient(145deg, rgba(5, 20, 27, .94), rgba(3, 10, 14, .9));
             box-shadow: 0 8px 28px rgba(0, 0, 0, .24);
             backdrop-filter: blur(12px);
-            color: #dcebf1;
-            font-size: 11px;
-            font-weight: 900;
-            line-height: 1.25;
+            color: #d8e7ed;
+            font-size: 10px;
+            font-weight: 800;
+            line-height: 1.35;
             text-decoration: none
         }
 
@@ -273,6 +273,7 @@
             flex: 0 0 30px;
             object-fit: contain;
             border-radius: 9px;
+            border: 1px solid rgba(8, 222, 244, .24);
             background: #071018
         }
 
@@ -1447,28 +1448,30 @@
 
             .ozman-directory-link {
                 display: inline-flex;
-                top: 38px;
+                top: 44px;
                 right: 0;
                 width: 100%;
-                min-height: 37px;
-                gap: 5px;
-                padding: 3px 5px;
+                min-height: 35px;
+                gap: 6px;
+                padding: 4px 7px;
                 border-radius: 12px;
-                font-size: 9px;
+                font-size: 8px;
+                font-weight: 800;
+                letter-spacing: -.12px;
                 white-space: nowrap
             }
 
             .ozman-directory-link img {
-                width: 27px;
-                height: 27px;
-                flex-basis: 27px;
-                border-radius: 8px
+                width: 25px;
+                height: 25px;
+                flex-basis: 25px;
+                border-radius: 7px
             }
 
             .brand {
                 align-items: flex-end;
                 gap: 14px;
-                top: 80px;
+                top: 88px;
                 right: 2px;
                 bottom: 2px;
                 width: calc(100% - 4px);
@@ -1804,7 +1807,7 @@
                 </div>
                 <a class="ozman-directory-link" href="{{ route('front.home') }}"
                     aria-label="{{ $browseAllShopsLabel }}">
-                    <img src="{{ asset('images/logo.svg') }}" alt="" aria-hidden="true">
+                    <img src="{{ $ozmanLogo ? asset($ozmanLogo) : asset('ozman-favicon.png') }}" alt="" aria-hidden="true">
                     <span>{{ $browseAllShopsLabel }}</span>
                 </a>
                 <div class="brand">

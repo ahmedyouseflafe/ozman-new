@@ -464,6 +464,33 @@ class RestaurantOrderingTest extends TestCase
             ->assertSee('data-public-locale="en"', false);
     }
 
+    public function test_restaurant_directory_link_uses_the_main_ozman_logo(): void
+    {
+        $ozmanOwner = User::create([
+            'name' => 'Ozman owner',
+            'email' => 'ozman-directory-logo@example.com',
+            'password' => 'password',
+            'role' => 'shop_owner',
+            'is_active' => true,
+        ]);
+        $logoPath = 'storage/shops/logos/ozman-main-logo.png';
+        Shop::create([
+            'user_id' => $ozmanOwner->id,
+            'name' => 'Ozman',
+            'slug' => 'ozman',
+            'catalog_type' => 'general',
+            'logo' => $logoPath,
+            'is_active' => true,
+        ]);
+        [$restaurant] = $this->restaurant('directory-main-logo');
+
+        $this->withSession(['locale' => 'ar'])
+            ->get(route('restaurant.menu', $restaurant))
+            ->assertOk()
+            ->assertSee('تصفح جميع المحلات')
+            ->assertSee(asset($logoPath), false);
+    }
+
     public function test_restaurant_menu_shows_active_categories_without_products(): void
     {
         [$shop] = $this->restaurant('empty-category');

@@ -170,6 +170,10 @@ class RestaurantController extends Controller
             ->orderBy('sort_order')
             ->latest()
             ->get();
+        $ozmanLogo = Shop::query()
+            ->where('slug', 'ozman')
+            ->where('is_active', true)
+            ->value('logo');
         $categories = $shop->categories()->where('is_active', true)->orderBy('name')->get();
         $products = Product::with('category')
             ->where('shop_id', $shop->id)
@@ -179,7 +183,7 @@ class RestaurantController extends Controller
                     ->orWhereHas('category', fn($categoryQuery) => $categoryQuery->where('is_active', true));
             })
             ->get();
-        return view('front.restaurant_menu', compact('shop', 'table', 'products', 'categories', 'hasActiveStories', 'displayItems'));
+        return view('front.restaurant_menu', compact('shop', 'table', 'products', 'categories', 'hasActiveStories', 'displayItems', 'ozmanLogo'));
     }
 
     public function storeOrder(Request $request, Shop $shop, FirebaseMessagingService $firebase): JsonResponse
