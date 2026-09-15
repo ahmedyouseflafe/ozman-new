@@ -1,7 +1,9 @@
 @php
     $merchantPwaShop = $pwaShop ?? ($shop ?? null);
     $merchantPwaUser = auth()->user();
-    $merchantPwaEnabled = $merchantPwaShop instanceof \App\Models\Shop
+    $forceCustomerPwa = $forceCustomerPwa ?? false;
+    $merchantPwaEnabled = ! $forceCustomerPwa
+        && $merchantPwaShop instanceof \App\Models\Shop
         && $merchantPwaUser?->isShopOwner()
         && $merchantPwaUser->shops()->whereKey($merchantPwaShop->id)->exists();
     $offerNotificationsEnabled = $merchantPwaShop instanceof \App\Models\Shop
@@ -42,6 +44,7 @@
     @endphp
     <meta name="theme-color" content="#071820">
     <meta name="application-name" content="{{ $merchantPwaShop->name }}">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="{{ $merchantPwaShop->name }}">
@@ -67,6 +70,7 @@
     @endphp
     <meta name="theme-color" content="#071820">
     <meta name="application-name" content="{{ $merchantPwaShop->name }}">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="{{ $merchantPwaShop->name }}">

@@ -66,6 +66,19 @@ class ShopAppTest extends TestCase
             ->assertDontSee(route('shop-app.manifest', $shop), false);
     }
 
+    public function test_customer_installer_uses_customer_manifest_even_when_owner_is_logged_in(): void
+    {
+        $shop = $this->shop();
+
+        $this->actingAs($shop->user)
+            ->get(route('shop-app.index', $shop))
+            ->assertOk()
+            ->assertSee(route('shop-app.manifest', $shop), false)
+            ->assertSee(asset('shop-pwa.js'), false)
+            ->assertDontSee(route('merchant-app.manifest', $shop), false)
+            ->assertDontSee(asset('merchant-pwa.js'), false);
+    }
+
     public function test_inactive_shop_cannot_publish_a_customer_app(): void
     {
         $shop = $this->shop();

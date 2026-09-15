@@ -7,6 +7,7 @@
     <title>تحميل تطبيق {{ $shop->name }}</title>
     @include('front.partials.merchant_pwa_head', [
         'pwaShop' => $shop,
+        'forceCustomerPwa' => true,
         'offerNotificationsPrompt' => false,
     ])
     <link rel="preconnect" href="https://fonts.googleapis.com">
