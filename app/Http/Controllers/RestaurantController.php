@@ -161,6 +161,7 @@ class RestaurantController extends Controller
     public function menu(Shop $shop, ?string $tableCode = null): View
     {
         abort_unless($shop->is_active && $shop->catalog_type === 'restaurant', 404);
+        $shop->loadMissing('social');
         $table = $tableCode ? $shop->restaurantTables()->where('code', $tableCode)->where('is_active', true)->firstOrFail() : null;
         $hasActiveStories = $shop->stories()->where('expires_at', '>', now())->exists();
         $displayItems = $shop->advertisements()

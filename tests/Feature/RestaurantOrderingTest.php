@@ -491,6 +491,29 @@ class RestaurantOrderingTest extends TestCase
             ->assertSee(asset($logoPath), false);
     }
 
+    public function test_restaurant_menu_shows_only_configured_social_platforms(): void
+    {
+        [$restaurant] = $this->restaurant('social-platforms');
+        $restaurant->social()->create([
+            'facebook' => 'https://facebook.com/bankai',
+            'instagram' => '@bankai.sushi',
+            'tiktok' => 'bankai.sushi',
+            'whatsapp' => '0591234567',
+        ]);
+
+        $this->withSession(['locale' => 'ar'])
+            ->get(route('restaurant.menu', $restaurant))
+            ->assertOk()
+            ->assertSee('class="restaurant-social-links"', false)
+            ->assertSee('is-facebook', false)
+            ->assertSee('https://facebook.com/bankai', false)
+            ->assertSee('https://instagram.com/bankai.sushi', false)
+            ->assertSee('https://tiktok.com/@bankai.sushi', false)
+            ->assertSee('https://wa.me/0591234567', false)
+            ->assertDontSee('href="https://youtube.com/', false)
+            ->assertDontSee('href="https://snapchat.com/', false);
+    }
+
     public function test_restaurant_menu_shows_active_categories_without_products(): void
     {
         [$shop] = $this->restaurant('empty-category');

@@ -240,17 +240,15 @@
             z-index: 4;
             top: 18px;
             right: 20px;
-            left: auto
+            left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px
         }
 
         .ozman-directory-link {
-            position: absolute;
-            z-index: 4;
-            top: 72px;
-            right: 20px;
-            left: auto;
             min-height: 43px;
-            display: none;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 7px;
@@ -346,6 +344,44 @@
             align-items: center;
             gap: 10px
         }
+
+        .restaurant-social-links {
+            display: grid;
+            grid-template-columns: repeat(2, 38px);
+            gap: 8px;
+            align-self: center
+        }
+
+        .restaurant-social-link {
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(8, 222, 244, .24);
+            border-radius: 50%;
+            background: rgba(3, 12, 17, .9);
+            color: #dceaf0;
+            font-size: 18px;
+            text-decoration: none;
+            box-shadow: 0 7px 20px rgba(0, 0, 0, .25);
+            transition: transform .2s ease, border-color .2s ease, background .2s ease, color .2s ease
+        }
+
+        .restaurant-social-link:hover,
+        .restaurant-social-link:focus-visible {
+            transform: translateY(-2px);
+            border-color: currentColor;
+            outline: none
+        }
+
+        .restaurant-social-link.is-facebook { color: #5d9cff }
+        .restaurant-social-link.is-instagram { color: #ff63ad }
+        .restaurant-social-link.is-tiktok { color: #fff }
+        .restaurant-social-link.is-telegram { color: #49b7f5 }
+        .restaurant-social-link.is-snapchat { color: #ffe83b }
+        .restaurant-social-link.is-twitter { color: #eaf4f8 }
+        .restaurant-social-link.is-youtube { color: #ff4d57 }
+        .restaurant-social-link.is-whatsapp { color: #35e58d }
 
         .logo {
             width: 166px;
@@ -1416,20 +1452,24 @@
             }
 
             .hero {
-                min-height: 340px;
+                min-height: 380px;
                 border-radius: 21px;
                 padding: 64px 7px 14px
             }
 
             .restaurant-display-screen {
-                min-height: 340px;
+                min-height: 380px;
                 border-radius: 21px
             }
 
             .hero-tools {
                 top: 0;
                 right: 0;
-                left: auto
+                left: auto;
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px
             }
 
             .public-language-switcher {
@@ -1447,9 +1487,6 @@
             }
 
             .ozman-directory-link {
-                display: inline-flex;
-                top: 44px;
-                right: 0;
                 width: 100%;
                 min-height: 35px;
                 gap: 6px;
@@ -1469,8 +1506,9 @@
             }
 
             .brand {
-                align-items: flex-end;
-                gap: 14px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0;
                 top: 88px;
                 right: 2px;
                 bottom: 2px;
@@ -1479,11 +1517,27 @@
             }
 
             .restaurant-logo-stack {
-                position: relative;
-                height: 100%;
+                position: static;
+                height: auto;
                 width: 100%;
                 align-items: flex-start;
                 gap: 8px
+            }
+
+            .restaurant-social-links {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                width: 100%;
+                gap: 5px;
+                margin-top: 8px
+            }
+
+            .restaurant-social-link {
+                width: 29px;
+                height: 29px;
+                flex: 0 0 29px;
+                font-size: 14px
             }
 
             .logo {
@@ -1748,6 +1802,51 @@
             'en' => 'Browse all stores',
             default => 'تصفح جميع المحلات',
         };
+        $socialMediaLabel = match ($locale) {
+            'he' => 'רשתות חברתיות',
+            'en' => 'Social media',
+            default => 'منصات التواصل الاجتماعي',
+        };
+        $normalizeSocialProfile = function (?string $value, string $base, bool $withAt = false): ?string {
+            if (! filled($value)) {
+                return null;
+            }
+
+            $value = trim($value);
+            if (preg_match('/^https?:\/\//i', $value)) {
+                return $value;
+            }
+            if (preg_match('/^(?:www\.)?[\w.-]+\.[a-z]{2,}\//i', $value)) {
+                return 'https://'.ltrim($value, '/');
+            }
+
+            $handle = ltrim($value, '@/');
+            return $handle === '' ? null : $base.($withAt ? '@' : '').$handle;
+        };
+        $normalizeSocialWhatsapp = function (?string $value): ?string {
+            if (! filled($value)) {
+                return null;
+            }
+
+            $value = trim($value);
+            if (preg_match('/^https?:\/\//i', $value)) {
+                return $value;
+            }
+
+            $digits = preg_replace('/\D+/', '', $value);
+            return $digits ? 'https://wa.me/'.$digits : null;
+        };
+        $restaurantSocial = optional($shop->social);
+        $restaurantSocialLinks = collect([
+            ['key' => 'facebook', 'label' => 'Facebook', 'icon' => 'ti-brand-facebook', 'url' => $normalizeSocialProfile($restaurantSocial->facebook, 'https://facebook.com/')],
+            ['key' => 'instagram', 'label' => 'Instagram', 'icon' => 'ti-brand-instagram', 'url' => $normalizeSocialProfile($restaurantSocial->instagram, 'https://instagram.com/')],
+            ['key' => 'tiktok', 'label' => 'TikTok', 'icon' => 'ti-brand-tiktok', 'url' => $normalizeSocialProfile($restaurantSocial->tiktok, 'https://tiktok.com/', true)],
+            ['key' => 'telegram', 'label' => 'Telegram', 'icon' => 'ti-brand-telegram', 'url' => $normalizeSocialProfile($restaurantSocial->telegram, 'https://t.me/')],
+            ['key' => 'snapchat', 'label' => 'Snapchat', 'icon' => 'ti-brand-snapchat', 'url' => $normalizeSocialProfile($restaurantSocial->snapchat, 'https://snapchat.com/add/')],
+            ['key' => 'twitter', 'label' => 'X', 'icon' => 'ti-brand-x', 'url' => $normalizeSocialProfile($restaurantSocial->twitter, 'https://x.com/')],
+            ['key' => 'youtube', 'label' => 'YouTube', 'icon' => 'ti-brand-youtube', 'url' => $normalizeSocialProfile($restaurantSocial->youtube, 'https://youtube.com/', true)],
+            ['key' => 'whatsapp', 'label' => 'WhatsApp', 'icon' => 'ti-brand-whatsapp', 'url' => $normalizeSocialWhatsapp($restaurantSocial->whatsapp ?: $shop->whatsapp)],
+        ])->filter(fn ($link) => filled($link['url']))->values();
         $restaurantDisplayItems = collect($displayItems ?? [])->filter(fn ($item) => filled($item->media))->values();
         $displayMediaUrl = function (?string $path): string {
             if (! filled($path)) {
@@ -1804,12 +1903,12 @@
             <header class="hero">
                 <div class="hero-tools">
                     @include('front.partials.public_language_switcher')
+                    <a class="ozman-directory-link" href="{{ route('front.home') }}"
+                        aria-label="{{ $browseAllShopsLabel }}">
+                        <img src="{{ $ozmanLogo ? asset($ozmanLogo) : asset('ozman-favicon.png') }}" alt="" aria-hidden="true">
+                        <span>{{ $browseAllShopsLabel }}</span>
+                    </a>
                 </div>
-                <a class="ozman-directory-link" href="{{ route('front.home') }}"
-                    aria-label="{{ $browseAllShopsLabel }}">
-                    <img src="{{ $ozmanLogo ? asset($ozmanLogo) : asset('ozman-favicon.png') }}" alt="" aria-hidden="true">
-                    <span>{{ $browseAllShopsLabel }}</span>
-                </a>
                 <div class="brand">
                     <div class="restaurant-logo-stack">
                         @if ($shop->logo)
@@ -1829,6 +1928,17 @@
                             {{ $availabilityShortLabel }}
                         </span>
                     </div>
+                    @if($restaurantSocialLinks->isNotEmpty())
+                        <nav class="restaurant-social-links" aria-label="{{ $socialMediaLabel }}">
+                            @foreach($restaurantSocialLinks as $socialLink)
+                                <a class="restaurant-social-link is-{{ $socialLink['key'] }}"
+                                    href="{{ $socialLink['url'] }}" target="_blank" rel="noopener noreferrer"
+                                    aria-label="{{ $socialLink['label'] }}" title="{{ $socialLink['label'] }}">
+                                    <i class="ti {{ $socialLink['icon'] }}" aria-hidden="true"></i>
+                                </a>
+                            @endforeach
+                        </nav>
+                    @endif
                 </div>
             </header>
         </div>
