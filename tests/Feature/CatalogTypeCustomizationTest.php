@@ -107,9 +107,47 @@ class CatalogTypeCustomizationTest extends TestCase
     public function test_shop_catalog_type_can_be_changed_to_supported_type(): void
     {
         $this->assertArrayHasKey('restaurant', config('catalog_types'));
+        $this->assertArrayHasKey('advertising_services', config('catalog_types'));
         $this->assertArrayHasKey('cosmetics', config('catalog_types'));
         $this->assertArrayHasKey('sweets', config('catalog_types'));
         $this->assertArrayHasKey('shoes', config('catalog_types'));
+    }
+
+    public function test_advertising_shop_starts_with_printing_categories_and_its_own_catalog(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'is_active' => true]);
+
+        $this->actingAs($admin)->get(route('shops.create'))
+            ->assertOk()
+            ->assertSee('خدمات دعائية وطباعة');
+
+        $this->post(route('shops.store'), [
+            'name' => 'مطبعة الاختبار',
+            'catalog_type' => 'advertising_services',
+            'owner_email' => 'printing-owner@example.com',
+            'owner_password' => 'secret123',
+            'owner_password_confirmation' => 'secret123',
+            'is_active' => 1,
+        ])->assertRedirect(route('shops'));
+
+        $shop = Shop::query()->where('name', 'مطبعة الاختبار')->firstOrFail();
+        $this->assertFalse($shop->show_ozman_products);
+        $this->assertFalse($shop->requiresActiveDistributor());
+        $this->assertSame(
+            config('catalog_types.advertising_services.suggested_categories'),
+            $shop->categories()->orderByDesc('id')->pluck('name')->all()
+        );
+
+        $this->get($shop->publicUrl())
+            ->assertOk()
+            ->assertViewHas('frontData', function (array $frontData) use ($shop): bool {
+                $storefront = collect($frontData['centersData'])->firstWhere('id', $shop->id);
+                $departments = array_column($storefront['departments'] ?? [], 'title');
+
+                return in_array('طباعة على البلايز', $departments, true)
+                    && in_array('طباعة على الأقلام', $departments, true)
+                    && in_array('ستاندات وبنرات', $departments, true);
+            });
     }
 
     public function test_restaurant_product_saves_menu_price_and_structured_options(): void

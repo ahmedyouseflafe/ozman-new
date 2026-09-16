@@ -249,9 +249,9 @@ class ShopController extends Controller
         $data['user_id'] = $owner->id;
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name']);
         $data['is_active'] = $request->boolean('is_active');
-        // Every new storefront starts with the original Ozman catalog enabled.
-        // It can still be disabled later from the shop edit screen.
-        $data['show_ozman_products'] = true;
+        // Advertising-service storefronts start with their own services only.
+        // Other storefronts can still disable the Ozman catalog later.
+        $data['show_ozman_products'] = $data['catalog_type'] !== 'advertising_services';
 
         if (Auth::user()?->isDistributor()) {
             $distributor = $this->currentDistributorProfile();
@@ -275,6 +275,18 @@ class ShopController extends Controller
         }
 
         $shop = Shop::create($data);
+        if ($shop->catalog_type === 'advertising_services') {
+            // The public storefront lists newest categories first, so create
+            // them in reverse to retain the configured display order.
+            $suggestions = $shop->catalogDefinition()['suggested_categories'];
+            foreach (array_reverse($suggestions, true) as $index => $name) {
+                $shop->categories()->create([
+                    'name' => $name,
+                    'slug' => "advertising-{$shop->id}-".($index + 1),
+                    'is_active' => true,
+                ]);
+            }
+        }
         if ($owner->isShopOwner()) {
             app(ShopOwnerAccountService::class)->resolve($shop);
         }
