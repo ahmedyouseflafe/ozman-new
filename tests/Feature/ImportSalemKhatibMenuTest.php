@@ -18,18 +18,18 @@ class ImportSalemKhatibMenuTest extends TestCase
         $shop = Shop::create([
             'user_id' => User::factory()->create()->id,
             'name' => 'مطعم ومشاوي سالم الخطيب',
-            'slug' => 'salem-al-khatib',
+            'slug' => 'mtaam-o-mshaoy-salm-alkhtyb',
             'catalog_type' => 'restaurant',
             'is_active' => true,
         ]);
 
         $this->artisan('restaurant:import-salem-menu', [
-            'shop' => $shop->slug,
+            'shop' => 'https://ozman.online/restaurants/mtaam-o-mshaoy-salm-alkhtyb',
             '--dry-run' => true,
         ])->assertExitCode(0);
         $this->assertSame(0, Category::where('shop_id', $shop->id)->count());
 
-        $this->artisan('restaurant:import-salem-menu', ['shop' => $shop->slug])->assertExitCode(0);
+        $this->artisan('restaurant:import-salem-menu')->assertExitCode(0);
         $this->artisan('restaurant:import-salem-menu', ['shop' => $shop->slug])->assertExitCode(0);
 
         $this->assertSame(4, Category::where('shop_id', $shop->id)->count());

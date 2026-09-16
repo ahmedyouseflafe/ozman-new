@@ -11,14 +11,14 @@ use Illuminate\Support\Facades\DB;
 class ImportSalemKhatibMenu extends Command
 {
     protected $signature = 'restaurant:import-salem-menu
-        {shop? : Restaurant ID, slug, or storefront URL}
+        {shop? : Restaurant ID, slug, or storefront URL; defaults to the verified restaurant slug}
         {--dry-run : Validate and preview without changing the database}';
 
     protected $description = 'Import the supplied Salem Al-Khatib restaurant menu and its licensed stock photos';
 
     public function handle(): int
     {
-        $shop = $this->resolveShop(trim((string) $this->argument('shop')));
+        $shop = $this->resolveShop(trim((string) ($this->argument('shop') ?: 'mtaam-o-mshaoy-salm-alkhtyb')));
         if (! $shop) {
             $this->error('Specify the exact Salem Al-Khatib restaurant ID, slug, or storefront URL.');
             return self::FAILURE;
@@ -132,12 +132,7 @@ class ImportSalemKhatibMenu extends Command
             })->first();
         }
 
-        $matches = $query->where('name', 'like', '%سالم%')
-            ->where('name', 'like', '%الخطيب%')
-            ->limit(2)
-            ->get();
-
-        return $matches->count() === 1 ? $matches->first() : null;
+        return null;
     }
 
     private function translations(array $entry): array
