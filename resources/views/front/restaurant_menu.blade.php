@@ -785,6 +785,21 @@
             transition: transform .3s ease, filter .3s ease
         }
 
+        .meal-photo-note {
+            position: absolute;
+            z-index: 1;
+            top: 13px;
+            inset-inline-end: 13px;
+            padding: 3px 7px;
+            border: 1px solid rgba(255, 255, 255, .22);
+            border-radius: 999px;
+            background: rgba(4, 9, 12, .8);
+            color: #e9f0f2;
+            font-size: 9px;
+            line-height: 1.5;
+            pointer-events: none
+        }
+
         .meal:hover .meal-image,
         .meal:focus-visible .meal-image {
             transform: scale(1.025);
@@ -1987,6 +2002,13 @@
                                     @if ($product->main_image)
                                         <img class="meal-image" src="{{ asset($product->main_image) }}"
                                         alt="{{ $product->localized('name') }}">@else<div class="meal-image"></div>
+                                    @endif
+                                    @if (data_get($product->catalog_attributes, 'photo_is_illustrative'))
+                                        <span class="meal-photo-note">{{ match ($locale) {
+                                            'he' => 'תמונה להמחשה',
+                                            'en' => 'Illustrative photo',
+                                            default => 'صورة توضيحية',
+                                        } }}</span>
                                     @endif
                                     <div class="meal-body">
                                         <h3>{{ $product->localized('name') }}</h3>
