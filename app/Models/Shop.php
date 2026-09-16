@@ -177,6 +177,7 @@ class Shop extends Model
     {
         return match ($this->catalog_type) {
             'restaurant' => 'restaurant.menu',
+            'advertising_services' => 'advertising.store',
             'electronics' => 'electronics.store',
             'real_estate' => 'real-estate.company',
             default => 'front.shop.slug',

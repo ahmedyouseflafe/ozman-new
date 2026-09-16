@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdvertisementController;
+use App\Http\Controllers\AdvertisingStoreController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
@@ -91,6 +92,7 @@ Route::get('/market', [FrontController::class, 'index'])->name('front.home');
 Route::get('/front/shops/{shop}', [FrontController::class, 'index'])->name('front.shop');
 Route::get('/stores/{shop:slug}', [FrontController::class, 'index'])->name('front.shop.slug');
 Route::get('/restaurants/{shop:slug}', [RestaurantController::class, 'menu'])->name('restaurant.menu');
+Route::get('/advertising/{shop:slug}', [AdvertisingStoreController::class, 'index'])->name('advertising.store');
 Route::get('/electronics/{shop:slug}', [ElectronicsStoreController::class, 'index'])->name('electronics.store');
 Route::post('/electronics/{shop:slug}/compare/{product}', [ElectronicsStoreController::class, 'toggleCompare'])->name('electronics.compare.toggle');
 Route::post('/electronics/{shop:slug}/compare-clear', [ElectronicsStoreController::class, 'clearCompare'])->name('electronics.compare.clear');

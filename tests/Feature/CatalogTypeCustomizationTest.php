@@ -138,16 +138,11 @@ class CatalogTypeCustomizationTest extends TestCase
             $shop->categories()->orderByDesc('id')->pluck('name')->all()
         );
 
-        $this->get($shop->publicUrl())
+        $this->withSession(['locale' => 'ar'])->get($shop->publicUrl())
             ->assertOk()
-            ->assertViewHas('frontData', function (array $frontData) use ($shop): bool {
-                $storefront = collect($frontData['centersData'])->firstWhere('id', $shop->id);
-                $departments = array_column($storefront['departments'] ?? [], 'title');
-
-                return in_array('طباعة على البلايز', $departments, true)
-                    && in_array('طباعة على الأقلام', $departments, true)
-                    && in_array('ستاندات وبنرات', $departments, true);
-            });
+            ->assertSee('طباعة على البلايز')
+            ->assertSee('طباعة على الأقلام')
+            ->assertSee('ستاندات وبنرات');
     }
 
     public function test_restaurant_product_saves_menu_price_and_structured_options(): void

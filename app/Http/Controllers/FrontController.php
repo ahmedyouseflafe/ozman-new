@@ -30,6 +30,9 @@ class FrontController extends Controller
         if ($shop?->exists && $shop->catalog_type === 'restaurant') {
             return redirect()->route('restaurant.menu', $shop);
         }
+        if ($shop?->exists && $shop->catalog_type === 'advertising_services') {
+            return redirect()->route('advertising.store', $shop);
+        }
         if ($shop?->exists && $shop->catalog_type === 'electronics') {
             return redirect()->route('electronics.store', $shop);
         }
