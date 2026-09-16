@@ -86,4 +86,18 @@ class AdvertisingStoreTest extends TestCase
         $this->get(route('advertising.store', $general))->assertNotFound();
         $this->get(route('advertising.store', $inactive))->assertNotFound();
     }
+
+    public function test_marketplace_click_opens_the_advertising_store_page(): void
+    {
+        $script = file_get_contents(public_path('script.js'));
+
+        $this->assertStringContainsString(
+            "'advertising_services'].includes(selectedCenter?.catalog_type)",
+            $script
+        );
+        $this->assertStringContainsString(
+            "advertising_services: { title: 'خدمات دعائية وطباعة'",
+            $script
+        );
+    }
 }

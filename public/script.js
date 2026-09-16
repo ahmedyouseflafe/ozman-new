@@ -3645,7 +3645,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function selectCategory(index) {
             const selectedCenter = centersData[index % centersData.length];
-            if (['restaurant', 'electronics', 'real_estate'].includes(selectedCenter?.catalog_type) && selectedCenter?.public_url) {
+            if (['restaurant', 'electronics', 'real_estate', 'advertising_services'].includes(selectedCenter?.catalog_type) && selectedCenter?.public_url) {
                 window.location.assign(selectedCenter.public_url);
                 return;
             }
@@ -3765,6 +3765,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const shopSectionDetails = {
             general: { title: 'متاجر عامة', icon: 'fa-store' },
             restaurant: { title: 'مطاعم ووجبات', icon: 'fa-utensils' },
+            advertising_services: { title: 'خدمات دعائية وطباعة', icon: 'fa-print' },
             electronics: { title: 'جوالات وإلكترونيات', icon: 'fa-mobile-screen-button' },
             real_estate: { title: 'عقارات', icon: 'fa-building' },
             clothing: { title: 'ملابس وأزياء', icon: 'fa-shirt' },
@@ -4016,6 +4017,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const nearestTypeDetails = {
                 restaurant: { label: 'مطاعم ووجبات', icon: 'fa-utensils' },
+                advertising_services: { label: 'خدمات دعائية وطباعة', icon: 'fa-print' },
                 electronics: { label: 'تلفونات وإلكترونيات', icon: 'fa-mobile-screen-button' },
                 general: { label: 'بقالة وسوبرماركت', icon: 'fa-basket-shopping' },
                 clothing: { label: 'ملابس وأزياء', icon: 'fa-shirt' },
