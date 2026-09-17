@@ -37,6 +37,7 @@
         .live-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.sound-toggle{min-height:38px;padding:6px 12px;font-size:11px}.sound-toggle.enabled{color:var(--green);border-color:rgba(37,223,135,.38);background:rgba(37,223,135,.1)}.sound-toggle.attention{color:var(--yellow);border-color:rgba(255,212,59,.48);animation:soundAttention 1s infinite alternate}@keyframes soundAttention{to{box-shadow:0 0 20px rgba(255,212,59,.3)}}
         [hidden]{display:none!important}.order-alarm{position:fixed;z-index:1000;top:18px;left:50%;transform:translateX(-50%);width:min(560px,calc(100% - 24px));border:1px solid rgba(255,212,59,.75);border-radius:22px;background:linear-gradient(135deg,rgba(24,14,5,.98),rgba(14,21,25,.98));color:#fff;padding:16px 18px;display:flex;align-items:center;gap:14px;text-align:right;box-shadow:0 18px 65px rgba(0,0,0,.7),0 0 35px rgba(255,212,59,.3);cursor:pointer;font-family:inherit;animation:alarmPulse .85s infinite alternate}.order-alarm:hover{transform:translateX(-50%) translateY(-2px)}@keyframes alarmPulse{to{border-color:var(--red);box-shadow:0 18px 65px rgba(0,0,0,.7),0 0 42px rgba(255,98,116,.43)}}.alarm-icon{width:52px;height:52px;border-radius:17px;display:grid;place-items:center;flex:0 0 auto;background:rgba(255,212,59,.16);color:var(--yellow);font-size:29px}.alarm-copy{min-width:0;flex:1}.alarm-copy strong{display:block;font-size:17px;color:var(--yellow)}.alarm-copy span{display:block;margin-top:3px;color:#d8dee5;font-size:12px;font-weight:700}.alarm-action{flex:0 0 auto;border-radius:999px;padding:8px 13px;background:var(--yellow);color:#171000;font-size:11px;font-weight:900}
         .orders-wrap{overflow:auto;border:1px solid var(--border);border-radius:19px;background:rgba(3,6,10,.55)}table{width:100%;min-width:1120px;border-collapse:collapse}th{color:var(--cyan);font-size:13px;background:rgba(8,220,244,.05)}th,td{text-align:right;padding:16px;border-bottom:1px solid rgba(139,160,179,.13);vertical-align:top}tbody tr{transition:.2s}tbody tr:hover{background:rgba(8,220,244,.035)}tbody tr:last-child td{border-bottom:0}small{color:var(--muted)}.tag{display:inline-flex;align-items:center;padding:5px 11px;border-radius:30px;background:var(--cyan-soft);color:var(--cyan);border:1px solid rgba(8,220,244,.24);font-size:12px;font-weight:800}.status-form{display:grid;grid-template-columns:minmax(135px,1fr) minmax(125px,.8fr);gap:8px;min-width:285px}.status-field{display:grid;gap:5px}.status-field>span{color:#cbd4dc;font-size:10px;font-weight:800}.status-form .field{min-height:40px;margin:0;padding:6px 10px}.status-form .btn{grid-column:1/-1;min-height:40px;padding:6px 12px}.status-help{grid-column:1/-1;color:var(--muted);font-size:10px;line-height:1.6}
+        .status-form{grid-template-columns:minmax(0,1fr);min-width:300px;max-width:390px}.status-choices{display:flex;flex-wrap:wrap;gap:7px;align-items:center}.status-choice{width:62px;height:62px;flex:0 0 62px;padding:5px;border:1px solid var(--border);border-radius:50%;background:rgba(8,13,19,.9);color:#d7e2ea;font-size:10px;font-weight:800;line-height:1.35;text-align:center;cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s}.status-choice:not(:disabled):hover{transform:translateY(-3px);border-color:var(--cyan);box-shadow:0 0 18px rgba(8,220,244,.2)}.status-choice:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}.status-choice.is-current{color:var(--cyan);border-color:var(--cyan);background:var(--cyan-soft);box-shadow:0 0 14px rgba(8,220,244,.16)}.status-choice-preparing.is-current{color:var(--yellow);border-color:var(--yellow);background:rgba(255,212,59,.12)}.status-choice-ready.is-current,.status-choice-completed.is-current{color:var(--green);border-color:var(--green);background:rgba(37,223,135,.12)}.status-choice-cancelled.is-current{color:var(--red);border-color:var(--red);background:rgba(255,98,116,.12)}.status-choice:disabled:not(.is-current){opacity:.37;cursor:not-allowed}.status-form.is-saving{opacity:.72}.status-form .status-field,.status-form .status-help,.status-form .status-save,.status-feedback{grid-column:1/-1}.status-feedback{display:block;min-height:18px;font-size:11px;font-weight:800;color:var(--green)}.status-feedback.is-error{color:var(--red)}
         .notice{border-radius:16px;padding:14px 18px;margin-bottom:18px}.notice-success{border:1px solid rgba(37,223,135,.35);background:rgba(37,223,135,.09);color:#73f2ae}.notice-error{border:1px solid rgba(255,98,116,.35);background:rgba(255,98,116,.09);color:#ffabb5}.empty{grid-column:1/-1;color:var(--muted);text-align:center;padding:18px}
         nav[role="navigation"]{margin-top:18px}
         @media(max-width:1250px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
@@ -176,6 +177,7 @@
     let alarmTimer = null;
     let soundUnlocked = false;
     let polling = false;
+    let statusUpdating = false;
 
     function getAlarmOutput() {
         if (alarmOutput) return alarmOutput;
@@ -286,6 +288,59 @@
         else if (orderId) window.location.href = `${dashboardUrl}#restaurant-order-${orderId}`;
     });
 
+    body.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' || event.target.name !== 'estimated_preparation_minutes') return;
+        event.preventDefault();
+        event.target.closest('form')?.requestSubmit(event.target.closest('form').querySelector('.status-save'));
+    });
+
+    body.addEventListener('submit', async event => {
+        const form = event.target.closest('.status-form');
+        if (!form) return;
+        event.preventDefault();
+        if (statusUpdating) return;
+
+        const submitter = event.submitter || form.querySelector('.status-save');
+        const payload = new FormData(form);
+        payload.set('status', submitter.value);
+        const feedback = form.querySelector('.status-feedback');
+        const buttons = [...form.querySelectorAll('button:not(:disabled)')];
+        statusUpdating = true;
+        form.classList.add('is-saving');
+        buttons.forEach(button => button.disabled = true);
+        feedback.textContent = 'جارٍ حفظ حالة الطلب...';
+        feedback.classList.remove('is-error');
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST', body: payload, credentials: 'same-origin',
+                headers: {Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+            });
+            if (response.redirected || response.status === 401 || response.status === 403) {
+                throw new Error('انتهت الجلسة أو لا توجد صلاحية. حدّث الصفحة وسجّل الدخول مجددًا.');
+            }
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                const validationError = Object.values(data.errors || {}).flat()[0];
+                throw new Error(validationError || (response.status === 419 ? 'انتهت الجلسة؛ حدّث الصفحة وحاول مجددًا.' : data.message || 'تعذّر حفظ حالة الطلب. حاول مجددًا.'));
+            }
+            const replacement = document.createElement('tbody');
+            replacement.innerHTML = data.html || '';
+            const updatedRow = replacement.querySelector('tr');
+            if (!updatedRow) throw new Error('تم الحفظ، لكن تعذّر تحديث العرض. حدّث الصفحة.');
+            form.closest('tr').replaceWith(updatedRow);
+            const updatedFeedback = updatedRow.querySelector('.status-feedback');
+            if (updatedFeedback) updatedFeedback.textContent = 'تم الحفظ وإشعار العميل.';
+        } catch (error) {
+            feedback.textContent = error.message;
+            feedback.classList.add('is-error');
+        } finally {
+            statusUpdating = false;
+            form.classList.remove('is-saving');
+            buttons.forEach(button => button.disabled = false);
+        }
+    });
+
     async function refreshOrders() {
         if (polling) return;
         polling = true;
@@ -295,7 +350,7 @@
             if (!response.ok) throw new Error('feed');
             const data=await response.json();
             const editingOrder = body.contains(document.activeElement);
-            if (!editingOrder) body.innerHTML=data.html;
+            if (!editingOrder && !statusUpdating) body.innerHTML=data.html;
             for(const key of ['today','new','preparing','ready']){const element=document.getElementById(`stat-${key}`);if(element)element.textContent=data.stats[key]??0}
             const salesTotal=document.getElementById('stat-sales-total');
             if(salesTotal)salesTotal.textContent=`${Number(data.stats.sales_total??0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} ₪`;

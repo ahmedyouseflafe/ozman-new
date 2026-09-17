@@ -21,6 +21,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
 
@@ -322,7 +323,7 @@ class RestaurantController extends Controller
         ]);
     }
 
-    public function status(Request $request, FrontOrder $order, FirebaseMessagingService $firebase): RedirectResponse
+    public function status(Request $request, FrontOrder $order, FirebaseMessagingService $firebase): JsonResponse|RedirectResponse
     {
         abort_unless($order->shop && $order->order_type, 404);
         $this->authorizeShop($request, $order->shop);
@@ -339,9 +340,9 @@ class RestaurantController extends Controller
         ];
         abort_unless(in_array($data['status'], $transitions[$order->status] ?? [], true), 422, 'لا يمكن إعادة الطلب إلى حالة سابقة.');
         if ($data['status'] === 'preparing' && empty($data['estimated_preparation_minutes']) && ! $order->estimated_preparation_minutes) {
-            return back()->withErrors([
+            throw ValidationException::withMessages([
                 'estimated_preparation_minutes' => 'حدد مدة التجهيز المتوقعة قبل نقل الطلب إلى قيد التحضير.',
-            ])->withInput();
+            ]);
         }
 
         $previousStatus = $order->status;
@@ -351,6 +352,16 @@ class RestaurantController extends Controller
         $preparationTimeChanged = $previousPreparationMinutes !== $order->estimated_preparation_minutes;
         if ($statusChanged || $preparationTimeChanged) {
             $this->sendCustomerStatusPush($order->fresh('shop'), $firebase, $statusChanged, $preparationTimeChanged);
+        }
+        if ($request->expectsJson()) {
+            return response()->json([
+                'status' => $order->status,
+                'message' => 'تم حفظ حالة الطلب ومدة التجهيز وإبلاغ العميل.',
+                'html' => view('admin.restaurant.partials.orders_rows', [
+                    'orders' => collect([$order->fresh('restaurantTable')]),
+                    'canManageOrders' => true,
+                ])->render(),
+            ]);
         }
         return back()->with('status', 'تم حفظ حالة الطلب ومدة التجهيز وإبلاغ العميل.');
     }

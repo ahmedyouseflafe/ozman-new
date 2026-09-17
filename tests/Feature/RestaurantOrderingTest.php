@@ -365,6 +365,52 @@ class RestaurantOrderingTest extends TestCase
             ->assertSee('حفظ وإشعار العميل');
     }
 
+    public function test_restaurant_status_circles_update_by_ajax_and_keep_transition_rules(): void
+    {
+        [$shop, , $table] = $this->restaurant('ajax-status');
+        $order = FrontOrder::create([
+            'shop_id' => $shop->id,
+            'restaurant_table_id' => $table->id,
+            'order_number' => 'RST-AJAX-STATUS',
+            'customer_name' => 'Ajax customer',
+            'order_channel' => 'restaurant',
+            'order_type' => 'dine_in',
+            'status' => 'new',
+        ]);
+
+        $this->actingAs($shop->user)
+            ->get(route('restaurant.dashboard', $shop))
+            ->assertOk()
+            ->assertSee('class="status-choices"', false)
+            ->assertSee('value="preparing"', false)
+            ->assertSee('value="cancelled"', false);
+
+        $this->actingAs($shop->user)
+            ->patchJson(route('restaurant.orders.status', $order), ['status' => 'preparing'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('estimated_preparation_minutes');
+
+        $response = $this->actingAs($shop->user)
+            ->patchJson(route('restaurant.orders.status', $order), [
+                'status' => 'preparing',
+                'estimated_preparation_minutes' => 20,
+            ])
+            ->assertOk()
+            ->assertJsonPath('status', 'preparing');
+
+        $this->assertStringContainsString('status-choice-preparing is-current', $response->json('html'));
+        $this->assertStringContainsString('value="ready"', $response->json('html'));
+        $this->assertDatabaseHas('front_orders', [
+            'id' => $order->id,
+            'status' => 'preparing',
+            'estimated_preparation_minutes' => 20,
+        ]);
+
+        $this->actingAs($shop->user)
+            ->patchJson(route('restaurant.orders.status', $order), ['status' => 'completed'])
+            ->assertUnprocessable();
+    }
+
     public function test_general_shop_owner_only_sees_orders_for_owned_shop(): void
     {
         $owner = User::create(['name' => 'Owner A', 'email' => 'owner-a@test.test', 'password' => 'password', 'role' => 'shop_owner', 'is_active' => true]);

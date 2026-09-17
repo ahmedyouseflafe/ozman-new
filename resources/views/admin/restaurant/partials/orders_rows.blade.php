@@ -30,24 +30,25 @@
             @if($canManageOrders)
                 <form class="status-form" method="post" action="{{ route('restaurant.orders.status',$order) }}">
                     @csrf @method('patch')
-                    <label class="status-field">
-                        <span><i class="ti ti-progress-check"></i> حالة الطلب</span>
-                        <select class="field" name="status" aria-label="حالة الطلب {{ $order->order_number }}">
-                            @php
-                                $statusLabels = ['new'=>'جديد','preparing'=>'قيد التحضير','ready'=>'جاهز','completed'=>'مكتمل','cancelled'=>'ملغي'];
-                                $allowedTransitions = [
-                                    'new' => ['new', 'preparing', 'cancelled'],
-                                    'preparing' => ['preparing', 'ready', 'cancelled'],
-                                    'ready' => ['ready', 'completed', 'cancelled'],
-                                    'completed' => ['completed'],
-                                    'cancelled' => ['cancelled'],
-                                ][$order->status] ?? [$order->status];
-                            @endphp
-                            @foreach($allowedTransitions as $key)
-                                <option value="{{ $key }}" @selected($order->status===$key)>{{ $statusLabels[$key] ?? $key }}</option>
-                            @endforeach
-                        </select>
-                    </label>
+                    @php
+                        $statusLabels = ['new'=>'جديد','preparing'=>'قيد التحضير','ready'=>'جاهز','completed'=>'مكتمل','cancelled'=>'ملغي'];
+                        $allowedTransitions = [
+                            'new' => ['preparing', 'cancelled'],
+                            'preparing' => ['ready', 'cancelled'],
+                            'ready' => ['completed', 'cancelled'],
+                            'completed' => [],
+                            'cancelled' => [],
+                        ][$order->status] ?? [];
+                    @endphp
+                    <div class="status-choices" role="group" aria-label="حالة الطلب {{ $order->order_number }}">
+                        @foreach($statusLabels as $key => $label)
+                            <button type="submit" name="status" value="{{ $key }}"
+                                class="status-choice status-choice-{{ $key }} {{ $order->status === $key ? 'is-current' : '' }}"
+                                aria-label="{{ $label }}{{ $order->status === $key ? '، الحالة الحالية' : '' }}"
+                                aria-pressed="{{ $order->status === $key ? 'true' : 'false' }}"
+                                @disabled(!in_array($key, $allowedTransitions, true))>{{ $label }}</button>
+                        @endforeach
+                    </div>
                     <label class="status-field">
                         <span><i class="ti ti-clock-hour-4"></i> وقت التجهيز</span>
                         <input class="field" name="estimated_preparation_minutes" type="number" min="1" max="1440"
@@ -55,7 +56,8 @@
                             aria-label="مدة تجهيز الطلب {{ $order->order_number }} بالدقائق">
                     </label>
                     <small class="status-help">الدقائق التي ستظهر للعميل في شاشة تتبّع طلبه.</small>
-                    <button class="btn btn-primary"><i class="ti ti-device-floppy"></i> حفظ وإشعار العميل</button>
+                    <button class="btn btn-primary status-save" type="submit" name="status" value="{{ $order->status }}"><i class="ti ti-device-floppy"></i> حفظ وإشعار العميل</button>
+                    <span class="status-feedback" role="status" aria-live="polite"></span>
                 </form>
             @else
                 <span class="tag">{{ ['new'=>'جديد','preparing'=>'قيد التحضير','ready'=>'جاهز','completed'=>'مكتمل','cancelled'=>'ملغي'][$order->status] ?? $order->status }}</span>
