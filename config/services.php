@@ -56,8 +56,4 @@ return [
         'key_file' => env('WEB_PUSH_KEY_FILE', storage_path('app/private/web-push-vapid.json')),
     ],
 
-    'google_maps' => [
-        'browser_key' => env('GOOGLE_MAPS_BROWSER_KEY'),
-    ],
-
 ];

@@ -99,12 +99,7 @@ class RestaurantDriverController extends Controller
         $order->update([
             'restaurant_driver_id' => $driverId,
             'driver_assigned_at' => $driverId ? now() : null,
-            ...($changed ? [
-                'driver_latitude' => null,
-                'driver_longitude' => null,
-                'driver_location_accuracy_meters' => null,
-                'driver_location_at' => null,
-            ] : []),
+            ...($changed ? ['estimated_delivery_at' => null] : []),
         ]);
         $order->refresh()->load('shop', 'restaurantDriver.user');
 
@@ -163,15 +158,12 @@ class RestaurantDriverController extends Controller
         FrontOrder $order,
         FirebaseMessagingService $firebase,
     ): RedirectResponse {
-        $driver = $this->activeDriver($request);
-        abort_unless(
-            (int) $order->restaurant_driver_id === (int) $driver->id
-            && (int) $order->shop_id === (int) $driver->shop_id
-            && $order->order_type === 'delivery',
-            403,
-        );
+        $this->authorizeDeliveryOrder($request, $order);
 
-        $data = $request->validate(['status' => ['required', Rule::in(['out_for_delivery', 'completed'])]]);
+        $data = $request->validate([
+            'status' => ['required', Rule::in(['out_for_delivery', 'completed'])],
+            'estimated_delivery_minutes' => ['required_if:status,out_for_delivery', 'integer', 'min:1', 'max:240'],
+        ]);
         $allowed = [
             'ready' => ['out_for_delivery'],
             'out_for_delivery' => ['completed'],
@@ -181,12 +173,10 @@ class RestaurantDriverController extends Controller
         $attributes = ['status' => $data['status']];
         if ($data['status'] === 'out_for_delivery') {
             $attributes['picked_up_at'] = now();
+            $attributes['estimated_delivery_at'] = now()->addMinutes((int) $data['estimated_delivery_minutes']);
         } else {
             $attributes['delivered_at'] = now();
-            $attributes['driver_latitude'] = null;
-            $attributes['driver_longitude'] = null;
-            $attributes['driver_location_accuracy_meters'] = null;
-            $attributes['driver_location_at'] = null;
+            $attributes['estimated_delivery_at'] = null;
         }
         $order->update($attributes);
         $this->sendCustomerDeliveryStatus($order->fresh('shop'), $firebase);
@@ -196,49 +186,26 @@ class RestaurantDriverController extends Controller
             : 'تم بدء التوصيل وإبلاغ العميل أن طلبه في الطريق.');
     }
 
-    public function updateLocation(Request $request, FrontOrder $order): JsonResponse
+    public function updateDeliveryTime(Request $request, FrontOrder $order): RedirectResponse
     {
-        $this->authorizeLiveLocation($request, $order);
+        $this->authorizeDeliveryOrder($request, $order);
+        abort_unless($order->status === 'out_for_delivery', 422, 'تحديد وقت الوصول متاح أثناء التوصيل فقط.');
         $data = $request->validate([
-            'latitude' => ['required', 'numeric', 'between:-90,90'],
-            'longitude' => ['required', 'numeric', 'between:-180,180'],
-            'accuracy' => ['required', 'numeric', 'min:0', 'max:250'],
+            'estimated_delivery_minutes' => ['required', 'integer', 'min:1', 'max:240'],
         ]);
-
-        if ($order->driver_location_at?->isAfter(now()->subSeconds(8))) {
-            return response()->json(['accepted' => false]);
-        }
 
         $updated = FrontOrder::query()->whereKey($order->id)
             ->where('restaurant_driver_id', $order->restaurant_driver_id)
             ->where('status', 'out_for_delivery')->update([
-            'driver_latitude' => $data['latitude'],
-            'driver_longitude' => $data['longitude'],
-            'driver_location_accuracy_meters' => (int) round($data['accuracy']),
-            'driver_location_at' => now(),
-        ]);
+                'estimated_delivery_at' => now()->addMinutes((int) $data['estimated_delivery_minutes']),
+            ]);
 
         abort_unless($updated, 422, 'انتهى التوصيل أو تغيّر المندوب.');
 
-        return response()->json(['accepted' => true]);
+        return back()->with('status', 'تم تحديث وقت الوصول التقريبي للعميل.');
     }
 
-    public function clearLocation(Request $request, FrontOrder $order): JsonResponse
-    {
-        $this->authorizeLiveLocation($request, $order);
-        FrontOrder::query()->whereKey($order->id)
-            ->where('restaurant_driver_id', $order->restaurant_driver_id)
-            ->where('status', 'out_for_delivery')->update([
-            'driver_latitude' => null,
-            'driver_longitude' => null,
-            'driver_location_accuracy_meters' => null,
-            'driver_location_at' => null,
-        ]);
-
-        return response()->json(['cleared' => true]);
-    }
-
-    private function authorizeLiveLocation(Request $request, FrontOrder $order): void
+    private function authorizeDeliveryOrder(Request $request, FrontOrder $order): void
     {
         $driver = $this->activeDriver($request);
         abort_unless(
@@ -247,7 +214,6 @@ class RestaurantDriverController extends Controller
             && $order->order_type === 'delivery',
             403,
         );
-        abort_unless($order->status === 'out_for_delivery', 422, 'مشاركة الموقع متاحة أثناء التوصيل فقط.');
     }
 
     private function activeDriver(Request $request): RestaurantDriver
@@ -324,7 +290,10 @@ class RestaurantDriverController extends Controller
         $title = $order->status === 'completed' ? 'تم تسليم طلبك ✅' : 'طلبك في الطريق إليك 🛵';
         $body = $order->status === 'completed'
             ? "تم تسليم طلبك {$order->order_number} من {$order->shop->name}. نتمنى لك وجبة شهية."
-            : "غادر طلبك {$order->order_number} المطعم وهو الآن في الطريق إليك.";
+            : "غادر طلبك {$order->order_number} المطعم وهو الآن في الطريق إليك."
+                .($order->estimated_delivery_at
+                    ? ' الوصول التقريبي خلال '.max(1, (int) ceil(now()->diffInSeconds($order->estimated_delivery_at, false) / 60)).' دقيقة.'
+                    : '');
 
         try {
             $firebase->sendToTokens(

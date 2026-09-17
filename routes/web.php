@@ -157,8 +157,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/driver', [RestaurantDriverController::class, 'dashboard'])->name('driver.dashboard');
     Route::get('/driver/orders-feed', [RestaurantDriverController::class, 'feed'])->name('driver.orders.feed');
     Route::patch('/driver/orders/{order}/status', [RestaurantDriverController::class, 'updateStatus'])->name('driver.orders.status');
-    Route::post('/driver/orders/{order}/location', [RestaurantDriverController::class, 'updateLocation'])->middleware('throttle:60,1')->name('driver.orders.location');
-    Route::delete('/driver/orders/{order}/location', [RestaurantDriverController::class, 'clearLocation'])->middleware('throttle:30,1')->name('driver.orders.location.clear');
+    Route::patch('/driver/orders/{order}/delivery-time', [RestaurantDriverController::class, 'updateDeliveryTime'])->name('driver.orders.delivery-time');
     Route::post('/driver/push/subscription', [WebPushSubscriptionController::class, 'storeDriver'])->name('driver.push.store');
     Route::delete('/driver/push/subscription', [WebPushSubscriptionController::class, 'destroyDriver'])->name('driver.push.destroy');
 });
