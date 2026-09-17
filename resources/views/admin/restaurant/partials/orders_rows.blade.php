@@ -27,15 +27,18 @@
         </td>
         <td data-label="المجموع">{{ $order->total }} ₪</td>
         <td data-label="الحالة">
-            @if($canManageOrders)
+            @if($canManageOrders && $order->status !== 'out_for_delivery')
                 <form class="status-form" method="post" action="{{ route('restaurant.orders.status',$order) }}">
                     @csrf @method('patch')
                     @php
-                        $statusLabels = ['new'=>'جديد','preparing'=>'قيد التحضير','ready'=>'جاهز','completed'=>'مكتمل','cancelled'=>'ملغي'];
+                        $statusLabels = ['new'=>'جديد','preparing'=>'قيد التحضير','ready'=>'جاهز'];
+                        if ($order->order_type === 'delivery') $statusLabels['out_for_delivery'] = 'خرج للتوصيل';
+                        $statusLabels += ['completed'=>'مكتمل','cancelled'=>'ملغي'];
                         $allowedTransitions = [
                             'new' => ['preparing', 'cancelled'],
                             'preparing' => ['ready', 'cancelled'],
-                            'ready' => ['completed', 'cancelled'],
+                            'ready' => $order->order_type === 'delivery' && $order->restaurant_driver_id ? ['cancelled'] : ['completed', 'cancelled'],
+                            'out_for_delivery' => [],
                             'completed' => [],
                             'cancelled' => [],
                         ][$order->status] ?? [];
@@ -59,8 +62,38 @@
                     <button class="btn btn-primary status-save" type="submit" name="status" value="{{ $order->status }}"><i class="ti ti-device-floppy"></i> حفظ وإشعار العميل</button>
                     <span class="status-feedback" role="status" aria-live="polite"></span>
                 </form>
+            @elseif($canManageOrders)
+                <div class="status-choices" role="group" aria-label="حالة الطلب {{ $order->order_number }}">
+                    @foreach(['new'=>'جديد','preparing'=>'قيد التحضير','ready'=>'جاهز','out_for_delivery'=>'خرج للتوصيل','completed'=>'مكتمل','cancelled'=>'ملغي'] as $key => $label)
+                        <button type="button" class="status-choice status-choice-{{ $key }} {{ $order->status === $key ? 'is-current' : '' }}" aria-pressed="{{ $order->status === $key ? 'true' : 'false' }}" disabled>{{ $label }}</button>
+                    @endforeach
+                </div>
             @else
-                <span class="tag">{{ ['new'=>'جديد','preparing'=>'قيد التحضير','ready'=>'جاهز','completed'=>'مكتمل','cancelled'=>'ملغي'][$order->status] ?? $order->status }}</span>
+                <span class="tag">{{ $order->statusLabel() }}</span>
+            @endif
+            @if($order->order_type === 'delivery')
+                <div class="driver-assignment">
+                    <strong><i class="ti ti-motorbike"></i> مندوب التوصيل</strong>
+                    @if($order->restaurantDriver)
+                        <span>{{ $order->restaurantDriver->user?->name ?? 'مندوب غير متاح' }}</span>
+                    @endif
+                    @if($canAssignDrivers && !in_array($order->status, ['completed', 'cancelled'], true))
+                        @if($drivers->isNotEmpty())
+                            <form method="post" action="{{ route('restaurant.orders.driver', $order) }}" class="driver-assign-form">
+                                @csrf @method('patch')
+                                <select class="field" name="restaurant_driver_id" aria-label="مندوب توصيل الطلب {{ $order->order_number }}">
+                                    @if($order->status !== 'out_for_delivery')<option value="">بدون مندوب</option>@endif
+                                    @foreach($drivers as $driver)
+                                        <option value="{{ $driver->id }}" @selected($order->restaurant_driver_id === $driver->id)>{{ $driver->user?->name }}</option>
+                                    @endforeach
+                                </select>
+                                <button class="btn btn-primary" type="submit"><i class="ti ti-send"></i> إرسال للمندوب</button>
+                            </form>
+                        @else
+                            <small>أضف مندوبًا أولًا من قسم المندوبين أدناه.</small>
+                        @endif
+                    @endif
+                </div>
             @endif
         </td>
     </tr>

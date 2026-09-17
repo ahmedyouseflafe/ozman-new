@@ -157,6 +157,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/driver', [RestaurantDriverController::class, 'dashboard'])->name('driver.dashboard');
     Route::get('/driver/orders-feed', [RestaurantDriverController::class, 'feed'])->name('driver.orders.feed');
     Route::patch('/driver/orders/{order}/status', [RestaurantDriverController::class, 'updateStatus'])->name('driver.orders.status');
+    Route::post('/driver/push/subscription', [WebPushSubscriptionController::class, 'storeDriver'])->name('driver.push.store');
+    Route::delete('/driver/push/subscription', [WebPushSubscriptionController::class, 'destroyDriver'])->name('driver.push.destroy');
 });
 
 Route::get('/display', [ScreenController::class, 'mainDisplay'])->name('display.main');

@@ -17,7 +17,7 @@
         .logo{width:64px;height:64px;object-fit:cover;border:1px solid rgba(8,222,244,.45);border-radius:20px;background:#071014}.head h1{margin:0;font-size:23px}.head p{margin:3px 0 0;color:var(--muted);font-size:13px}
         .body{padding:26px}.live{display:flex;align-items:center;justify-content:space-between;gap:15px}.live strong{font-size:20px}.live span{display:inline-flex;align-items:center;gap:7px;color:var(--green);font-size:12px;font-weight:800}.live span:before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 12px currentColor}
         .number{margin:7px 0 20px;color:var(--muted);font-size:13px}.prep{display:flex;align-items:center;gap:12px;margin-bottom:24px;padding:15px;border:1px solid rgba(8,222,244,.2);border-radius:16px;background:rgba(8,222,244,.07)}.prep i{color:var(--cyan);font-size:26px}.prep small{display:block;color:var(--muted)}.prep b{font-size:17px}
-        .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:24px 0;padding:0;list-style:none}.step{position:relative;display:grid;justify-items:center;gap:9px;color:#687680;text-align:center;font-size:11px;font-weight:800}.step:not(:last-child):after{content:"";position:absolute;z-index:0;top:18px;right:58%;width:84%;height:3px;background:#26323a}.step.done:not(:last-child):after{background:var(--cyan)}.step span{position:relative;z-index:1;display:grid;place-items:center;width:38px;height:38px;border:2px solid #26323a;border-radius:50%;background:#080d11;font-size:18px}.step.done,.step.active{color:#eaffff}.step.done span,.step.active span{border-color:var(--cyan);background:var(--cyan);color:#001114;box-shadow:0 0 18px rgba(8,222,244,.32)}.step.active span{animation:pulse 1.8s infinite}
+        .steps{display:grid;grid-template-columns:repeat(var(--steps,4),1fr);gap:6px;margin:24px 0;padding:0;list-style:none}.step{position:relative;display:grid;justify-items:center;gap:9px;color:#687680;text-align:center;font-size:11px;font-weight:800}.step:not(:last-child):after{content:"";position:absolute;z-index:0;top:18px;right:58%;width:84%;height:3px;background:#26323a}.step.done:not(:last-child):after{background:var(--cyan)}.step span{position:relative;z-index:1;display:grid;place-items:center;width:38px;height:38px;border:2px solid #26323a;border-radius:50%;background:#080d11;font-size:18px}.step.done,.step.active{color:#eaffff}.step.done span,.step.active span{border-color:var(--cyan);background:var(--cyan);color:#001114;box-shadow:0 0 18px rgba(8,222,244,.32)}.step.active span{animation:pulse 1.8s infinite}
         .status-box{padding:18px;border-radius:18px;background:#080d11;border:1px solid var(--border)}.status-box h2{margin:0;color:var(--cyan);font-size:21px}.status-box p{margin:7px 0 0;color:#d7e1e7;line-height:1.8}.card.cancelled{border-color:rgba(255,102,120,.4)}.card.cancelled .status-box h2{color:var(--red)}
         .footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:20px;color:var(--muted);font-size:11px}.back{color:var(--cyan);font-size:13px;font-weight:800;text-decoration:none}
         @keyframes pulse{50%{box-shadow:0 0 0 10px rgba(8,222,244,0)}}
@@ -34,11 +34,12 @@
             <div class="live"><strong>حالة الطلب</strong><span>تحديث مباشر</span></div>
             <p class="number" id="orderNumber"></p>
             <div class="prep" id="prepBox" hidden><i class="ti ti-clock-hour-4"></i><div><small>مدة التجهيز المتوقعة</small><b><span id="prepMinutes"></span> دقيقة تقريباً</b></div></div>
-            <ol class="steps">
+            <ol class="steps" style="--steps:{{ $order->order_type === 'delivery' ? 5 : 4 }}">
                 <li class="step" data-step="1"><span><i class="ti ti-receipt"></i></span>تم الاستلام</li>
                 <li class="step" data-step="2"><span><i class="ti ti-tools-kitchen-2"></i></span>قيد التحضير</li>
                 <li class="step" data-step="3"><span><i class="ti ti-bell-check"></i></span>جاهز</li>
-                <li class="step" data-step="4"><span><i class="ti ti-circle-check"></i></span>مكتمل</li>
+                @if($order->order_type === 'delivery')<li class="step" data-step="4"><span><i class="ti ti-motorbike"></i></span>في الطريق</li>@endif
+                <li class="step" data-step="{{ $order->order_type === 'delivery' ? 5 : 4 }}"><span><i class="ti ti-circle-check"></i></span>مكتمل</li>
             </ol>
             <section class="status-box"><h2 id="statusLabel"></h2><p id="statusMessage"></p></section>
             <footer class="footer"><span id="lastUpdate"></span><a class="back" href="{{ route('restaurant.menu', $shop) }}">العودة إلى المنيو</a></footer>

@@ -569,6 +569,7 @@ class AuthController extends Controller
     {
         $token = $request->session()->get('app_push_token');
         $webPushEndpointHash = $request->session()->get('merchant_web_push_endpoint_hash');
+        $driverWebPushEndpointHash = $request->session()->get('driver_web_push_endpoint_hash');
         $userId = $request->user()?->id;
         if ($userId && is_string($token) && $token !== '') {
             PushDevice::query()
@@ -580,6 +581,12 @@ class AuthController extends Controller
             WebPushSubscription::query()
                 ->where('user_id', $userId)
                 ->where('endpoint_hash', $webPushEndpointHash)
+                ->delete();
+        }
+        if ($userId && is_string($driverWebPushEndpointHash) && $driverWebPushEndpointHash !== '') {
+            WebPushSubscription::query()
+                ->where('user_id', $userId)
+                ->where('endpoint_hash', $driverWebPushEndpointHash)
                 ->delete();
         }
 

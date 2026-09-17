@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\OfferPushSubscription;
+use App\Models\RestaurantDriver;
 use App\Models\Shop;
 use App\Models\WebPushSubscription;
 use Illuminate\Support\Facades\File;
@@ -50,6 +51,36 @@ class WebPushService
         return $this->deliver($subscriptions, $payload, WebPushSubscription::class, [
             'channel' => 'merchant_orders',
             'shop_id' => $shop->id,
+        ]);
+    }
+
+    public function sendToDriver(RestaurantDriver $driver, string $title, string $body, string $url, array $data = []): int
+    {
+        $subscriptions = WebPushSubscription::query()
+            ->where('shop_id', $driver->shop_id)
+            ->where('user_id', $driver->user_id)
+            ->get();
+        if ($subscriptions->isEmpty()) {
+            return 0;
+        }
+
+        $driver->loadMissing('shop');
+        $icon = route('merchant-app.icon', ['shop' => $driver->shop->slug, 'size' => 192]);
+        $payload = json_encode([
+            'title' => $title,
+            'body' => $body,
+            'url' => $url,
+            'icon' => $icon,
+            'badge' => $icon,
+            'tag' => 'driver-order-'.($data['order_id'] ?? now()->timestamp),
+            'requireInteraction' => true,
+            'data' => $data,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+
+        return $this->deliver($subscriptions, $payload, WebPushSubscription::class, [
+            'channel' => 'driver_orders',
+            'shop_id' => $driver->shop_id,
+            'user_id' => $driver->user_id,
         ]);
     }
 

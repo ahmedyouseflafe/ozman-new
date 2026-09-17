@@ -35,6 +35,7 @@ return new class extends Migration
                 'distributor',
                 'marketer',
                 'employee',
+                'restaurant_driver',
                 'customer'
             ])->default('customer');
 

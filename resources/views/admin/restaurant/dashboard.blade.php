@@ -38,10 +38,11 @@
         [hidden]{display:none!important}.order-alarm{position:fixed;z-index:1000;top:18px;left:50%;transform:translateX(-50%);width:min(560px,calc(100% - 24px));border:1px solid rgba(255,212,59,.75);border-radius:22px;background:linear-gradient(135deg,rgba(24,14,5,.98),rgba(14,21,25,.98));color:#fff;padding:16px 18px;display:flex;align-items:center;gap:14px;text-align:right;box-shadow:0 18px 65px rgba(0,0,0,.7),0 0 35px rgba(255,212,59,.3);cursor:pointer;font-family:inherit;animation:alarmPulse .85s infinite alternate}.order-alarm:hover{transform:translateX(-50%) translateY(-2px)}@keyframes alarmPulse{to{border-color:var(--red);box-shadow:0 18px 65px rgba(0,0,0,.7),0 0 42px rgba(255,98,116,.43)}}.alarm-icon{width:52px;height:52px;border-radius:17px;display:grid;place-items:center;flex:0 0 auto;background:rgba(255,212,59,.16);color:var(--yellow);font-size:29px}.alarm-copy{min-width:0;flex:1}.alarm-copy strong{display:block;font-size:17px;color:var(--yellow)}.alarm-copy span{display:block;margin-top:3px;color:#d8dee5;font-size:12px;font-weight:700}.alarm-action{flex:0 0 auto;border-radius:999px;padding:8px 13px;background:var(--yellow);color:#171000;font-size:11px;font-weight:900}
         .orders-wrap{overflow:auto;border:1px solid var(--border);border-radius:19px;background:rgba(3,6,10,.55)}table{width:100%;min-width:1120px;border-collapse:collapse}th{color:var(--cyan);font-size:13px;background:rgba(8,220,244,.05)}th,td{text-align:right;padding:16px;border-bottom:1px solid rgba(139,160,179,.13);vertical-align:top}tbody tr{transition:.2s}tbody tr:hover{background:rgba(8,220,244,.035)}tbody tr:last-child td{border-bottom:0}small{color:var(--muted)}.tag{display:inline-flex;align-items:center;padding:5px 11px;border-radius:30px;background:var(--cyan-soft);color:var(--cyan);border:1px solid rgba(8,220,244,.24);font-size:12px;font-weight:800}.status-form{display:grid;grid-template-columns:minmax(135px,1fr) minmax(125px,.8fr);gap:8px;min-width:285px}.status-field{display:grid;gap:5px}.status-field>span{color:#cbd4dc;font-size:10px;font-weight:800}.status-form .field{min-height:40px;margin:0;padding:6px 10px}.status-form .btn{grid-column:1/-1;min-height:40px;padding:6px 12px}.status-help{grid-column:1/-1;color:var(--muted);font-size:10px;line-height:1.6}
         .status-form{grid-template-columns:minmax(0,1fr);min-width:300px;max-width:390px}.status-choices{display:flex;flex-wrap:wrap;gap:7px;align-items:center}.status-choice{width:62px;height:62px;flex:0 0 62px;padding:5px;border:1px solid var(--border);border-radius:50%;background:rgba(8,13,19,.9);color:#d7e2ea;font-size:10px;font-weight:800;line-height:1.35;text-align:center;cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s}.status-choice:not(:disabled):hover{transform:translateY(-3px);border-color:var(--cyan);box-shadow:0 0 18px rgba(8,220,244,.2)}.status-choice:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}.status-choice.is-current{color:var(--cyan);border-color:var(--cyan);background:var(--cyan-soft);box-shadow:0 0 14px rgba(8,220,244,.16)}.status-choice-preparing.is-current{color:var(--yellow);border-color:var(--yellow);background:rgba(255,212,59,.12)}.status-choice-ready.is-current,.status-choice-completed.is-current{color:var(--green);border-color:var(--green);background:rgba(37,223,135,.12)}.status-choice-cancelled.is-current{color:var(--red);border-color:var(--red);background:rgba(255,98,116,.12)}.status-choice:disabled:not(.is-current){opacity:.37;cursor:not-allowed}.status-form.is-saving{opacity:.72}.status-form .status-field,.status-form .status-help,.status-form .status-save,.status-feedback{grid-column:1/-1}.status-feedback{display:block;min-height:18px;font-size:11px;font-weight:800;color:var(--green)}.status-feedback.is-error{color:var(--red)}
+        .driver-assignment{display:grid;gap:7px;margin-top:13px;padding-top:12px;border-top:1px solid var(--border);font-size:12px}.driver-assignment>strong{color:var(--cyan)}.driver-assign-form{display:grid;gap:8px}.driver-assign-form .field{min-height:40px}.driver-assign-form .btn{min-height:40px}.driver-management-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.driver-management-form .btn{grid-column:1/-1}.driver-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:16px}.driver-card{padding:14px;border:1px solid var(--border);border-radius:16px;background:rgba(5,9,15,.7)}.driver-card strong,.driver-card small{display:block}.driver-card small{overflow-wrap:anywhere}.driver-card form{margin-top:10px}.driver-card .btn{min-height:36px}.status-choice-out_for_delivery.is-current{color:var(--purple);border-color:var(--purple);background:rgba(118,44,255,.14)}
         .notice{border-radius:16px;padding:14px 18px;margin-bottom:18px}.notice-success{border:1px solid rgba(37,223,135,.35);background:rgba(37,223,135,.09);color:#73f2ae}.notice-error{border:1px solid rgba(255,98,116,.35);background:rgba(255,98,116,.09);color:#ffabb5}.empty{grid-column:1/-1;color:var(--muted);text-align:center;padding:18px}
         nav[role="navigation"]{margin-top:18px}
         @media(max-width:1250px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
-        @media(max-width:900px){.restaurant-page{width:100%;margin:0;padding:18px 14px 100px}.hero{padding:23px}.hero-top,.hero-actions,.section-head,.live-heading{align-items:flex-start;flex-direction:column}.hero-actions,.availability-form,.availability-toggle{width:100%}.stats-grid{grid-template-columns:repeat(2,1fr)}.section{padding:19px}.form-row,.filters{grid-template-columns:1fr}.form-row .btn,.filters .btn{width:100%}.live-tools{width:100%;justify-content:space-between}}
+        @media(max-width:900px){.restaurant-page{width:100%;margin:0;padding:18px 14px 100px}.hero{padding:23px}.hero-top,.hero-actions,.section-head,.live-heading{align-items:flex-start;flex-direction:column}.hero-actions,.availability-form,.availability-toggle{width:100%}.stats-grid{grid-template-columns:repeat(2,1fr)}.section{padding:19px}.form-row,.filters{grid-template-columns:1fr}.form-row .btn,.filters .btn{width:100%}.live-tools{width:100%;justify-content:space-between}.driver-management-form{grid-template-columns:1fr}}
         @media(max-width:900px){
             .orders-wrap{overflow:visible;border:0;border-radius:0;background:transparent}
             .orders-wrap table,.orders-wrap tbody{display:block;width:100%;min-width:0}
@@ -150,6 +151,41 @@
         </div>
     </section>
 
+    @if(auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.drivers.store'))
+        <section class="section glass" id="restaurant-drivers">
+            <div class="section-head">
+                <div class="section-title"><span class="section-icon"><i class="ti ti-motorbike"></i></span><div><h2>مندوبي التوصيل</h2><div class="section-subtitle">أضف مندوبًا، ثم اختره في طلب التوصيل. يرى المندوب الطلب في صفحته ويبدأ التوصيل بعد أن يصبح جاهزًا.</div></div></div>
+                <label class="status-field"><span>رابط دخول المندوب — انسخه وأرسله له</span><input class="field" readonly value="{{ route('driver.login') }}" aria-label="رابط دخول المندوب" onclick="this.select()"></label>
+            </div>
+            <form class="driver-management-form" method="post" action="{{ route('restaurant.drivers.store', $shop) }}">
+                @csrf
+                <input class="field" name="name" value="{{ old('name') }}" placeholder="اسم المندوب" autocomplete="name" required maxlength="255">
+                <input class="field" name="phone" value="{{ old('phone') }}" placeholder="رقم الجوال" inputmode="tel" autocomplete="tel" required maxlength="60">
+                <input class="field" name="email" value="{{ old('email') }}" placeholder="البريد الإلكتروني للدخول" type="email" autocomplete="off" required maxlength="255">
+                <input class="field" name="password" placeholder="كلمة مرور للمندوب (8 أحرف على الأقل)" type="password" autocomplete="new-password" required minlength="8">
+                <input class="field" name="password_confirmation" placeholder="تأكيد كلمة المرور" type="password" autocomplete="new-password" required minlength="8">
+                <button class="btn btn-primary" type="submit"><i class="ti ti-user-plus"></i> إضافة مندوب وربطه بالمطعم</button>
+            </form>
+            <div class="driver-grid">
+                @forelse($drivers as $driver)
+                    <article class="driver-card">
+                        <strong>{{ $driver->user?->name }} <span class="tag">{{ $driver->is_active ? 'فعال' : 'متوقف' }}</span></strong>
+                        <small>{{ $driver->user?->phone }} · {{ $driver->user?->email }}</small>
+                        @if(auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.drivers.toggle'))
+                            <form method="post" action="{{ route('restaurant.drivers.toggle', $driver) }}">
+                                @csrf @method('patch')
+                                <input type="hidden" name="is_active" value="{{ $driver->is_active ? 0 : 1 }}">
+                                <button class="btn {{ $driver->is_active ? 'btn-danger' : '' }}" type="submit">{{ $driver->is_active ? 'إيقاف المندوب' : 'تفعيل المندوب' }}</button>
+                            </form>
+                        @endif
+                    </article>
+                @empty
+                    <p class="empty">لا يوجد مندوبون بعد.</p>
+                @endforelse
+            </div>
+        </section>
+    @endif
+
     <section class="section glass">
         <div class="live-heading">
             <div class="section-title"><span class="section-icon"><i class="ti ti-chef-hat"></i></span><div><h2>شاشة المطبخ والكاشير</h2><div class="section-subtitle">طلبات الصالة والتوصيل والاستلام في مكان واحد.</div></div></div>
@@ -160,13 +196,15 @@
         </div>
         <form class="filters" method="get" style="margin:22px 0 16px">
             <select class="field" name="type"><option value="">كل أنواع الطلب</option>@foreach(['dine_in'=>'طلبات الطاولات','delivery'=>'توصيل','pickup'=>'استلام'] as $key=>$label)<option value="{{ $key }}" @selected($selectedType===$key)>{{ $label }}</option>@endforeach</select>
-            <select class="field" name="status"><option value="">كل الحالات</option>@foreach(['new'=>'جديد','preparing'=>'قيد التحضير','ready'=>'جاهز','completed'=>'مكتمل','cancelled'=>'ملغي'] as $key=>$label)<option value="{{ $key }}" @selected($selectedStatus===$key)>{{ $label }}</option>@endforeach</select>
+            <select class="field" name="status"><option value="">كل الحالات</option>@foreach(['new'=>'جديد','preparing'=>'قيد التحضير','ready'=>'جاهز','out_for_delivery'=>'خرج للتوصيل','completed'=>'مكتمل','cancelled'=>'ملغي'] as $key=>$label)<option value="{{ $key }}" @selected($selectedStatus===$key)>{{ $label }}</option>@endforeach</select>
             <button class="btn btn-primary"><i class="ti ti-filter"></i> فلترة</button>
         </form>
         <div class="orders-wrap"><table><thead><tr><th>الطلب</th><th>المصدر</th><th>الزبون / الطاولة</th><th>تفاصيل الوجبات</th><th>المجموع</th><th>الحالة</th></tr></thead><tbody id="restaurant-orders-body">
             @include('admin.restaurant.partials.orders_rows', [
                 'orders' => $orders,
+                'drivers' => $drivers->filter(fn ($driver) => $driver->is_active && $driver->user?->is_active),
                 'canManageOrders' => auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.orders.status'),
+                'canAssignDrivers' => auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.orders.driver'),
             ])
         </tbody></table></div>
         <div>{{ $orders->links() }}</div>

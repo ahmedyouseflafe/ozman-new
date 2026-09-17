@@ -604,6 +604,122 @@ class RestaurantOrderingTest extends TestCase
         $this->assertSame('https://www.google.com/maps?q=32.2211,35.2544', $order->map_link);
     }
 
+    public function test_restaurant_can_create_driver_assign_delivery_and_driver_can_finish_it(): void
+    {
+        [$shop] = $this->restaurant('delivery-driver');
+        $this->actingAs($shop->user)
+            ->post(route('restaurant.drivers.store', $shop), [
+                'name' => 'Delivery Driver',
+                'email' => 'delivery-driver@example.test',
+                'phone' => '0591234567',
+                'password' => 'driver-password',
+                'password_confirmation' => 'driver-password',
+            ])->assertRedirect();
+
+        $driver = $shop->restaurantDrivers()->with('user')->firstOrFail();
+        $order = FrontOrder::create([
+            'shop_id' => $shop->id,
+            'order_number' => 'RST-DELIVERY-DRIVER',
+            'customer_name' => 'Delivery customer',
+            'customer_phone' => '0599876543',
+            'customer_address' => 'Nablus',
+            'order_channel' => 'restaurant',
+            'order_type' => 'delivery',
+            'status' => 'ready',
+            'total' => 50,
+        ]);
+
+        $webPush = \Mockery::mock(\App\Services\WebPushService::class);
+        $webPush->shouldReceive('sendToDriver')->once()->withArgs(fn ($assignedDriver, $title, $body, $url) =>
+            $assignedDriver->is($driver)
+            && str_contains($title, $shop->name)
+            && str_contains($body, $order->order_number)
+            && str_contains($url, route('driver.dashboard'))
+        )->andReturn(1);
+        $this->app->instance(\App\Services\WebPushService::class, $webPush);
+
+        $this->actingAs($shop->user)
+            ->patch(route('restaurant.orders.driver', $order), ['restaurant_driver_id' => $driver->id])
+            ->assertRedirect();
+        $this->assertSame($driver->id, $order->fresh()->restaurant_driver_id);
+        $this->actingAs($shop->user)
+            ->patchJson(route('restaurant.orders.status', $order), ['status' => 'completed'])
+            ->assertUnprocessable();
+
+        $this->actingAs($driver->user)
+            ->get(route('driver.dashboard'))
+            ->assertOk()
+            ->assertSee($order->order_number)
+            ->assertSee('استلمت الطلب وخرجت للتوصيل');
+        $this->actingAs($driver->user)
+            ->getJson(route('driver.orders.feed'))
+            ->assertOk()
+            ->assertJsonPath('stats.assigned', 1);
+
+        $this->actingAs($driver->user)
+            ->patch(route('driver.orders.status', $order), ['status' => 'out_for_delivery'])
+            ->assertRedirect();
+        $this->assertSame('out_for_delivery', $order->fresh()->status);
+        $this->actingAs($shop->user)
+            ->patchJson(route('restaurant.orders.driver', $order), ['restaurant_driver_id' => null])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('restaurant_driver_id');
+        $this->actingAs($driver->user)
+            ->patch(route('driver.orders.status', $order), ['status' => 'completed'])
+            ->assertRedirect();
+        $this->assertNotNull($order->fresh()->delivered_at);
+        $this->assertSame('completed', $order->fresh()->status);
+    }
+
+    public function test_driver_web_push_subscription_is_scoped_to_driver_and_removed_on_logout(): void
+    {
+        [$shop] = $this->restaurant('driver-browser-push');
+        $driverUser = User::create([
+            'name' => 'Driver', 'email' => 'browser-driver@example.test',
+            'phone' => '0591234567', 'password' => 'password',
+            'role' => 'restaurant_driver', 'is_active' => true,
+        ]);
+        $shop->restaurantDrivers()->create(['user_id' => $driverUser->id, 'is_active' => true]);
+        $payload = ['subscription' => [
+            'endpoint' => 'https://push.example.test/driver-endpoint',
+            'keys' => ['p256dh' => 'public-key', 'auth' => 'auth-token'],
+            'contentEncoding' => 'aes128gcm',
+        ]];
+
+        $this->actingAs($shop->user)->postJson(route('driver.push.store'), $payload)->assertForbidden();
+        $this->actingAs($driverUser)->postJson(route('driver.push.store'), $payload)
+            ->assertOk()->assertJsonPath('registered', true);
+        $this->assertDatabaseHas('web_push_subscriptions', ['user_id' => $driverUser->id, 'shop_id' => $shop->id]);
+        $this->actingAs($driverUser)->post(route('logout'))->assertRedirect();
+        $this->assertDatabaseMissing('web_push_subscriptions', ['user_id' => $driverUser->id]);
+    }
+
+    public function test_restaurant_cannot_assign_another_restaurants_driver(): void
+    {
+        [$shop] = $this->restaurant('assign-own-driver');
+        [$otherShop] = $this->restaurant('assign-foreign-driver');
+        $foreignUser = User::create([
+            'name' => 'Foreign driver', 'email' => 'foreign-driver@example.test',
+            'phone' => '0591234567', 'password' => 'password',
+            'role' => 'restaurant_driver', 'is_active' => true,
+        ]);
+        $foreignDriver = $otherShop->restaurantDrivers()->create(['user_id' => $foreignUser->id, 'is_active' => true]);
+        $order = FrontOrder::create([
+            'shop_id' => $shop->id, 'order_number' => 'RST-FOREIGN-DRIVER',
+            'customer_name' => 'Customer', 'order_channel' => 'restaurant',
+            'order_type' => 'delivery', 'status' => 'ready',
+        ]);
+
+        $this->actingAs($shop->user)
+            ->patchJson(route('restaurant.orders.driver', $order), ['restaurant_driver_id' => $foreignDriver->id])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('restaurant_driver_id');
+        $this->assertNull($order->fresh()->restaurant_driver_id);
+        $this->actingAs($foreignUser)
+            ->patch(route('driver.orders.status', $order), ['status' => 'out_for_delivery'])
+            ->assertForbidden();
+    }
+
     public function test_valid_table_qr_forces_table_order_and_dashboard_shows_table_name(): void
     {
         [$shop, $product, $table] = $this->restaurant('qr-table');

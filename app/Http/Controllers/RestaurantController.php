@@ -34,9 +34,9 @@ class RestaurantController extends Controller
 
         $status = (string) $request->query('status', '');
         $type = (string) $request->query('type', '');
-        $allowedStatuses = ['new', 'preparing', 'ready', 'completed', 'cancelled'];
+        $allowedStatuses = ['new', 'preparing', 'ready', 'out_for_delivery', 'completed', 'cancelled'];
         $allowedTypes = ['dine_in', 'delivery', 'pickup'];
-        $ordersQuery = FrontOrder::with('restaurantTable')->where('shop_id', $shop->id)->whereNotNull('order_type');
+        $ordersQuery = FrontOrder::with('restaurantTable', 'restaurantDriver.user')->where('shop_id', $shop->id)->whereNotNull('order_type');
         $latestOrderId = (int) ((clone $ordersQuery)->max('id') ?? 0);
         $stats = [
             'new' => (clone $ordersQuery)->where('status', 'new')->count(),
@@ -49,6 +49,7 @@ class RestaurantController extends Controller
         return view('admin.restaurant.dashboard', [
             'shop' => $shop,
             'tables' => $shop->restaurantTables()->latest()->get(),
+            'drivers' => $shop->restaurantDrivers()->with('user')->latest()->get(),
             'orders' => $ordersQuery
                 ->when(in_array($status, $allowedStatuses, true), fn($query) => $query->where('status', $status))
                 ->when(in_array($type, $allowedTypes, true), fn($query) => $query->where('order_type', $type))
@@ -67,9 +68,9 @@ class RestaurantController extends Controller
 
         $status = (string) $request->query('status', '');
         $type = (string) $request->query('type', '');
-        $allowedStatuses = ['new', 'preparing', 'ready', 'completed', 'cancelled'];
+        $allowedStatuses = ['new', 'preparing', 'ready', 'out_for_delivery', 'completed', 'cancelled'];
         $allowedTypes = ['dine_in', 'delivery', 'pickup'];
-        $ordersQuery = FrontOrder::with('restaurantTable')
+        $ordersQuery = FrontOrder::with('restaurantTable', 'restaurantDriver.user')
             ->where('shop_id', $shop->id)
             ->whereNotNull('order_type');
         $statsQuery = FrontOrder::query()
@@ -103,8 +104,11 @@ class RestaurantController extends Controller
             'stats' => $stats,
             'html' => view('admin.restaurant.partials.orders_rows', [
                 'orders' => $orders,
+                'drivers' => $shop->restaurantDrivers()->with('user')->where('is_active', true)->whereHas('user', fn ($query) => $query->where('is_active', true))->get(),
                 'canManageOrders' => $request->user()->isSuperAdmin()
                     || $request->user()->canAccessRouteName('restaurant.orders.status'),
+                'canAssignDrivers' => $request->user()->isSuperAdmin()
+                    || $request->user()->canAccessRouteName('restaurant.orders.driver'),
             ])->render(),
         ]);
     }
@@ -334,9 +338,12 @@ class RestaurantController extends Controller
         $transitions = [
             'new' => ['new', 'preparing', 'cancelled'],
             'preparing' => ['preparing', 'ready', 'cancelled'],
-            'ready' => ['ready', 'completed', 'cancelled'],
+            'ready' => $order->order_type === 'delivery' && $order->restaurant_driver_id
+                ? ['ready', 'cancelled']
+                : ['ready', 'completed', 'cancelled'],
             'completed' => ['completed'],
             'cancelled' => ['cancelled'],
+            'out_for_delivery' => ['out_for_delivery'],
         ];
         abort_unless(in_array($data['status'], $transitions[$order->status] ?? [], true), 422, 'لا يمكن إعادة الطلب إلى حالة سابقة.');
         if ($data['status'] === 'preparing' && empty($data['estimated_preparation_minutes']) && ! $order->estimated_preparation_minutes) {
@@ -358,8 +365,11 @@ class RestaurantController extends Controller
                 'status' => $order->status,
                 'message' => 'تم حفظ حالة الطلب ومدة التجهيز وإبلاغ العميل.',
                 'html' => view('admin.restaurant.partials.orders_rows', [
-                    'orders' => collect([$order->fresh('restaurantTable')]),
+                    'orders' => collect([$order->fresh(['restaurantTable', 'restaurantDriver.user'])]),
+                    'drivers' => $order->shop->restaurantDrivers()->with('user')->where('is_active', true)->whereHas('user', fn ($query) => $query->where('is_active', true))->get(),
                     'canManageOrders' => true,
+                    'canAssignDrivers' => $request->user()->isSuperAdmin()
+                        || $request->user()->canAccessRouteName('restaurant.orders.driver'),
                 ])->render(),
             ]);
         }
@@ -474,7 +484,8 @@ class RestaurantController extends Controller
             'new' => 1,
             'preparing' => 2,
             'ready' => 3,
-            'completed' => 4,
+            'out_for_delivery' => 4,
+            'completed' => $order->order_type === 'delivery' ? 5 : 4,
             default => 0,
         };
         $message = match ($order->status) {
@@ -483,6 +494,7 @@ class RestaurantController extends Controller
             'ready' => $order->order_type === 'delivery'
                 ? 'طلبك جاهز وسيبدأ التوصيل إليك.'
                 : 'طلبك جاهز، يمكنك استلامه الآن.',
+            'out_for_delivery' => 'استلم المندوب طلبك وهو الآن في الطريق إليك.',
             'completed' => 'اكتمل طلبك، نتمنى لك وجبة شهية.',
             'cancelled' => 'تم إلغاء الطلب. تواصل مع المطعم لمزيد من التفاصيل.',
             default => 'يتم الآن تحديث حالة طلبك.',

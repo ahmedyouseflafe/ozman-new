@@ -9,12 +9,14 @@ use App\Models\Shop;
 use App\Models\User;
 use App\Rules\ValidPhoneNumber;
 use App\Services\FirebaseMessagingService;
+use App\Services\WebPushService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Throwable;
@@ -69,6 +71,7 @@ class RestaurantDriverController extends Controller
         Request $request,
         FrontOrder $order,
         FirebaseMessagingService $firebase,
+        WebPushService $webPush,
     ): RedirectResponse {
         $order->loadMissing('shop', 'restaurantDriver.user');
         abort_unless($order->shop?->catalog_type === 'restaurant' && $order->order_type === 'delivery', 404);
@@ -85,6 +88,12 @@ class RestaurantDriverController extends Controller
             ],
         ]);
         $driverId = isset($data['restaurant_driver_id']) ? (int) $data['restaurant_driver_id'] : null;
+        if ($order->status === 'out_for_delivery' && ! $driverId) {
+            throw ValidationException::withMessages(['restaurant_driver_id' => 'لا يمكن إزالة المندوب بعد بدء التوصيل. اختر مندوبًا بديلًا.']);
+        }
+        if ($driverId && ! RestaurantDriver::query()->whereKey($driverId)->whereHas('user', fn ($query) => $query->where('is_active', true))->exists()) {
+            throw ValidationException::withMessages(['restaurant_driver_id' => 'حساب المندوب المحدد غير فعال.']);
+        }
         $changed = (int) $order->restaurant_driver_id !== (int) $driverId;
 
         $order->update([
@@ -94,10 +103,12 @@ class RestaurantDriverController extends Controller
         $order->refresh()->load('shop', 'restaurantDriver.user');
 
         if ($changed && $order->restaurantDriver) {
-            $this->sendAssignmentNotifications($order, $firebase);
+            $this->sendAssignmentNotifications($order, $firebase, $webPush);
         }
 
-        return back()->with('status', $driverId ? 'تم تعيين المندوب وإرسال الإشعارات.' : 'تم إلغاء تعيين المندوب.');
+        return back()->with('status', $driverId
+            ? ($changed ? 'تم تعيين المندوب. ظهر الطلب في لوحته وسيصله إشعار إذا فعّله على جهازه.' : 'المندوب معيّن لهذا الطلب مسبقًا.')
+            : 'تم إلغاء تعيين المندوب.');
     }
 
     public function dashboard(Request $request): View
@@ -198,7 +209,7 @@ class RestaurantDriverController extends Controller
         );
     }
 
-    private function sendAssignmentNotifications(FrontOrder $order, FirebaseMessagingService $firebase): void
+    private function sendAssignmentNotifications(FrontOrder $order, FirebaseMessagingService $firebase, WebPushService $webPush): void
     {
         $driver = $order->restaurantDriver;
         $tokens = PushDevice::query()->where('user_id', $driver->user_id)->pluck('token');
@@ -223,6 +234,18 @@ class RestaurantDriverController extends Controller
                     ['type' => 'restaurant_order_status', 'status' => $order->status, 'order_id' => $order->id],
                 );
             }
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
+        try {
+            $webPush->sendToDriver(
+                $driver,
+                'طلب توصيل جديد · '.$order->shop->name,
+                "تم تعيين الطلب {$order->order_number} لك بقيمة {$order->total} شيكل",
+                route('driver.dashboard').'#delivery-order-'.$order->id,
+                ['type' => 'driver_order_assignment', 'order_id' => $order->id, 'shop_id' => $order->shop_id],
+            );
         } catch (Throwable $exception) {
             report($exception);
         }
