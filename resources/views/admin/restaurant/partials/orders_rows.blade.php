@@ -1,8 +1,8 @@
 @forelse($orders as $order)
     <tr id="restaurant-order-{{ $order->id }}" data-order-id="{{ $order->id }}">
-        <td>{{ $order->order_number }}<br><small>{{ $order->created_at }}</small></td>
-        <td><span class="tag">{{ ['dine_in'=>'طلب طاولة','delivery'=>'توصيل','pickup'=>'استلام'][$order->order_type] ?? $order->order_type }}</span></td>
-        <td>
+        <td data-label="الطلب">{{ $order->order_number }}<br><small>{{ $order->created_at }}</small></td>
+        <td data-label="المصدر"><span class="tag">{{ ['dine_in'=>'طلب طاولة','delivery'=>'توصيل','pickup'=>'استلام'][$order->order_type] ?? $order->order_type }}</span></td>
+        <td data-label="الزبون / الطاولة">
             @if($order->restaurantTable)
                 <strong><i class="ti ti-table"></i> {{ $order->restaurantTable->name }}</strong>
                 <br><small>العميل: {{ $order->customer_name }}</small>
@@ -12,7 +12,7 @@
             <br>{{ $order->customer_phone }}
             @if($order->order_type === 'delivery' && $order->map_link)<br><a href="{{ $order->map_link }}" target="_blank" rel="noopener"><i class="ti ti-map-pin"></i> موقع التوصيل</a>@endif
         </td>
-        <td>
+        <td data-label="تفاصيل الوجبات">
             @foreach($order->items ?? [] as $item)
                 <div>
                     <b>{{ $item['qty'] }}× {{ $item['name'] }}</b> {{ $item['size'] ?? '' }}<br>
@@ -25,8 +25,8 @@
                 <div class="tag" style="margin-top:8px"><i class="ti ti-clock"></i> تجهيز متوقع: {{ $order->estimated_preparation_minutes }} دقيقة</div>
             @endif
         </td>
-        <td>{{ $order->total }} ₪</td>
-        <td>
+        <td data-label="المجموع">{{ $order->total }} ₪</td>
+        <td data-label="الحالة">
             @if($canManageOrders)
                 <form class="status-form" method="post" action="{{ route('restaurant.orders.status',$order) }}">
                     @csrf @method('patch')

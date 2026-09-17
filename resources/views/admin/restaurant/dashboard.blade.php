@@ -42,6 +42,25 @@
         nav[role="navigation"]{margin-top:18px}
         @media(max-width:1250px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:900px){.restaurant-page{width:100%;margin:0;padding:18px 14px 100px}.hero{padding:23px}.hero-top,.hero-actions,.section-head,.live-heading{align-items:flex-start;flex-direction:column}.hero-actions,.availability-form,.availability-toggle{width:100%}.stats-grid{grid-template-columns:repeat(2,1fr)}.section{padding:19px}.form-row,.filters{grid-template-columns:1fr}.form-row .btn,.filters .btn{width:100%}.live-tools{width:100%;justify-content:space-between}}
+        @media(max-width:900px){
+            .orders-wrap{overflow:visible;border:0;border-radius:0;background:transparent}
+            .orders-wrap table,.orders-wrap tbody{display:block;width:100%;min-width:0}
+            .orders-wrap thead{display:none}
+            .orders-wrap tbody tr{display:grid;grid-template-columns:minmax(0,1fr) max-content;width:100%;min-width:0;margin-bottom:13px;overflow:hidden;border:1px solid var(--border);border-radius:18px;background:rgba(7,15,21,.92)}
+            .orders-wrap tbody tr:last-child{margin-bottom:0}
+            .orders-wrap tbody td{display:block;min-width:0;padding:11px 14px;border:0;overflow-wrap:anywhere}
+            .orders-wrap tbody td::before{content:attr(data-label);display:block;margin-bottom:4px;color:var(--cyan);font-size:11px;font-weight:800}
+            .orders-wrap tbody td:nth-child(-n+2){background:rgba(8,220,244,.045)}
+            .orders-wrap tbody td:nth-child(1){font-size:15px;font-weight:800}
+            .orders-wrap tbody td:nth-child(1) small{display:block;font-size:11px;font-weight:600}
+            .orders-wrap tbody td:nth-child(2){text-align:left}
+            .orders-wrap tbody td:nth-child(n+3){grid-column:1/-1;border-top:1px solid rgba(139,160,179,.13)}
+            .orders-wrap tbody td:nth-child(5){color:var(--cyan);font-size:19px;font-weight:800}
+            .orders-wrap tbody td[colspan]{grid-column:1/-1;text-align:center}
+            .orders-wrap .status-form{width:100%;min-width:0;max-width:none}
+            .orders-wrap .status-choices{gap:6px}
+            .orders-wrap .status-choice{width:56px;height:56px;flex-basis:56px;font-size:9px}
+        }
         @media(max-width:600px){.order-alarm{top:9px;padding:13px;gap:10px;border-radius:18px}.alarm-icon{width:44px;height:44px;border-radius:14px;font-size:24px}.alarm-copy strong{font-size:14px}.alarm-copy span{font-size:10px}.alarm-action{padding:7px 9px;font-size:9px}}
         @media(max-width:520px){.restaurant-page{padding-inline:10px}.hero{border-radius:21px;padding:19px}.hero h1{font-size:25px}.stats-grid{gap:10px}.stat{min-height:112px;padding:15px}.stat strong{font-size:28px}.stat-icon{width:39px;height:39px}.section{border-radius:21px;padding:15px}.section h2{font-size:20px}.tables-grid{grid-template-columns:1fr}}
     </style>

@@ -382,6 +382,8 @@ class RestaurantOrderingTest extends TestCase
             ->get(route('restaurant.dashboard', $shop))
             ->assertOk()
             ->assertSee('class="status-choices"', false)
+            ->assertSee('data-label="تفاصيل الوجبات"', false)
+            ->assertSee('data-label="الحالة"', false)
             ->assertSee('value="preparing"', false)
             ->assertSee('value="cancelled"', false);
 
