@@ -311,20 +311,21 @@ class RestaurantController extends Controller
         ]);
     }
 
-    public function track(Request $request, FrontOrder $order): JsonResponse|View
+    public function track(Request $request, FrontOrder $order): JsonResponse|Response
     {
         abort_unless($order->order_type && $order->shop?->catalog_type === 'restaurant', 404);
         $tracking = $this->trackingPayload($order);
 
         if ($request->expectsJson()) {
-            return response()->json(['ok' => true, 'tracking' => $tracking]);
+            return response()->json(['ok' => true, 'tracking' => $tracking])
+                ->header('Cache-Control', 'private, no-store');
         }
 
-        return view('front.restaurant_order_tracking', [
+        return response()->view('front.restaurant_order_tracking', [
             'order' => $order,
             'shop' => $order->shop,
             'tracking' => $tracking,
-        ]);
+        ])->header('Cache-Control', 'private, no-store');
     }
 
     public function status(Request $request, FrontOrder $order, FirebaseMessagingService $firebase): JsonResponse|RedirectResponse
@@ -480,6 +481,11 @@ class RestaurantController extends Controller
     private function trackingPayload(FrontOrder $order): array
     {
         $order->loadMissing('shop');
+        $shop = $order->shop;
+        $locationIsFresh = $order->status === 'out_for_delivery'
+            && $order->driver_location_at?->isAfter(now()->subMinutes(2))
+            && $order->driver_latitude !== null
+            && $order->driver_longitude !== null;
         $step = match ($order->status) {
             'new' => 1,
             'preparing' => 2,
@@ -509,6 +515,20 @@ class RestaurantController extends Controller
             'step' => $step,
             'is_cancelled' => $order->status === 'cancelled',
             'order_type' => $order->order_type,
+            'delivery_map' => $order->order_type === 'delivery' ? [
+                'restaurant' => $shop?->latitude !== null && $shop?->longitude !== null
+                    ? ['lat' => (float) $shop->latitude, 'lng' => (float) $shop->longitude]
+                    : null,
+                'destination' => $order->latitude !== null && $order->longitude !== null
+                    ? ['lat' => (float) $order->latitude, 'lng' => (float) $order->longitude]
+                    : null,
+                'driver' => $locationIsFresh ? [
+                    'lat' => (float) $order->driver_latitude,
+                    'lng' => (float) $order->driver_longitude,
+                    'accuracy_meters' => $order->driver_location_accuracy_meters,
+                    'updated_at' => $order->driver_location_at->toIso8601String(),
+                ] : null,
+            ] : null,
             'estimated_preparation_minutes' => $order->estimated_preparation_minutes,
             'created_at' => $order->created_at?->toIso8601String(),
             'updated_at' => $order->updated_at?->toIso8601String(),

@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <style>
         :root{--cyan:#08dcf4;--green:#28dc88;--muted:#aab6bf;--border:rgba(139,160,179,.24)}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 80% 0,rgba(8,220,244,.13),transparent 34%),#050b0e;color:#f6fbfd;font-family:Cairo,Arial,sans-serif}button{font:inherit}a{color:var(--cyan)}main{width:min(920px,100%);margin:auto;padding:22px 16px 70px}.hero,.order-card,.stat{border:1px solid var(--border);border-radius:20px;background:#0b171d;box-shadow:0 15px 38px rgba(0,0,0,.2)}.hero{padding:20px;display:flex;justify-content:space-between;align-items:flex-start;gap:15px}.hero h1{margin:0;font-size:25px}.hero p{margin:4px 0 0;color:var(--muted)}.hero-actions{display:flex;flex-wrap:wrap;gap:8px}.btn,.action{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:8px 13px;border:1px solid rgba(8,220,244,.4);border-radius:12px;background:rgba(8,220,244,.1);color:var(--cyan);font-weight:800;text-decoration:none;cursor:pointer}.btn:hover,.action:hover{background:rgba(8,220,244,.2)}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:15px 0}.stat{padding:13px}.stat small{display:block;color:var(--muted)}.stat strong{font-size:25px;color:var(--cyan)}.notice{margin:14px 0;padding:12px 15px;border:1px solid rgba(40,220,136,.45);border-radius:12px;background:rgba(40,220,136,.1);color:#8df5b9}.notice.error{border-color:#a84555;background:#31151b;color:#ffb7c0}.feed-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 0 10px}.feed-head h2{font-size:20px;margin:0}.feed-head span{font-size:12px;color:var(--green)}.orders{display:grid;gap:13px}.order-card{padding:17px;scroll-margin-top:15px}.order-head,.order-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.order-head small,.order-details small,.order-items small{display:block;color:var(--muted);font-size:11px}.order-head h2{margin:0;font-size:18px;overflow-wrap:anywhere}.badge{padding:5px 10px;border:1px solid rgba(8,220,244,.4);border-radius:30px;color:var(--cyan);font-size:12px;font-weight:800}.order-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:15px 0}.order-details>div{min-width:0;overflow-wrap:anywhere}.order-details .full{grid-column:1/-1}.map-link{display:inline-flex;align-items:center;gap:5px}.order-items{padding:12px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}.order-items div{font-size:13px}.order-foot{padding-top:14px}.order-foot>strong{color:var(--green)}.action{background:var(--cyan);color:#01151a}.empty{text-align:center;padding:45px 20px;border:1px dashed var(--border);border-radius:18px;color:var(--muted)}@media(max-width:600px){main{padding:10px 10px 70px}.hero{display:block}.hero h1{font-size:21px}.hero-actions{margin-top:13px}.stats{gap:7px}.stat{padding:10px}.stat strong{font-size:21px}.order-details{grid-template-columns:1fr}.order-details .full{grid-column:1}.order-foot form,.order-foot .action{width:100%}}
+        .location-share{display:grid;gap:5px;min-width:220px}.location-share small{color:var(--muted);font-size:11px}.location-share .btn{width:100%}@media(max-width:600px){.order-foot .location-share{width:100%}}
     </style>
 </head>
 <body>
@@ -43,6 +44,91 @@
     const keyUrl = {{ Illuminate\Support\Js::from(route('merchant-app.push.public-key')) }};
     const subscribeUrl = {{ Illuminate\Support\Js::from(route('driver.push.store')) }};
     const workerUrl = {{ Illuminate\Support\Js::from(asset('merchant-pwa-sw.js')) }};
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    let locationWatch = null;
+    let sharedOrder = null;
+    let lastLocationSent = 0;
+    let sendingLocation = false;
+    let pendingLocationPost = null;
+    let locationHeartbeat = null;
+    const locationButton = () => orders.querySelector(`[data-share-location][data-order-id="${sharedOrder?.id}"]`);
+    const locationStatus = () => locationButton()?.parentElement.querySelector('[data-location-status]');
+    function renderLocationSharing() {
+        const button = locationButton();
+        if (!button) {
+            if (locationWatch !== null) stopLocationSharing(false);
+            return;
+        }
+        if (locationWatch !== null) {
+            button.innerHTML = '<i class="ti ti-location-filled"></i> إيقاف مشاركة موقعي';
+            if (locationStatus() && !locationStatus().dataset.error) locationStatus().textContent = 'موقعك يُرسل لهذا الطلب فقط. أبقِ الصفحة مفتوحة أثناء التوصيل.';
+        }
+    }
+    async function stopLocationSharing(clearServer = true) {
+        if (locationWatch !== null) navigator.geolocation.clearWatch(locationWatch);
+        locationWatch = null;
+        if (locationHeartbeat !== null) clearInterval(locationHeartbeat);
+        locationHeartbeat = null;
+        const previous = sharedOrder;
+        sharedOrder = null;
+        lastLocationSent = 0;
+        if (clearServer && previous) {
+            try {
+                if (pendingLocationPost) await pendingLocationPost.catch(() => {});
+                await fetch(previous.clearUrl, {method:'DELETE',credentials:'same-origin',headers:{Accept:'application/json','X-CSRF-TOKEN':csrfToken}});
+            } catch (_) {}
+        }
+        const button = orders.querySelector(`[data-share-location][data-order-id="${previous?.id}"]`);
+        if (button) button.innerHTML = '<i class="ti ti-location"></i> بدء مشاركة موقعي مع العميل';
+    }
+    async function sendDriverPosition(position) {
+        if (!sharedOrder || locationWatch === null || sendingLocation || Date.now() - lastLocationSent < 10000) return;
+        const status = locationStatus();
+        if (position.coords.accuracy > 250) {
+            if (status) status.textContent = 'إشارة GPS ضعيفة؛ حاول الوقوف في مكان مفتوح.';
+            return;
+        }
+        sendingLocation = true;
+        const currentOrder = sharedOrder;
+        try {
+            pendingLocationPost = fetch(currentOrder.url, {method:'POST',credentials:'same-origin',headers:{Accept:'application/json','Content-Type':'application/json','X-CSRF-TOKEN':csrfToken},body:JSON.stringify({latitude:position.coords.latitude,longitude:position.coords.longitude,accuracy:position.coords.accuracy})});
+            const response = await pendingLocationPost;
+            if (!response.ok) throw new Error(response.status === 403 || response.status === 422 ? 'لم يعد هذا الطلب متاحًا للمشاركة.' : 'تعذّر إرسال الموقع؛ ستتم إعادة المحاولة.');
+            lastLocationSent = Date.now();
+            if (sharedOrder?.id === currentOrder.id && status) { status.textContent = `تم تحديث موقعك للعميل الساعة ${new Date().toLocaleTimeString('ar-PS')}.`; delete status.dataset.error; }
+        } catch (error) {
+            if (status) { status.textContent = error.message; status.dataset.error = '1'; }
+            if (error.message === 'لم يعد هذا الطلب متاحًا للمشاركة.') stopLocationSharing(false);
+        } finally { pendingLocationPost = null; sendingLocation = false; }
+    }
+    function locationError(error) {
+        const status = locationStatus();
+        if (status) { status.textContent = error.code === 1 ? 'رفضت إذن الموقع. فعّله من إعدادات المتصفح.' : 'تعذّر تحديد موقعك؛ حاول مرة أخرى في مكان مفتوح.'; status.dataset.error = '1'; }
+        if (error.code === 1) stopLocationSharing();
+    }
+    orders.addEventListener('click', async event => {
+        const button = event.target.closest('[data-share-location]');
+        if (!button) return;
+        if (sharedOrder?.id === button.dataset.orderId && locationWatch !== null) {
+            await stopLocationSharing();
+            const status = button.parentElement.querySelector('[data-location-status]');
+            if (status) status.textContent = 'تم إيقاف مشاركة الموقع.';
+            return;
+        }
+        if (!window.isSecureContext || !navigator.geolocation) {
+            button.parentElement.querySelector('[data-location-status]').textContent = 'هذا المتصفح لا يدعم GPS أو أن الاتصال غير آمن (HTTPS مطلوب).';
+            return;
+        }
+        if (sharedOrder) await stopLocationSharing();
+        sharedOrder = {id:button.dataset.orderId, url:button.dataset.locationUrl, clearUrl:button.dataset.clearUrl};
+        button.parentElement.querySelector('[data-location-status]').textContent = 'بانتظار إذن الموقع وإشارة GPS...';
+        locationWatch = navigator.geolocation.watchPosition(sendDriverPosition, locationError, {enableHighAccuracy:true,maximumAge:0,timeout:15000});
+        locationHeartbeat = setInterval(() => {
+            if (locationWatch !== null && !document.hidden && Date.now() - lastLocationSent > 30000)
+                navigator.geolocation.getCurrentPosition(sendDriverPosition, locationError, {enableHighAccuracy:true,maximumAge:10000,timeout:15000});
+        }, 30000);
+        renderLocationSharing();
+    });
     let refreshing = false;
     async function refreshOrders() {
         if (refreshing) return;
@@ -51,7 +137,7 @@
             const response = await fetch(feedUrl, {headers:{Accept:'application/json'},credentials:'same-origin',cache:'no-store'});
             if (!response.ok) throw new Error('feed');
             const data = await response.json();
-            if (!orders.contains(document.activeElement)) orders.innerHTML = data.html;
+            if (!orders.contains(document.activeElement)) { orders.innerHTML = data.html; renderLocationSharing(); }
             for (const [key,id] of Object.entries({assigned:'stat-assigned',on_the_way:'stat-on-the-way',delivered_today:'stat-delivered-today'})) {
                 document.getElementById(id).textContent = data.stats[key] ?? 0;
             }

@@ -35,6 +35,10 @@ class FrontOrder extends Model
         'estimated_preparation_minutes',
         'customer_push_token',
         'driver_assigned_at',
+        'driver_latitude',
+        'driver_longitude',
+        'driver_location_accuracy_meters',
+        'driver_location_at',
         'picked_up_at',
         'delivered_at',
         'payment_method',
@@ -59,11 +63,18 @@ class FrontOrder extends Model
         'reward_won_at' => 'datetime',
         'estimated_preparation_minutes' => 'integer',
         'driver_assigned_at' => 'datetime',
+        'driver_latitude' => 'decimal:7',
+        'driver_longitude' => 'decimal:7',
+        'driver_location_accuracy_meters' => 'integer',
+        'driver_location_at' => 'datetime',
         'picked_up_at' => 'datetime',
         'delivered_at' => 'datetime',
     ];
 
-    protected $hidden = ['customer_push_token'];
+    protected $hidden = [
+        'customer_push_token', 'driver_latitude', 'driver_longitude',
+        'driver_location_accuracy_meters', 'driver_location_at',
+    ];
 
     public function shop(): BelongsTo
     {

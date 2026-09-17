@@ -671,6 +671,85 @@ class RestaurantOrderingTest extends TestCase
         $this->assertSame('completed', $order->fresh()->status);
     }
 
+    public function test_live_driver_location_is_private_fresh_and_cleared_after_delivery(): void
+    {
+        config()->set('services.google_maps.browser_key', null);
+        [$shop] = $this->restaurant('live-driver-location');
+        $shop->update(['latitude' => 32.2210, 'longitude' => 35.2540]);
+        $driverUser = User::create([
+            'name' => 'Live driver', 'email' => 'live-driver@example.test',
+            'password' => 'password', 'role' => 'restaurant_driver', 'is_active' => true,
+        ]);
+        $otherDriverUser = User::create([
+            'name' => 'Other driver', 'email' => 'other-live-driver@example.test',
+            'password' => 'password', 'role' => 'restaurant_driver', 'is_active' => true,
+        ]);
+        $driver = $shop->restaurantDrivers()->create(['user_id' => $driverUser->id, 'is_active' => true]);
+        $otherDriver = $shop->restaurantDrivers()->create(['user_id' => $otherDriverUser->id, 'is_active' => true]);
+        $order = FrontOrder::create([
+            'shop_id' => $shop->id, 'restaurant_driver_id' => $driver->id,
+            'order_number' => 'RST-LIVE-LOCATION', 'customer_name' => 'Tracked delivery customer',
+            'order_channel' => 'restaurant', 'order_type' => 'delivery', 'status' => 'ready',
+            'latitude' => 32.2300, 'longitude' => 35.2600,
+        ]);
+        $location = ['latitude' => 32.2251, 'longitude' => 35.2552, 'accuracy' => 12.4];
+        $trackingUrl = \Illuminate\Support\Facades\URL::signedRoute('restaurant.orders.track', $order);
+
+        $this->actingAs($driverUser)->postJson(route('driver.orders.location', $order), $location)
+            ->assertUnprocessable();
+        $this->actingAs($driverUser)->patch(route('driver.orders.status', $order), ['status' => 'out_for_delivery'])
+            ->assertRedirect();
+        $this->actingAs($otherDriverUser)->postJson(route('driver.orders.location', $order), $location)
+            ->assertForbidden();
+        $this->actingAs($driverUser)->postJson(route('driver.orders.location', $order), ['latitude' => 91] + $location)
+            ->assertUnprocessable()->assertJsonValidationErrors('latitude');
+        $this->actingAs($driverUser)->postJson(route('driver.orders.location', $order), array_replace($location, ['accuracy' => 300]))
+            ->assertUnprocessable()->assertJsonValidationErrors('accuracy');
+        $this->actingAs($driverUser)->postJson(route('driver.orders.location', $order), $location)
+            ->assertOk()->assertJsonPath('accepted', true);
+        $this->getJson($trackingUrl)->assertOk()
+            ->assertJsonPath('tracking.delivery_map.restaurant.lat', 32.221)
+            ->assertJsonPath('tracking.delivery_map.destination.lng', 35.26)
+            ->assertJsonPath('tracking.delivery_map.driver.lat', 32.2251)
+            ->assertDontSee('customer_phone');
+        $this->get($trackingUrl)->assertOk()->assertSee('موقع المندوب ومسار التوصيل')
+            ->assertSee('الخريطة ووقت الطريق غير متاحين حاليًا', false);
+        config()->set('services.google_maps.browser_key', 'test-browser-key');
+        $this->get($trackingUrl)->assertOk()
+            ->assertSee('maps.googleapis.com/maps/api/js?key=test-browser-key', false)
+            ->assertSee("google.maps.importLibrary('routes')", false);
+        config()->set('services.google_maps.browser_key', null);
+        $this->actingAs($otherDriverUser)->deleteJson(route('driver.orders.location.clear', $order))
+            ->assertForbidden();
+        $this->actingAs($driverUser)->deleteJson(route('driver.orders.location.clear', $order))
+            ->assertOk()->assertJsonPath('cleared', true);
+        $this->getJson($trackingUrl)->assertOk()->assertJsonPath('tracking.delivery_map.driver', null);
+        $this->actingAs($driverUser)->postJson(route('driver.orders.location', $order), $location)
+            ->assertOk()->assertJsonPath('accepted', true);
+        $this->actingAs($driverUser)->postJson(route('driver.orders.location', $order), $location)
+            ->assertOk()->assertJsonPath('accepted', false);
+
+        $this->travel(3)->minutes();
+        $this->getJson($trackingUrl)->assertOk()->assertJsonPath('tracking.delivery_map.driver', null);
+        $this->actingAs($driverUser)->postJson(route('driver.orders.location', $order), $location)
+            ->assertOk()->assertJsonPath('accepted', true);
+        $this->actingAs($shop->user)->patch(route('restaurant.orders.driver', $order), ['restaurant_driver_id' => $otherDriver->id])
+            ->assertRedirect();
+        $this->assertNull($order->fresh()->driver_location_at);
+        $this->getJson($trackingUrl)->assertOk()->assertJsonPath('tracking.delivery_map.driver', null);
+        $this->actingAs($driverUser)->postJson(route('driver.orders.location', $order), $location)
+            ->assertForbidden();
+        $this->actingAs($otherDriverUser)->postJson(route('driver.orders.location', $order), $location)
+            ->assertOk()->assertJsonPath('accepted', true);
+        $this->actingAs($otherDriverUser)->patch(route('driver.orders.status', $order), ['status' => 'completed'])
+            ->assertRedirect();
+        $this->assertNull($order->fresh()->driver_location_at);
+        $this->getJson($trackingUrl)->assertOk()->assertJsonPath('tracking.delivery_map.driver', null);
+        $this->actingAs($otherDriverUser)->postJson(route('driver.orders.location', $order), $location)
+            ->assertUnprocessable();
+        $this->travelBack();
+    }
+
     public function test_driver_web_push_subscription_is_scoped_to_driver_and_removed_on_logout(): void
     {
         [$shop] = $this->restaurant('driver-browser-push');

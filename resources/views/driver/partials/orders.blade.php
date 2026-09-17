@@ -26,6 +26,10 @@
                     <button type="submit" class="action"><i class="ti ti-motorbike"></i> استلمت الطلب وخرجت للتوصيل</button>
                 </form>
             @elseif($order->status === 'out_for_delivery')
+                <div class="location-share" data-location-order="{{ $order->id }}">
+                    <button type="button" class="btn" data-share-location data-order-id="{{ $order->id }}" data-location-url="{{ route('driver.orders.location', $order) }}" data-clear-url="{{ route('driver.orders.location.clear', $order) }}"><i class="ti ti-location"></i> بدء مشاركة موقعي مع العميل</button>
+                    <small data-location-status>اسمح باستخدام الموقع وأبقِ هذه الصفحة مفتوحة أثناء التوصيل. قد يتوقف التحديث عند إغلاق الشاشة.</small>
+                </div>
                 <form method="post" action="{{ route('driver.orders.status', $order) }}">
                     @csrf @method('patch')
                     <input type="hidden" name="status" value="completed">
