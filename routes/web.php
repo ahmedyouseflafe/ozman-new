@@ -8,19 +8,16 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DistributorController;
 use App\Http\Controllers\ElectronicsStoreController;
 use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\FrontController;
 use App\Http\Controllers\FrontAssetController;
-use App\Http\Controllers\ShopStoryController;
+use App\Http\Controllers\FrontController;
 use App\Http\Controllers\FrontOrderController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\PushDeviceController;
-use App\Http\Controllers\PushNotificationController;
 use App\Http\Controllers\MerchantPwaController;
 use App\Http\Controllers\ModularServiceController;
 use App\Http\Controllers\ModularServiceDashboardController;
 use App\Http\Controllers\OfferPushSubscriptionController;
-use App\Http\Controllers\ShopAppController;
-use App\Http\Controllers\WebPushSubscriptionController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PushDeviceController;
+use App\Http\Controllers\PushNotificationController;
 use App\Http\Controllers\RaffleCardController;
 use App\Http\Controllers\RealEstateController;
 use App\Http\Controllers\RealEstateDashboardController;
@@ -30,11 +27,14 @@ use App\Http\Controllers\RewardWheelController;
 use App\Http\Controllers\ScreenController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\ShopAppController;
 use App\Http\Controllers\ShopController;
+use App\Http\Controllers\ShopStoryController;
 use App\Http\Controllers\TextToSpeechController;
 use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\VisitorRegistrationAdminController;
 use App\Http\Controllers\VisitorRegistrationController;
+use App\Http\Controllers\WebPushSubscriptionController;
 use App\Models\AdminNotification;
 use Illuminate\Support\Facades\Route;
 
@@ -54,6 +54,9 @@ Route::middleware('auth')->group(function () {
 Route::get('/front-assets/{file}', [FrontAssetController::class, 'show'])
     ->where('file', 'script\\.js|style\\.css|shop-stories\\.(js|css)')
     ->name('front.assets');
+Route::get('/images/real-estate-services/{file}', [FrontAssetController::class, 'realEstateServiceImage'])
+    ->where('file', '[A-Za-z0-9_-]+\\.webp')
+    ->name('real-estate.service-images');
 // Fallback for hosts where Laravel's public directory and public_html are separate.
 // The web server serves these paths directly when copied; otherwise Laravel serves
 // the Git-managed files while preserving the service worker's root scope.

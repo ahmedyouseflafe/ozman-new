@@ -30,6 +30,17 @@ class ModularServiceCatalogTest extends TestCase
         }
     }
 
+    public function test_default_catalog_images_are_served_when_public_html_is_separate(): void
+    {
+        foreach (['mobile-home.webp', 'bathroom-unit.webp', 'guard-room.webp', 'caravan.webp', 'custom-build.webp'] as $file) {
+            $this->get(route('real-estate.service-images', $file))
+                ->assertOk()
+                ->assertHeader('Content-Type', 'image/webp');
+        }
+
+        $this->get('/images/real-estate-services/not-allowed.webp')->assertNotFound();
+    }
+
     public function test_customer_can_open_a_service_and_see_the_real_configuration_choices(): void
     {
         [, $shop] = $this->company('service-page');
