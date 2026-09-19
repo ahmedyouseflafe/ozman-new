@@ -37,12 +37,27 @@ class RealEstateController extends Controller
         }
 
         $defaults->ensure($shop);
+        $shop->loadMissing('social');
         $categories = $shop->modularCategories()
             ->where('is_active', true)
+            ->with(['services' => fn ($query) => $query
+                ->where('is_active', true)
+                ->with('images')])
             ->withCount(['services' => fn ($query) => $query->where('is_active', true)])
             ->get();
+        $displayItems = $shop->advertisements()
+            ->where('is_active', true)
+            ->whereNotNull('media')
+            ->where('media', '!=', '')
+            ->orderBy('sort_order')
+            ->latest()
+            ->get();
+        $ozmanLogo = Shop::query()
+            ->where('slug', 'ozman')
+            ->where('is_active', true)
+            ->value('logo');
 
-        return view('front.real_estate.company', compact('shop', 'categories'));
+        return view('front.real_estate.company', compact('shop', 'categories', 'displayItems', 'ozmanLogo'));
     }
 
     public function property(Request $request, Shop $shop, RealEstateProperty $realEstateProperty): View|RedirectResponse

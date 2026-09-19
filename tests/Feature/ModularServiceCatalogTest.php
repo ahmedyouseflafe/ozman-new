@@ -13,7 +13,7 @@ class ModularServiceCatalogTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_company_bootstraps_the_modular_catalog_and_links_every_category(): void
+    public function test_company_bootstraps_and_displays_the_catalog_inside_one_page(): void
     {
         [, $shop] = $this->company('catalog');
 
@@ -22,10 +22,12 @@ class ModularServiceCatalogTest extends TestCase
         $response->assertOk()
             ->assertSee('Mobile homes')
             ->assertSee('Bathroom units')
-            ->assertSee('Custom builds');
+            ->assertSee('Custom builds')
+            ->assertSee('data-category-key="mobile-homes"', false)
+            ->assertSee('data-service-key="custom-mobile-home"', false);
         $this->assertCount(5, $shop->fresh()->modularCategories);
         foreach ($shop->modularCategories as $category) {
-            $response->assertSee($category->publicUrl(), false);
+            $response->assertDontSee('href="'.$category->publicUrl().'"', false);
             $this->assertTrue($category->services()->exists());
         }
     }
@@ -52,25 +54,31 @@ class ModularServiceCatalogTest extends TestCase
         $this->get('/images/real-estate-services/not-allowed.webp')->assertNotFound();
     }
 
-    public function test_customer_can_open_a_service_and_see_the_real_configuration_choices(): void
+    public function test_old_category_and_service_pages_redirect_to_the_single_page_catalog(): void
     {
-        [, $shop] = $this->company('service-page');
+        [, $shop] = $this->company('service-page', ['whatsapp' => '059-900-1122']);
         app(ModularCatalogDefaults::class)->ensure($shop);
         $category = $shop->modularCategories()->where('slug', 'bathroom-units')->firstOrFail();
         $service = $category->services()->firstOrFail();
 
-        $this->withSession(['locale' => 'ar'])->get($category->publicUrl())
-            ->assertOk()
-            ->assertSee($service->name)
-            ->assertSee($service->publicUrl(), false);
+        $this->get($category->publicUrl())->assertRedirect(route('real-estate.company', [
+            'shop' => $shop,
+            'category' => $category->slug,
+        ]));
 
-        $this->withSession(['locale' => 'ar'])->get($service->publicUrl())
+        $this->get($service->publicUrl())->assertRedirect(route('real-estate.company', [
+            'shop' => $shop,
+            'category' => $category->slug,
+            'service' => $service->slug,
+        ]));
+
+        $this->withSession(['locale' => 'en'])
+            ->get(route('real-estate.company', ['shop' => $shop, 'category' => $category->slug]))
             ->assertOk()
-            ->assertSee('اختر المواصفات')
-            ->assertSee('بدون قعادة')
-            ->assertSee('سيراميك كامل')
-            ->assertSee(route('real-estate.services.whatsapp', [$shop, $category, $service]), false)
-            ->assertDontSee('السعر النهائي');
+            ->assertSee($service->localized('name'))
+            ->assertSee('Contact via WhatsApp')
+            ->assertDontSee(route('real-estate.services.whatsapp', [$shop, $category, $service]), false)
+            ->assertDontSee('Choose specifications');
     }
 
     public function test_whatsapp_request_is_validated_saved_and_redirected_to_the_company(): void

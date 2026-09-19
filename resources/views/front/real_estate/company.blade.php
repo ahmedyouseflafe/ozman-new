@@ -1,69 +1,188 @@
 @php
     $locale = app()->getLocale();
     $rtl = in_array($locale, ['ar', 'he'], true);
-    $copy = [
-        'ar' => ['subtitle' => 'حلول البناء المتنقل', 'eyebrow' => 'مجالات عملنا', 'title' => 'اختر نوع المشروع الذي تحتاجه', 'intro' => 'ابدأ من القسم المناسب، شاهد الخدمات المتاحة، ثم خصّص المقاس والمواد والتجهيزات وأرسل طلبك مباشرة إلى واتساب الشركة.', 'open' => 'استعرض الخدمات', 'service' => 'خدمة متاحة', 'services' => 'خدمات متاحة', 'custom' => 'حسب طلبك'],
-        'he' => ['subtitle' => 'פתרונות בנייה ניידת', 'eyebrow' => 'תחומי הפעילות שלנו', 'title' => 'בחרו את סוג הפרויקט הדרוש לכם', 'intro' => 'בחרו קטגוריה, צפו בשירותים, התאימו מידות, חומרים ואבזור ושלחו את הבקשה ישירות ל-WhatsApp של החברה.', 'open' => 'לצפייה בשירותים', 'service' => 'שירות זמין', 'services' => 'שירותים זמינים', 'custom' => 'בהתאמה אישית'],
-        'en' => ['subtitle' => 'Mobile building solutions', 'eyebrow' => 'What we build', 'title' => 'Choose the project you need', 'intro' => 'Open a category, explore its services, configure sizes, materials and fittings, then send your request directly to the company on WhatsApp.', 'open' => 'Explore services', 'service' => 'service available', 'services' => 'services available', 'custom' => 'Made for you'],
-    ][$locale] ?? null;
-    $copy ??= ['subtitle' => 'حلول البناء المتنقل', 'eyebrow' => 'مجالات عملنا', 'title' => 'اختر نوع المشروع الذي تحتاجه', 'intro' => 'اختر القسم المناسب وأرسل مواصفاتك إلى واتساب الشركة.', 'open' => 'استعرض الخدمات', 'service' => 'خدمة متاحة', 'services' => 'خدمات متاحة', 'custom' => 'حسب طلبك'];
-    $logo = $shop->logo ? asset($shop->logo) : asset('ozman-favicon.png');
-    $whatsappLabels = [
-        'ar' => 'تواصل عن طريق الواتساب',
-        'he' => 'יצירת קשר ב-WhatsApp',
-        'en' => 'Contact via WhatsApp',
-    ];
-    $whatsappMessages = [
-        'ar' => 'مرحباً، أرغب بالاستفسار عن خدمات '.$shop->name.'.',
-        'he' => 'שלום, אשמח לקבל פרטים על השירותים של '.$shop->name.'.',
-        'en' => 'Hello, I would like to ask about the services of '.$shop->name.'.',
-    ];
-    $whatsappDigits = preg_replace('/\D+/', '', (string) ($shop->whatsapp ?: $shop->social?->whatsapp ?: $shop->phone)) ?: '';
+    $copy = match ($locale) {
+        'he' => [
+            'services' => 'מבנים ניידים ופתרונות בנייה', 'browse' => 'לכל החנויות', 'sections' => 'קטגוריות השירות',
+            'contact' => 'יצירת קשר ב-WhatsApp', 'call' => 'התקשרו לפרטים', 'available' => 'פתוח לפניות', 'social' => 'רשתות חברתיות',
+            'empty' => 'אין שירותים זמינים כרגע.', 'empty_section' => 'אין שירותים בקטגוריה זו כרגע.',
+            'service_hint' => 'שירות המותאם לצרכים שלכם. פנו אלינו לפרטים.',
+        ],
+        'en' => [
+            'services' => 'Mobile buildings and construction solutions', 'browse' => 'Browse all stores', 'sections' => 'Service categories',
+            'contact' => 'Contact via WhatsApp', 'call' => 'Call for details', 'available' => 'Open for inquiries', 'social' => 'Social media',
+            'empty' => 'No services are available yet.', 'empty_section' => 'No services in this category yet.',
+            'service_hint' => 'A service tailored to your needs. Contact the company for details.',
+        ],
+        default => [
+            'services' => 'المباني المتنقلة وحلول البناء', 'browse' => 'تصفح جميع المحلات', 'sections' => 'أقسام الخدمات',
+            'contact' => 'تواصل عن طريق الواتساب', 'call' => 'اتصل للاستفسار', 'available' => 'متاح للاستفسارات', 'social' => 'منصات التواصل الاجتماعي',
+            'empty' => 'لا توجد خدمات متاحة حالياً.', 'empty_section' => 'لا توجد خدمات في هذا القسم حالياً.',
+            'service_hint' => 'خدمة مخصصة حسب احتياجك. تواصل مع الشركة للتفاصيل.',
+        ],
+    };
+    $mediaUrl = fn (?string $path) => ! filled($path) ? '' : (preg_match('/^https?:\/\//i', $path) ? $path : asset($path));
+    $shopImage = $mediaUrl($shop->banner ?: $shop->logo) ?: asset('images/logo.svg');
+    $logo = $mediaUrl($shop->logo) ?: asset('images/logo.svg');
+    $canonical = route('real-estate.company', $shop);
+    $description = $shop->description ?: $copy['services'].' — '.$shop->name;
+    $social = $shop->social;
+    $whatsappDigits = preg_replace('/\D+/', '', (string) ($shop->whatsapp ?: $social?->whatsapp ?: $shop->phone)) ?: '';
     if (str_starts_with($whatsappDigits, '00')) {
         $whatsappDigits = substr($whatsappDigits, 2);
     } elseif (str_starts_with($whatsappDigits, '0')) {
         $countryCode = preg_replace('/\D+/', '', (string) config('services.whatsapp_cloud.default_country_code', '972')) ?: '972';
         $whatsappDigits = $countryCode.ltrim($whatsappDigits, '0');
     }
-    $whatsappUrl = $whatsappDigits
-        ? 'https://wa.me/'.$whatsappDigits.'?text='.rawurlencode($whatsappMessages[$locale] ?? $whatsappMessages['ar'])
-        : null;
+    $callNumber = preg_replace('/[^\d+]/', '', (string) $shop->phone);
+    $generalMessage = match ($locale) {
+        'he' => 'שלום, אשמח לקבל פרטים על השירותים של '.$shop->name.'.',
+        'en' => 'Hello, I would like to ask about the services of '.$shop->name.'.',
+        default => 'مرحباً، أرغب بالاستفسار عن خدمات '.$shop->name.'.',
+    };
+    $generalWhatsappUrl = $whatsappDigits ? 'https://wa.me/'.$whatsappDigits.'?text='.rawurlencode($generalMessage) : null;
+    $socialProfiles = collect([
+        ['label' => 'Facebook', 'icon' => 'ti-brand-facebook', 'value' => $social?->facebook, 'base' => 'https://facebook.com/'],
+        ['label' => 'Instagram', 'icon' => 'ti-brand-instagram', 'value' => $social?->instagram, 'base' => 'https://instagram.com/'],
+        ['label' => 'TikTok', 'icon' => 'ti-brand-tiktok', 'value' => $social?->tiktok, 'base' => 'https://tiktok.com/@'],
+        ['label' => 'YouTube', 'icon' => 'ti-brand-youtube', 'value' => $social?->youtube, 'base' => 'https://youtube.com/@'],
+        ['label' => 'Telegram', 'icon' => 'ti-brand-telegram', 'value' => $social?->telegram, 'base' => 'https://t.me/'],
+        ['label' => 'Snapchat', 'icon' => 'ti-brand-snapchat', 'value' => $social?->snapchat, 'base' => 'https://snapchat.com/add/'],
+    ])->filter(fn ($profile) => filled($profile['value']))->map(function ($profile) {
+        $value = trim($profile['value']);
+        $profile['url'] = preg_match('/^https?:\/\//i', $value) ? $value : $profile['base'].ltrim($value, '@/');
+        return $profile;
+    });
+    if ($generalWhatsappUrl) $socialProfiles->push(['label' => 'WhatsApp', 'icon' => 'ti-brand-whatsapp', 'url' => $generalWhatsappUrl]);
+    $hasStories = $shop->stories()->where('expires_at', '>', now())->exists();
+    $youtubeEmbed = function (?string $url): ?string {
+        return preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]+)/', (string) $url, $match)
+            ? 'https://www.youtube.com/embed/'.$match[1].'?mute=1&playsinline=1&rel=0' : null;
+    };
+    $categoryIcons = ['home' => 'ti-home', 'bath' => 'ti-bath', 'shield' => 'ti-shield', 'caravan' => 'ti-caravan', 'tools' => 'ti-tools'];
 @endphp
 <!doctype html>
 <html lang="{{ $locale }}" dir="{{ $rtl ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-    @include('front.partials.seo', ['title' => $shop->name, 'description' => $shop->description ?: $copy['intro'], 'canonical' => route('real-estate.company', $shop), 'image' => $logo])
-    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    @include('front.partials.merchant_pwa_head', ['pwaShop' => $shop])
+    @include('front.partials.seo', ['title' => $shop->name.' | Ozman', 'description' => $description, 'canonical' => $canonical, 'image' => $shopImage, 'schema' => ['@context' => 'https://schema.org', '@type' => 'Store', 'name' => $shop->name, 'url' => $canonical, 'description' => $description, 'image' => $shopImage, 'telephone' => $shop->phone, 'address' => $shop->address]])
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <style>
-        :root{--bg:#061019;--header:#081621;--line:#203b4c;--cyan:#16d9f3;--muted:#94a9b7;--white:#f7fbff}*{box-sizing:border-box}html,body{width:100%;max-width:100%;min-height:100%;margin:0;overflow-x:hidden}body{background:radial-gradient(circle at 85% 0,rgba(22,217,243,.08),transparent 33%),var(--bg);color:var(--white);font-family:Cairo,Arial,Tahoma,sans-serif}.site-header{width:100%;max-width:100%;border-bottom:1px solid rgba(32,59,76,.55);background:rgba(8,22,33,.95);backdrop-filter:blur(14px)}.topbar{display:flex;align-items:center;justify-content:space-between;gap:20px;width:min(1720px,calc(100% - 40px));max-width:100%;min-height:104px;margin:auto;padding:14px 0}.topbar>*{min-width:0}.brand{display:flex;align-items:center;gap:13px;min-width:0;color:inherit;text-decoration:none}.brand img{width:58px;height:58px;flex:0 0 auto;border:1px solid rgba(255,255,255,.16);border-radius:15px;background:#fff;object-fit:cover}.brand-copy{min-width:0}.brand strong,.brand small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.brand strong{font-size:18px;font-weight:900}.brand small{margin-top:3px;color:var(--muted);font-size:13px;font-weight:600}.page-shell{width:min(1420px,calc(100% - 40px));max-width:100%;margin:auto;padding:74px 0 100px}.section-heading{display:grid;max-width:100%;grid-template-columns:minmax(0,.95fr) minmax(330px,.65fr);align-items:end;gap:50px;margin-bottom:34px}.section-heading>*{min-width:0}.eyebrow{display:flex;align-items:center;gap:9px;margin:0 0 10px;color:var(--cyan);font-size:13px;font-weight:900}.eyebrow:before{content:'';width:34px;height:2px;flex:0 0 auto;border-radius:999px;background:var(--cyan);box-shadow:0 0 18px rgba(22,217,243,.65)}.section-heading h1{max-width:800px;margin:0;overflow-wrap:anywhere;font-size:clamp(34px,4.3vw,62px);line-height:1.2;letter-spacing:-1.5px}.section-heading>p{margin:0;overflow-wrap:anywhere;color:#a8bbc7;font-size:16px;line-height:2}.category-grid{display:grid;width:100%;max-width:100%;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}.category-card{--accent:#16d9f3;isolation:isolate;position:relative;display:flex;min-width:0;max-width:100%;min-height:330px;flex-direction:column;justify-content:flex-end;grid-column:span 4;overflow:hidden;border:1px solid rgba(89,122,141,.38);border-radius:26px;background:#0b1721;color:inherit;text-decoration:none;box-shadow:0 20px 65px rgba(0,0,0,.22);transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease}.category-card:nth-child(1){grid-column:span 7;min-height:390px;--accent:#23d7ec}.category-card:nth-child(2){grid-column:span 5;min-height:390px;--accent:#70a5ff}.category-card:nth-child(3){--accent:#57dfad}.category-card:nth-child(4){--accent:#f0bd67}.category-card:nth-child(5){--accent:#b68cff}.category-card:hover{transform:translateY(-5px);border-color:var(--accent);box-shadow:0 30px 85px rgba(0,0,0,.36)}.category-media{position:absolute;inset:0;z-index:-2}.category-media img{display:block;width:100%;max-width:100%;height:100%;object-fit:cover;transition:transform .45s ease}.category-card:hover .category-media img{transform:scale(1.035)}.category-media:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,11,17,.06) 5%,rgba(4,11,17,.35) 43%,rgba(5,15,23,.97) 92%)}.category-content{min-width:0;max-width:100%;padding:25px}.card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.category-icon{display:grid;width:48px;height:48px;flex:0 0 auto;place-items:center;border:1px solid color-mix(in srgb,var(--accent) 55%,transparent);border-radius:15px;background:rgba(5,15,23,.76);color:var(--accent);backdrop-filter:blur(9px)}.category-icon svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.card-number{direction:ltr;color:rgba(255,255,255,.7);font-size:12px;font-weight:900;letter-spacing:.14em}.category-content h2,.category-content p{max-width:100%;overflow-wrap:anywhere}.category-content h2{margin:0 0 7px;font-size:clamp(22px,2vw,30px);line-height:1.35}.category-content p{margin:0;color:#bdcbd4;font-size:13px;line-height:1.85}.card-footer{display:flex;max-width:100%;align-items:center;justify-content:space-between;gap:12px;margin-top:17px}.open-label{display:flex;min-width:0;align-items:center;gap:8px;color:var(--accent);font-size:12px;font-weight:900}.open-label:after{content:'←';font-size:17px}.service-count{flex:0 0 auto;padding:6px 10px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(4,11,17,.62);font-size:10px;font-weight:800}.custom-badge{position:absolute;z-index:2;top:20px;inset-inline-end:20px;max-width:calc(100% - 40px);padding:7px 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid color-mix(in srgb,var(--accent) 55%,transparent);border-radius:999px;background:rgba(5,15,23,.82);color:var(--accent);font-size:11px;font-weight:900;backdrop-filter:blur(8px)}.empty{grid-column:1/-1;max-width:100%;padding:60px 20px;text-align:center;border:1px dashed var(--line);border-radius:24px;color:var(--muted)}
-        @media(max-width:600px){.topbar{width:min(100% - 22px,1720px);min-height:86px;gap:10px;padding:11px 0}.brand{gap:9px}.brand img{width:48px;height:48px;border-radius:12px}.brand strong{max-width:45vw;font-size:13px}.brand small{font-size:10px}.page-shell{width:min(100% - 22px,1420px);padding:42px 0 70px}.section-heading{display:block;margin-bottom:24px}.section-heading h1{font-size:31px;letter-spacing:-.7px}.section-heading>p{margin-top:14px;font-size:13px;line-height:1.9}.category-grid{grid-template-columns:1fr;gap:12px}.category-card,.category-card:nth-child(1),.category-card:nth-child(2){grid-column:auto;min-height:315px;border-radius:21px}.category-content{padding:20px}.category-content h2{font-size:23px}.category-content p{font-size:12px}}
-        @media(max-width:520px){.topbar{align-items:stretch;flex-direction:column;justify-content:center;gap:8px;padding:10px 0}.brand strong{max-width:calc(100vw - 100px)}.public-language-switcher{width:100%;justify-content:center}.page-shell{padding-top:34px}.section-heading h1{font-size:29px}.card-footer{align-items:flex-start;flex-direction:column}.service-count{align-self:flex-start}}
-        @media(min-width:601px) and (max-width:980px){.page-shell{width:min(100% - 30px,1420px);padding-top:58px}.section-heading{grid-template-columns:1fr;gap:14px}.category-card,.category-card:nth-child(1),.category-card:nth-child(2){grid-column:span 6;min-height:330px}.category-card:nth-child(5){grid-column:span 12}}
-        .topbar{display:grid;grid-template-columns:minmax(0,1fr) auto auto}.site-header .public-language-switcher{width:auto;padding:3px;gap:2px;border-radius:10px}.site-header .public-language-switcher a{padding:4px 6px;font-size:9px}.site-header .public-language-icon{margin-inline:2px 1px;font-size:11px}.whatsapp-contact{display:inline-flex;min-height:42px;align-items:center;justify-content:center;gap:8px;padding:8px 15px;border:1px solid rgba(37,211,102,.55);border-radius:12px;background:linear-gradient(135deg,rgba(37,211,102,.2),rgba(18,140,126,.13));color:#65ef9f;text-decoration:none;font-size:12px;font-weight:900;box-shadow:0 10px 28px rgba(37,211,102,.1);transition:transform .2s ease,border-color .2s ease,background .2s ease}.whatsapp-contact:hover{transform:translateY(-2px);border-color:#25d366;background:linear-gradient(135deg,rgba(37,211,102,.32),rgba(18,140,126,.2))}.whatsapp-contact svg{width:20px;height:20px;flex:0 0 auto;fill:currentColor}
-        @media(max-width:600px){.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 10px;min-height:0;padding:8px 0 10px}.brand{min-width:0}.brand-copy{max-width:calc(100vw - 210px)}.brand strong{max-width:100%;font-size:12px}.brand small{font-size:9px}.site-header .public-language-switcher{width:auto;align-self:start;justify-self:end}.site-header .public-language-switcher a{padding:3px 5px;font-size:8px}.whatsapp-contact{grid-column:1/-1;width:100%;min-height:40px}.page-shell{padding-top:30px}}
-        @media(max-width:370px){.brand img{width:42px;height:42px}.brand-copy{max-width:calc(100vw - 190px)}.site-header .public-language-switcher a{padding-inline:4px;font-size:7.5px}}
+        :root{--cyan:#08def4;--green:#27dd86;--bg:#05070a;--card:#10151a;--border:rgba(150,174,190,.18);--muted:#9ca9b4}*{box-sizing:border-box}html{width:100%;max-width:100%;overflow-x:hidden;scroll-behavior:smooth}body{width:100%;max-width:100%;margin:0;overflow-x:hidden;background:radial-gradient(circle at 85% 5%,rgba(8,222,244,.11),transparent 27%),radial-gradient(circle at 8% 30%,rgba(101,42,255,.1),transparent 25%),var(--bg);color:#fff;font-family:Cairo,Arial,sans-serif}button{font:inherit}.shell{width:min(1380px,calc(100% - 32px));max-width:100%;margin:auto;padding:20px 0 55px}
+        .company-hero-layout{display:grid;max-width:100%;grid-template-columns:minmax(0,1fr) minmax(310px,380px);align-items:stretch;gap:16px;direction:ltr}.company-display-screen,.hero{position:relative;min-width:0;min-height:310px;overflow:hidden;border:1px solid var(--border);border-radius:28px;box-shadow:0 20px 60px rgba(0,0,0,.28)}.company-display-screen{background:linear-gradient(145deg,#071318,#020608 70%);isolation:isolate}.company-display-screen:before{content:"";position:absolute;z-index:3;inset:0;border-radius:inherit;border:5px solid rgba(2,8,11,.86);box-shadow:inset 0 0 0 1px rgba(8,222,244,.15);pointer-events:none}.company-display-slider,.company-display-slide{position:absolute;inset:0}.company-display-slide{opacity:0;pointer-events:none;background:#020607;transition:opacity .55s ease}.company-display-slide.active{opacity:1;pointer-events:auto}.company-display-slide img,.company-display-slide video,.company-display-slide iframe{display:block;width:100%;max-width:100%;height:100%;border:0;object-fit:cover}.company-display-slide.is-logo img{object-fit:contain;padding:22px}.company-display-shade{position:absolute;z-index:1;inset:0;background:linear-gradient(180deg,rgba(1,7,9,.04),transparent 58%,rgba(1,7,9,.32));pointer-events:none}
+        .hero{background:linear-gradient(110deg,rgba(15,18,28,.96),rgba(5,25,28,.9));direction:rtl}.hero:after{content:"";position:absolute;width:360px;height:360px;left:-100px;top:-180px;border-radius:50%;background:rgba(8,222,244,.12);filter:blur(70px);pointer-events:none}.hero-tools{position:absolute;z-index:4;top:18px;right:20px;display:flex;align-items:center;gap:10px}.hero .public-language-switcher{padding:4px}.hero .public-language-switcher a{padding:5px 7px;font-size:10px}.ozman-directory-link{min-height:43px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:5px 9px;border:1px solid rgba(8,222,244,.24);border-radius:13px;background:rgba(3,10,14,.9);color:#d8e7ed;font-size:10px;font-weight:800;text-decoration:none;white-space:nowrap}.ozman-directory-link img{width:30px;height:30px;object-fit:contain;border-radius:9px}.ozman-directory-link:hover{color:var(--cyan);border-color:var(--cyan)}
+        .brand{position:absolute;z-index:2;right:30px;bottom:24px;display:flex;align-items:center;gap:25px;direction:rtl}.logo-stack{display:flex;flex-direction:column;align-items:center;gap:9px}.shop-logo{display:block;width:166px;height:166px;border:2px solid var(--cyan);border-radius:34px;background:#020607;object-fit:contain;box-shadow:0 0 28px rgba(8,222,244,.3)}.story-trigger{border:0;background:none;padding:0;color:inherit}.story-trigger.has-story{cursor:pointer}.story-trigger.has-story .shop-logo{border:4px solid var(--green)}.story-trigger:focus-visible{outline:3px solid #fff;outline-offset:5px}.shop-name{max-width:190px;color:#fff;font-size:12px;text-align:center;line-height:1.4}.availability{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border:1px solid var(--green);border-radius:999px;background:rgba(39,221,134,.09);color:var(--green);font-size:11px;font-weight:900}.availability:after{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 12px currentColor}.main-contact-btn{display:inline-flex;min-height:36px;align-items:center;justify-content:center;gap:6px;padding:6px 11px;border-radius:11px;background:#25d366;color:#03150c;font-size:10px;font-weight:900;text-decoration:none}.main-contact-btn i{font-size:16px}.social-links{display:grid;grid-template-columns:repeat(2,38px);gap:8px}.social-link{width:38px;height:38px;display:grid;place-items:center;border:1px solid rgba(8,222,244,.24);border-radius:50%;background:rgba(3,12,17,.9);color:#dceaf0;font-size:18px;text-decoration:none}.social-link:hover,.social-link:focus-visible{border-color:var(--cyan);color:var(--cyan);outline:none}
+        .layout{max-width:100%;margin-top:13px;padding-top:13px;border-top:1px solid var(--border)}.service-panel{min-height:390px;max-width:100%;padding:12px;border:1px solid var(--border);border-radius:28px;background:linear-gradient(145deg,rgba(18,23,27,.96),rgba(11,16,18,.98))}.service-browser{display:grid;max-width:100%;grid-template-columns:minmax(0,1fr) 120px;gap:12px;direction:ltr}.category-rail{grid-column:2;grid-row:1;display:flex;flex-direction:column;align-items:center;gap:12px;position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto;padding:6px 3px;scrollbar-width:thin}.category-tab{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;min-width:0;padding:6px 3px;border:1px solid transparent;border-radius:17px;background:none;color:var(--muted);font-size:11px;font-weight:900;line-height:1.35;cursor:pointer}.category-tab.active{color:#fff;background:rgba(8,222,244,.07);border-color:rgba(8,222,244,.25)}.category-tab img,.category-icon{width:72px;height:72px;display:grid;place-items:center;border:2px solid rgba(140,165,175,.3);border-radius:50%;object-fit:cover;background:#080d10;color:var(--cyan);font-size:28px}.category-tab.active img,.category-tab.active .category-icon{border-color:var(--cyan);box-shadow:0 0 17px rgba(8,222,244,.38)}.category-tab span:last-child{max-width:105px;overflow-wrap:anywhere;text-align:center}
+        .category-content{grid-column:1;grid-row:1;min-width:0;max-width:100%;position:relative;overflow:hidden;border-radius:20px;direction:rtl}.category-content:before{content:"";position:absolute;inset:0;z-index:0;background:radial-gradient(circle at 35% 20%,rgba(8,222,244,.09),transparent 50%);pointer-events:none}.category-background{position:absolute;inset:0;width:100%;height:100%;min-height:420px;object-fit:cover;opacity:.11;pointer-events:none}.category-pane{position:relative;z-index:1;min-width:0;min-height:350px}.category-pane[hidden]{display:none!important}.services{display:grid;max-width:100%;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;padding:8px}.service-card{position:relative;min-width:0;max-width:100%;overflow:hidden;padding:9px;border:1px solid rgba(150,174,190,.18);border-radius:20px;background:rgba(15,20,24,.94);box-shadow:0 10px 30px rgba(0,0,0,.2)}.service-image{display:grid;place-items:center;width:100%;aspect-ratio:1.12;overflow:hidden;border:1px solid rgba(8,222,244,.22);border-radius:14px;background:#05090b;color:var(--cyan);font-size:54px}.service-image img{display:block;width:100%;max-width:100%;height:100%;object-fit:cover}.service-body{padding:10px 5px 3px}.service-body h2{margin:0 0 5px;overflow-wrap:anywhere;font-size:16px;line-height:1.5}.service-body p{min-height:44px;margin:0;overflow-wrap:anywhere;color:var(--muted);font-size:12px;line-height:1.7}.service-bottom{margin-top:12px;padding-top:9px;border-top:1px solid var(--border)}.service-contact{display:inline-flex;width:100%;min-height:36px;align-items:center;justify-content:center;gap:5px;padding:6px 10px;border-radius:10px;background:var(--cyan);color:#001318;font-size:11px;font-weight:900;text-decoration:none;text-align:center}.service-contact:hover{background:#49eaff}.service-contact.is-call{border:1px solid var(--cyan);background:rgba(8,222,244,.13);color:var(--cyan)}.empty{display:flex;align-items:center;justify-content:center;gap:10px;min-height:240px;color:var(--muted);font-weight:700}.empty i{font-size:26px;color:var(--cyan)}
+        @media(max-width:720px){.shell{width:calc(100% - 18px);padding-top:9px}.company-hero-layout{grid-template-columns:minmax(0,1fr) 148px;gap:7px}.company-display-screen,.hero{min-height:390px;border-radius:21px}.hero-tools{top:0;right:0;width:100%;flex-direction:column;align-items:stretch;gap:7px}.hero .public-language-switcher{width:100%;justify-content:center;padding:3px}.hero .public-language-switcher a{padding:4px 5px;font-size:8px}.ozman-directory-link{width:100%;min-height:35px;padding:4px 5px;font-size:8px}.ozman-directory-link img{width:24px;height:24px}.brand{top:86px;right:2px;bottom:2px;width:calc(100% - 4px);flex-direction:column;justify-content:flex-start;gap:6px}.logo-stack{width:100%;align-items:stretch}.story-trigger,.shop-logo{width:100%}.shop-logo{height:auto;aspect-ratio:1;border-radius:25px}.shop-name{max-width:100%;font-size:9px}.availability{align-self:center;padding:6px 8px;font-size:9px}.main-contact-btn{width:100%;min-height:34px;padding:5px;font-size:8px}.social-links{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;width:100%}.social-link{width:28px;height:28px;font-size:14px}.layout{margin-top:7px;padding-top:7px}.service-panel{padding:7px;border-radius:20px}.service-browser{grid-template-columns:minmax(0,1fr) 100px;gap:3px}.category-rail{top:8px;gap:8px}.category-tab img,.category-icon{width:57px;height:57px;font-size:24px}.category-tab span:last-child{max-width:90px;font-size:10px}.services{grid-template-columns:1fr;gap:12px;padding:4px}.service-body h2{font-size:14px}}
+        @media(max-width:390px){.company-hero-layout{grid-template-columns:minmax(0,1fr) 135px}.service-browser{grid-template-columns:minmax(0,1fr) 82px}.category-tab img,.category-icon{width:48px;height:48px}.category-tab span:last-child{font-size:9px}.service-card{padding:6px}.service-body{padding-inline:3px}.hero .public-language-switcher a{padding-inline:4px;font-size:7px}.main-contact-btn{font-size:7.5px}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.company-display-slide{transition:none}}
     </style>
 </head>
 <body>
-<header class="site-header"><nav class="topbar" aria-label="{{ $shop->name }}"><a class="brand" href="{{ route('real-estate.company', $shop) }}"><img src="{{ $logo }}" alt="{{ $shop->name }}"><span class="brand-copy"><strong>{{ $shop->name }}</strong><small>{{ $copy['subtitle'] }}</small></span></a>@include('front.partials.public_language_switcher')@if($whatsappUrl)<a class="whatsapp-contact" href="{{ $whatsappUrl }}" target="_blank" rel="noopener" aria-label="{{ $whatsappLabels[$locale] ?? $whatsappLabels['ar'] }}"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16.04 3.2A12.7 12.7 0 0 0 5.28 22.65L3.5 29l6.51-1.71A12.72 12.72 0 1 0 16.04 3.2Zm0 23.27c-1.87 0-3.7-.5-5.3-1.45l-.38-.22-3.86 1.01 1.03-3.76-.25-.39a10.5 10.5 0 1 1 8.76 4.81Zm5.76-7.86c-.32-.16-1.87-.92-2.16-1.03-.29-.11-.5-.16-.71.16-.21.31-.82 1.03-1 1.24-.18.21-.37.24-.68.08-1.86-.93-3.08-1.66-4.31-3.77-.33-.57.33-.53.93-1.76.1-.21.05-.39-.03-.55-.08-.16-.71-1.71-.97-2.34-.26-.61-.52-.53-.71-.54h-.61c-.21 0-.55.08-.84.39-.29.32-1.1 1.08-1.1 2.63s1.13 3.05 1.29 3.26c.16.21 2.22 3.39 5.38 4.76 2 .86 2.79.93 3.79.78 1.21-.18 1.87-.76 2.13-1.5.26-.74.26-1.37.18-1.5-.08-.13-.29-.21-.61-.37Z"/></svg><span>{{ $whatsappLabels[$locale] ?? $whatsappLabels['ar'] }}</span></a>@endif</nav></header>
-<main class="page-shell"><section aria-labelledby="company-categories-title"><div class="section-heading"><div><p class="eyebrow">{{ $copy['eyebrow'] }}</p><h1 id="company-categories-title">{{ $copy['title'] }}</h1></div><p>{{ $copy['intro'] }}</p></div><div class="category-grid">
-    @forelse($categories as $index => $category)
-        <a class="category-card" href="{{ $category->publicUrl() }}" aria-label="{{ $category->localized('name') }}">
-            <span class="category-media"><img src="{{ $category->imageUrl() ?: $logo }}" alt="{{ $category->localized('name') }}" loading="{{ $index > 1 ? 'lazy' : 'eager' }}"></span>
-            @if($category->icon_key === 'tools')<span class="custom-badge">{{ $copy['custom'] }}</span>@endif
-            <span class="category-content"><span class="card-top"><span class="category-icon" aria-hidden="true">
-                @switch($category->icon_key)
-                    @case('bath')<svg viewBox="0 0 32 32"><path d="M8 4v24M24 4v24M8 7h16M8 25h16"/><path d="M12 11h8v7a4 4 0 0 1-8 0v-7ZM16 7v4"/></svg>@break
-                    @case('shield')<svg viewBox="0 0 32 32"><path d="M6 28V9l10-5 10 5v19M6 12h20"/><path d="M11 16h10v7H11zM16 23v5"/></svg>@break
-                    @case('caravan')<svg viewBox="0 0 32 32"><path d="M4 20V9h18l6 7v4H4Z"/><path d="M9 27a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM23 27a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM22 10v6h6"/></svg>@break
-                    @case('tools')<svg viewBox="0 0 32 32"><path d="m6 25 5-1 14-14-4-4L7 20l-1 5Z"/><path d="m18 9 4 4M5 28h22M9 7h6M12 4v6"/></svg>@break
-                    @default<svg viewBox="0 0 32 32"><path d="M4 15 16 6l12 9"/><path d="M7 13v13h18V13M12 26v-7h8v7M3 27h26"/></svg>
-                @endswitch
-            </span><span class="card-number">{{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}</span></span><h2>{{ $category->localized('name') }}</h2><p>{{ $category->localized('description') }}</p><span class="card-footer"><span class="open-label">{{ $copy['open'] }}</span><span class="service-count">{{ $category->services_count }} {{ $category->services_count === 1 ? $copy['service'] : $copy['services'] }}</span></span></span>
-        </a>
-    @empty<div class="empty">لا توجد خدمات متاحة حاليًا.</div>@endforelse
-</div></section></main>
+<main class="shell">
+    <div class="company-hero-layout">
+        <section class="company-display-screen" aria-label="{{ $copy['services'] }}">
+            <div class="company-display-slider" data-display-slider>
+                @forelse($displayItems as $item)
+                    @php
+                        $embed = $item->type === 'youtube' ? $youtubeEmbed($item->media) : null;
+                    @endphp
+                    <article class="company-display-slide {{ $loop->first ? 'active' : '' }}" data-duration="{{ max(1, (int) ($item->duration ?? 8)) * 1000 }}">
+                        @if($item->type === 'video')<video src="{{ $mediaUrl($item->media) }}" muted playsinline loop preload="metadata"></video>
+                        @elseif($embed)<iframe src="{{ $embed }}" title="{{ $item->title ?: $copy['services'] }}" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe>
+                        @else<img src="{{ $mediaUrl($item->media) }}" alt="{{ $item->title ?: $shop->name }}">@endif
+                    </article>
+                @empty
+                    <article class="company-display-slide active {{ $shop->banner ? '' : 'is-logo' }}" data-duration="10000"><img src="{{ $shopImage }}" alt="{{ $shop->name }}"></article>
+                @endforelse
+            </div>
+            <div class="company-display-shade" aria-hidden="true"></div>
+        </section>
+        <header class="hero">
+            <div class="hero-tools">
+                @include('front.partials.public_language_switcher')
+                <a class="ozman-directory-link" href="{{ route('front.home') }}"><img src="{{ $ozmanLogo ? $mediaUrl($ozmanLogo) : asset('ozman-favicon.png') }}" alt="" aria-hidden="true"><span>{{ $copy['browse'] }}</span></a>
+            </div>
+            <div class="brand">
+                <div class="logo-stack">
+                    <button type="button" class="story-trigger {{ $hasStories ? 'has-story' : '' }}" data-shop-story-trigger data-story-shop-id="{{ $shop->id }}" aria-label="{{ $shop->name }}" @disabled(! $hasStories)><img class="shop-logo" src="{{ $logo }}" alt="{{ $shop->name }}"></button>
+                    <strong class="shop-name">{{ $shop->name }}</strong><span class="availability">{{ $copy['available'] }}</span>
+                    @if($generalWhatsappUrl)<a class="main-contact-btn" href="{{ $generalWhatsappUrl }}" target="_blank" rel="noopener noreferrer"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i>{{ $copy['contact'] }}</a>@endif
+                </div>
+                @if($socialProfiles->isNotEmpty())<nav class="social-links" aria-label="{{ $copy['social'] }}">@foreach($socialProfiles as $profile)<a class="social-link" href="{{ $profile['url'] }}" target="_blank" rel="noopener noreferrer" aria-label="{{ $profile['label'] }}" title="{{ $profile['label'] }}"><i class="ti {{ $profile['icon'] }}" aria-hidden="true"></i></a>@endforeach</nav>@endif
+            </div>
+        </header>
+    </div>
+    <div class="layout"><section class="service-panel" aria-label="{{ $copy['sections'] }}">
+        @if($categories->isNotEmpty())
+            <div class="service-browser">
+                <nav class="category-rail" aria-label="{{ $copy['sections'] }}">
+                    @foreach($categories as $category)
+                        <button type="button" class="category-tab {{ $loop->first ? 'active' : '' }}" data-category-key="{{ $category->slug }}" aria-pressed="{{ $loop->first ? 'true' : 'false' }}">
+                            @if($category->imageUrl())<img src="{{ $category->imageUrl() }}" alt="" loading="lazy">@else<span class="category-icon"><i class="ti {{ $categoryIcons[$category->icon_key] ?? 'ti-building' }}" aria-hidden="true"></i></span>@endif
+                            <span>{{ $category->localized('name') }}</span>
+                        </button>
+                    @endforeach
+                </nav>
+                <div class="category-content">
+                    @foreach($categories as $category)
+                        <section class="category-pane" data-category-pane="{{ $category->slug }}" @if(!$loop->first) hidden @endif>
+                            @if($category->imageUrl())<img class="category-background" src="{{ $category->imageUrl() }}" alt="" loading="lazy">@endif
+                            <div class="services">
+                                @forelse($category->services as $service)
+                                    @php
+                                        $serviceName = $service->localized('name');
+                                        $serviceMessage = match ($locale) {
+                                            'he' => 'שלום, אשמח לקבל פרטים על '.$serviceName.' מ-'.$shop->name.'.',
+                                            'en' => 'Hello, I would like details about '.$serviceName.' from '.$shop->name.'.',
+                                            default => 'مرحباً، أريد الاستفسار عن '.$serviceName.' من '.$shop->name.'.',
+                                        };
+                                        $serviceWhatsappUrl = $whatsappDigits ? 'https://wa.me/'.$whatsappDigits.'?text='.rawurlencode($serviceMessage) : null;
+                                    @endphp
+                                    <article class="service-card" data-service-key="{{ $service->slug }}">
+                                        <div class="service-image">@if($service->imageUrl())<img src="{{ $service->imageUrl() }}" alt="{{ $serviceName }}" loading="lazy">@else<i class="ti {{ $categoryIcons[$category->icon_key] ?? 'ti-building' }}" aria-hidden="true"></i>@endif</div>
+                                        <div class="service-body"><h2>{{ $serviceName }}</h2><p>{{ $service->localized('short_description') ?: $copy['service_hint'] }}</p><div class="service-bottom">
+                                            @if($serviceWhatsappUrl)<a class="service-contact" href="{{ $serviceWhatsappUrl }}" target="_blank" rel="noopener noreferrer"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i>{{ $copy['contact'] }}</a>
+                                            @elseif($callNumber)<a class="service-contact is-call" href="tel:{{ $callNumber }}"><i class="ti ti-phone" aria-hidden="true"></i>{{ $copy['call'] }}</a>@endif
+                                        </div></div>
+                                    </article>
+                                @empty<div class="empty"><i class="ti ti-building-off" aria-hidden="true"></i>{{ $copy['empty_section'] }}</div>@endforelse
+                            </div>
+                        </section>
+                    @endforeach
+                </div>
+            </div>
+        @else<div class="empty"><i class="ti ti-building-off" aria-hidden="true"></i>{{ $copy['empty'] }}</div>@endif
+    </section></div>
+</main>
+@include('front.shop_stories', ['showStoryList' => false])
+<script>
+(() => {
+    const slider = document.querySelector('[data-display-slider]');
+    const slides = [...(slider?.querySelectorAll('.company-display-slide') || [])];
+    let slideIndex = 0;
+    const showSlide = next => { slides[slideIndex]?.querySelector('video')?.pause(); slides[slideIndex]?.classList.remove('active'); slideIndex = next; slides[slideIndex]?.classList.add('active'); slides[slideIndex]?.querySelector('video')?.play().catch(() => {}); };
+    slides[0]?.querySelector('video')?.play().catch(() => {});
+    if (slides.length > 1) { const schedule = () => window.setTimeout(() => { showSlide((slideIndex + 1) % slides.length); schedule(); }, Number(slides[slideIndex]?.dataset.duration) || 8000); schedule(); }
+    const tabs = [...document.querySelectorAll('[data-category-key]')];
+    const panes = [...document.querySelectorAll('[data-category-pane]')];
+    const selectCategory = (key, updateUrl = false) => {
+        if (!tabs.some(tab => tab.dataset.categoryKey === key)) key = tabs[0]?.dataset.categoryKey;
+        if (!key) return;
+        tabs.forEach(tab => { const active = tab.dataset.categoryKey === key; tab.classList.toggle('active', active); tab.setAttribute('aria-pressed', String(active)); });
+        panes.forEach(pane => pane.hidden = pane.dataset.categoryPane !== key);
+        if (updateUrl) { const url = new URL(window.location.href); url.searchParams.set('category', key); url.searchParams.delete('service'); history.replaceState({}, '', url); }
+    };
+    tabs.forEach(tab => tab.addEventListener('click', () => selectCategory(tab.dataset.categoryKey, true)));
+    const params = new URLSearchParams(window.location.search);
+    selectCategory(params.get('category') || tabs[0]?.dataset.categoryKey);
+    const requestedService = params.get('service');
+    if (requestedService) window.setTimeout(() => document.querySelector(`[data-service-key="${CSS.escape(requestedService)}"]`)?.scrollIntoView({ block: 'center' }), 100);
+})();
+</script>
 </body>
 </html>

@@ -11,7 +11,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
 
 class ModularServiceController extends Controller
 {
@@ -20,7 +19,7 @@ class ModularServiceController extends Controller
         Shop $shop,
         ModularCategory $modularCategory,
         ModularCatalogDefaults $defaults
-    ): View|RedirectResponse {
+    ): RedirectResponse {
         $category = $modularCategory;
         $this->ensureCompany($shop);
         $defaults->ensure($shop);
@@ -30,9 +29,10 @@ class ModularServiceController extends Controller
             return $redirect;
         }
 
-        $category->load(['services' => fn ($query) => $query->where('is_active', true)->with('images')]);
-
-        return view('front.real_estate.services.category', compact('shop', 'category'));
+        return redirect()->route('real-estate.company', [
+            'shop' => $shop,
+            'category' => $category->slug,
+        ]);
     }
 
     public function show(
@@ -41,7 +41,7 @@ class ModularServiceController extends Controller
         ModularCategory $modularCategory,
         ModularService $service,
         ModularCatalogDefaults $defaults
-    ): View|RedirectResponse {
+    ): RedirectResponse {
         $category = $modularCategory;
         $this->ensureCompany($shop);
         $defaults->ensure($shop);
@@ -52,9 +52,12 @@ class ModularServiceController extends Controller
         }
 
         abort_unless($service->is_active && $category->is_active, 404);
-        $service->load(['images', 'optionGroups.values' => fn ($query) => $query->where('is_active', true)]);
 
-        return view('front.real_estate.services.show', compact('shop', 'category', 'service'));
+        return redirect()->route('real-estate.company', [
+            'shop' => $shop,
+            'category' => $category->slug,
+            'service' => $service->slug,
+        ]);
     }
 
     public function whatsapp(
