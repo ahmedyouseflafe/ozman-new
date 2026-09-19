@@ -30,6 +30,17 @@ class ModularServiceCatalogTest extends TestCase
         }
     }
 
+    public function test_company_header_has_a_normalized_whatsapp_contact_link(): void
+    {
+        [, $shop] = $this->company('company-contact', ['whatsapp' => '059-900-1122']);
+
+        $this->withSession(['locale' => 'en'])
+            ->get(route('real-estate.company', $shop))
+            ->assertOk()
+            ->assertSee('Contact via WhatsApp')
+            ->assertSee('https://wa.me/972599001122?text=', false);
+    }
+
     public function test_default_catalog_images_are_served_when_public_html_is_separate(): void
     {
         foreach (['mobile-home.webp', 'bathroom-unit.webp', 'guard-room.webp', 'caravan.webp', 'custom-build.webp'] as $file) {

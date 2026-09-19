@@ -8,6 +8,26 @@
     ][$locale] ?? null;
     $copy ??= ['subtitle' => 'حلول البناء المتنقل', 'eyebrow' => 'مجالات عملنا', 'title' => 'اختر نوع المشروع الذي تحتاجه', 'intro' => 'اختر القسم المناسب وأرسل مواصفاتك إلى واتساب الشركة.', 'open' => 'استعرض الخدمات', 'service' => 'خدمة متاحة', 'services' => 'خدمات متاحة', 'custom' => 'حسب طلبك'];
     $logo = $shop->logo ? asset($shop->logo) : asset('ozman-favicon.png');
+    $whatsappLabels = [
+        'ar' => 'تواصل عن طريق الواتساب',
+        'he' => 'יצירת קשר ב-WhatsApp',
+        'en' => 'Contact via WhatsApp',
+    ];
+    $whatsappMessages = [
+        'ar' => 'مرحباً، أرغب بالاستفسار عن خدمات '.$shop->name.'.',
+        'he' => 'שלום, אשמח לקבל פרטים על השירותים של '.$shop->name.'.',
+        'en' => 'Hello, I would like to ask about the services of '.$shop->name.'.',
+    ];
+    $whatsappDigits = preg_replace('/\D+/', '', (string) ($shop->whatsapp ?: $shop->social?->whatsapp ?: $shop->phone)) ?: '';
+    if (str_starts_with($whatsappDigits, '00')) {
+        $whatsappDigits = substr($whatsappDigits, 2);
+    } elseif (str_starts_with($whatsappDigits, '0')) {
+        $countryCode = preg_replace('/\D+/', '', (string) config('services.whatsapp_cloud.default_country_code', '972')) ?: '972';
+        $whatsappDigits = $countryCode.ltrim($whatsappDigits, '0');
+    }
+    $whatsappUrl = $whatsappDigits
+        ? 'https://wa.me/'.$whatsappDigits.'?text='.rawurlencode($whatsappMessages[$locale] ?? $whatsappMessages['ar'])
+        : null;
 @endphp
 <!doctype html>
 <html lang="{{ $locale }}" dir="{{ $rtl ? 'rtl' : 'ltr' }}">
@@ -21,10 +41,13 @@
         @media(max-width:600px){.topbar{width:min(100% - 22px,1720px);min-height:86px;gap:10px;padding:11px 0}.brand{gap:9px}.brand img{width:48px;height:48px;border-radius:12px}.brand strong{max-width:45vw;font-size:13px}.brand small{font-size:10px}.page-shell{width:min(100% - 22px,1420px);padding:42px 0 70px}.section-heading{display:block;margin-bottom:24px}.section-heading h1{font-size:31px;letter-spacing:-.7px}.section-heading>p{margin-top:14px;font-size:13px;line-height:1.9}.category-grid{grid-template-columns:1fr;gap:12px}.category-card,.category-card:nth-child(1),.category-card:nth-child(2){grid-column:auto;min-height:315px;border-radius:21px}.category-content{padding:20px}.category-content h2{font-size:23px}.category-content p{font-size:12px}}
         @media(max-width:520px){.topbar{align-items:stretch;flex-direction:column;justify-content:center;gap:8px;padding:10px 0}.brand strong{max-width:calc(100vw - 100px)}.public-language-switcher{width:100%;justify-content:center}.page-shell{padding-top:34px}.section-heading h1{font-size:29px}.card-footer{align-items:flex-start;flex-direction:column}.service-count{align-self:flex-start}}
         @media(min-width:601px) and (max-width:980px){.page-shell{width:min(100% - 30px,1420px);padding-top:58px}.section-heading{grid-template-columns:1fr;gap:14px}.category-card,.category-card:nth-child(1),.category-card:nth-child(2){grid-column:span 6;min-height:330px}.category-card:nth-child(5){grid-column:span 12}}
+        .topbar{display:grid;grid-template-columns:minmax(0,1fr) auto auto}.site-header .public-language-switcher{width:auto;padding:3px;gap:2px;border-radius:10px}.site-header .public-language-switcher a{padding:4px 6px;font-size:9px}.site-header .public-language-icon{margin-inline:2px 1px;font-size:11px}.whatsapp-contact{display:inline-flex;min-height:42px;align-items:center;justify-content:center;gap:8px;padding:8px 15px;border:1px solid rgba(37,211,102,.55);border-radius:12px;background:linear-gradient(135deg,rgba(37,211,102,.2),rgba(18,140,126,.13));color:#65ef9f;text-decoration:none;font-size:12px;font-weight:900;box-shadow:0 10px 28px rgba(37,211,102,.1);transition:transform .2s ease,border-color .2s ease,background .2s ease}.whatsapp-contact:hover{transform:translateY(-2px);border-color:#25d366;background:linear-gradient(135deg,rgba(37,211,102,.32),rgba(18,140,126,.2))}.whatsapp-contact svg{width:20px;height:20px;flex:0 0 auto;fill:currentColor}
+        @media(max-width:600px){.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 10px;min-height:0;padding:8px 0 10px}.brand{min-width:0}.brand-copy{max-width:calc(100vw - 210px)}.brand strong{max-width:100%;font-size:12px}.brand small{font-size:9px}.site-header .public-language-switcher{width:auto;align-self:start;justify-self:end}.site-header .public-language-switcher a{padding:3px 5px;font-size:8px}.whatsapp-contact{grid-column:1/-1;width:100%;min-height:40px}.page-shell{padding-top:30px}}
+        @media(max-width:370px){.brand img{width:42px;height:42px}.brand-copy{max-width:calc(100vw - 190px)}.site-header .public-language-switcher a{padding-inline:4px;font-size:7.5px}}
     </style>
 </head>
 <body>
-<header class="site-header"><nav class="topbar" aria-label="{{ $shop->name }}"><a class="brand" href="{{ route('real-estate.company', $shop) }}"><img src="{{ $logo }}" alt="{{ $shop->name }}"><span class="brand-copy"><strong>{{ $shop->name }}</strong><small>{{ $copy['subtitle'] }}</small></span></a>@include('front.partials.public_language_switcher')</nav></header>
+<header class="site-header"><nav class="topbar" aria-label="{{ $shop->name }}"><a class="brand" href="{{ route('real-estate.company', $shop) }}"><img src="{{ $logo }}" alt="{{ $shop->name }}"><span class="brand-copy"><strong>{{ $shop->name }}</strong><small>{{ $copy['subtitle'] }}</small></span></a>@include('front.partials.public_language_switcher')@if($whatsappUrl)<a class="whatsapp-contact" href="{{ $whatsappUrl }}" target="_blank" rel="noopener" aria-label="{{ $whatsappLabels[$locale] ?? $whatsappLabels['ar'] }}"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16.04 3.2A12.7 12.7 0 0 0 5.28 22.65L3.5 29l6.51-1.71A12.72 12.72 0 1 0 16.04 3.2Zm0 23.27c-1.87 0-3.7-.5-5.3-1.45l-.38-.22-3.86 1.01 1.03-3.76-.25-.39a10.5 10.5 0 1 1 8.76 4.81Zm5.76-7.86c-.32-.16-1.87-.92-2.16-1.03-.29-.11-.5-.16-.71.16-.21.31-.82 1.03-1 1.24-.18.21-.37.24-.68.08-1.86-.93-3.08-1.66-4.31-3.77-.33-.57.33-.53.93-1.76.1-.21.05-.39-.03-.55-.08-.16-.71-1.71-.97-2.34-.26-.61-.52-.53-.71-.54h-.61c-.21 0-.55.08-.84.39-.29.32-1.1 1.08-1.1 2.63s1.13 3.05 1.29 3.26c.16.21 2.22 3.39 5.38 4.76 2 .86 2.79.93 3.79.78 1.21-.18 1.87-.76 2.13-1.5.26-.74.26-1.37.18-1.5-.08-.13-.29-.21-.61-.37Z"/></svg><span>{{ $whatsappLabels[$locale] ?? $whatsappLabels['ar'] }}</span></a>@endif</nav></header>
 <main class="page-shell"><section aria-labelledby="company-categories-title"><div class="section-heading"><div><p class="eyebrow">{{ $copy['eyebrow'] }}</p><h1 id="company-categories-title">{{ $copy['title'] }}</h1></div><p>{{ $copy['intro'] }}</p></div><div class="category-grid">
     @forelse($categories as $index => $category)
         <a class="category-card" href="{{ $category->publicUrl() }}" aria-label="{{ $category->localized('name') }}">
