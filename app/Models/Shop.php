@@ -173,6 +173,26 @@ class Shop extends Model
         return $this->hasMany(RealEstateAlert::class);
     }
 
+    public function slugRedirects(): HasMany
+    {
+        return $this->hasMany(ShopSlugRedirect::class);
+    }
+
+    public function resolveRouteBindingQuery($query, $value, $field = null)
+    {
+        $field ??= $this->getRouteKeyName();
+
+        if ($field !== 'slug') {
+            return parent::resolveRouteBindingQuery($query, $value, $field);
+        }
+
+        return $query->where(function ($builder) use ($value): void {
+            $builder
+                ->where($this->qualifyColumn('slug'), $value)
+                ->orWhereHas('slugRedirects', fn ($redirects) => $redirects->where('slug', $value));
+        });
+    }
+
     public function publicRouteName(): string
     {
         return match ($this->catalog_type) {

@@ -27,17 +27,25 @@ class RealEstateController extends Controller
         return $this->renderMarket($request);
     }
 
-    public function company(Request $request, Shop $shop): View
+    public function company(Request $request, Shop $shop): View|RedirectResponse
     {
         $this->ensurePublicRealEstateCompany($shop);
+
+        if ($redirect = $this->canonicalCompanyRedirect($request, $shop)) {
+            return $redirect;
+        }
 
         return $this->renderMarket($request, $shop);
     }
 
-    public function property(Shop $shop, RealEstateProperty $realEstateProperty): View
+    public function property(Request $request, Shop $shop, RealEstateProperty $realEstateProperty): View|RedirectResponse
     {
         $this->ensurePublicRealEstateCompany($shop);
         abort_unless($realEstateProperty->status === 'published' && $realEstateProperty->published_at, 404);
+
+        if ($redirect = $this->canonicalCompanyRedirect($request, $shop, $realEstateProperty)) {
+            return $redirect;
+        }
 
         $realEstateProperty->load(['images', 'shop', 'assignedUser']);
         $similar = RealEstateProperty::query()
@@ -208,5 +216,25 @@ class RealEstateController extends Controller
     private function ensurePublicRealEstateCompany(Shop $shop): void
     {
         abort_unless($shop->is_active && $shop->catalog_type === 'real_estate', 404);
+    }
+
+    private function canonicalCompanyRedirect(
+        Request $request,
+        Shop $shop,
+        ?RealEstateProperty $property = null
+    ): ?RedirectResponse {
+        if ($request->route()?->originalParameter('shop') === $shop->slug) {
+            return null;
+        }
+
+        if ($property) {
+            return redirect()->route('real-estate.property', [$shop, $property], 301);
+        }
+
+        return redirect()->route(
+            'real-estate.company',
+            array_merge(['shop' => $shop], $request->query()),
+            301
+        );
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Distributor;
 use App\Models\DistributorMarketer;
 use App\Models\Shop;
+use App\Models\ShopSlugRedirect;
 use App\Models\ShopSocial;
 use App\Models\User;
 use App\Services\ShopOwnerAccountService;
@@ -331,9 +332,16 @@ class ShopController extends Controller
 
         $data = $this->validatedData($request, $shop);
         $data['catalog_type'] = $data['catalog_type'] ?? ($shop->catalog_type ?: 'general');
-        $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name'], $shop);
+        $submittedSlug = trim((string) ($data['slug'] ?? ''));
+        $shouldFollowCompanyName = $data['catalog_type'] === 'real_estate'
+            && ($submittedSlug === '' || $submittedSlug === $shop->slug);
+        $data['slug'] = $this->uniqueSlug(
+            $shouldFollowCompanyName ? $data['name'] : ($submittedSlug ?: $data['name']),
+            $shop
+        );
         $data['is_active'] = $request->boolean('is_active');
         $data['show_ozman_products'] = $request->boolean('show_ozman_products');
+        $previousSlug = $shop->slug;
 
         if ($this->isSuperAdmin()) {
             $this->updateShopOwner($request, $shop, $data);
@@ -349,20 +357,28 @@ class ShopController extends Controller
             $data['banner'] = $this->storeUpload($request, 'banner', 'shops/banners');
         }
 
-        $shop->update($data);
-        $shop->social()->updateOrCreate(
-            ['shop_id' => $shop->id],
-            [
-                'facebook' => $request->facebook,
-                'instagram' => $request->instagram,
-                'tiktok' => $request->tiktok,
-                'telegram' => $request->telegram,
-                'snapchat' => $request->snapchat,
-                'twitter' => $request->twitter,
-                'youtube' => $request->youtube,
-                'whatsapp' => $request->social_whatsapp,
-            ]
-        );
+        DB::transaction(function () use ($request, $shop, $data, $previousSlug): void {
+            $shop->update($data);
+
+            if ($previousSlug !== $shop->slug) {
+                $shop->slugRedirects()->where('slug', $shop->slug)->delete();
+                $shop->slugRedirects()->firstOrCreate(['slug' => $previousSlug]);
+            }
+
+            $shop->social()->updateOrCreate(
+                ['shop_id' => $shop->id],
+                [
+                    'facebook' => $request->facebook,
+                    'instagram' => $request->instagram,
+                    'tiktok' => $request->tiktok,
+                    'telegram' => $request->telegram,
+                    'snapchat' => $request->snapchat,
+                    'twitter' => $request->twitter,
+                    'youtube' => $request->youtube,
+                    'whatsapp' => $request->social_whatsapp,
+                ]
+            );
+        });
 
         return redirect()
             ->route('shops')
@@ -591,6 +607,13 @@ class ShopController extends Controller
     private function uniqueSlug(string $value, ?Shop $shop = null): string
     {
         $base = Str::slug($value);
+        if ($base === '') {
+            $base = Str::of($value)
+                ->lower()
+                ->replaceMatches('/[^\p{L}\p{N}]+/u', '-')
+                ->trim('-')
+                ->toString();
+        }
         $base = $base !== '' ? $base : 'shop';
         $slug = $base;
         $counter = 2;
@@ -599,6 +622,10 @@ class ShopController extends Controller
             Shop::query()
                 ->where('slug', $slug)
                 ->when($shop, fn ($query) => $query->where('id', '!=', $shop->id))
+                ->exists()
+            || ShopSlugRedirect::query()
+                ->where('slug', $slug)
+                ->when($shop, fn ($query) => $query->where('shop_id', '!=', $shop->id))
                 ->exists()
         ) {
             $slug = "{$base}-{$counter}";

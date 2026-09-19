@@ -205,9 +205,14 @@ class RealEstateDashboardController extends Controller
         return back()->with('status', 'تم تحديث حالة العميل.');
     }
 
-    public function qr(Shop $shop): Response
+    public function qr(Request $request, Shop $shop): Response|RedirectResponse
     {
         abort_unless($shop->is_active && $shop->catalog_type === 'real_estate', 404);
+
+        if ($request->route()?->originalParameter('shop') !== $shop->slug) {
+            return redirect()->route('real-estate.company.qr', $shop, 301);
+        }
+
         $svg = (new Writer(new ImageRenderer(new RendererStyle(600, 2), new SvgImageBackEnd)))
             ->writeString(route('real-estate.company', $shop));
 
