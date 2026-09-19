@@ -32,7 +32,7 @@ class RealEstateFoundationTest extends TestCase
             ->assertSee($company->name);
     }
 
-    public function test_company_page_only_lists_its_own_published_properties(): void
+    public function test_company_page_keeps_only_the_company_header_while_it_is_being_rebuilt(): void
     {
         $alpha = $this->company('alpha');
         $beta = $this->company('beta');
@@ -42,10 +42,11 @@ class RealEstateFoundationTest extends TestCase
 
         $this->get(route('real-estate.company', $alpha))
             ->assertOk()
-            ->assertSee('Alpha Home')
+            ->assertSee($alpha->name)
+            ->assertSee('public-language-switcher', false)
+            ->assertDontSee('Alpha Home')
             ->assertDontSee('Beta Home')
-            ->assertDontSee('Draft Home')
-            ->assertSee(route('real-estate.property', [$alpha, $alphaProperty]), false);
+            ->assertDontSee('Draft Home');
         $this->assertSame(route('real-estate.property', [$alpha, $alphaProperty]), $alphaProperty->publicUrl());
 
         $this->get(route('seo.sitemap'))
@@ -151,8 +152,7 @@ class RealEstateFoundationTest extends TestCase
         $this->property($company, 'ajax-wrong', 'AJAX Wrong Home');
 
         $this->withHeader('X-Requested-With', 'XMLHttpRequest')
-            ->get(route('real-estate.company', [
-                'shop' => $company,
+            ->get(route('real-estate.index', [
                 'purpose' => 'sale',
                 'property_type' => 'villa',
                 'city' => 'Ramallah',

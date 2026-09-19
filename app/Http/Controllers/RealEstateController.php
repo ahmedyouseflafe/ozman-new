@@ -35,7 +35,7 @@ class RealEstateController extends Controller
             return $redirect;
         }
 
-        return $this->renderMarket($request, $shop);
+        return view('front.real_estate.company', ['shop' => $shop]);
     }
 
     public function property(Request $request, Shop $shop, RealEstateProperty $realEstateProperty): View|RedirectResponse
