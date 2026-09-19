@@ -32,7 +32,7 @@ class RealEstateFoundationTest extends TestCase
             ->assertSee($company->name);
     }
 
-    public function test_company_page_keeps_only_the_company_header_while_it_is_being_rebuilt(): void
+    public function test_company_page_shows_the_new_category_structure_without_old_property_listings(): void
     {
         $alpha = $this->company('alpha');
         $beta = $this->company('beta');
@@ -44,6 +44,8 @@ class RealEstateFoundationTest extends TestCase
             ->assertOk()
             ->assertSee($alpha->name)
             ->assertSee('public-language-switcher', false)
+            ->assertSee('Mobile homes')
+            ->assertSee('Custom builds')
             ->assertDontSee('Alpha Home')
             ->assertDontSee('Beta Home')
             ->assertDontSee('Draft Home');
