@@ -96,7 +96,7 @@ class RealEstateDashboardTest extends TestCase
 
         $this->actingAs($owner)->get(route('real-estate.dashboard', $shop))
             ->assertOk()
-            ->assertSee('إدارة عقارات '.$shop->name);
+            ->assertSee('إدارة خدمات '.$shop->name);
     }
 
     public function test_owner_cannot_access_or_mutate_another_company_properties(): void

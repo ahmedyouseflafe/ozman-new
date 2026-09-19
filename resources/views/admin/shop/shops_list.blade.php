@@ -709,8 +709,8 @@
                             @endif
                             @if($shop->catalog_type === 'real_estate')
                             <a href="{{ route('real-estate.dashboard', $shop) }}" class="btn btn-primary">
-                                <i class="ti ti-building-estate" aria-hidden="true"></i>
-                                إدارة شركة العقارات
+                                <i class="ti ti-building-community" aria-hidden="true"></i>
+                                إدارة خدمات البناء المتنقل
                             </a>
                             @endif
                             <a href="{{ $publicShopUrl }}" target="_blank" rel="noopener" class="btn btn-primary">

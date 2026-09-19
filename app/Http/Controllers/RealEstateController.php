@@ -6,6 +6,7 @@ use App\Models\RealEstateAlert;
 use App\Models\RealEstateLead;
 use App\Models\RealEstateProperty;
 use App\Models\Shop;
+use App\Services\ModularCatalogDefaults;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,7 +28,7 @@ class RealEstateController extends Controller
         return $this->renderMarket($request);
     }
 
-    public function company(Request $request, Shop $shop): View|RedirectResponse
+    public function company(Request $request, Shop $shop, ModularCatalogDefaults $defaults): View|RedirectResponse
     {
         $this->ensurePublicRealEstateCompany($shop);
 
@@ -35,7 +36,13 @@ class RealEstateController extends Controller
             return $redirect;
         }
 
-        return view('front.real_estate.company', ['shop' => $shop]);
+        $defaults->ensure($shop);
+        $categories = $shop->modularCategories()
+            ->where('is_active', true)
+            ->withCount(['services' => fn ($query) => $query->where('is_active', true)])
+            ->get();
+
+        return view('front.real_estate.company', compact('shop', 'categories'));
     }
 
     public function property(Request $request, Shop $shop, RealEstateProperty $realEstateProperty): View|RedirectResponse

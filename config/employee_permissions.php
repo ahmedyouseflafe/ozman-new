@@ -103,14 +103,14 @@ return [
             ],
         ],
         'real_estate' => [
-            'label' => 'إدارة شركات العقارات',
-            'description' => 'إدارة العقارات والصور وطلبات العملاء ضمن الشركات المسموح للحساب بالوصول إليها.',
+            'label' => 'إدارة شركات البناء المتنقل',
+            'description' => 'إدارة أقسام الخدمات والصور والمواصفات وطلبات العملاء ضمن الشركات المسموح للحساب بالوصول إليها.',
             'permissions' => [
-                'real_estate.view' => ['label' => 'عرض لوحة العقارات', 'description' => 'مشاهدة العقارات والإحصائيات والعملاء.', 'routes' => ['real-estate.dashboard', 'real-estate.company.qr']],
-                'real_estate.create' => ['label' => 'إضافة عقارات', 'description' => 'إنشاء عقار جديد ورفع صوره.', 'routes' => ['real-estate.dashboard.properties.create', 'real-estate.dashboard.properties.store']],
-                'real_estate.edit' => ['label' => 'تعديل العقارات والصور', 'description' => 'تعديل البيانات والحالة والصور واختيار الغلاف وتجهيز منشور فيسبوك.', 'routes' => ['real-estate.dashboard.properties.edit', 'real-estate.dashboard.properties.update', 'real-estate.dashboard.images.destroy', 'real-estate.dashboard.images.cover', 'real-estate.dashboard.images.move', 'real-estate.dashboard.facebook-images']],
-                'real_estate.delete' => ['label' => 'حذف العقارات', 'description' => 'حذف العقار وجميع صوره؛ صلاحية حساسة.', 'routes' => ['real-estate.dashboard.properties.destroy']],
-                'real_estate.leads' => ['label' => 'إدارة العملاء والمعاينات', 'description' => 'تحديث حالة العميل وموعد المعاينة.', 'routes' => ['real-estate.dashboard.leads.update']],
+                'real_estate.view' => ['label' => 'عرض لوحة الخدمات', 'description' => 'مشاهدة الأقسام والخدمات والإحصائيات والطلبات.', 'routes' => ['real-estate.dashboard', 'real-estate.company.qr']],
+                'real_estate.create' => ['label' => 'إضافة الأقسام والخدمات', 'description' => 'إنشاء أقسام وخدمات جديدة ورفع صورها.', 'routes' => ['real-estate.dashboard.categories.create', 'real-estate.dashboard.categories.store', 'real-estate.dashboard.services.create', 'real-estate.dashboard.services.store', 'real-estate.dashboard.properties.create', 'real-estate.dashboard.properties.store']],
+                'real_estate.edit' => ['label' => 'تعديل الخدمات والمواصفات', 'description' => 'تعديل الأقسام والخدمات والصور وقوائم المواد والمقاسات والتجهيزات.', 'routes' => ['real-estate.dashboard.categories.edit', 'real-estate.dashboard.categories.update', 'real-estate.dashboard.services.edit', 'real-estate.dashboard.services.update', 'real-estate.dashboard.service-images.destroy', 'real-estate.dashboard.properties.edit', 'real-estate.dashboard.properties.update', 'real-estate.dashboard.images.destroy', 'real-estate.dashboard.images.cover', 'real-estate.dashboard.images.move', 'real-estate.dashboard.facebook-images']],
+                'real_estate.delete' => ['label' => 'حذف الأقسام والخدمات', 'description' => 'حذف قسم أو خدمة وجميع الصور والطلبات التابعة؛ صلاحية حساسة.', 'routes' => ['real-estate.dashboard.categories.destroy', 'real-estate.dashboard.services.destroy', 'real-estate.dashboard.properties.destroy']],
+                'real_estate.leads' => ['label' => 'إدارة طلبات العملاء', 'description' => 'تحديث حالة طلبات المواصفات الواردة من واتساب.', 'routes' => ['real-estate.dashboard.service-requests.update', 'real-estate.dashboard.leads.update']],
             ],
         ],
         'reward_wheels' => [

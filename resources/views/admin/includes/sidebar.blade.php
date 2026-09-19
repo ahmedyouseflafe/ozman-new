@@ -571,8 +571,8 @@
         @elseif($realEstateNavShop && $canSee(['real-estate.dashboard']))
         <a href="{{ route('real-estate.dashboard', $realEstateNavShop) }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('real-estate.dashboard*') ? 'active' : '' }}">
-             <i class="ti ti-building-estate" aria-hidden="true"></i>
-             إدارة العقارات والعملاء
+             <i class="ti ti-building-community" aria-hidden="true"></i>
+             إدارة الخدمات والطلبات
         </a>
         @elseif($canSee(['front-orders.index']))
         <a href="{{ route('front-orders.index') }}"
@@ -723,8 +723,8 @@
         </a>
     @elseif($realEstateNavShop && $canSee(['real-estate.dashboard']))
         <a href="{{ route('real-estate.dashboard', $realEstateNavShop) }}" class="admin-mobile-nav-item {{ request()->routeIs('real-estate.dashboard*') ? 'active' : '' }}">
-            <i class="ti ti-building-estate" aria-hidden="true"></i>
-            العقارات
+            <i class="ti ti-building-community" aria-hidden="true"></i>
+            الخدمات
         </a>
     @elseif($canSee(['front-orders.index']))
         <a href="{{ route('front-orders.index') }}" class="admin-mobile-nav-item {{ request()->routeIs('front-orders.index') ? 'active' : '' }}">

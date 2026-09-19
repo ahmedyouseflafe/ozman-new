@@ -16,6 +16,8 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PushDeviceController;
 use App\Http\Controllers\PushNotificationController;
 use App\Http\Controllers\MerchantPwaController;
+use App\Http\Controllers\ModularServiceController;
+use App\Http\Controllers\ModularServiceDashboardController;
 use App\Http\Controllers\OfferPushSubscriptionController;
 use App\Http\Controllers\ShopAppController;
 use App\Http\Controllers\WebPushSubscriptionController;
@@ -99,6 +101,10 @@ Route::post('/electronics/{shop:slug}/compare-clear', [ElectronicsStoreControlle
 Route::get('/electronics/{shop:slug}/compare', [ElectronicsStoreController::class, 'compare'])->name('electronics.compare');
 Route::get('/electronics/{shop:slug}/devices/{product:slug}', [ElectronicsStoreController::class, 'show'])->name('electronics.product');
 Route::get('/real-estate/{shop:slug}', [RealEstateController::class, 'company'])->name('real-estate.company');
+Route::get('/real-estate/{shop:slug}/services/{modularCategory:slug}', [ModularServiceController::class, 'category'])->name('real-estate.services.category');
+Route::get('/real-estate/{shop:slug}/services/{modularCategory:slug}/{service:slug}', [ModularServiceController::class, 'show'])->name('real-estate.services.show');
+Route::post('/real-estate/{shop:slug}/services/{modularCategory:slug}/{service:slug}/whatsapp', [ModularServiceController::class, 'whatsapp'])
+    ->middleware('throttle:10,1')->name('real-estate.services.whatsapp');
 Route::get('/real-estate/{shop:slug}/properties/{realEstateProperty:slug}', [RealEstateController::class, 'property'])->name('real-estate.property');
 Route::get('/real-estate', [RealEstateController::class, 'index'])->name('real-estate.index');
 Route::get('/real-estate-compare', [RealEstateController::class, 'compare'])->name('real-estate.compare');
@@ -168,7 +174,19 @@ Route::get('/display/shop/{shop}', [ScreenController::class, 'shopDisplay'])->na
 Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::get('/push-notifications', [PushNotificationController::class, 'index'])->name('push-notifications.index');
     Route::post('/push-notifications', [PushNotificationController::class, 'send'])->name('push-notifications.send');
-    Route::get('/shops/{shop}/real-estate', [RealEstateDashboardController::class, 'index'])->name('real-estate.dashboard');
+    Route::get('/shops/{shop}/real-estate', [ModularServiceDashboardController::class, 'index'])->name('real-estate.dashboard');
+    Route::get('/shops/{shop}/real-estate/categories/create', [ModularServiceDashboardController::class, 'createCategory'])->name('real-estate.dashboard.categories.create');
+    Route::post('/shops/{shop}/real-estate/categories', [ModularServiceDashboardController::class, 'storeCategory'])->name('real-estate.dashboard.categories.store');
+    Route::get('/shops/{shop}/real-estate/categories/{category}/edit', [ModularServiceDashboardController::class, 'editCategory'])->name('real-estate.dashboard.categories.edit');
+    Route::put('/shops/{shop}/real-estate/categories/{category}', [ModularServiceDashboardController::class, 'updateCategory'])->name('real-estate.dashboard.categories.update');
+    Route::delete('/shops/{shop}/real-estate/categories/{category}', [ModularServiceDashboardController::class, 'destroyCategory'])->name('real-estate.dashboard.categories.destroy');
+    Route::get('/shops/{shop}/real-estate/services/create', [ModularServiceDashboardController::class, 'createService'])->name('real-estate.dashboard.services.create');
+    Route::post('/shops/{shop}/real-estate/services', [ModularServiceDashboardController::class, 'storeService'])->name('real-estate.dashboard.services.store');
+    Route::get('/shops/{shop}/real-estate/services/{service}/edit', [ModularServiceDashboardController::class, 'editService'])->name('real-estate.dashboard.services.edit');
+    Route::put('/shops/{shop}/real-estate/services/{service}', [ModularServiceDashboardController::class, 'updateService'])->name('real-estate.dashboard.services.update');
+    Route::delete('/shops/{shop}/real-estate/services/{service}', [ModularServiceDashboardController::class, 'destroyService'])->name('real-estate.dashboard.services.destroy');
+    Route::delete('/shops/{shop}/real-estate/service-images/{image}', [ModularServiceDashboardController::class, 'destroyServiceImage'])->name('real-estate.dashboard.service-images.destroy');
+    Route::patch('/shops/{shop}/real-estate/service-requests/{serviceRequest}', [ModularServiceDashboardController::class, 'updateRequest'])->name('real-estate.dashboard.service-requests.update');
     Route::get('/shops/{shop}/real-estate/properties/create', [RealEstateDashboardController::class, 'create'])->name('real-estate.dashboard.properties.create');
     Route::post('/shops/{shop}/real-estate/properties', [RealEstateDashboardController::class, 'store'])->name('real-estate.dashboard.properties.store');
     Route::get('/shops/{shop}/real-estate/properties/{property}/edit', [RealEstateDashboardController::class, 'edit'])->name('real-estate.dashboard.properties.edit');

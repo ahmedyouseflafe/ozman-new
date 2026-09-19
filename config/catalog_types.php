@@ -120,8 +120,8 @@ return [
         ],
     ],
     'real_estate' => [
-        'label' => 'شركة عقارات',
-        'description' => 'بيع وتأجير العقارات بواجهة مستقلة وروابط خاصة بالشركة.',
+        'label' => 'شركة بناء متنقل وكرفانات',
+        'description' => 'بيوت متنقلة وكرفانات ووحدات حمّامات وغرف حراسة وتصنيع خاص حسب الطلب.',
         'requires_distributor' => false,
         'suggested_categories' => [],
         'icon' => 'ti-building-community',

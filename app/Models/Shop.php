@@ -173,6 +173,16 @@ class Shop extends Model
         return $this->hasMany(RealEstateAlert::class);
     }
 
+    public function modularCategories(): HasMany
+    {
+        return $this->hasMany(ModularCategory::class)->orderBy('position')->orderBy('id');
+    }
+
+    public function modularServiceRequests(): HasMany
+    {
+        return $this->hasMany(ModularServiceRequest::class);
+    }
+
     public function slugRedirects(): HasMany
     {
         return $this->hasMany(ShopSlugRedirect::class);
