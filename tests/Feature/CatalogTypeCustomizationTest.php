@@ -108,9 +108,36 @@ class CatalogTypeCustomizationTest extends TestCase
     {
         $this->assertArrayHasKey('restaurant', config('catalog_types'));
         $this->assertArrayHasKey('advertising_services', config('catalog_types'));
+        $this->assertArrayHasKey('furniture_appliances', config('catalog_types'));
         $this->assertArrayHasKey('cosmetics', config('catalog_types'));
         $this->assertArrayHasKey('sweets', config('catalog_types'));
         $this->assertArrayHasKey('shoes', config('catalog_types'));
+    }
+
+    public function test_admin_can_create_a_furniture_and_appliances_shop_with_its_catalog_fields(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'is_active' => true]);
+
+        $this->actingAs($admin)->get(route('shops.create'))
+            ->assertOk()
+            ->assertSee('أثاث وأدوات كهربائية')
+            ->assertSee('أثاث منزلي ومكتبي وأجهزة كهربائية');
+
+        $this->post(route('shops.store'), [
+            'name' => 'بيت الأثاث والأجهزة',
+            'catalog_type' => 'furniture_appliances',
+            'owner_email' => 'home-store-owner@example.com',
+            'owner_password' => 'secret123',
+            'owner_password_confirmation' => 'secret123',
+            'is_active' => 1,
+        ])->assertRedirect(route('shops'));
+
+        $shop = Shop::query()->where('name', 'بيت الأثاث والأجهزة')->firstOrFail();
+
+        $this->assertSame('furniture_appliances', $shop->catalog_type);
+        $this->assertArrayHasKey('dimensions', $shop->catalogDefinition()['fields']);
+        $this->assertArrayHasKey('energy_rating', $shop->catalogDefinition()['fields']);
+        $this->assertArrayHasKey('installation_available', $shop->catalogDefinition()['fields']);
     }
 
     public function test_advertising_shop_starts_with_printing_categories_and_its_own_catalog(): void
