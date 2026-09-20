@@ -9,6 +9,7 @@
     (() => {
         const select = document.getElementById('shop_id');
         const types = @json(config('catalog_types', []));
+        const terminology = @json(config('catalog_terminology', []));
         const title = document.getElementById('catalogCategoryTitle');
         const description = document.getElementById('catalogCategoryDescription');
         const suggestions = document.getElementById('catalogCategorySuggestions');
@@ -16,8 +17,9 @@
         function renderGuidance() {
             const typeKey = select?.selectedOptions?.[0]?.dataset?.catalogType || select?.dataset?.catalogType || 'general';
             const type = types[typeKey] || types.general;
+            const terms = terminology[typeKey] || terminology.general;
             const isRestaurant = typeKey === 'restaurant';
-            title.textContent = isRestaurant ? 'أقسام مقترحة لمنيو المطعم' : `فئات مناسبة لنشاط: ${type.label}`;
+            title.textContent = `${terms.category_plural} المقترحة`;
             description.textContent = isRestaurant ? 'اختر اسم القسم المناسب أو اكتب اسماً مخصصاً.' : type.description;
             suggestions.innerHTML = '';
             (type.suggested_categories || []).forEach((category) => {

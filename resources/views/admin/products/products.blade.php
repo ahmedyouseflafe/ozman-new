@@ -3,8 +3,11 @@
 
 @php
     $isRestaurantContext = ($currentShop ?? null)?->catalog_type === 'restaurant';
-    $itemLabel = $isRestaurantContext ? 'وجبة' : 'منتج';
-    $itemsLabel = $isRestaurantContext ? 'الوجبات' : 'المنتجات';
+    $catalogTerms = ($currentShop ?? null)?->catalogTerms() ?? config('catalog_terminology.general');
+    $itemLabel = $catalogTerms['item_singular'];
+    $itemsLabel = $catalogTerms['item_plural'];
+    $addItemLabel = $catalogTerms['add_item'];
+    $placeLabel = $catalogTerms['place_singular'];
 @endphp
 
 <head>
@@ -592,14 +595,14 @@
 
                 <header class="page-head">
                     <div>
-                        <div class="page-kicker">{{ $isRestaurantContext ? 'لوحة المطعم · ' . $currentShop->name : 'المتجر' }}</div>
+                        <div class="page-kicker">{{ $currentShop ? ($catalogTerms['dashboard_label'].' · '.$currentShop->name) : $placeLabel }}</div>
                         <h1>إدارة {{ $itemsLabel }}</h1>
-                        <p>{{ $productsTotal }} {{ $isRestaurantContext ? 'وجبة في منيو المطعم مع متابعة الأسعار وحالة الظهور.' : 'منتج في جميع المتاجر مع متابعة الأسعار والمخزون.' }}</p>
+                        <p>{{ $productsTotal }} من {{ $itemsLabel }} مع متابعة الأسعار والمخزون وحالة الظهور.</p>
                     </div>
                     @if($canCreateProducts)
                         <a href="{{ route('products.create', $currentShop ? ['shop_id' => $currentShop->id] : []) }}" class="btn-primary">
                             <i class="ti ti-plus" aria-hidden="true"></i>
-                            {{ $isRestaurantContext ? 'وجبة جديدة' : 'منتج جديد' }}
+                            {{ $addItemLabel }}
                         </a>
                     @endif
                 </header>
@@ -764,7 +767,7 @@
                                                     </a>
                                                 @endif
                                                 @if($canManageProduct($product) && $canDeleteProducts)
-                                                    <form action="{{ route('products.destroy', $product) }}" method="POST" onsubmit="return confirm('{{ $isRestaurantContext ? 'هل تريد حذف هذه الوجبة؟' : 'هل تريد حذف هذا المنتج؟' }}')">
+                                                    <form action="{{ route('products.destroy', $product) }}" method="POST" onsubmit="return confirm('هل تريد حذف: {{ $product->name }}؟')">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="icon-btn" aria-label="حذف">

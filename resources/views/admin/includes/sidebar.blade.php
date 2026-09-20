@@ -386,14 +386,14 @@
     if (! $previewShopId) {
         $previewShopId = auth()->user()?->accessibleShopIds()[0] ?? null;
     }
-    $restaurantNavShop = $previewShopId
-        ? \App\Models\Shop::query()->whereKey($previewShopId)->where('catalog_type', 'restaurant')->first()
+    $catalogNavShop = $previewShopId
+        ? \App\Models\Shop::query()->whereKey($previewShopId)->first()
         : null;
-    $realEstateNavShop = $previewShopId
-        ? \App\Models\Shop::query()->whereKey($previewShopId)->where('catalog_type', 'real_estate')->first()
-        : null;
-    $catalogItemsLabel = $restaurantNavShop ? 'الوجبات' : 'المنتجات';
-    $catalogCategoriesLabel = $restaurantNavShop ? 'أقسام المنيو' : 'الفئات';
+    $restaurantNavShop = $catalogNavShop?->catalog_type === 'restaurant' ? $catalogNavShop : null;
+    $realEstateNavShop = $catalogNavShop?->catalog_type === 'real_estate' ? $catalogNavShop : null;
+    $catalogTerms = $catalogNavShop?->catalogTerms() ?? config('catalog_terminology.general', []);
+    $catalogItemsLabel = $catalogTerms['item_plural'] ?? 'المنتجات';
+    $catalogCategoriesLabel = $catalogTerms['category_plural'] ?? 'الفئات';
 
     $previewDistributor = null;
     if ($isDistributor) {
@@ -419,7 +419,7 @@
         <div class="admin-sidebar-logo-icon">O</div>
         <div>
             <div class="admin-sidebar-logo-text">Ozman</div>
-            <div class="admin-sidebar-logo-sub">{{ $restaurantNavShop ? 'لوحة المطعم' : 'لوحة التحكم' }}</div>
+            <div class="admin-sidebar-logo-sub">{{ $catalogTerms['dashboard_label'] ?? 'لوحة التحكم' }}</div>
         </div>
         <button type="button" class="admin-mobile-sidebar-close" data-admin-menu-close aria-label="إغلاق قائمة لوحة التحكم" style="display:none;margin-right:auto;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;align-items:center;justify-content:center;cursor:pointer">
             <i class="ti ti-x" aria-hidden="true"></i>
@@ -437,7 +437,7 @@
         </a>
         @endif
 
-        <div class="admin-sidebar-section">{{ $restaurantNavShop ? 'المطعم' : 'المتجر' }}</div>
+        <div class="admin-sidebar-section">{{ $catalogTerms['place_singular'] ?? 'المتجر' }}</div>
 
         @if($isMarketer && ! $hasAssignedPermissions)
         @if($canSee(['front-orders.index']))

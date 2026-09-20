@@ -1,3 +1,6 @@
+@php
+    $catalogTerms = $shop->catalogTerms();
+@endphp
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
@@ -720,7 +723,7 @@
                             @if($canCreateCategories)
                             <a href="{{ route('categories.create', ['shop_id' => $shop->id]) }}" class="btn btn-primary">
                                 <i class="ti ti-category-plus" aria-hidden="true"></i>
-                                إضافة قسم
+                                {{ $catalogTerms['add_category'] }}
                             </a>
                             @endif
                             @if($canCreateAgents)
@@ -755,13 +758,13 @@
 
                 <section class="stats-grid" aria-label="إحصائيات المتجر">
                     <article class="stat-card" style="--stat-color: var(--primary)">
-                        <div class="stat-label">المنتجات</div>
+                        <div class="stat-label">{{ $catalogTerms['item_plural'] }}</div>
                         <div class="stat-value">{{ $shop->products_count ?? 0 }}</div>
                         <i class="ti ti-package stat-icon" aria-hidden="true"></i>
                     </article>
 
                     <article class="stat-card" style="--stat-color: var(--accent)">
-                        <div class="stat-label">الأقسام</div>
+                        <div class="stat-label">{{ $catalogTerms['category_plural'] }}</div>
                         <div class="stat-value">{{ $shop->categories_count ?? 0 }}</div>
                         <i class="ti ti-category stat-icon" aria-hidden="true"></i>
                     </article>

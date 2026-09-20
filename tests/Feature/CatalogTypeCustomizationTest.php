@@ -138,6 +138,29 @@ class CatalogTypeCustomizationTest extends TestCase
         $this->assertArrayHasKey('dimensions', $shop->catalogDefinition()['fields']);
         $this->assertArrayHasKey('energy_rating', $shop->catalogDefinition()['fields']);
         $this->assertArrayHasKey('installation_available', $shop->catalogDefinition()['fields']);
+
+        $this->actingAs($shop->user)->withSession(['current_shop_id' => $shop->id]);
+
+        $this->get(route('shops.show', $shop))
+            ->assertOk()
+            ->assertSee('الأثاث والأجهزة')
+            ->assertSee('أقسام المعرض')
+            ->assertSee('إضافة قسم للمعرض');
+
+        $this->get(route('products', ['shop_id' => $shop->id]))
+            ->assertOk()
+            ->assertSee('إدارة الأثاث والأجهزة')
+            ->assertSee('إضافة قطعة أو جهاز');
+
+        $this->get(route('products.create', ['shop_id' => $shop->id]))
+            ->assertOk()
+            ->assertSee('إضافة قطعة أو جهاز')
+            ->assertSee('تفاصيل قطعة أو جهاز');
+
+        $this->get(route('categories', ['shop_id' => $shop->id]))
+            ->assertOk()
+            ->assertSee('أقسام المعرض')
+            ->assertSee('إضافة قسم للمعرض');
     }
 
     public function test_advertising_shop_starts_with_printing_categories_and_its_own_catalog(): void

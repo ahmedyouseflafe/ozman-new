@@ -5,14 +5,16 @@
     $formShopId = (int) old('shop_id', $selectedShopId);
     $formShop = $shops->firstWhere('id', $formShopId) ?: $selectedShop;
     $isRestaurantForm = $formShop?->catalog_type === 'restaurant';
-    $itemLabel = $isRestaurantForm ? 'وجبة' : 'منتج';
-    $itemsLabel = $isRestaurantForm ? 'الوجبات' : 'المنتجات';
-    $placeLabel = $isRestaurantForm ? 'المطعم' : 'المتجر';
-    $categoryLabel = $isRestaurantForm ? 'قسم المنيو' : 'الفئة';
+    $catalogTerms = $formShop?->catalogTerms() ?? config('catalog_terminology.general');
+    $itemLabel = $catalogTerms['item_singular'];
+    $itemsLabel = $catalogTerms['item_plural'];
+    $addItemLabel = $catalogTerms['add_item'];
+    $placeLabel = $catalogTerms['place_singular'];
+    $categoryLabel = $catalogTerms['category_singular'];
 @endphp
 
 <head>
-    <title>إضافة {{ $itemLabel }} جديدة - Ozman</title>
+    <title>{{ $addItemLabel }} - Ozman</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -458,12 +460,12 @@
     <div class="shell">
         @include('admin.includes.sidebar')
         <main class="main">
-            @include('admin.includes.header', ['title' => 'إضافة ' . $itemLabel . ' جديدة'])
+            @include('admin.includes.header', ['title' => $addItemLabel])
             <div class="content">
                 <header class="page-head">
                     <div>
-                        <h1>إضافة {{ $itemLabel }} جديدة</h1>
-                        <p>{{ $isRestaurantForm ? 'أدخل بيانات الوجبة وسعرها وصورها وحالة ظهورها في منيو المطعم.' : 'أدخل بيانات المنتج، السعر، المخزون، الصور، وحالة الظهور.' }}</p>
+                        <h1>{{ $addItemLabel }}</h1>
+                        <p>أدخل بيانات {{ $itemLabel }} والسعر والمخزون والصور وحالة الظهور في {{ $placeLabel }}.</p>
                     </div>
                     <a href="{{ route('products') }}" class="btn"><i class="ti ti-arrow-right"></i>رجوع لـ{{ $itemsLabel }}</a>
                 </header>
@@ -497,7 +499,7 @@
                                 @if($lockShopSelection && $formShop)
                                     <div class="locked-shop-field">
                                         <i class="ti ti-tools-kitchen-2"></i>
-                                        <span><small>{{ $isRestaurantForm ? 'لوحة المطعم الحالية' : 'متجرك الحالي' }}</small>{{ $formShop->name }}</span>
+                                        <span><small>{{ $catalogTerms['dashboard_label'] }} الحالية</small>{{ $formShop->name }}</span>
                                     </div>
                                     <input type="hidden" id="shop_id" name="shop_id" value="{{ $formShop->id }}" data-catalog-type="{{ $formShop->catalog_type ?: 'general' }}">
                                 @else
@@ -632,11 +634,11 @@
                         </div>
                     </section>
 
-                    <section class="form-section">
+                    <section class="form-section" data-catalog-campaigns>
                         <div class="section-head">
                             <div class="section-icon"><i class="ti ti-speakerphone"></i></div>
                             <div>
-                                <h2>حملات المنتج</h2>
+                                <h2>حملات {{ $itemLabel }}</h2>
                                 <p>أضف عرض الحملة فعليًا مثل: 3 عبوات بسعر 10، مع صورة أو فيديو اختياري.</p>
                             </div>
                         </div>
@@ -759,7 +761,7 @@
                         <div class="switch-grid">
                             <div class="switch-card">
                                 <div class="card-copy"><span class="card-icon"><i
-                                            class="ti ti-star"></i></span><span><span class="card-title">{{ $isRestaurantForm ? 'وجبة مميزة' : 'منتج مميز' }}</span><span class="card-sub">{{ $isRestaurantForm ? 'تظهر ضمن الوجبات المميزة.' : 'يظهر ضمن المنتجات المميزة.' }}</span></span>
+                                            class="ti ti-star"></i></span><span><span class="card-title">تمييز {{ $itemLabel }}</span><span class="card-sub">إظهار {{ $itemLabel }} ضمن العناصر المميزة.</span></span>
                                 </div>
                                 <label class="switch" for="is_featured"><input type="checkbox" id="is_featured"
                                         name="is_featured" value="1" @checked(old('is_featured'))><span
@@ -768,7 +770,7 @@
                             <div class="switch-card">
                                 <div class="card-copy"><span class="card-icon"><i
                                             class="ti ti-circle-check"></i></span><span><span class="card-title">تفعيل
-                                            {{ $itemLabel }}</span><span class="card-sub">{{ $isRestaurantForm ? 'الوجبة النشطة تظهر في المنيو.' : 'المنتج النشط يظهر للعرض.' }}</span></span>
+                                            {{ $itemLabel }}</span><span class="card-sub">يظهر العنصر النشط للزبائن داخل {{ $placeLabel }}.</span></span>
                                 </div>
                                 <label class="switch" for="is_active"><input type="checkbox" id="is_active"
                                         name="is_active" value="1" @checked(old('is_active', true))><span

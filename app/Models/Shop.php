@@ -61,6 +61,16 @@ class Shop extends Model
         return config('catalog_types.'.($this->catalog_type ?: 'general'), config('catalog_types.general', []));
     }
 
+    public function catalogTerms(): array
+    {
+        $general = config('catalog_terminology.general', []);
+
+        return array_replace(
+            $general,
+            config('catalog_terminology.'.($this->catalog_type ?: 'general'), [])
+        );
+    }
+
     public function requiresActiveDistributor(): bool
     {
         if (($this->catalogDefinition()['requires_distributor'] ?? true) === false) {

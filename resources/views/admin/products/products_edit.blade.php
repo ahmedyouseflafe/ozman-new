@@ -4,10 +4,11 @@
 @php
     $formShop = $shops->firstWhere('id', (int) old('shop_id', $product->shop_id)) ?: $selectedShop;
     $isRestaurantForm = $formShop?->catalog_type === 'restaurant';
-    $itemLabel = $isRestaurantForm ? 'وجبة' : 'منتج';
-    $itemsLabel = $isRestaurantForm ? 'الوجبات' : 'المنتجات';
-    $placeLabel = $isRestaurantForm ? 'المطعم' : 'المتجر';
-    $categoryLabel = $isRestaurantForm ? 'قسم المنيو' : 'الفئة';
+    $catalogTerms = $formShop?->catalogTerms() ?? config('catalog_terminology.general');
+    $itemLabel = $catalogTerms['item_singular'];
+    $itemsLabel = $catalogTerms['item_plural'];
+    $placeLabel = $catalogTerms['place_singular'];
+    $categoryLabel = $catalogTerms['category_singular'];
 @endphp
 
 <head>
@@ -103,7 +104,7 @@
                 <header class="page-head">
                     <div>
                         <h1>تعديل {{ $itemLabel }}</h1>
-                        <p>{{ $isRestaurantForm ? 'حدّث بيانات الوجبة وسعرها وصورها وحالة ظهورها في المنيو.' : 'حدّث بيانات المنتج والسعر والصور وحالة الظهور.' }}</p>
+                        <p>حدّث بيانات {{ $itemLabel }} والسعر والمخزون والصور وحالة الظهور في {{ $placeLabel }}.</p>
                     </div>
                     <a href="{{ route('products') }}" class="btn"><i class="ti ti-arrow-right"></i>رجوع لـ{{ $itemsLabel }}</a>
                 </header>
@@ -128,7 +129,7 @@
                             <div class="form-group">
                                 <label class="form-label">{{ $placeLabel }}</label>
                                 @if($lockShopSelection && $formShop)
-                                    <div class="locked-shop-field"><i class="ti ti-tools-kitchen-2"></i><span><small>{{ $isRestaurantForm ? 'لوحة المطعم الحالية' : 'متجرك الحالي' }}</small>{{ $formShop->name }}</span></div>
+                                    <div class="locked-shop-field"><i class="ti ti-tools-kitchen-2"></i><span><small>{{ $catalogTerms['dashboard_label'] }} الحالية</small>{{ $formShop->name }}</span></div>
                                     <input type="hidden" id="shop_id" name="shop_id" value="{{ $formShop->id }}" data-catalog-type="{{ $formShop->catalog_type ?: 'general' }}">
                                 @else
                                     <select id="shop_id" name="shop_id" required>
@@ -238,11 +239,11 @@
                         </div>
                     </section>
 
-                    <section class="form-section">
+                    <section class="form-section" data-catalog-campaigns>
                         <div class="section-head">
                             <div class="section-icon"><i class="ti ti-speakerphone"></i></div>
                             <div>
-                                <h2>حملات المنتج</h2>
+                                <h2>حملات {{ $itemLabel }}</h2>
                                 <p>احذف حملات قديمة أو أضف عرض حملة فعلي مثل: 3 عبوات بسعر 10، مع صورة أو فيديو اختياري.</p>
                             </div>
                         </div>
@@ -252,7 +253,7 @@
                                 @foreach($product->campaigns as $campaign)
                                     <div class="campaign-card">
                                         <div class="campaign-head">
-                                            <div class="campaign-title"><i class="ti ti-ad"></i>{{ $campaign->title ?: 'حملة المنتج' }}</div>
+                                            <div class="campaign-title"><i class="ti ti-ad"></i>{{ $campaign->title ?: 'حملة '.$itemLabel }}</div>
                                             <label class="campaign-remove">
                                                 <input type="checkbox" name="delete_campaign_ids[]" value="{{ $campaign->id }}" style="width:auto;margin-left:6px">
                                                 حذف الحملة
@@ -474,11 +475,11 @@
                     <section class="form-section">
                         <div class="switch-grid">
                             <div class="switch-card">
-                                <div class="card-copy"><span class="card-icon"><i class="ti ti-star"></i></span><span><span class="card-title">{{ $isRestaurantForm ? 'وجبة مميزة' : 'منتج مميز' }}</span><span class="card-sub">{{ $isRestaurantForm ? 'تظهر ضمن الوجبات المميزة.' : 'يظهر ضمن المنتجات المميزة.' }}</span></span></div>
+                                <div class="card-copy"><span class="card-icon"><i class="ti ti-star"></i></span><span><span class="card-title">تمييز {{ $itemLabel }}</span><span class="card-sub">إظهار {{ $itemLabel }} ضمن العناصر المميزة.</span></span></div>
                                 <label class="switch" for="is_featured"><input type="checkbox" id="is_featured" name="is_featured" value="1" @checked(old('is_featured', $product->is_featured))><span class="slider"></span></label>
                             </div>
                             <div class="switch-card">
-                                <div class="card-copy"><span class="card-icon"><i class="ti ti-circle-check"></i></span><span><span class="card-title">تفعيل {{ $itemLabel }}</span><span class="card-sub">{{ $isRestaurantForm ? 'الوجبة النشطة تظهر في المنيو.' : 'المنتج النشط يظهر للعرض.' }}</span></span></div>
+                                <div class="card-copy"><span class="card-icon"><i class="ti ti-circle-check"></i></span><span><span class="card-title">تفعيل {{ $itemLabel }}</span><span class="card-sub">يظهر العنصر النشط للزبائن داخل {{ $placeLabel }}.</span></span></div>
                                 <label class="switch" for="is_active"><input type="checkbox" id="is_active" name="is_active" value="1" @checked(old('is_active', $product->is_active))><span class="slider"></span></label>
                             </div>
                         </div>

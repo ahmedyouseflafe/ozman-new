@@ -2,13 +2,17 @@
 @php
     $formShop = $selectedShop ?? $shops->firstWhere('id', (int) old('shop_id', $selectedShopId));
     $isRestaurantForm = $formShop?->catalog_type === 'restaurant';
-    $categoryName = $isRestaurantForm ? 'قسم المنيو' : 'الفئة';
-    $categoriesName = $isRestaurantForm ? 'أقسام المنيو' : 'الفئات';
+    $catalogTerms = $formShop?->catalogTerms() ?? config('catalog_terminology.general');
+    $categoryName = $catalogTerms['category_singular'];
+    $categoriesName = $catalogTerms['category_plural'];
+    $itemsLabel = $catalogTerms['item_plural'];
+    $addCategoryLabel = $catalogTerms['add_category'];
+    $placeLabel = $catalogTerms['place_singular'];
 @endphp
 <html lang="ar" dir="rtl">
 
 <head>
-    <title>إضافة {{ $isRestaurantForm ? 'قسم منيو جديد' : 'فئة جديدة' }} - Ozman</title>
+    <title>{{ $addCategoryLabel }} - Ozman</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -103,13 +107,13 @@
         @include('admin.includes.sidebar')
 
         <main class="main">
-            @include('admin.includes.header', ['title' => $isRestaurantForm ? 'إضافة قسم منيو جديد' : 'إضافة فئة جديدة'])
+            @include('admin.includes.header', ['title' => $addCategoryLabel])
 
             <div class="content">
                 <header class="page-head">
                     <div>
-                        <h1>إضافة {{ $isRestaurantForm ? 'قسم منيو جديد' : 'فئة جديدة' }}</h1>
-                        <p>{{ $isRestaurantForm ? 'أنشئ قسماً جديداً لتنظيم وجبات منيو المطعم.' : 'اربط الفئة بمتجر، وحدد اسمها وصورتها وحالة ظهورها.' }}</p>
+                        <h1>{{ $addCategoryLabel }}</h1>
+                        <p>أنشئ {{ $categoryName }} لتنظيم {{ $itemsLabel }} داخل {{ $placeLabel }} وحدد اسمه وصورته وحالة ظهوره.</p>
                     </div>
                     <a href="{{ route('categories') }}" class="btn">
                         <i class="ti ti-arrow-right" aria-hidden="true"></i>
@@ -136,14 +140,14 @@
                             <div class="section-icon"><i class="ti ti-category-plus" aria-hidden="true"></i></div>
                             <div>
                                 <h2>بيانات {{ $categoryName }}</h2>
-                                <p>{{ $isRestaurantForm ? 'الحقول الأساسية الخاصة بتنظيم وجبات المنيو.' : 'الحقول الأساسية الخاصة بتصنيف المنتجات.' }}</p>
+                                <p>الحقول الأساسية الخاصة بتنظيم {{ $itemsLabel }}.</p>
                             </div>
                         </div>
 
                         <div class="form-grid">
                             <div class="form-group">
                                 @if($lockShopSelection && $formShop)
-                                    <label class="form-label" for="shop_id"><i class="ti ti-building-store" aria-hidden="true"></i>{{ $isRestaurantForm ? 'المطعم الحالي' : 'المتجر الحالي' }}</label>
+                                    <label class="form-label" for="shop_id"><i class="ti ti-building-store" aria-hidden="true"></i>{{ $placeLabel }} الحالي</label>
                                     <div class="locked-shop-field">
                                         <i class="ti {{ $isRestaurantForm ? 'ti-tools-kitchen-2' : 'ti-building-store' }}" aria-hidden="true"></i>
                                         <div>
@@ -200,7 +204,7 @@
                                     <span class="card-icon"><i class="ti ti-video-plus" aria-hidden="true"></i></span>
                                     <span>
                                         <span class="card-title">فيديو خلفية {{ $categoryName }}</span>
-                                        <span class="card-sub">MP4 أو WebM حتى 20MB — {{ $isRestaurantForm ? 'يفضّل فيديو عمودي 9:16 ليظهر بوضوح على الجوال، وسيُقص تلقائيًا بما يناسب باقي الشاشات' : 'اختياري ويظهر متحركًا خلف منتجات الفئة' }}</span>
+                                        <span class="card-sub">MP4 أو WebM حتى 20MB — اختياري ويظهر متحركًا خلف {{ $itemsLabel }} داخل {{ $categoryName }}.</span>
                                     </span>
                                 </label>
                             </div>
@@ -211,7 +215,7 @@
                                         <span class="card-icon"><i class="ti ti-circle-check" aria-hidden="true"></i></span>
                                         <span>
                                             <span class="card-title">تفعيل {{ $categoryName }}</span>
-                                            <span class="card-sub">{{ $isRestaurantForm ? 'القسم النشط يظهر داخل منيو المطعم.' : 'الفئة النشطة تظهر في قوائم التصنيفات.' }}</span>
+                                            <span class="card-sub">يظهر {{ $categoryName }} النشط للزبائن داخل {{ $placeLabel }}.</span>
                                         </span>
                                     </div>
                                     <label class="switch" for="is_active">

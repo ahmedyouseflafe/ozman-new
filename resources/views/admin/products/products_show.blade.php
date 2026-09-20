@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
+@php
+    $catalogTerms = $product->shop?->catalogTerms() ?? config('catalog_terminology.general');
+    $itemLabel = $catalogTerms['item_singular'];
+    $categoryLabel = $catalogTerms['category_singular'];
+@endphp
+
 <head>
     <title>{{ $product->name }} - Ozman</title>
     <meta charset="UTF-8">
@@ -217,17 +223,17 @@
     <div class="shell">
         @include('admin.includes.sidebar')
         <main class="main">
-            @include('admin.includes.header', ['title' => 'عرض المنتج'])
+            @include('admin.includes.header', ['title' => 'عرض ' . $itemLabel])
             <div class="content">
                 <header class="page-head">
                     <div>
-                        <div class="eyebrow">تفاصيل المنتج</div>
+                        <div class="eyebrow">تفاصيل {{ $itemLabel }}</div>
                         <h1>{{ $product->name }}</h1>
-                        <p>{{ $product->shop?->name ?? 'متجر غير محدد' }} / {{ $product->category?->name ?? 'فئة غير محددة' }}</p>
+                        <p>{{ $product->shop?->name ?? 'متجر غير محدد' }} / {{ $product->category?->name ?? ($categoryLabel.' غير محدد') }}</p>
                     </div>
                     <div class="actions" style="margin-top:0">
                         @if($canManageProducts)
-                            <a href="{{ route('products.edit', $product) }}" class="btn btn-primary"><i class="ti ti-edit"></i>تعديل المنتج</a>
+                            <a href="{{ route('products.edit', $product) }}" class="btn btn-primary"><i class="ti ti-edit"></i>تعديل {{ $itemLabel }}</a>
                         @endif
                         <a href="{{ route('products') }}" class="btn"><i class="ti ti-arrow-right"></i>رجوع للمنتجات</a>
                     </div>
@@ -301,7 +307,7 @@
                         <div class="panel-head">
                             <h2 style="margin:0;color:#00e5ff">
                                 <i class="ti {{ $catalogDefinition['icon'] ?? 'ti-adjustments' }}"></i>
-                                تفاصيل {{ $catalogDefinition['label'] ?? 'المنتج' }}
+                                تفاصيل {{ $catalogDefinition['label'] ?? $itemLabel }}
                             </h2>
                         </div>
                         @if(count($product->catalog_attributes ?? []))
@@ -363,10 +369,10 @@
 
                     <section class="panel">
                         <div class="section">
-                            <div class="section-title"><i class="ti ti-info-circle"></i>معلومات المنتج</div>
+                            <div class="section-title"><i class="ti ti-info-circle"></i>معلومات {{ $itemLabel }}</div>
                             <div class="info-grid">
                                 <div class="item"><div class="label">المتجر</div><div class="value">{{ $product->shop?->name ?? '-' }}</div></div>
-                                <div class="item"><div class="label">الفئة</div><div class="value">{{ $product->category?->name ?? '-' }}</div></div>
+                                <div class="item"><div class="label">{{ $categoryLabel }}</div><div class="value">{{ $product->category?->name ?? '-' }}</div></div>
                                 <div class="item"><div class="label">الرابط المختصر</div><div class="value">{{ $product->slug }}</div></div>
                                 <div class="item"><div class="label">SKU</div><div class="value">{{ $product->sku ?? '-' }}</div></div>
                                 <div class="item"><div class="label">Barcode</div><div class="value">{{ $product->barcode ?? '-' }}</div></div>
@@ -379,7 +385,7 @@
                             @if($product->description)
                                 <div class="description">{{ $product->description }}</div>
                             @else
-                                <div class="empty-state">لا يوجد وصف لهذا المنتج.</div>
+                                <div class="empty-state">لا يوجد وصف لهذا العنصر.</div>
                             @endif
                         </div>
 
@@ -432,7 +438,7 @@
                                     @endforeach
                                 </div>
                             @else
-                                <div class="empty-state">لا توجد حملات لهذا المنتج.</div>
+                                <div class="empty-state">لا توجد حملات لهذا العنصر.</div>
                             @endif
                         </div>
                     </section>

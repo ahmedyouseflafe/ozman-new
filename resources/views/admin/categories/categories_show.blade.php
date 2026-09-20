@@ -1,8 +1,12 @@
 <!DOCTYPE html>
 @php
     $isRestaurantCategory = $category->shop?->catalog_type === 'restaurant';
-    $categoryName = $isRestaurantCategory ? 'قسم المنيو' : 'الفئة';
-    $categoriesName = $isRestaurantCategory ? 'أقسام المنيو' : 'الفئات';
+    $catalogTerms = $category->shop?->catalogTerms() ?? config('catalog_terminology.general');
+    $categoryName = $catalogTerms['category_singular'];
+    $categoriesName = $catalogTerms['category_plural'];
+    $itemLabel = $catalogTerms['item_singular'];
+    $itemsLabel = $catalogTerms['item_plural'];
+    $placeLabel = $catalogTerms['place_singular'];
 @endphp
 <html lang="ar" dir="rtl">
 
@@ -56,7 +60,7 @@
                 <header class="page-head">
                     <div>
                         <h1>{{ $category->name }}</h1>
-                        <p>{{ $isRestaurantCategory ? 'تفاصيل قسم المنيو وعدد الوجبات المرتبطة به.' : 'تفاصيل الفئة وعدد المنتجات المرتبطة بها.' }}</p>
+                        <p>تفاصيل {{ $categoryName }} وعدد {{ $itemsLabel }} المرتبطة به.</p>
                     </div>
                     <a href="{{ route('categories', ['shop_id' => $category->shop_id]) }}" class="btn">
                         <i class="ti ti-arrow-right" aria-hidden="true"></i>
@@ -84,7 +88,7 @@
 
                     <div class="grid">
                         <div class="item">
-                            <div class="label">{{ $isRestaurantCategory ? 'المطعم' : 'المتجر' }}</div>
+                            <div class="label">{{ $placeLabel }}</div>
                             <div class="value">{{ $category->shop?->name ?? '-' }}</div>
                         </div>
                         <div class="item">
@@ -92,8 +96,8 @@
                             <div class="value">{{ $category->slug }}</div>
                         </div>
                         <div class="item">
-                            <div class="label">عدد {{ $isRestaurantCategory ? 'الوجبات' : 'المنتجات' }}</div>
-                            <div class="value">{{ $category->products_count }} {{ $isRestaurantCategory ? 'وجبة' : 'منتج' }}</div>
+                            <div class="label">عدد {{ $itemsLabel }}</div>
+                            <div class="value">{{ $category->products_count }} {{ $itemLabel }}</div>
                         </div>
                         <div class="item">
                             <div class="label">تاريخ الإضافة</div>
@@ -105,7 +109,7 @@
                         @if($canCreateProducts)
                             <a href="{{ route('products.create', ['shop_id' => $category->shop_id, 'category_id' => $category->id]) }}" class="btn btn-primary">
                                 <i class="ti ti-package-plus" aria-hidden="true"></i>
-                                إضافة {{ $isRestaurantCategory ? 'وجبة' : 'منتج' }}
+                                {{ $catalogTerms['add_item'] }}
                             </a>
                         @endif
                         @if($canEditCategories)

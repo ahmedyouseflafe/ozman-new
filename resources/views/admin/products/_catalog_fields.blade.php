@@ -1,5 +1,12 @@
 @php
     $savedCatalogAttributes = old('catalog_attributes', isset($product) ? ($product->catalog_attributes ?? []) : []);
+    $catalogClientDefinitions = collect($catalogTypes)->map(function ($type, $typeKey) {
+        return [
+            'label' => $type['label'],
+            'description' => $type['description'],
+            'item' => config('catalog_terminology.'.$typeKey.'.item_singular', 'المنتج'),
+        ];
+    });
 @endphp
 
 <style>
@@ -19,8 +26,8 @@
     <div class="section-head">
         <div class="section-icon"><i class="ti ti-adjustments-horizontal"></i></div>
         <div>
-            <h2 id="catalogSpecificTitle">{{ ($isRestaurantForm ?? false) ? 'تفاصيل الوجبة' : 'تفاصيل المنتج حسب نوع المتجر' }}</h2>
-            <p id="catalogSpecificDescription">{{ ($isRestaurantForm ?? false) ? 'بيانات الوجبة المخصصة لمنيو المطعم.' : 'اختر المتجر لعرض الحقول المناسبة لنشاطه.' }}</p>
+            <h2 id="catalogSpecificTitle">تفاصيل {{ $itemLabel ?? 'المنتج' }}</h2>
+            <p id="catalogSpecificDescription">الحقول المناسبة لنشاط {{ $placeLabel ?? 'المتجر' }}.</p>
         </div>
     </div>
 
@@ -151,10 +158,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         const shopSelect = document.getElementById('shop_id');
         const groups = [...document.querySelectorAll('[data-catalog-fields]')];
-        const definitions = @json(collect($catalogTypes)->map(fn ($type) => [
-            'label' => $type['label'],
-            'description' => $type['description'],
-        ]));
+        const definitions = @json($catalogClientDefinitions);
         const title = document.getElementById('catalogSpecificTitle');
         const description = document.getElementById('catalogSpecificDescription');
         const variantsPanel = document.getElementById('productVariantsPanel');
@@ -162,8 +166,7 @@
         const addVariant = document.getElementById('addProductVariant');
         const restaurantEditor = document.getElementById('restaurantMenuEditor');
         const legacyPricing = document.getElementById('legacyProductPricingSection');
-        const legacyCampaigns = [...document.querySelectorAll('.form-section')]
-            .find((section) => section.querySelector('h2')?.textContent.trim() === 'حملات المنتج');
+        const legacyCampaigns = document.querySelector('[data-catalog-campaigns]');
         let variantIndex = variantsList?.querySelectorAll('[data-variant-row]').length || 0;
 
         function updateCatalogFields() {
@@ -178,8 +181,8 @@
                 group.querySelectorAll('input, select, textarea').forEach((field) => field.disabled = !active);
             });
             if (definitions[type]) {
-                title.textContent = type === 'restaurant' ? 'تفاصيل الوجبة' : `تفاصيل ${definitions[type].label}`;
-                description.textContent = type === 'restaurant' ? 'بيانات الوجبة المخصصة لمنيو المطعم.' : definitions[type].description;
+                title.textContent = `تفاصيل ${definitions[type].item}`;
+                description.textContent = definitions[type].description;
             }
             const usesVariants = ['clothing', 'shoes', 'electronics'].includes(type);
             variantsPanel.hidden = !usesVariants;

@@ -6,7 +6,13 @@
     $emptyCategoriesCount = $emptyCategoriesCount ?? $categoriesList->filter(fn($category) => (int) data_get($category, 'products_count', 0) === 0)->count();
     $currentShop = $currentShop ?? null;
     $isRestaurantCategories = $currentShop?->catalog_type === 'restaurant';
-    $categoriesPageTitle = $isRestaurantCategories ? 'أقسام المنيو' : 'الفئات';
+    $catalogTerms = $currentShop?->catalogTerms() ?? config('catalog_terminology.general');
+    $categoryName = $catalogTerms['category_singular'];
+    $categoriesPageTitle = $catalogTerms['category_plural'];
+    $itemLabel = $catalogTerms['item_singular'];
+    $itemsLabel = $catalogTerms['item_plural'];
+    $addCategoryLabel = $catalogTerms['add_category'];
+    $placeLabel = $catalogTerms['place_singular'];
 @endphp
 
 <!DOCTYPE html>
@@ -558,9 +564,9 @@
                 <div class="hero-panel">
                     <div class="display-screen">
                         <div class="story-slider">
-                            <span class="welcome-msg">{{ $isRestaurantCategories ? 'نظّم منيو مطعم '.$currentShop->name.' بشكل واضح وسريع' : 'تصنيف منتجات Ozman بشكل واضح وسريع' }}</span>
-                            <span class="welcome-msg">{{ $categoriesCount }} {{ $isRestaurantCategories ? 'قسم يحتوي على' : 'فئة تحتوي على' }} {{ $productsInCategoriesCount }} {{ $isRestaurantCategories ? 'وجبة' : 'منتج' }}</span>
-                            <span class="welcome-msg">{{ $isRestaurantCategories ? 'قسّم الوجبات ليسهل على الزبون تصفّح المنيو' : 'نظّم واجهة المتجر حسب الفئات الأكثر أهمية' }}</span>
+                            <span class="welcome-msg">نظّم {{ $categoriesPageTitle }} في {{ $placeLabel }} بشكل واضح وسريع</span>
+                            <span class="welcome-msg">{{ $categoriesCount }} من {{ $categoriesPageTitle }} تحتوي على {{ $productsInCategoriesCount }} من {{ $itemsLabel }}</span>
+                            <span class="welcome-msg">قسّم {{ $itemsLabel }} ليسهل على الزبون تصفّحها</span>
                         </div>
                     </div>
                     <div class="hero-orb">
@@ -572,12 +578,12 @@
                 <div class="page-header-row">
                     <div>
                         <h1>{{ $categoriesPageTitle }}</h1>
-                        <p>{{ $isRestaurantCategories ? 'أنشئ أقسام المنيو ورتّب وجبات المطعم بطريقة واضحة للزبائن.' : 'تصنيف منتجات المتاجر وترتيب ظهورها داخل تجربة العرض.' }}</p>
+                        <p>أنشئ {{ $categoriesPageTitle }} ورتّب {{ $itemsLabel }} بطريقة واضحة للزبائن.</p>
                     </div>
                     @if($canCreateCategories)
                     <a href="{{ route('categories.create', $currentShop ? ['shop_id' => $currentShop->id] : []) }}" class="btn-primary">
                         <i class="ti ti-plus" aria-hidden="true"></i>
-                        {{ $isRestaurantCategories ? 'قسم منيو جديد' : 'فئة جديدة' }}
+                        {{ $addCategoryLabel }}
                     </a>
                     @endif
                 </div>
@@ -588,22 +594,22 @@
 
                 <div class="stats-grid">
                     <div class="stat-card" style="--accent: var(--primary-color)">
-                        <div class="stat-label">{{ $isRestaurantCategories ? 'إجمالي الأقسام' : 'إجمالي الفئات' }}</div>
+                        <div class="stat-label">إجمالي {{ $categoriesPageTitle }}</div>
                         <div class="stat-val">{{ $categoriesCount }}</div>
                         <i class="ti ti-category stat-icon" aria-hidden="true"></i>
                     </div>
                     <div class="stat-card" style="--accent: var(--green)">
-                        <div class="stat-label">{{ $isRestaurantCategories ? 'أقسام نشطة' : 'فئات نشطة' }}</div>
+                        <div class="stat-label">{{ $categoriesPageTitle }} النشطة</div>
                         <div class="stat-val">{{ $activeCategoriesCount }}</div>
                         <i class="ti ti-circle-check stat-icon" aria-hidden="true"></i>
                     </div>
                     <div class="stat-card" style="--accent: var(--accent-color)">
-                        <div class="stat-label">{{ $isRestaurantCategories ? 'الوجبات داخل الأقسام' : 'المنتجات داخل الفئات' }}</div>
+                        <div class="stat-label">{{ $isRestaurantCategories ? 'الوجبات داخل الأقسام' : $itemsLabel.' داخل '.$categoriesPageTitle }}</div>
                         <div class="stat-val">{{ $productsInCategoriesCount }}</div>
                         <i class="ti ti-package stat-icon" aria-hidden="true"></i>
                     </div>
                     <div class="stat-card" style="--accent: var(--yellow)">
-                        <div class="stat-label">{{ $isRestaurantCategories ? 'أقسام فارغة' : 'فئات فارغة' }}</div>
+                        <div class="stat-label">{{ $categoriesPageTitle }} الفارغة</div>
                         <div class="stat-val">{{ $emptyCategoriesCount }}</div>
                         <i class="ti ti-folder-off stat-icon" aria-hidden="true"></i>
                     </div>
@@ -613,7 +619,7 @@
                     <h3><i class="ti ti-layout-grid" aria-hidden="true"></i> قائمة {{ $categoriesPageTitle }}</h3>
                     <div class="input-wrap">
                         <i class="ti ti-search search-icon" aria-hidden="true"></i>
-                        <input class="search-inp" id="categorySearch" placeholder="{{ $isRestaurantCategories ? 'بحث بالقسم...' : 'بحث بالفئة...' }}">
+                        <input class="search-inp" id="categorySearch" placeholder="بحث في {{ $categoriesPageTitle }}...">
                     </div>
                 </div>
 
@@ -632,7 +638,7 @@
                             </div>
                             <div class="category-name">{{ data_get($category, 'name', '-') }}</div>
                             <div class="category-count">{{ data_get($category, 'shop.name', '-') }}</div>
-                            <div class="category-count">{{ data_get($category, 'products_count', 0) }} {{ $isRestaurantCategories ? 'وجبة' : 'منتج' }}</div>
+                            <div class="category-count">{{ data_get($category, 'products_count', 0) }} {{ $itemLabel }}</div>
                             <div class="category-actions">
                                 <a href="{{ route('categories.show', $category) }}" class="action-btn" aria-label="عرض">
                                     <i class="ti ti-eye" aria-hidden="true"></i>
@@ -640,7 +646,7 @@
                                 <a href="{{ route('categories.edit', $category) }}" class="action-btn" aria-label="تعديل">
                                     <i class="ti ti-edit" aria-hidden="true"></i>
                                 </a>
-                                <form action="{{ route('categories.destroy', $category) }}" method="POST" onsubmit="return confirm('{{ $isRestaurantCategories ? 'هل تريد حذف هذا القسم؟' : 'هل تريد حذف هذه الفئة؟' }}')">
+                                <form action="{{ route('categories.destroy', $category) }}" method="POST" onsubmit="return confirm('هل تريد حذف: {{ $category->name }}؟')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="action-btn" aria-label="حذف">
@@ -653,7 +659,7 @@
                     <?php else: ?>
                         <div class="empty-state">
                             <i class="ti ti-category-off" aria-hidden="true"></i>
-                            {{ $isRestaurantCategories ? 'لا توجد أقسام منيو لعرضها' : 'لا توجد فئات لعرضها' }}
+                            لا توجد {{ $categoriesPageTitle }} لعرضها
                         </div>
                     <?php endif; ?>
                 </div>

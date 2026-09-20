@@ -2,8 +2,11 @@
 @php
     $formShop = $selectedShop ?? $category->shop;
     $isRestaurantForm = $formShop?->catalog_type === 'restaurant';
-    $categoryName = $isRestaurantForm ? 'قسم المنيو' : 'الفئة';
-    $categoriesName = $isRestaurantForm ? 'أقسام المنيو' : 'الفئات';
+    $catalogTerms = $formShop?->catalogTerms() ?? config('catalog_terminology.general');
+    $categoryName = $catalogTerms['category_singular'];
+    $categoriesName = $catalogTerms['category_plural'];
+    $itemsLabel = $catalogTerms['item_plural'];
+    $placeLabel = $catalogTerms['place_singular'];
 @endphp
 <html lang="ar" dir="rtl">
 
@@ -76,7 +79,7 @@
                 <header class="page-head">
                     <div>
                         <h1>تعديل {{ $categoryName }}</h1>
-                        <p>{{ $isRestaurantForm ? 'حدّث بيانات القسم وطريقة ظهوره داخل منيو المطعم.' : 'حدّث بيانات الفئة وحالة ظهورها داخل المتجر.' }}</p>
+                        <p>حدّث بيانات {{ $categoryName }} وطريقة ظهوره داخل {{ $placeLabel }}.</p>
                     </div>
                     <a href="{{ route('categories') }}" class="btn">
                         <i class="ti ti-arrow-right" aria-hidden="true"></i>
@@ -104,19 +107,19 @@
                             <div class="section-icon"><i class="ti ti-category" aria-hidden="true"></i></div>
                             <div>
                                 <h2>بيانات {{ $categoryName }}</h2>
-                                <p>{{ $isRestaurantForm ? 'الحقول الأساسية الخاصة بتنظيم وجبات المنيو.' : 'الحقول الأساسية الخاصة بتصنيف المنتجات.' }}</p>
+                                <p>الحقول الأساسية الخاصة بتنظيم {{ $itemsLabel }}.</p>
                             </div>
                         </div>
 
                         <div class="form-grid">
                             <div class="form-group">
                                 @if($lockShopSelection && $formShop)
-                                    <label class="form-label" for="shop_id"><i class="ti ti-building-store" aria-hidden="true"></i>{{ $isRestaurantForm ? 'المطعم الحالي' : 'المتجر الحالي' }}</label>
+                                    <label class="form-label" for="shop_id"><i class="ti ti-building-store" aria-hidden="true"></i>{{ $placeLabel }} الحالي</label>
                                     <div class="locked-shop-field">
                                         <i class="ti {{ $isRestaurantForm ? 'ti-tools-kitchen-2' : 'ti-building-store' }}" aria-hidden="true"></i>
                                         <div>
                                             <strong>{{ $formShop->name }}</strong>
-                                            <span>{{ $isRestaurantForm ? 'هذا القسم مرتبط بمنيو المطعم الحالي' : 'هذه الفئة مرتبطة بالمتجر الحالي' }}</span>
+                                            <span>{{ $categoryName }} مرتبط بـ{{ $placeLabel }} الحالي</span>
                                         </div>
                                     </div>
                                     <input type="hidden" id="shop_id" name="shop_id" value="{{ $formShop->id }}" data-catalog-type="{{ $formShop->catalog_type ?: 'general' }}">
@@ -194,7 +197,7 @@
                                         <span class="card-icon"><i class="ti ti-circle-check" aria-hidden="true"></i></span>
                                         <span>
                                             <span class="card-title">تفعيل {{ $categoryName }}</span>
-                                            <span class="card-sub">{{ $isRestaurantForm ? 'القسم النشط يظهر داخل منيو المطعم.' : 'الفئة النشطة تظهر في قوائم التصنيفات.' }}</span>
+                                            <span class="card-sub">يظهر {{ $categoryName }} النشط للزبائن داخل {{ $placeLabel }}.</span>
                                         </span>
                                     </div>
                                     <label class="switch" for="is_active">
