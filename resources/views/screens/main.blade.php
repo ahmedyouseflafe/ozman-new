@@ -24,8 +24,12 @@
         .stage { flex:1; display:grid; place-items:center; padding:72px 24px; }
         .carousel { width:min(520px, 80vw); display:grid; place-items:center; gap:18px; text-align:center; }
         .section-title { color:var(--primary); font-size:24px; font-weight:900; text-shadow:0 0 15px rgba(0,229,255,.78); }
-        .media-card { width:min(330px, 74vw); aspect-ratio:3 / 4; border:2px solid var(--primary); border-radius:28px; background:#060606; box-shadow:0 0 42px rgba(0,229,255,.28); overflow:hidden; display:grid; place-items:center; }
+        .media-frame { position:relative; width:min(330px, 74vw); aspect-ratio:3 / 4; }
+        .media-card { width:100%; height:100%; border:2px solid var(--primary); border-radius:28px; background:#060606; box-shadow:0 0 42px rgba(0,229,255,.28); overflow:hidden; display:grid; place-items:center; }
         .media-card img, .media-card video { width:100%; height:100%; object-fit:cover; }
+        .sound-toggle { position:absolute; z-index:3; top:12px; left:12px; width:42px; height:42px; border:1px solid rgba(255,255,255,.26); border-radius:50%; display:grid; place-items:center; background:rgba(2,8,10,.82); color:#fff; font:inherit; font-size:21px; cursor:pointer; box-shadow:0 0 18px rgba(0,0,0,.42); transition:transform .2s ease,background .2s ease,color .2s ease; }
+        .sound-toggle:hover:not(:disabled), .sound-toggle.is-active { color:#001014; background:var(--primary); transform:scale(1.07); }
+        .sound-toggle:disabled { opacity:.42; cursor:not-allowed; }
         .youtube { padding:22px; color:var(--primary); font-weight:900; overflow-wrap:anywhere; }
         .youtube i { display:block; font-size:64px; margin-bottom:14px; }
         .item-title { font-size:20px; font-weight:900; color:#fff; text-shadow:0 0 12px rgba(0,229,255,.32); }
@@ -67,16 +71,23 @@
 
                     @foreach($items as $index => $item)
                         <article class="slide" data-duration="{{ max((int) $item->duration, 1) * 1000 }}" style="{{ $index === 0 ? '' : 'display:none' }}">
-                            <div class="media-card">
-                                @if($item->type === 'image')
-                                    <img src="{{ asset($item->media) }}" alt="{{ $item->title }}">
-                                @elseif($item->type === 'video')
-                                    <video src="{{ asset($item->media) }}" muted playsinline autoplay loop></video>
-                                @else
-                                    <div class="youtube">
-                                        <i class="ti ti-brand-youtube"></i>
-                                        {{ $item->media }}
-                                    </div>
+                            <div class="media-frame">
+                                <div class="media-card">
+                                    @if($item->type === 'image')
+                                        <img src="{{ asset($item->media) }}" alt="{{ $item->title }}">
+                                    @elseif($item->type === 'video')
+                                        <video src="{{ asset($item->media) }}" muted playsinline autoplay loop></video>
+                                    @else
+                                        <div class="youtube">
+                                            <i class="ti ti-brand-youtube"></i>
+                                            {{ $item->media }}
+                                        </div>
+                                    @endif
+                                </div>
+                                @if($item->type === 'video')
+                                    <button type="button" class="sound-toggle" data-sound-toggle aria-label="تفعيل صوت الفيديو" aria-pressed="false" title="تفعيل الصوت">
+                                        <i class="ti ti-volume-off" aria-hidden="true"></i>
+                                    </button>
                                 @endif
                             </div>
                             <div class="item-title">{{ $item->title }}</div>
@@ -103,14 +114,59 @@
     <script>
         const slides = [...document.querySelectorAll('.slide')];
         let index = 0;
+        // يبدأ الصوت مكتوماً دائمًا؛ المتصفح لا يضمن السماح بالصوت قبل كبسة من المستخدم.
+        let muted = true;
+
+        function currentVideo() {
+            return slides[index]?.querySelector('video') || null;
+        }
+
+        function syncVideoSound() {
+            slides.forEach((slide, slideIndex) => {
+                slide.querySelectorAll('video').forEach((video) => {
+                    const isCurrent = slideIndex === index;
+                    video.muted = !isCurrent || muted;
+                    video.defaultMuted = video.muted;
+
+                    if (isCurrent) {
+                        video.play().catch(() => {});
+                    } else {
+                        video.pause();
+                    }
+                });
+            });
+
+            slides.forEach((slide, slideIndex) => {
+                const toggle = slide.querySelector('[data-sound-toggle]');
+                if (!toggle) return;
+                const isCurrentVideo = slideIndex === index && Boolean(currentVideo());
+                toggle.disabled = !isCurrentVideo;
+                toggle.classList.toggle('is-active', isCurrentVideo && !muted);
+                toggle.setAttribute('aria-pressed', String(isCurrentVideo && !muted));
+                toggle.setAttribute('aria-label', muted ? 'تفعيل صوت الفيديو' : 'كتم صوت الفيديو');
+                toggle.title = muted ? 'تفعيل الصوت' : 'كتم الصوت';
+                toggle.innerHTML = `<i class="ti ${muted ? 'ti-volume-off' : 'ti-volume-3'}" aria-hidden="true"></i>`;
+            });
+        }
+
+        document.querySelectorAll('[data-sound-toggle]').forEach((toggle) => {
+            toggle.addEventListener('click', () => {
+                if (!currentVideo()) return;
+                muted = !muted;
+                syncVideoSound();
+            });
+        });
 
         function nextSlide() {
             if (slides.length <= 1) return;
             slides[index].style.display = 'none';
             index = (index + 1) % slides.length;
             slides[index].style.display = '';
+            syncVideoSound();
             setTimeout(nextSlide, Number(slides[index].dataset.duration || 10000));
         }
+
+        syncVideoSound();
 
         if (slides.length > 1) {
             setTimeout(nextSlide, Number(slides[0].dataset.duration || 10000));
