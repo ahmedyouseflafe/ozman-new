@@ -43,7 +43,7 @@
 <!doctype html>
 <html lang="{{ $locale }}" dir="{{ $rtl ? 'rtl' : 'ltr' }}">
 <head>
-    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="{{ csrf_token() }}">
     @include('front.partials.merchant_pwa_head', ['pwaShop' => $shop])
     @include('front.partials.seo', [
         'title' => $shop->name.' | '. __('عطور وكوزماتيكس'),
@@ -68,7 +68,7 @@
     <style>
         .beauty-product.has-product-video{cursor:pointer}
         .beauty-product.has-product-video .product-picture::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(8,3,10,.52),transparent 46%);pointer-events:none}
-        .beauty-video-hint{position:absolute;z-index:1;bottom:9px;right:9px;display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid rgba(255,226,160,.65);border-radius:999px;background:rgba(10,5,12,.78);color:#ffe2a0;font-size:9px;font-weight:900;pointer-events:none}
+        .beauty-video-hint{position:absolute;z-index:4;bottom:9px;right:9px;display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid rgba(255,226,160,.65);border-radius:999px;background:rgba(10,5,12,.86);color:#ffe2a0;font:inherit;font-size:9px;font-weight:900;cursor:pointer;box-shadow:0 5px 14px rgba(0,0,0,.3)}.beauty-video-hint:hover,.beauty-video-hint:focus-visible{border-color:var(--rose);color:#fff;outline:none}
         .beauty-product-preview .beauty-display-product-title{position:absolute;z-index:2;right:18px;bottom:17px;max-width:72%;padding:7px 11px;border:1px solid rgba(255,205,228,.36);border-radius:999px;background:rgba(15,7,17,.78);color:#fff;font-size:12px;font-weight:900;direction:rtl}
         @media(max-width:720px){.beauty-video-hint{right:6px;bottom:6px;padding:4px 6px;font-size:8px}.beauty-product-preview .beauty-display-product-title{right:12px;bottom:12px;font-size:9px}}
     </style>
@@ -87,6 +87,10 @@
             .beauty-brand .directory-link img{width:19px;height:19px}
             .beauty-brand .brand-logo{margin-top:76px}
         }
+    </style>
+    <style>
+        /* Purchase rewards and raffle cards inherit the cosmetics palette. */
+        .beauty-reward-tools{position:fixed;z-index:29;left:20px;bottom:18px;display:grid;gap:8px;direction:rtl}.beauty-reward-tool{display:flex;align-items:center;gap:9px;min-width:178px;padding:9px 12px;border:1px solid rgba(232,194,118,.45);border-radius:16px;background:rgba(30,14,31,.94);box-shadow:0 12px 35px rgba(0,0,0,.36);color:#fff;cursor:pointer;text-align:right;backdrop-filter:blur(15px)}.beauty-reward-tool>span:first-child{display:grid;place-items:center;width:31px;height:31px;border-radius:11px;background:linear-gradient(135deg,#f7cc75,#ff86bb);color:#260617;font-size:17px}.beauty-reward-tool strong{display:block;font-size:11px}.beauty-reward-tool small{display:block;margin-top:1px;color:#dbc5d6;font-size:9px}.beauty-modal{position:fixed;z-index:80;inset:0;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(3,1,5,.76);backdrop-filter:blur(8px);direction:rtl}.beauty-modal.open{display:flex}.beauty-modal-card{position:relative;width:min(470px,100%);max-height:min(760px,calc(100vh - 36px));overflow:auto;padding:26px;border:1px solid rgba(255,128,184,.48);border-radius:28px;background:radial-gradient(circle at 50% 0,rgba(255,128,184,.16),transparent 40%),linear-gradient(145deg,#211225,#0e0911);box-shadow:0 25px 80px #000;text-align:center}.beauty-modal-close{position:absolute;top:12px;left:12px;display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:50%;background:#2b1b2e;color:#fff;cursor:pointer;font-size:20px}.beauty-modal-kicker{margin:0;color:var(--gold);font-size:11px;font-weight:900}.beauty-modal-card h2{margin:5px 0 6px;font-family:'Playfair Display',Cairo,serif;font-size:27px}.beauty-modal-intro{margin:0 auto 17px;max-width:340px;color:var(--muted);font-size:12px;line-height:1.8}.beauty-wheel-wrap{position:relative;width:min(282px,76vw);aspect-ratio:1;margin:4px auto 19px}.beauty-wheel-wrap:after{content:"";position:absolute;z-index:4;top:-5px;left:calc(50% - 12px);width:0;height:0;border-right:12px solid transparent;border-left:12px solid transparent;border-top:27px solid var(--gold);filter:drop-shadow(0 2px 2px #000)}.beauty-wheel{position:relative;width:100%;height:100%;overflow:hidden;border:8px solid #f2c56f;border-radius:50%;box-shadow:0 0 0 6px rgba(255,128,184,.15),0 15px 38px rgba(0,0,0,.5);transition:transform 4.2s cubic-bezier(.16,.75,.16,1);cursor:pointer}.beauty-wheel:after{content:"لف العجلة";position:absolute;inset:calc(50% - 43px);display:grid;place-items:center;border:4px solid #f4d48d;border-radius:50%;background:#2b1530;color:#fff;font-family:Cairo,Arial,sans-serif;font-size:12px;font-weight:900;box-shadow:0 3px 15px rgba(0,0,0,.45)}.beauty-wheel:disabled{cursor:wait}.beauty-wheel-label{position:absolute;top:9%;left:50%;width:43%;transform-origin:0 116px;color:#261123;font-size:10px;font-weight:900;text-align:center;line-height:1.2}.beauty-wheel-result{min-height:42px;padding:10px 13px;border:1px dashed rgba(232,194,118,.45);border-radius:15px;color:#ffe9c6;font-size:12px;font-weight:800}.beauty-wheel-result.win{border-style:solid;border-color:#6ae6b4;background:rgba(50,202,133,.09);color:#89ffc6}.beauty-form{display:grid;gap:10px;text-align:right}.beauty-field{display:grid;gap:5px;color:#ffe3ef;font-size:11px;font-weight:800}.beauty-field input{width:100%;min-height:46px;padding:0 13px;border:1px solid rgba(255,205,228,.22);border-radius:13px;outline:0;background:#100b13;color:#fff;font:inherit}.beauty-field input:focus{border-color:var(--rose);box-shadow:0 0 0 3px rgba(255,128,184,.11)}.beauty-card-number{letter-spacing:8px;text-align:center;font-size:22px!important;font-weight:900}.beauty-form-action{display:flex;align-items:center;justify-content:center;min-height:45px;border:0;border-radius:13px;background:linear-gradient(135deg,#ff86bb,#bd78ff);color:#260617;font:inherit;font-size:13px;font-weight:900;cursor:pointer}.beauty-scan-action{border:1px solid rgba(232,194,118,.45);background:transparent;color:#f8d99c}.beauty-raffle-result{display:none;margin-top:13px;padding:12px;border:1px solid rgba(232,194,118,.38);border-radius:15px;background:rgba(9,5,11,.5);text-align:center}.beauty-raffle-result.show{display:block}.beauty-raffle-result strong{display:block;color:#ffe4a5;font-size:14px}.beauty-raffle-result p{margin:5px 0 0;color:#e5d4e1;font-size:11px;line-height:1.7}.beauty-raffle-result img{display:block;width:92px;height:92px;margin:9px auto 0;border-radius:13px;object-fit:cover}.beauty-scanner{display:none;margin-top:12px}.beauty-scanner.open{display:block}.beauty-scanner video{display:block;width:100%;max-height:220px;border:1px solid rgba(232,194,118,.4);border-radius:15px;background:#000;object-fit:cover}@media(max-width:720px){.beauty-reward-tools{left:10px;bottom:10px;gap:6px}.beauty-reward-tool{min-width:0;padding:7px 9px;border-radius:13px}.beauty-reward-tool>span:first-child{width:29px;height:29px}.beauty-reward-tool strong{font-size:10px}.beauty-reward-tool small{display:none}.beauty-modal{align-items:end;padding:9px}.beauty-modal-card{max-height:88vh;padding:23px 16px 17px;border-radius:23px}.beauty-modal-card h2{font-size:23px}.beauty-wheel-label{transform-origin:0 97px;font-size:8px}}
     </style>
 </head>
 <body>
@@ -121,6 +125,18 @@
 </main>
 <aside class="beauty-cart" aria-live="polite"><div><strong id="beautyCartCount">0 {{ __('منتجات في السلة') }}</strong><small id="beautyCartTotal">0.00 ₪</small></div><button type="button" id="openBeautyCart"><i class="ti ti-shopping-bag"></i></button></aside>
 <div class="cart-sheet" id="beautyCartSheet" aria-hidden="true"><section class="cart-card" role="dialog" aria-modal="true" aria-label="{{ __('سلة الطلب') }}"><h2>{{ __('سلة طلبك') }}</h2><div class="cart-items" id="beautyCartItems"></div><div class="cart-total"><span>{{ __('المجموع') }}</span><span id="beautyCartSheetTotal">0.00 ₪</span></div><div class="cart-actions"><a id="beautyWhatsappOrder" class="disabled" target="_blank" rel="noopener noreferrer"><i class="ti ti-brand-whatsapp"></i>&nbsp; {{ __('إرسال الطلب واتساب') }}</a><button type="button" id="closeBeautyCart">{{ __('إغلاق') }}</button></div></section></div>
+@if(!empty($purchaseRewardWheels) || $raffleCardsAvailable)
+<aside class="beauty-reward-tools" aria-label="جوائز المتجر">
+    @if(!empty($purchaseRewardWheels))<button type="button" class="beauty-reward-tool" id="beautyPurchaseWheelOpen"><span>◉</span><span><strong>عجلة الشراء</strong><small>ادخل على الجائزة بعد إتمام طلبك</small></span></button>@endif
+    @if($raffleCardsAvailable)<button type="button" class="beauty-reward-tool" id="beautyRaffleOpen"><span>▣</span><span><strong>فحص بطاقة الربح</strong><small>أدخل رقم بطاقتك أو امسحها</small></span></button>@endif
+</aside>
+@endif
+@if(!empty($purchaseRewardWheels))
+<div class="beauty-modal" id="beautyWheelModal" aria-hidden="true"><section class="beauty-modal-card" role="dialog" aria-modal="true" aria-labelledby="beautyWheelTitle"><button type="button" class="beauty-modal-close" data-close-beauty-modal="beautyWheelModal" aria-label="إغلاق">×</button><p class="beauty-modal-kicker">مكافأة الشراء</p><h2 id="beautyWheelTitle">عجلة الحظ</h2><p class="beauty-modal-intro" id="beautyWheelIntro">أتمم طلبك أولاً، ثم لف العجلة لتكشف هديتك.</p><div class="beauty-wheel-wrap"><button type="button" class="beauty-wheel" id="beautyWheelSpin" disabled aria-label="لف عجلة الحظ"></button></div><div class="beauty-wheel-result" id="beautyWheelResult">الجائزة ستظهر هنا.</div></section></div>
+@endif
+@if($raffleCardsAvailable)
+<div class="beauty-modal" id="beautyRaffleModal" aria-hidden="true"><section class="beauty-modal-card" role="dialog" aria-modal="true" aria-labelledby="beautyRaffleTitle"><button type="button" class="beauty-modal-close" data-close-beauty-modal="beautyRaffleModal" aria-label="إغلاق">×</button><p class="beauty-modal-kicker">بطاقات الربح</p><h2 id="beautyRaffleTitle">تحقق من رقم بطاقتك</h2><p class="beauty-modal-intro">اكتب رقم البطاقة من 6 أرقام أو امسح رمزها بالكاميرا.</p><form class="beauty-form" id="beautyRaffleForm"><label class="beauty-field">رقم البطاقة<input class="beauty-card-number" id="beautyRaffleNumber" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required></label><label class="beauty-field">الاسم<input id="beautyRaffleName" autocomplete="name" required></label><label class="beauty-field">الجوال أو واتساب<input id="beautyRaffleWhatsapp" inputmode="tel" autocomplete="tel" required></label><button type="submit" class="beauty-form-action">تحقق من البطاقة</button><button type="button" class="beauty-form-action beauty-scan-action" id="beautyStartScan">مسح البطاقة بالكاميرا</button></form><div class="beauty-scanner" id="beautyScanner"><video id="beautyScannerVideo" playsinline muted></video></div><div class="beauty-raffle-result" id="beautyRaffleResult"></div></section></div>
+@endif
 @include('front.shop_stories', ['showStoryList' => false])
 <script>
     window.beautyProductVideos = @json($productVideos);
@@ -170,9 +186,16 @@
             const image = card?.querySelector('.product-picture');
             card?.classList.add('has-product-video');
             if (image && !image.querySelector('.beauty-video-hint')) {
-                const hint = document.createElement('span');
+                const hint = document.createElement('button');
+                hint.type = 'button';
                 hint.className = 'beauty-video-hint';
                 hint.textContent = '▶ فيديو المنتج';
+                hint.setAttribute('aria-label', `عرض فيديو ${product.title}`);
+                hint.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    selectProductVideo(button.dataset.id);
+                });
                 image.append(hint);
             }
             card?.addEventListener('click', () => selectProductVideo(button.dataset.id));
@@ -188,5 +211,169 @@
 </script>
 <script>
 (() => {const slider=document.querySelector('[data-beauty-display]'),slides=[...(slider?.querySelectorAll('.beauty-display-slide')||[])];let current=0,timer;const play=()=>slides[current]?.querySelector('video')?.play().catch(()=>{});const show=next=>{slides[current]?.querySelector('video')?.pause();slides[current]?.classList.remove('active');current=next%slides.length;slides[current]?.classList.add('active');play()};play();if(slides.length>1){const loop=()=>{timer=setTimeout(()=>{show(current+1);loop()},Number(slides[current]?.dataset.duration)||8000)};loop()}document.querySelectorAll('[data-beauty-category]').forEach(button=>button.addEventListener('click',()=>{const key=button.dataset.beautyCategory;document.querySelectorAll('[data-beauty-category]').forEach(item=>item.classList.toggle('active',item===button));document.querySelectorAll('[data-beauty-pane]').forEach(pane=>pane.hidden=pane.dataset.beautyPane!==key)}));const cart=[],$=id=>document.getElementById(id),fmt=value=>`${Number(value).toFixed(2)} ₪`,sync=()=>{const count=cart.reduce((n,item)=>n+item.qty,0),total=cart.reduce((n,item)=>n+item.qty*item.price,0);$('beautyCartCount').textContent=`${count} ${count===1?'منتج في السلة':'منتجات في السلة'}`;$('beautyCartTotal').textContent=fmt(total);$('beautyCartSheetTotal').textContent=fmt(total);$('beautyCartItems').innerHTML=cart.length?cart.map(item=>`<div class="cart-row"><span>${item.name} × ${item.qty}</span><span>${fmt(item.price*item.qty)} <button data-remove="${item.id}" aria-label="حذف">×</button></span></div>`).join(''):'<div class="empty-products" style="min-height:120px">السلة فارغة حاليًا.</div>';const message=cart.map(item=>`• ${item.name} × ${item.qty} — ${fmt(item.price*item.qty)}`).join('%0A');const order=$('beautyWhatsappOrder');order.href=cart.length&&@json((bool)$whatsapp)?`https://wa.me/{{ $whatsapp }}?text=${encodeURIComponent('مرحباً، أود طلب المنتجات التالية من {{ $shop->name }}:%0A'+message+'%0A%0Aالمجموع: '+fmt(total))}`:'#';order.classList.toggle('disabled',!cart.length||!@json((bool)$whatsapp));document.querySelectorAll('[data-remove]').forEach(button=>button.onclick=()=>{const index=cart.findIndex(item=>String(item.id)===button.dataset.remove);if(index>-1)cart.splice(index,1);sync()})};document.querySelectorAll('[data-add-product]').forEach(button=>button.onclick=()=>{const item=cart.find(item=>String(item.id)===button.dataset.id);if(item)item.qty++;else cart.push({id:button.dataset.id,name:button.dataset.name,price:Number(button.dataset.price),qty:1});sync()});$('openBeautyCart').onclick=()=>{$('beautyCartSheet').classList.add('open');$('beautyCartSheet').setAttribute('aria-hidden','false');sync()};$('closeBeautyCart').onclick=()=>{$('beautyCartSheet').classList.remove('open');$('beautyCartSheet').setAttribute('aria-hidden','true')};$('beautyCartSheet').onclick=e=>{if(e.target===$('beautyCartSheet'))$('closeBeautyCart').click()};sync()})();
+</script>
+<script>
+(() => {
+    const config = {
+        shopId: @json($shop->id),
+        whatsapp: @json($whatsapp),
+        wheels: @json($purchaseRewardWheels),
+        orderUrl: @json(route('front-orders.store')),
+        raffleUrl: @json(route('raffle.check')),
+        spinUrl: @json(url('/front-orders')),
+    };
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const rewardCart = [];
+    const $ = id => document.getElementById(id);
+    const total = () => rewardCart.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const format = value => `${Number(value).toFixed(2)} ₪`;
+    const matchingWheel = value => config.wheels.find(wheel => value >= Number(wheel.min_order_total) && (wheel.max_order_total === null || value <= Number(wheel.max_order_total)));
+    const openModal = id => { const modal = $(id); if (!modal) return; modal.classList.add('open'); modal.setAttribute('aria-hidden', 'false'); };
+    const closeModal = id => { const modal = $(id); if (!modal) return; modal.classList.remove('open'); modal.setAttribute('aria-hidden', 'true'); };
+    const request = async (url, body, method = 'POST') => {
+        const response = await fetch(url, {method, headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf}, body: JSON.stringify(body)});
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.message || 'تعذر إتمام العملية، حاول مرة أخرى.');
+        return data;
+    };
+
+    document.addEventListener('click', event => {
+        const add = event.target.closest('[data-add-product]');
+        if (add) {
+            const existing = rewardCart.find(item => String(item.id) === add.dataset.id);
+            if (existing) existing.qty += 1;
+            else rewardCart.push({id: add.dataset.id, name: add.dataset.name, price: Number(add.dataset.price), qty: 1});
+        }
+        const remove = event.target.closest('[data-remove]');
+        if (remove) window.setTimeout(() => {
+            const index = rewardCart.findIndex(item => String(item.id) === remove.dataset.remove);
+            if (index > -1) rewardCart.splice(index, 1);
+        });
+    });
+
+    document.querySelectorAll('[data-close-beauty-modal]').forEach(button => button.addEventListener('click', () => closeModal(button.dataset.closeBeautyModal)));
+    document.querySelectorAll('.beauty-modal').forEach(modal => modal.addEventListener('click', event => { if (event.target === modal) closeModal(modal.id); }));
+
+    let orderContext = null;
+    const wheelButton = $('beautyPurchaseWheelOpen');
+    const wheel = $('beautyWheelSpin');
+    const wheelIntro = $('beautyWheelIntro');
+    const wheelResult = $('beautyWheelResult');
+    const renderWheel = wheelData => {
+        if (!wheel || !wheelData) return;
+        const segments = wheelData.segments || [];
+        const fallback = ['#ff80b8', '#e8c276', '#bd78ff', '#91e8c0', '#f6a6d0', '#c997e7'];
+        const unit = 360 / Math.max(segments.length, 1);
+        wheel.style.background = `conic-gradient(${segments.map((segment, index) => `${segment.color || fallback[index % fallback.length]} ${index * unit}deg ${(index + 1) * unit}deg`).join(',')})`;
+        wheel.style.transform = 'rotate(0deg)';
+        wheel.replaceChildren(...segments.map((segment, index) => {
+            const label = document.createElement('span');
+            label.className = 'beauty-wheel-label';
+            label.style.transform = `rotate(${index * unit + unit / 2}deg)`;
+            label.textContent = segment.label;
+            return label;
+        }));
+    };
+    wheelButton?.addEventListener('click', () => {
+        if (!orderContext) { $('openBeautyCart')?.click(); return; }
+        openModal('beautyWheelModal');
+    });
+    wheel?.addEventListener('click', async () => {
+        if (!orderContext || wheel.disabled) return;
+        wheel.disabled = true;
+        wheelResult.textContent = 'العجلة تدور…';
+        wheelResult.classList.remove('win');
+        try {
+            const result = await request(`${config.spinUrl}/${orderContext.orderId}/spin-reward`, {});
+            const segmentIndex = Number(result.segment_index || 0);
+            const count = orderContext.wheel.segments.length;
+            const degrees = 2160 + (360 - ((segmentIndex + .5) * (360 / count)));
+            wheel.style.transform = `rotate(${degrees}deg)`;
+            window.setTimeout(() => {
+                wheelResult.textContent = `مبروك! ربحت: ${result.reward?.label || 'هدية مميزة'}`;
+                wheelResult.classList.add('win');
+            }, 4250);
+        } catch (error) {
+            wheelResult.textContent = error.message;
+            wheel.disabled = false;
+        }
+    });
+
+    const cartCard = document.querySelector('.cart-card');
+    const cartActions = document.querySelector('.cart-actions');
+    if (cartCard && cartActions) {
+        const customer = document.createElement('div');
+        customer.className = 'beauty-form';
+        customer.style.marginBottom = '12px';
+        customer.innerHTML = '<label class="beauty-field">الاسم<input id="beautyCustomerName" autocomplete="name" required></label><label class="beauty-field">رقم الجوال أو واتساب<input id="beautyCustomerWhatsapp" inputmode="tel" autocomplete="tel" required></label>';
+        cartActions.before(customer);
+        const saved = JSON.parse(localStorage.getItem('beautyCustomer') || '{}');
+        $('beautyCustomerName').value = saved.name || '';
+        $('beautyCustomerWhatsapp').value = saved.whatsapp || '';
+    }
+    $('beautyWhatsappOrder')?.addEventListener('click', async event => {
+        event.preventDefault();
+        if (!rewardCart.length) return;
+        const name = $('beautyCustomerName')?.value.trim();
+        const whatsapp = $('beautyCustomerWhatsapp')?.value.trim();
+        if (!name || !whatsapp) { alert('أدخل الاسم ورقم الجوال أو واتساب لإرسال الطلب.'); return; }
+        const value = total();
+        const rewardWheel = matchingWheel(value);
+        const orderLink = $('beautyWhatsappOrder');
+        orderLink.style.pointerEvents = 'none';
+        try {
+            localStorage.setItem('beautyCustomer', JSON.stringify({name, whatsapp}));
+            const order = await request(config.orderUrl, {shop_id: config.shopId, customer_name: name, customer_phone: whatsapp, customer_whatsapp: whatsapp, items: rewardCart.map(item => ({name: item.name, price: String(item.price), qty: item.qty})), subtotal: value, total: value, order_channel: 'whatsapp', visitor_type: 'customer', reward_wheel_id: rewardWheel?.id || null});
+            const message = rewardCart.map(item => `• ${item.name} × ${item.qty} — ${format(item.price * item.qty)}`).join('\n');
+            if (config.whatsapp) window.open(`https://wa.me/${config.whatsapp}?text=${encodeURIComponent(`مرحباً، أود طلب المنتجات التالية من {{ $shop->name }}:\n${message}\n\nالمجموع: ${format(value)}`)}`, '_blank', 'noopener');
+            if (rewardWheel) {
+                orderContext = {orderId: order.order_id, wheel: rewardWheel};
+                renderWheel(rewardWheel);
+                wheel.disabled = false;
+                wheelIntro.textContent = `${rewardWheel.title} — تم تسجيل طلبك، لف العجلة الآن واكتشف جائزتك.`;
+                $('closeBeautyCart')?.click();
+                openModal('beautyWheelModal');
+            }
+        } catch (error) { alert(error.message); }
+        finally { orderLink.style.pointerEvents = ''; }
+    });
+
+    const raffleButton = $('beautyRaffleOpen');
+    raffleButton?.addEventListener('click', () => {
+        const saved = JSON.parse(localStorage.getItem('beautyCustomer') || '{}');
+        $('beautyRaffleName').value = saved.name || '';
+        $('beautyRaffleWhatsapp').value = saved.whatsapp || '';
+        openModal('beautyRaffleModal');
+    });
+    $('beautyRaffleForm')?.addEventListener('submit', async event => {
+        event.preventDefault();
+        const number = $('beautyRaffleNumber').value.replace(/\D/g, '');
+        const resultBox = $('beautyRaffleResult');
+        if (number.length !== 6) { resultBox.textContent = 'أدخل رقم البطاقة من 6 أرقام.'; resultBox.classList.add('show'); return; }
+        try {
+            const data = await request(config.raffleUrl, {card_number: number, customer: {name: $('beautyRaffleName').value.trim(), whatsapp: $('beautyRaffleWhatsapp').value.trim()}});
+            localStorage.setItem('beautyCustomer', JSON.stringify({name: $('beautyRaffleName').value.trim(), whatsapp: $('beautyRaffleWhatsapp').value.trim()}));
+            resultBox.innerHTML = `<strong>${data.title || 'تم التحقق'}</strong><p>${data.message || ''}</p>${data.prize_image ? `<img src="${data.prize_image}" alt="${data.prize_title || ''}">` : ''}`;
+            resultBox.classList.add('show');
+        } catch (error) { resultBox.innerHTML = `<strong>تنبيه</strong><p>${error.message}</p>`; resultBox.classList.add('show'); }
+    });
+    $('beautyStartScan')?.addEventListener('click', async () => {
+        const box = $('beautyScanner'), video = $('beautyScannerVideo');
+        if (!navigator.mediaDevices?.getUserMedia || !('BarcodeDetector' in window)) { alert('المسح بالكاميرا غير متاح في هذا المتصفح. أدخل الرقم يدويًا.'); return; }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: 'environment'}}});
+            box.classList.add('open'); video.srcObject = stream; await video.play();
+            const detector = new BarcodeDetector({formats: ['qr_code', 'code_128', 'ean_13']});
+            const scan = async () => {
+                if (!box.classList.contains('open')) return;
+                const codes = await detector.detect(video).catch(() => []);
+                const value = codes[0]?.rawValue?.match(/\d{6}/)?.[0];
+                if (value) { $('beautyRaffleNumber').value = value; stream.getTracks().forEach(track => track.stop()); video.srcObject = null; box.classList.remove('open'); return; }
+                requestAnimationFrame(scan);
+            };
+            scan();
+        } catch (error) { alert('تعذر تشغيل الكاميرا. تحقق من إذن الكاميرا ثم حاول مرة أخرى.'); }
+    });
+})();
 </script>
 </body></html>
