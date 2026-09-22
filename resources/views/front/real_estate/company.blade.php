@@ -101,6 +101,7 @@
                 @endforelse
             </div>
             <div class="company-display-shade" aria-hidden="true"></div>
+            @include('front.partials.display_sound_toggle')
         </section>
         <header class="hero">
             <div class="hero-tools">

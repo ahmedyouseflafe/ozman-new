@@ -50,6 +50,38 @@ function initMediaStorySlider(slider) {
         let index = Math.max(0, slides.findIndex((slide) => slide.classList.contains('active')));
         let timer = null;
         let isActive = false;
+        let soundEnabled = false;
+        const soundButton = slider.querySelector('[data-media-story-sound]') || (() => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'media-story-sound-toggle';
+            button.dataset.mediaStorySound = '';
+            button.setAttribute('aria-label', 'تشغيل صوت الفيديو');
+            button.setAttribute('title', 'تشغيل صوت الفيديو');
+            button.innerHTML = '<i class="fas fa-volume-mute" aria-hidden="true"></i>';
+            slider.appendChild(button);
+            return button;
+        })();
+
+        const activeVideo = () => slides[index]?.querySelector('video') || null;
+        const syncSoundControl = () => {
+            const video = activeVideo();
+            slides.forEach((slide) => slide.querySelectorAll('video').forEach((item) => {
+                item.muted = item !== video || !soundEnabled;
+            }));
+
+            if (!video) {
+                soundEnabled = false;
+                soundButton.hidden = true;
+                return;
+            }
+
+            soundButton.hidden = false;
+            const label = soundEnabled ? 'كتم صوت الفيديو' : 'تشغيل صوت الفيديو';
+            soundButton.setAttribute('aria-label', label);
+            soundButton.setAttribute('title', label);
+            soundButton.innerHTML = `<i class="fas ${soundEnabled ? 'fa-volume-up' : 'fa-volume-mute'}" aria-hidden="true"></i>`;
+        };
 
         const pauseSlide = (slide) => {
             slide?.querySelectorAll('video').forEach((video) => video.pause());
@@ -63,6 +95,7 @@ function initMediaStorySlider(slider) {
         const playActive = () => {
             if (!isActive || document.hidden) return;
             const activeSlide = slides[index];
+            syncSoundControl();
             activeSlide?.querySelectorAll('video').forEach((video) => video.play().catch(() => {}));
             activeSlide?.querySelectorAll('iframe[src*="youtube.com/embed"]').forEach((frame) => {
                 frame.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo' }), '*');
@@ -84,9 +117,18 @@ function initMediaStorySlider(slider) {
             const activeSlide = slides[index];
             activeSlide.classList.add('active');
             activeSlide.querySelectorAll('video').forEach((video) => { video.currentTime = 0; });
+            syncSoundControl();
             playActive();
             scheduleNext();
         };
+
+        soundButton.addEventListener('click', () => {
+            const video = activeVideo();
+            if (!video) return;
+            soundEnabled = !soundEnabled;
+            syncSoundControl();
+            video.play().catch(() => {});
+        });
 
         const state = {
             visibleArea: 0,
@@ -126,6 +168,7 @@ function initMediaStorySlider(slider) {
         });
 
         pauseAll();
+        syncSoundControl();
         observer.observe(slider);
 }
 

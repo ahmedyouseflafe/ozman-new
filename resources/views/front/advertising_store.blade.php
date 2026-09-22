@@ -153,6 +153,7 @@
                     @endforelse
                 </div>
                 <div class="restaurant-display-shade" aria-hidden="true"></div>
+                @include('front.partials.display_sound_toggle')
             </section>
 
             <header class="hero">
