@@ -219,6 +219,7 @@ class Shop extends Model
             'restaurant' => 'restaurant.menu',
             'advertising_services' => 'advertising.store',
             'electronics' => 'electronics.store',
+            'cosmetics' => 'cosmetics.store',
             'real_estate' => 'real-estate.company',
             default => 'front.shop.slug',
         };
