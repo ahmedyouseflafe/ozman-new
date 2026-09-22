@@ -572,6 +572,8 @@
 
                     @include('admin.products._catalog_fields')
 
+                    @include('admin.products._simple_pricing')
+
                     <section class="form-section" id="legacyProductPricingSection">
                         <div class="section-head">
                             <div class="section-icon"><i class="ti ti-coin"></i></div>

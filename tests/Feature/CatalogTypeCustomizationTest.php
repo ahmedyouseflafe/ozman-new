@@ -114,6 +114,35 @@ class CatalogTypeCustomizationTest extends TestCase
         $this->assertArrayHasKey('shoes', config('catalog_types'));
     }
 
+    public function test_cosmetics_product_uses_its_direct_price_and_discount_without_wholesale_prices(): void
+    {
+        $owner = User::factory()->create(['role' => 'shop_owner', 'is_active' => true]);
+        $shop = Shop::create([
+            'user_id' => $owner->id, 'name' => 'Beauty Shop', 'slug' => 'beauty-shop',
+            'catalog_type' => 'cosmetics', 'is_active' => true,
+        ]);
+        $category = Category::create([
+            'shop_id' => $shop->id, 'name' => 'Perfumes', 'slug' => 'beauty-perfumes', 'is_active' => true,
+        ]);
+
+        $this->actingAs($owner)->post(route('products.store'), [
+            'shop_id' => $shop->id, 'category_id' => $category->id, 'name' => 'Amber Bloom',
+            'price' => 180, 'discount_price' => 145, 'quantity' => 6,
+            'catalog_attributes' => ['brand' => 'Elegance', 'volume' => '50 ml'],
+        ])->assertRedirect(route('products'));
+
+        $product = Product::query()->where('slug', 'amber-bloom')->firstOrFail();
+        $this->assertSame('180.00', $product->price);
+        $this->assertSame('145.00', $product->discount_price);
+        $this->assertNull($product->merchant_price);
+
+        $this->actingAs($owner)->withSession(['current_shop_id' => $shop->id])
+            ->get(route('products.create'))
+            ->assertOk()
+            ->assertSee('simpleProductPricingSection', false)
+            ->assertSee('usesSimplePricing', false);
+    }
+
     public function test_admin_can_create_a_furniture_and_appliances_shop_with_its_catalog_fields(): void
     {
         $admin = User::factory()->create(['role' => 'super_admin', 'is_active' => true]);

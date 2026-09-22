@@ -166,6 +166,7 @@
         const addVariant = document.getElementById('addProductVariant');
         const restaurantEditor = document.getElementById('restaurantMenuEditor');
         const legacyPricing = document.getElementById('legacyProductPricingSection');
+        const simplePricing = document.getElementById('simpleProductPricingSection');
         const legacyCampaigns = document.querySelector('[data-catalog-campaigns]');
         let variantIndex = variantsList?.querySelectorAll('[data-variant-row]').length || 0;
 
@@ -223,25 +224,31 @@
             updateElectronicsVariantStructure(isElectronics);
 
             const isRestaurant = type === 'restaurant';
-            const usesSpecializedPricing = isRestaurant || isElectronics;
+            const usesLegacyPricing = type === 'general';
+            const usesSimplePricing = !['general', 'restaurant', 'electronics', 'real_estate'].includes(type);
             restaurantEditor.hidden = !isRestaurant;
             restaurantEditor.style.display = isRestaurant ? '' : 'none';
             restaurantEditor.querySelectorAll('[data-restaurant-input]').forEach((field) => field.disabled = !isRestaurant);
             if (legacyPricing) {
-                legacyPricing.hidden = usesSpecializedPricing;
-                legacyPricing.style.display = usesSpecializedPricing ? 'none' : '';
-                legacyPricing.querySelectorAll('input,select,textarea').forEach((field) => field.disabled = usesSpecializedPricing);
+                legacyPricing.hidden = !usesLegacyPricing;
+                legacyPricing.style.display = usesLegacyPricing ? '' : 'none';
+                legacyPricing.querySelectorAll('input,select,textarea').forEach((field) => field.disabled = !usesLegacyPricing);
+            }
+            if (simplePricing) {
+                simplePricing.hidden = !usesSimplePricing;
+                simplePricing.style.display = usesSimplePricing ? '' : 'none';
+                simplePricing.querySelectorAll('input,select,textarea').forEach((field) => field.disabled = !usesSimplePricing);
             }
             if (legacyCampaigns) {
-                legacyCampaigns.hidden = usesSpecializedPricing;
-                legacyCampaigns.style.display = usesSpecializedPricing ? 'none' : '';
-                legacyCampaigns.querySelectorAll('input,select,textarea,button').forEach((field) => field.disabled = usesSpecializedPricing);
+                legacyCampaigns.hidden = !usesLegacyPricing;
+                legacyCampaigns.style.display = usesLegacyPricing ? '' : 'none';
+                legacyCampaigns.querySelectorAll('input,select,textarea,button').forEach((field) => field.disabled = !usesLegacyPricing);
             }
             const agentField = document.getElementById('agent_id')?.closest('.form-group');
             if (agentField) {
-                agentField.hidden = usesSpecializedPricing;
-                agentField.style.display = usesSpecializedPricing ? 'none' : '';
-                agentField.querySelectorAll('select,input').forEach((field) => field.disabled = usesSpecializedPricing);
+                agentField.hidden = !usesLegacyPricing;
+                agentField.style.display = usesLegacyPricing ? '' : 'none';
+                agentField.querySelectorAll('select,input').forEach((field) => field.disabled = !usesLegacyPricing);
             }
             document.querySelectorAll('[data-catalog-fields="restaurant"] input').forEach((field) => {
                 const key = field.name.match(/catalog_attributes\[([^\]]+)\]/)?.[1];

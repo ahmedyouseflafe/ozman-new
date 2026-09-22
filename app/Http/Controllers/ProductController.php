@@ -557,7 +557,8 @@ class ProductController extends Controller
 
     private function syncLegacyPrices(array &$data, ?Product $product = null): void
     {
-        $data['price'] = $data['customer_package_price']
+        $data['price'] = $data['price']
+            ?? $data['customer_package_price']
             ?? $data['customer_carton_price']
             ?? $data['customer_pallet_price']
             ?? $data['package_price']
@@ -569,7 +570,9 @@ class ProductController extends Controller
             ?? $data['carton_price']
             ?? $data['pallet_price']
             ?? null;
-        $data['discount_price'] = null;
+        $data['discount_price'] = filled($data['discount_price'] ?? null)
+            ? $data['discount_price']
+            : null;
     }
 
     private function uniqueSlug(string $value, ?Product $product = null): string
