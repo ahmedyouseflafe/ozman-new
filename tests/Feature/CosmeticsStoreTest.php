@@ -27,6 +27,7 @@ class CosmeticsStoreTest extends TestCase
         Product::create([
             'shop_id' => $shop->id, 'category_id' => $category->id, 'name' => 'Rose Bloom',
             'slug' => 'rose-bloom', 'price' => 125, 'quantity' => 2, 'is_active' => true,
+            'video' => 'storage/products/videos/rose-bloom.mp4',
             'catalog_attributes' => ['brand' => 'Elegance', 'volume' => '50 ml'],
         ]);
         Advertisement::create([
@@ -39,6 +40,8 @@ class CosmeticsStoreTest extends TestCase
         $this->get($shop->publicUrl())->assertOk()
             ->assertSee('beauty-display', false)
             ->assertSee('data-display-sound-toggle', false)
+            ->assertSee('beautyProductVideos', false)
+            ->assertSee('rose-bloom.mp4')
             ->assertSee('Perfumes')
             ->assertSee('Rose Bloom')
             ->assertSee('wa.me/972501234567');

@@ -25,6 +25,14 @@
         return $link;
     });
     if ($whatsapp) $socialLinks->push(['label' => 'WhatsApp', 'icon' => 'ti-brand-whatsapp', 'url' => 'https://wa.me/'.$whatsapp]);
+    $productVideos = $categoriesForPage
+        ->flatMap(fn (array $category) => $category['products'])
+        ->filter(fn ($product) => filled($product->video))
+        ->mapWithKeys(fn ($product) => [(string) $product->id => [
+            'url' => $mediaUrl($product->video),
+            'title' => $product->localized('name'),
+        ]])
+        ->all();
     $youtubeEmbed = function (?string $url): string {
         if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]+)/', (string) $url, $match)) {
             return 'https://www.youtube.com/embed/'.$match[1].'?mute=1&playsinline=1&rel=0&enablejsapi=1';
@@ -56,6 +64,13 @@
         .beauty-product .add-beauty-cart::before{content:"+";font-size:21px;font-weight:500;line-height:1}
         .beauty-product .add-beauty-cart::after{content:"أضف للسلة"}
         @media(max-width:720px){.beauty-product .add-beauty-cart{min-width:102px;height:35px;padding:0 9px;font-size:10px}}
+    </style>
+    <style>
+        .beauty-product.has-product-video{cursor:pointer}
+        .beauty-product.has-product-video .product-picture::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(8,3,10,.52),transparent 46%);pointer-events:none}
+        .beauty-video-hint{position:absolute;z-index:1;bottom:9px;right:9px;display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid rgba(255,226,160,.65);border-radius:999px;background:rgba(10,5,12,.78);color:#ffe2a0;font-size:9px;font-weight:900;pointer-events:none}
+        .beauty-product-preview .beauty-display-product-title{position:absolute;z-index:2;right:18px;bottom:17px;max-width:72%;padding:7px 11px;border:1px solid rgba(255,205,228,.36);border-radius:999px;background:rgba(15,7,17,.78);color:#fff;font-size:12px;font-weight:900;direction:rtl}
+        @media(max-width:720px){.beauty-video-hint{right:6px;bottom:6px;padding:4px 6px;font-size:8px}.beauty-product-preview .beauty-display-product-title{right:12px;bottom:12px;font-size:9px}}
     </style>
     <style>
         /* Cosmetics keeps the language control quiet so the brand remains the hero. */
@@ -107,6 +122,70 @@
 <aside class="beauty-cart" aria-live="polite"><div><strong id="beautyCartCount">0 {{ __('منتجات في السلة') }}</strong><small id="beautyCartTotal">0.00 ₪</small></div><button type="button" id="openBeautyCart"><i class="ti ti-shopping-bag"></i></button></aside>
 <div class="cart-sheet" id="beautyCartSheet" aria-hidden="true"><section class="cart-card" role="dialog" aria-modal="true" aria-label="{{ __('سلة الطلب') }}"><h2>{{ __('سلة طلبك') }}</h2><div class="cart-items" id="beautyCartItems"></div><div class="cart-total"><span>{{ __('المجموع') }}</span><span id="beautyCartSheetTotal">0.00 ₪</span></div><div class="cart-actions"><a id="beautyWhatsappOrder" class="disabled" target="_blank" rel="noopener noreferrer"><i class="ti ti-brand-whatsapp"></i>&nbsp; {{ __('إرسال الطلب واتساب') }}</a><button type="button" id="closeBeautyCart">{{ __('إغلاق') }}</button></div></section></div>
 @include('front.shop_stories', ['showStoryList' => false])
+<script>
+    window.beautyProductVideos = @json($productVideos);
+
+    (() => {
+        const slider = document.querySelector('[data-beauty-display]');
+        const videos = window.beautyProductVideos || {};
+        if (!slider || !Object.keys(videos).length) return;
+
+        const preview = document.createElement('article');
+        preview.className = 'beauty-display-slide beauty-product-preview';
+        preview.hidden = true;
+        slider.parentElement.append(preview);
+
+        let selectedId = null;
+        const selectProductVideo = (id) => {
+            const product = videos[id];
+            if (!product) return;
+
+            selectedId = String(id);
+            slider.querySelectorAll('.beauty-display-slide').forEach(slide => {
+                slide.classList.remove('active');
+                slide.querySelector('video')?.pause();
+            });
+
+            const video = document.createElement('video');
+            video.src = product.url;
+            video.muted = true;
+            video.playsInline = true;
+            video.loop = true;
+            video.preload = 'metadata';
+
+            const title = document.createElement('div');
+            title.className = 'beauty-display-product-title';
+            title.textContent = product.title;
+            preview.replaceChildren(video, title);
+            preview.hidden = false;
+            preview.classList.add('active');
+            video.play().catch(() => {});
+        };
+
+        document.querySelectorAll('[data-add-product]').forEach(button => {
+            const product = videos[button.dataset.id];
+            if (!product) return;
+
+            const card = button.closest('.beauty-product');
+            const image = card?.querySelector('.product-picture');
+            card?.classList.add('has-product-video');
+            if (image && !image.querySelector('.beauty-video-hint')) {
+                const hint = document.createElement('span');
+                hint.className = 'beauty-video-hint';
+                hint.textContent = '▶ فيديو المنتج';
+                image.append(hint);
+            }
+            card?.addEventListener('click', () => selectProductVideo(button.dataset.id));
+            button.addEventListener('click', event => event.stopPropagation());
+        });
+
+        new MutationObserver(() => {
+            const gallerySlideIsActive = [...slider.querySelectorAll('.beauty-display-slide')]
+                .some(slide => slide.classList.contains('active'));
+            if (selectedId && (!preview.classList.contains('active') || gallerySlideIsActive)) selectProductVideo(selectedId);
+        }).observe(slider.parentElement, {subtree: true, attributes: true, attributeFilter: ['class']});
+    })();
+</script>
 <script>
 (() => {const slider=document.querySelector('[data-beauty-display]'),slides=[...(slider?.querySelectorAll('.beauty-display-slide')||[])];let current=0,timer;const play=()=>slides[current]?.querySelector('video')?.play().catch(()=>{});const show=next=>{slides[current]?.querySelector('video')?.pause();slides[current]?.classList.remove('active');current=next%slides.length;slides[current]?.classList.add('active');play()};play();if(slides.length>1){const loop=()=>{timer=setTimeout(()=>{show(current+1);loop()},Number(slides[current]?.dataset.duration)||8000)};loop()}document.querySelectorAll('[data-beauty-category]').forEach(button=>button.addEventListener('click',()=>{const key=button.dataset.beautyCategory;document.querySelectorAll('[data-beauty-category]').forEach(item=>item.classList.toggle('active',item===button));document.querySelectorAll('[data-beauty-pane]').forEach(pane=>pane.hidden=pane.dataset.beautyPane!==key)}));const cart=[],$=id=>document.getElementById(id),fmt=value=>`${Number(value).toFixed(2)} ₪`,sync=()=>{const count=cart.reduce((n,item)=>n+item.qty,0),total=cart.reduce((n,item)=>n+item.qty*item.price,0);$('beautyCartCount').textContent=`${count} ${count===1?'منتج في السلة':'منتجات في السلة'}`;$('beautyCartTotal').textContent=fmt(total);$('beautyCartSheetTotal').textContent=fmt(total);$('beautyCartItems').innerHTML=cart.length?cart.map(item=>`<div class="cart-row"><span>${item.name} × ${item.qty}</span><span>${fmt(item.price*item.qty)} <button data-remove="${item.id}" aria-label="حذف">×</button></span></div>`).join(''):'<div class="empty-products" style="min-height:120px">السلة فارغة حاليًا.</div>';const message=cart.map(item=>`• ${item.name} × ${item.qty} — ${fmt(item.price*item.qty)}`).join('%0A');const order=$('beautyWhatsappOrder');order.href=cart.length&&@json((bool)$whatsapp)?`https://wa.me/{{ $whatsapp }}?text=${encodeURIComponent('مرحباً، أود طلب المنتجات التالية من {{ $shop->name }}:%0A'+message+'%0A%0Aالمجموع: '+fmt(total))}`:'#';order.classList.toggle('disabled',!cart.length||!@json((bool)$whatsapp));document.querySelectorAll('[data-remove]').forEach(button=>button.onclick=()=>{const index=cart.findIndex(item=>String(item.id)===button.dataset.remove);if(index>-1)cart.splice(index,1);sync()})};document.querySelectorAll('[data-add-product]').forEach(button=>button.onclick=()=>{const item=cart.find(item=>String(item.id)===button.dataset.id);if(item)item.qty++;else cart.push({id:button.dataset.id,name:button.dataset.name,price:Number(button.dataset.price),qty:1});sync()});$('openBeautyCart').onclick=()=>{$('beautyCartSheet').classList.add('open');$('beautyCartSheet').setAttribute('aria-hidden','false');sync()};$('closeBeautyCart').onclick=()=>{$('beautyCartSheet').classList.remove('open');$('beautyCartSheet').setAttribute('aria-hidden','true')};$('beautyCartSheet').onclick=e=>{if(e.target===$('beautyCartSheet'))$('closeBeautyCart').click()};sync()})();
 </script>
