@@ -22,7 +22,7 @@
             button.hidden = false;
             const label = soundEnabled ? @json(__('كتم صوت الفيديو')) : @json(__('تشغيل صوت الفيديو'));
             button.setAttribute('aria-label', label); button.title = label;
-            button.innerHTML = `<i class="ti ti-volume-${soundEnabled ? 'high' : 'off'}" aria-hidden="true"></i>`;
+            button.innerHTML = `<i class="ti ${soundEnabled ? 'ti-volume-3' : 'ti-volume-off'}" aria-hidden="true"></i>`;
         };
         button.addEventListener('click', () => {
             const video = activeVideo();
