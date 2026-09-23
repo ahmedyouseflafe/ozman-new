@@ -92,6 +92,10 @@
         /* Purchase rewards and raffle cards inherit the cosmetics palette. */
         .beauty-reward-tools{position:fixed;z-index:29;left:20px;bottom:18px;display:grid;gap:8px;direction:rtl}.beauty-reward-tool{display:flex;align-items:center;gap:9px;min-width:178px;padding:9px 12px;border:1px solid rgba(232,194,118,.45);border-radius:16px;background:rgba(30,14,31,.94);box-shadow:0 12px 35px rgba(0,0,0,.36);color:#fff;cursor:pointer;text-align:right;backdrop-filter:blur(15px)}.beauty-reward-tool>span:first-child{display:grid;place-items:center;width:31px;height:31px;border-radius:11px;background:linear-gradient(135deg,#f7cc75,#ff86bb);color:#260617;font-size:17px}.beauty-reward-tool strong{display:block;font-size:11px}.beauty-reward-tool small{display:block;margin-top:1px;color:#dbc5d6;font-size:9px}.beauty-modal{position:fixed;z-index:80;inset:0;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(3,1,5,.76);backdrop-filter:blur(8px);direction:rtl}.beauty-modal.open{display:flex}.beauty-modal-card{position:relative;width:min(470px,100%);max-height:min(760px,calc(100vh - 36px));overflow:auto;padding:26px;border:1px solid rgba(255,128,184,.48);border-radius:28px;background:radial-gradient(circle at 50% 0,rgba(255,128,184,.16),transparent 40%),linear-gradient(145deg,#211225,#0e0911);box-shadow:0 25px 80px #000;text-align:center}.beauty-modal-close{position:absolute;top:12px;left:12px;display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:50%;background:#2b1b2e;color:#fff;cursor:pointer;font-size:20px}.beauty-modal-kicker{margin:0;color:var(--gold);font-size:11px;font-weight:900}.beauty-modal-card h2{margin:5px 0 6px;font-family:'Playfair Display',Cairo,serif;font-size:27px}.beauty-modal-intro{margin:0 auto 17px;max-width:340px;color:var(--muted);font-size:12px;line-height:1.8}.beauty-wheel-wrap{position:relative;width:min(282px,76vw);aspect-ratio:1;margin:4px auto 19px}.beauty-wheel-wrap:after{content:"";position:absolute;z-index:4;top:-5px;left:calc(50% - 12px);width:0;height:0;border-right:12px solid transparent;border-left:12px solid transparent;border-top:27px solid var(--gold);filter:drop-shadow(0 2px 2px #000)}.beauty-wheel{position:relative;width:100%;height:100%;overflow:hidden;border:8px solid #f2c56f;border-radius:50%;box-shadow:0 0 0 6px rgba(255,128,184,.15),0 15px 38px rgba(0,0,0,.5);transition:transform 4.2s cubic-bezier(.16,.75,.16,1);cursor:pointer}.beauty-wheel:after{content:"لف العجلة";position:absolute;inset:calc(50% - 43px);display:grid;place-items:center;border:4px solid #f4d48d;border-radius:50%;background:#2b1530;color:#fff;font-family:Cairo,Arial,sans-serif;font-size:12px;font-weight:900;box-shadow:0 3px 15px rgba(0,0,0,.45)}.beauty-wheel:disabled{cursor:wait}.beauty-wheel-label{position:absolute;top:9%;left:50%;width:43%;transform-origin:0 116px;color:#261123;font-size:10px;font-weight:900;text-align:center;line-height:1.2}.beauty-wheel-result{min-height:42px;padding:10px 13px;border:1px dashed rgba(232,194,118,.45);border-radius:15px;color:#ffe9c6;font-size:12px;font-weight:800}.beauty-wheel-result.win{border-style:solid;border-color:#6ae6b4;background:rgba(50,202,133,.09);color:#89ffc6}.beauty-form{display:grid;gap:10px;text-align:right}.beauty-field{display:grid;gap:5px;color:#ffe3ef;font-size:11px;font-weight:800}.beauty-field input{width:100%;min-height:46px;padding:0 13px;border:1px solid rgba(255,205,228,.22);border-radius:13px;outline:0;background:#100b13;color:#fff;font:inherit}.beauty-field input:focus{border-color:var(--rose);box-shadow:0 0 0 3px rgba(255,128,184,.11)}.beauty-card-number{letter-spacing:8px;text-align:center;font-size:22px!important;font-weight:900}.beauty-form-action{display:flex;align-items:center;justify-content:center;min-height:45px;border:0;border-radius:13px;background:linear-gradient(135deg,#ff86bb,#bd78ff);color:#260617;font:inherit;font-size:13px;font-weight:900;cursor:pointer}.beauty-scan-action{border:1px solid rgba(232,194,118,.45);background:transparent;color:#f8d99c}.beauty-raffle-result{display:none;margin-top:13px;padding:12px;border:1px solid rgba(232,194,118,.38);border-radius:15px;background:rgba(9,5,11,.5);text-align:center}.beauty-raffle-result.show{display:block}.beauty-raffle-result strong{display:block;color:#ffe4a5;font-size:14px}.beauty-raffle-result p{margin:5px 0 0;color:#e5d4e1;font-size:11px;line-height:1.7}.beauty-raffle-result img{display:block;width:92px;height:92px;margin:9px auto 0;border-radius:13px;object-fit:cover}.beauty-scanner{display:none;margin-top:12px}.beauty-scanner.open{display:block}.beauty-scanner video{display:block;width:100%;max-height:220px;border:1px solid rgba(232,194,118,.4);border-radius:15px;background:#000;object-fit:cover}@media(max-width:720px){.beauty-reward-tools{left:10px;bottom:10px;gap:6px}.beauty-reward-tool{min-width:0;padding:7px 9px;border-radius:13px}.beauty-reward-tool>span:first-child{width:29px;height:29px}.beauty-reward-tool strong{font-size:10px}.beauty-reward-tool small{display:none}.beauty-modal{align-items:end;padding:9px}.beauty-modal-card{max-height:88vh;padding:23px 16px 17px;border-radius:23px}.beauty-modal-card h2{font-size:23px}.beauty-wheel-label{transform-origin:0 97px;font-size:8px}}
     </style>
+    <style>
+        /* Product clips open in their own gallery-style viewer, separate from the store display. */
+        .beauty-product-video-modal{position:fixed;z-index:110;inset:0;display:none;align-items:center;justify-content:center;padding:30px 88px;background:rgba(3,1,5,.84);backdrop-filter:blur(13px);direction:rtl}.beauty-product-video-modal.open{display:flex}.beauty-product-video-dialog{position:relative;display:grid;grid-template-rows:minmax(0,1fr) auto;width:min(920px,100%);max-height:calc(100vh - 60px);overflow:hidden;border:1px solid rgba(255,128,184,.46);border-radius:28px;background:#08050a;box-shadow:0 30px 100px rgba(0,0,0,.82)}.beauty-product-video-dialog video{display:block;width:100%;max-height:calc(100vh - 150px);min-height:260px;background:#000;object-fit:contain}.beauty-product-video-meta{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px;background:linear-gradient(90deg,#140b17,#2a1428);color:#fff}.beauty-product-video-meta strong{font-family:'Playfair Display',Cairo,serif;font-size:16px}.beauty-product-video-meta span{color:#ffe0a1;font-size:10px;font-weight:800}.beauty-product-video-close{position:fixed;z-index:1;top:30px;left:32px;display:grid;place-items:center;width:52px;height:52px;border:1px solid rgba(255,205,228,.34);border-radius:50%;background:rgba(19,10,22,.88);color:#fff;font-size:30px;cursor:pointer}.beauty-product-video-close:hover{border-color:var(--rose);color:var(--rose)}@media(max-width:720px){.beauty-product-video-modal{padding:12px}.beauty-product-video-dialog{width:100%;max-height:calc(100vh - 24px);border-radius:22px}.beauty-product-video-dialog video{min-height:0;max-height:calc(100vh - 115px)}.beauty-product-video-close{top:18px;left:18px;width:42px;height:42px;font-size:25px}.beauty-product-video-meta{padding:10px 13px}.beauty-product-video-meta strong{font-size:13px}}
+    </style>
 </head>
 <body>
 <main class="cosmetics-shell">
@@ -137,6 +141,13 @@
 @if($raffleCardsAvailable)
 <div class="beauty-modal" id="beautyRaffleModal" aria-hidden="true"><section class="beauty-modal-card" role="dialog" aria-modal="true" aria-labelledby="beautyRaffleTitle"><button type="button" class="beauty-modal-close" data-close-beauty-modal="beautyRaffleModal" aria-label="إغلاق">×</button><p class="beauty-modal-kicker">بطاقات الربح</p><h2 id="beautyRaffleTitle">تحقق من رقم بطاقتك</h2><p class="beauty-modal-intro">اكتب رقم البطاقة من 6 أرقام أو امسح رمزها بالكاميرا.</p><form class="beauty-form" id="beautyRaffleForm"><label class="beauty-field">رقم البطاقة<input class="beauty-card-number" id="beautyRaffleNumber" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required></label><label class="beauty-field">الاسم<input id="beautyRaffleName" autocomplete="name" required></label><label class="beauty-field">الجوال أو واتساب<input id="beautyRaffleWhatsapp" inputmode="tel" autocomplete="tel" required></label><button type="submit" class="beauty-form-action">تحقق من البطاقة</button><button type="button" class="beauty-form-action beauty-scan-action" id="beautyStartScan">مسح البطاقة بالكاميرا</button></form><div class="beauty-scanner" id="beautyScanner"><video id="beautyScannerVideo" playsinline muted></video></div><div class="beauty-raffle-result" id="beautyRaffleResult"></div></section></div>
 @endif
+<div class="beauty-product-video-modal" id="beautyProductVideoModal" aria-hidden="true">
+    <button type="button" class="beauty-product-video-close" id="beautyProductVideoClose" aria-label="إغلاق الفيديو">×</button>
+    <section class="beauty-product-video-dialog" role="dialog" aria-modal="true" aria-labelledby="beautyProductVideoTitle">
+        <video id="beautyProductVideoPlayer" controls playsinline preload="metadata"></video>
+        <div class="beauty-product-video-meta"><strong id="beautyProductVideoTitle"></strong><span>الصوت مفعّل</span></div>
+    </section>
+</div>
 @include('front.shop_stories', ['showStoryList' => false])
 <script>
     window.beautyProductVideos = @json($productVideos);
@@ -374,6 +385,48 @@
             scan();
         } catch (error) { alert('تعذر تشغيل الكاميرا. تحقق من إذن الكاميرا ثم حاول مرة أخرى.'); }
     });
+})();
+</script>
+<script>
+(() => {
+    const clips = window.beautyProductVideos || {};
+    const modal = document.getElementById('beautyProductVideoModal');
+    const player = document.getElementById('beautyProductVideoPlayer');
+    const title = document.getElementById('beautyProductVideoTitle');
+    const close = () => {
+        if (!modal) return;
+        player.pause();
+        player.removeAttribute('src');
+        player.load();
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    };
+    const open = productId => {
+        const clip = clips[String(productId)];
+        if (!clip || !modal) return;
+        player.src = clip.url;
+        player.muted = false;
+        player.volume = 1;
+        player.loop = true;
+        title.textContent = clip.title;
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        player.play().catch(() => {});
+    };
+    document.addEventListener('click', event => {
+        const trigger = event.target.closest('.beauty-video-hint');
+        if (!trigger) return;
+        const productId = trigger.closest('.beauty-product')?.querySelector('[data-add-product]')?.dataset.id;
+        if (!productId || !clips[String(productId)]) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        open(productId);
+    }, true);
+    document.getElementById('beautyProductVideoClose')?.addEventListener('click', close);
+    modal?.addEventListener('click', event => { if (event.target === modal) close(); });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape' && modal?.classList.contains('open')) close(); });
 })();
 </script>
 </body></html>
