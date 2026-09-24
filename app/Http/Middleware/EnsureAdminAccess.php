@@ -42,7 +42,11 @@ class EnsureAdminAccess
 
             app(ShopOwnerAccountService::class)->resolve($activeOwnedShops->first());
 
-            abort_unless($user->canAccessRouteName($request->route()?->getName()), 403);
+            // Salon appointments are operational data of a cosmetics shop. The
+            // shop owner must always be able to manage their own appointments,
+            // even when their account already has a custom permission set.
+            $isSalonAppointmentRoute = str_starts_with((string) $request->route()?->getName(), 'salon-appointments.');
+            abort_unless($isSalonAppointmentRoute || $user->canAccessRouteName($request->route()?->getName()), 403);
             $activeOwnedShopIds = $activeOwnedShops->pluck('id')->map(fn ($id) => (int) $id)->all();
         }
 

@@ -392,6 +392,7 @@
     $restaurantNavShop = $catalogNavShop?->catalog_type === 'restaurant' ? $catalogNavShop : null;
     $realEstateNavShop = $catalogNavShop?->catalog_type === 'real_estate' ? $catalogNavShop : null;
     $cosmeticsNavShop = $catalogNavShop?->catalog_type === 'cosmetics' ? $catalogNavShop : null;
+    $canSeeSalonAppointments = $cosmeticsNavShop && ($isShopOwner || $canSee(['salon-appointments.index']));
     $catalogTerms = $catalogNavShop?->catalogTerms() ?? config('catalog_terminology.general', []);
     $catalogItemsLabel = $catalogTerms['item_plural'] ?? 'المنتجات';
     $catalogCategoriesLabel = $catalogTerms['category_plural'] ?? 'الفئات';
@@ -575,7 +576,7 @@
              <i class="ti ti-building-community" aria-hidden="true"></i>
              إدارة الخدمات والطلبات
         </a>
-        @elseif($cosmeticsNavShop && $canSee(['salon-appointments.index']))
+        @elseif($canSeeSalonAppointments)
         <a href="{{ route('salon-appointments.index', $cosmeticsNavShop) }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('salon-appointments.*') ? 'active' : '' }}">
              <i class="ti ti-calendar-heart" aria-hidden="true"></i>
@@ -711,7 +712,7 @@
 @php
     $mobileNavCount = 1
         + ($canSee(['dashboard']) ? 1 : 0)
-        + ((($restaurantNavShop && $canSee(['restaurant.dashboard'])) || ($realEstateNavShop && $canSee(['real-estate.dashboard'])) || ($cosmeticsNavShop && $canSee(['salon-appointments.index'])) || $canSee(['front-orders.index'])) ? 1 : 0)
+        + ((($restaurantNavShop && $canSee(['restaurant.dashboard'])) || ($realEstateNavShop && $canSee(['real-estate.dashboard'])) || $canSeeSalonAppointments || $canSee(['front-orders.index'])) ? 1 : 0)
         + ($canSee(['products']) ? 1 : 0)
         + ($canSee(['products.preview']) ? 1 : 0);
 @endphp
@@ -733,7 +734,7 @@
             <i class="ti ti-building-community" aria-hidden="true"></i>
             الخدمات
         </a>
-    @elseif($cosmeticsNavShop && $canSee(['salon-appointments.index']))
+    @elseif($canSeeSalonAppointments)
         <a href="{{ route('salon-appointments.index', $cosmeticsNavShop) }}" class="admin-mobile-nav-item {{ request()->routeIs('salon-appointments.*') ? 'active' : '' }}">
             <i class="ti ti-calendar-heart" aria-hidden="true"></i>
             الحجوزات

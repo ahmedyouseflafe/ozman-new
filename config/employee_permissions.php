@@ -102,6 +102,14 @@ return [
                 'raffle_cards.delete' => ['label' => 'حذف بطاقات أو نتائج سحب', 'description' => 'حذف بطاقة واحدة أو عدة بطاقات ومدخلات السحب؛ صلاحية حساسة.', 'routes' => ['raffle-cards.destroy', 'raffle-cards.bulk-destroy', 'raffle-cards.live-draw.destroy', 'raffle-cards.live-draw.bulk-destroy']],
             ],
         ],
+        'salon_appointments' => [
+            'label' => 'حجوزات الصالون',
+            'description' => 'متابعة مواعيد خدمات الصالون وتأكيدها أو إكمالها أو إلغاؤها ضمن متجر الكوزماتيكس.',
+            'permissions' => [
+                'salon_appointments.view' => ['label' => 'عرض حجوزات الصالون', 'description' => 'مشاهدة جدول حجوزات متجر الكوزماتيكس.', 'routes' => ['salon-appointments.index']],
+                'salon_appointments.manage' => ['label' => 'إدارة حجوزات الصالون', 'description' => 'تأكيد الموعد أو إكماله أو إلغاؤه.', 'routes' => ['salon-appointments.status']],
+            ],
+        ],
         'real_estate' => [
             'label' => 'إدارة شركات البناء المتنقل',
             'description' => 'إدارة أقسام الخدمات والصور والمواصفات وطلبات العملاء ضمن الشركات المسموح للحساب بالوصول إليها.',
