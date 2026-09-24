@@ -33,6 +33,13 @@
             'title' => $product->localized('name'),
         ]])
         ->all();
+    $productPrices = $categoriesForPage
+        ->flatMap(fn (array $category) => $category['products'])
+        ->mapWithKeys(fn ($product) => [(string) $product->id => [
+            'original' => (float) $product->price,
+            'discount' => $product->discount_price !== null ? (float) $product->discount_price : null,
+        ]])
+        ->all();
     $youtubeEmbed = function (?string $url): string {
         if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]+)/', (string) $url, $match)) {
             return 'https://www.youtube.com/embed/'.$match[1].'?mute=1&playsinline=1&rel=0&enablejsapi=1';
@@ -96,6 +103,9 @@
         /* Product clips open in their own gallery-style viewer, separate from the store display. */
         .beauty-product-video-modal{position:fixed;z-index:110;inset:0;display:none;align-items:center;justify-content:center;padding:30px 88px;background:rgba(3,1,5,.84);backdrop-filter:blur(13px);direction:rtl}.beauty-product-video-modal.open{display:flex}.beauty-product-video-dialog{position:relative;width:auto;max-width:100%;max-height:calc(100vh - 60px);background:transparent}.beauty-product-video-dialog video{display:block;width:auto;height:auto;max-width:100%;max-height:calc(100vh - 60px);min-height:0;background:#000;object-fit:contain}.beauty-product-video-meta{display:none}.beauty-product-video-close{position:fixed;z-index:1;top:30px;left:32px;display:grid;place-items:center;width:52px;height:52px;border:1px solid rgba(255,205,228,.34);border-radius:50%;background:rgba(19,10,22,.88);color:#fff;font-size:30px;cursor:pointer}.beauty-product-video-close:hover{border-color:var(--rose);color:var(--rose)}@media(max-width:720px){.beauty-product-video-modal{padding:12px}.beauty-product-video-dialog{max-height:calc(100vh - 24px)}.beauty-product-video-dialog video{max-height:calc(100vh - 24px)}.beauty-product-video-close{top:18px;left:18px;width:42px;height:42px;font-size:25px}}
     </style>
+    <style>
+        .product-price-stack{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}.product-price-stack del{color:#ad91a7;font-size:10px;font-weight:700;text-decoration-thickness:2px;text-decoration-color:#ff80b8}.product-price-stack ins{color:#ffe2a0;font-size:14px;font-weight:900;text-decoration:none}
+    </style>
 </head>
 <body>
 <main class="cosmetics-shell">
@@ -151,6 +161,7 @@
 @include('front.shop_stories', ['showStoryList' => false])
 <script>
     window.beautyProductVideos = @json($productVideos);
+    window.beautyProductPrices = @json($productPrices);
 
     (() => {
         const slider = document.querySelector('[data-beauty-display]');
@@ -427,6 +438,22 @@
     document.getElementById('beautyProductVideoClose')?.addEventListener('click', close);
     modal?.addEventListener('click', event => { if (event.target === modal) close(); });
     document.addEventListener('keydown', event => { if (event.key === 'Escape' && modal?.classList.contains('open')) close(); });
+})();
+</script>
+<script>
+(() => {
+    const prices = window.beautyProductPrices || {};
+    document.querySelectorAll('[data-add-product]').forEach(button => {
+        const price = prices[String(button.dataset.id)];
+        const target = button.closest('.product-bottom')?.querySelector('.product-price');
+        if (!target || !price || price.discount === null || Number(price.discount) >= Number(price.original)) return;
+        const oldPrice = document.createElement('del');
+        oldPrice.textContent = `${Number(price.original).toFixed(2)} ₪`;
+        const salePrice = document.createElement('ins');
+        salePrice.textContent = `${Number(price.discount).toFixed(2)} ₪`;
+        target.classList.add('product-price-stack');
+        target.replaceChildren(oldPrice, salePrice);
+    });
 })();
 </script>
 </body></html>
