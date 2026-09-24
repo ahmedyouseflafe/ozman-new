@@ -101,6 +101,7 @@ Route::get('/restaurants/{shop:slug}', [RestaurantController::class, 'menu'])->n
 Route::get('/advertising/{shop:slug}', [AdvertisingStoreController::class, 'index'])->name('advertising.store');
 Route::get('/electronics/{shop:slug}', [ElectronicsStoreController::class, 'index'])->name('electronics.store');
 Route::get('/cosmetics/{shop:slug}', [CosmeticsStoreController::class, 'index'])->name('cosmetics.store');
+Route::get('/cosmetics/{shop:slug}/booking', [CosmeticsStoreController::class, 'booking'])->name('cosmetics.booking');
 Route::post('/electronics/{shop:slug}/compare/{product}', [ElectronicsStoreController::class, 'toggleCompare'])->name('electronics.compare.toggle');
 Route::post('/electronics/{shop:slug}/compare-clear', [ElectronicsStoreController::class, 'clearCompare'])->name('electronics.compare.clear');
 Route::get('/electronics/{shop:slug}/compare', [ElectronicsStoreController::class, 'compare'])->name('electronics.compare');

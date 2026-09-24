@@ -10,6 +10,15 @@ use Illuminate\View\View;
 
 class CosmeticsStoreController extends Controller
 {
+    public function booking(Shop $shop): View
+    {
+        abort_unless($shop->is_active && $shop->catalog_type === 'cosmetics', 404);
+
+        $shop->loadMissing('social');
+
+        return view('front.cosmetics_booking', compact('shop'));
+    }
+
     public function index(Shop $shop): View
     {
         abort_unless($shop->is_active && $shop->catalog_type === 'cosmetics', 404);
