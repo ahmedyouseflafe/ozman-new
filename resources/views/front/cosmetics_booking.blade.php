@@ -8,7 +8,7 @@
 <!doctype html>
 <html lang="{{ $locale }}" dir="{{ $rtl ? 'rtl' : 'ltr' }}">
 <head>
-    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="{{ csrf_token() }}">
     @include('front.partials.merchant_pwa_head', ['pwaShop' => $shop])
     <title>حجز موعد | {{ $shop->name }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,7 +30,7 @@
             <p class="booking-lead">اختاري الخدمة والموعد المناسبين، ثم أرسلي طلب الحجز. سيتواصل معك الصالون لتأكيده.</p>
             <form class="booking-form" id="salonBookingForm">
                 <div class="booking-section"><h2>الخدمة المطلوبة</h2><div class="booking-grid"><label class="booking-field full">اختاري الخدمة<select name="service" required><option value="">اختاري خدمة</option><option>تسريحة شعر</option><option>مكياج</option><option>عناية بالبشرة</option><option>رموش وحواجب</option><option>استشارة عناية وجمال</option><option>خدمة أخرى</option></select></label></div></div>
-                <div class="booking-section"><h2>اختاري الوقت</h2><div class="booking-grid"><label class="booking-field">التاريخ<input type="date" name="date" id="bookingDate" required></label><label class="booking-field">الوقت المفضل<select name="time" required><option value="">اختاري الوقت</option><option>10:00 صباحًا</option><option>12:00 ظهرًا</option><option>2:00 مساءً</option><option>4:00 مساءً</option><option>6:00 مساءً</option><option>وقت آخر</option></select></label></div></div>
+                <div class="booking-section"><h2>اختاري الوقت</h2><div class="booking-grid"><label class="booking-field">التاريخ<input type="date" name="date" id="bookingDate" required></label><label class="booking-field">الوقت المفضل<select name="time" id="bookingTime" required><option value="">اختاري الوقت</option><option value="10:00">10:00 صباحًا</option><option value="12:00">12:00 ظهرًا</option><option value="14:00">2:00 مساءً</option><option value="16:00">4:00 مساءً</option><option value="18:00">6:00 مساءً</option></select></label></div></div>
                 <div class="booking-section"><h2>بيانات التواصل</h2><div class="booking-grid"><label class="booking-field">الاسم<input name="name" autocomplete="name" required></label><label class="booking-field">الجوال أو واتساب<input name="phone" inputmode="tel" autocomplete="tel" required></label><label class="booking-field full">ملاحظات إضافية (اختياري)<textarea name="notes" placeholder="مثلاً: نوع المناسبة أو أي طلب خاص"></textarea></label></div></div>
                 <button class="booking-submit" type="submit"><i class="ti ti-brand-whatsapp"></i> إرسال طلب الحجز</button><div class="booking-note" id="bookingNote"></div>
             </form>
@@ -42,13 +42,37 @@
 (() => {
     const form = document.getElementById('salonBookingForm');
     const date = document.getElementById('bookingDate');
+    const time = document.getElementById('bookingTime');
     const note = document.getElementById('bookingNote');
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const availabilityUrl = @json(route('cosmetics.booking.availability', $shop));
+    const bookingUrl = @json(route('cosmetics.booking.store', $shop));
+    const showNote = message => { note.textContent = message; note.style.display = 'block'; };
     date.min = new Date().toISOString().slice(0, 10);
-    form.addEventListener('submit', event => {
+    const refreshAvailability = async () => {
+        if (!date.value) return;
+        time.disabled = true;
+        try {
+            const response = await fetch(`${availabilityUrl}?date=${encodeURIComponent(date.value)}`, {headers: {'Accept': 'application/json'}});
+            const data = await response.json();
+            const booked = new Set(data.booked_times || []);
+            [...time.options].forEach(option => {
+                if (!option.value) return;
+                option.disabled = booked.has(option.value);
+                option.textContent = option.disabled ? `${option.dataset.label || option.textContent.replace(' — محجوز', '')} — محجوز` : (option.dataset.label || option.textContent);
+                option.dataset.label ||= option.textContent.replace(' — محجوز', '');
+            });
+            if (time.selectedOptions[0]?.disabled) time.value = '';
+        } catch (_) { showNote('تعذر تحميل الأوقات المتاحة. حدّث الصفحة وحاول مرة أخرى.'); }
+        finally { time.disabled = false; }
+    };
+    date.addEventListener('change', refreshAvailability);
+    form.addEventListener('submit', async event => {
         event.preventDefault();
         const data = new FormData(form);
         const whatsapp = @json($whatsapp);
-        if (!whatsapp) { note.textContent = 'لا يوجد رقم واتساب مضاف للصالون حاليًا.'; note.style.display = 'block'; return; }
+        const submit = form.querySelector('[type="submit"]');
+        submit.disabled = true;
         const message = [
             `مرحباً، أريد حجز موعد في ${@json($shop->name)}`,
             '',
@@ -59,8 +83,15 @@
             `الجوال: ${data.get('phone')}`,
             data.get('notes') ? `ملاحظات: ${data.get('notes')}` : '',
         ].filter(Boolean).join('\n');
-        window.open(`https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
-        note.textContent = 'تم تجهيز رسالة الحجز في واتساب. بانتظار تأكيد الصالون للموعد.'; note.style.display = 'block';
+        try {
+            const response = await fetch(bookingUrl, {method: 'POST', headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf}, body: JSON.stringify(Object.fromEntries(data))});
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(result.message || Object.values(result.errors || {})[0]?.[0] || 'تعذر تسجيل الحجز.');
+            if (whatsapp) window.open(`https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
+            showNote(result.message || 'تم تسجيل طلب الحجز. سيتواصل معك الصالون لتأكيده.');
+            form.reset(); date.min = new Date().toISOString().slice(0, 10); refreshAvailability();
+        } catch (error) { showNote(error.message); refreshAvailability(); }
+        finally { submit.disabled = false; }
     });
 })();
 </script>

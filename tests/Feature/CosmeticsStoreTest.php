@@ -58,4 +58,25 @@ class CosmeticsStoreTest extends TestCase
         $this->get(route('cosmetics.store', $general))->assertNotFound();
         $this->get(route('cosmetics.store', $inactive))->assertNotFound();
     }
+
+    public function test_salon_booking_is_saved_and_a_booked_time_cannot_be_taken_twice(): void
+    {
+        $shop = Shop::create([
+            'user_id' => User::factory()->create()->id,
+            'name' => 'Beauty Salon', 'slug' => 'beauty-salon',
+            'catalog_type' => 'cosmetics', 'whatsapp' => '972501234567', 'is_active' => true,
+        ]);
+        $payload = [
+            'service' => 'Makeup', 'date' => now()->addDay()->format('Y-m-d'), 'time' => '14:00',
+            'name' => 'Ahmad', 'phone' => '972501234567', 'notes' => 'Wedding',
+        ];
+
+        $this->get(route('cosmetics.booking', $shop))->assertOk()->assertSee('salonBookingForm', false);
+        $this->postJson(route('cosmetics.booking.store', $shop), $payload)->assertCreated()->assertJsonPath('ok', true);
+        $this->getJson(route('cosmetics.booking.availability', [$shop, 'date' => $payload['date']]))
+            ->assertOk()->assertJsonPath('booked_times.0', '14:00');
+        $this->postJson(route('cosmetics.booking.store', $shop), $payload)
+            ->assertUnprocessable()->assertJsonPath('message', 'هذا الموعد حُجز للتو. اختَر وقتًا آخر.');
+        $this->assertDatabaseCount('salon_appointments', 1);
+    }
 }

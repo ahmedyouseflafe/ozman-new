@@ -25,6 +25,7 @@ use App\Http\Controllers\RealEstateDashboardController;
 use App\Http\Controllers\RestaurantController;
 use App\Http\Controllers\RestaurantDriverController;
 use App\Http\Controllers\RewardWheelController;
+use App\Http\Controllers\SalonAppointmentController;
 use App\Http\Controllers\ScreenController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\SettingsController;
@@ -102,6 +103,8 @@ Route::get('/advertising/{shop:slug}', [AdvertisingStoreController::class, 'inde
 Route::get('/electronics/{shop:slug}', [ElectronicsStoreController::class, 'index'])->name('electronics.store');
 Route::get('/cosmetics/{shop:slug}', [CosmeticsStoreController::class, 'index'])->name('cosmetics.store');
 Route::get('/cosmetics/{shop:slug}/booking', [CosmeticsStoreController::class, 'booking'])->name('cosmetics.booking');
+Route::get('/cosmetics/{shop:slug}/booking/availability', [SalonAppointmentController::class, 'availability'])->name('cosmetics.booking.availability');
+Route::post('/cosmetics/{shop:slug}/booking', [SalonAppointmentController::class, 'store'])->name('cosmetics.booking.store');
 Route::post('/electronics/{shop:slug}/compare/{product}', [ElectronicsStoreController::class, 'toggleCompare'])->name('electronics.compare.toggle');
 Route::post('/electronics/{shop:slug}/compare-clear', [ElectronicsStoreController::class, 'clearCompare'])->name('electronics.compare.clear');
 Route::get('/electronics/{shop:slug}/compare', [ElectronicsStoreController::class, 'compare'])->name('electronics.compare');
@@ -180,6 +183,8 @@ Route::get('/display/shop/{shop}', [ScreenController::class, 'shopDisplay'])->na
 Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::get('/push-notifications', [PushNotificationController::class, 'index'])->name('push-notifications.index');
     Route::post('/push-notifications', [PushNotificationController::class, 'send'])->name('push-notifications.send');
+    Route::get('/shops/{shop}/salon-appointments', [SalonAppointmentController::class, 'index'])->name('salon-appointments.index');
+    Route::patch('/shops/{shop}/salon-appointments/{appointment}/status', [SalonAppointmentController::class, 'status'])->name('salon-appointments.status');
     Route::get('/shops/{shop}/real-estate', [ModularServiceDashboardController::class, 'index'])->name('real-estate.dashboard');
     Route::get('/shops/{shop}/real-estate/categories/create', [ModularServiceDashboardController::class, 'createCategory'])->name('real-estate.dashboard.categories.create');
     Route::post('/shops/{shop}/real-estate/categories', [ModularServiceDashboardController::class, 'storeCategory'])->name('real-estate.dashboard.categories.store');

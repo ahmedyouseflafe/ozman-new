@@ -391,6 +391,7 @@
         : null;
     $restaurantNavShop = $catalogNavShop?->catalog_type === 'restaurant' ? $catalogNavShop : null;
     $realEstateNavShop = $catalogNavShop?->catalog_type === 'real_estate' ? $catalogNavShop : null;
+    $cosmeticsNavShop = $catalogNavShop?->catalog_type === 'cosmetics' ? $catalogNavShop : null;
     $catalogTerms = $catalogNavShop?->catalogTerms() ?? config('catalog_terminology.general', []);
     $catalogItemsLabel = $catalogTerms['item_plural'] ?? 'المنتجات';
     $catalogCategoriesLabel = $catalogTerms['category_plural'] ?? 'الفئات';
@@ -574,6 +575,12 @@
              <i class="ti ti-building-community" aria-hidden="true"></i>
              إدارة الخدمات والطلبات
         </a>
+        @elseif($cosmeticsNavShop && $canSee(['salon-appointments.index']))
+        <a href="{{ route('salon-appointments.index', $cosmeticsNavShop) }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('salon-appointments.*') ? 'active' : '' }}">
+             <i class="ti ti-calendar-heart" aria-hidden="true"></i>
+             حجوزات الصالون
+        </a>
         @elseif($canSee(['front-orders.index']))
         <a href="{{ route('front-orders.index') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('front-orders.index') ? 'active' : '' }}">
@@ -704,7 +711,7 @@
 @php
     $mobileNavCount = 1
         + ($canSee(['dashboard']) ? 1 : 0)
-        + ((($restaurantNavShop && $canSee(['restaurant.dashboard'])) || ($realEstateNavShop && $canSee(['real-estate.dashboard'])) || $canSee(['front-orders.index'])) ? 1 : 0)
+        + ((($restaurantNavShop && $canSee(['restaurant.dashboard'])) || ($realEstateNavShop && $canSee(['real-estate.dashboard'])) || ($cosmeticsNavShop && $canSee(['salon-appointments.index'])) || $canSee(['front-orders.index'])) ? 1 : 0)
         + ($canSee(['products']) ? 1 : 0)
         + ($canSee(['products.preview']) ? 1 : 0);
 @endphp
@@ -725,6 +732,11 @@
         <a href="{{ route('real-estate.dashboard', $realEstateNavShop) }}" class="admin-mobile-nav-item {{ request()->routeIs('real-estate.dashboard*') ? 'active' : '' }}">
             <i class="ti ti-building-community" aria-hidden="true"></i>
             الخدمات
+        </a>
+    @elseif($cosmeticsNavShop && $canSee(['salon-appointments.index']))
+        <a href="{{ route('salon-appointments.index', $cosmeticsNavShop) }}" class="admin-mobile-nav-item {{ request()->routeIs('salon-appointments.*') ? 'active' : '' }}">
+            <i class="ti ti-calendar-heart" aria-hidden="true"></i>
+            الحجوزات
         </a>
     @elseif($canSee(['front-orders.index']))
         <a href="{{ route('front-orders.index') }}" class="admin-mobile-nav-item {{ request()->routeIs('front-orders.index') ? 'active' : '' }}">

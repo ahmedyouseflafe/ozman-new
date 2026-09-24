@@ -168,6 +168,11 @@ class Shop extends Model
         return $this->hasMany(RewardWheel::class);
     }
 
+    public function salonAppointments(): HasMany
+    {
+        return $this->hasMany(SalonAppointment::class);
+    }
+
     public function realEstateProperties(): HasMany
     {
         return $this->hasMany(RealEstateProperty::class);
