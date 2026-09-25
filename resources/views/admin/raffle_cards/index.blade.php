@@ -55,6 +55,27 @@
         .file-card i { color:var(--primary); font-size:18px; filter:drop-shadow(0 0 8px rgba(0,229,255,.45)); }
         .file-card span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         input:focus { border-color:var(--primary); box-shadow:0 0 18px rgba(0,229,255,.22); }
+        .booklet-panel { overflow:visible; }
+        .booklet-intro { color:var(--muted); font-weight:800; line-height:1.8; }
+        .booklet-form { display:grid; gap:16px; }
+        .booklet-top { display:grid; grid-template-columns:minmax(220px,.78fr) minmax(0,1.22fr); gap:14px; align-items:stretch; }
+        .booklet-range-preview { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:15px 18px; border:1px solid rgba(0,229,255,.25); border-radius:18px; background:linear-gradient(135deg,rgba(0,229,255,.1),rgba(112,0,255,.1)); }
+        .booklet-range-preview span { color:var(--muted); font-size:12px; font-weight:900; }
+        .booklet-range-preview strong { display:block; margin-top:4px; color:var(--primary); direction:ltr; font-size:22px; letter-spacing:1px; text-shadow:0 0 16px rgba(0,229,255,.42); }
+        .booklet-range-preview i { color:var(--primary); font-size:30px; filter:drop-shadow(0 0 10px rgba(0,229,255,.5)); }
+        .booklet-gifts-head { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+        .booklet-gifts-head h3 { font-size:16px; font-weight:900; }
+        .booklet-gifts-head p { margin-top:4px; color:var(--muted); font-size:12px; font-weight:800; }
+        .booklet-total { min-width:126px; padding:8px 12px; border:1px solid rgba(0,229,255,.28); border-radius:999px; background:rgba(0,229,255,.08); color:var(--primary); font-size:12px; font-weight:900; text-align:center; }
+        .booklet-total.is-over { color:#ff91a0; border-color:rgba(255,77,104,.45); background:rgba(255,77,104,.1); }
+        .booklet-gifts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+        .booklet-gift-row { display:grid; grid-template-columns:46px minmax(0,1fr) 92px minmax(130px,.9fr); gap:10px; align-items:end; padding:13px; border:1px solid rgba(255,255,255,.1); border-radius:19px; background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(0,0,0,.18)); }
+        .booklet-gift-index { width:38px; height:38px; display:grid; place-items:center; align-self:center; border:1px solid rgba(0,229,255,.3); border-radius:50%; background:rgba(0,229,255,.08); color:var(--primary); font-size:11px; font-weight:900; direction:ltr; }
+        .booklet-gift-row label { margin-bottom:0; }
+        .booklet-gift-row .file-card { min-height:44px; padding:0 10px; font-size:11px; }
+        .booklet-gift-row .file-card span { max-width:105px; }
+        .booklet-note { padding:12px 15px; border:1px solid rgba(255,214,10,.22); border-radius:15px; background:rgba(255,214,10,.06); color:#ffe88a; font-size:12px; font-weight:800; line-height:1.7; }
+        .booklet-note i { margin-inline-end:6px; }
         .check-row { display:flex; align-items:center; gap:9px; min-height:46px; color:#fff; font-weight:900; }
         .check-row input { width:20px; min-height:20px; accent-color:var(--green); }
         .btn { border:0; min-height:46px; padding:0 20px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; gap:8px; font:inherit; font-weight:900; text-decoration:none; cursor:pointer; white-space:nowrap; }
@@ -134,8 +155,9 @@
         .live-draw-info strong { color:#fff; }
         .live-draw-error { color:#ff91a0; font-weight:900; margin-top:18px; }
         @keyframes drawPulse { 0%{ transform:scale(.985); opacity:.82; } 100%{ transform:scale(1.015); opacity:1; } }
-        @media(max-width:1100px){ .grid,.form-grid{grid-template-columns:1fr;} .edit-box{grid-template-columns:1fr;} }
+        @media(max-width:1100px){ .grid,.form-grid{grid-template-columns:1fr;} .booklet-gifts{grid-template-columns:1fr;} .edit-box{grid-template-columns:1fr;} }
         @media(max-width:900px){ .main{margin-right:0;} .content{padding:20px 14px 90px;} .page-head,.panel-head{flex-direction:column; align-items:stretch;} .live-actions{width:100%;} .live-actions .btn{flex:1 1 180px;min-width:0;} h1{font-size:28px;} }
+        @media(max-width:640px){ .booklet-top{grid-template-columns:1fr;} .booklet-gift-row{grid-template-columns:38px minmax(0,1fr) 82px;}.booklet-gift-row .booklet-image-field{grid-column:2 / -1;}.booklet-gifts-head{align-items:flex-start;flex-direction:column;}.booklet-total{min-width:0;} }
         @media(max-width:420px){ .live-actions{display:grid;grid-template-columns:1fr;} .live-actions .btn{width:100%;white-space:normal;} }
     </style>
 </head>
@@ -234,42 +256,56 @@
             <section class="panel">
                 <div class="panel-head">
                     <div>
-                        <div class="panel-title"><i class="ti ti-wand"></i> إضافة بطاقات رابحة عشوائيًا</div>
-                        <div class="muted">حدد النطاق وعدد الهدايا، وسيختار النظام أرقامًا غير مستخدمة بشكل عشوائي.</div>
+                        <div class="panel-title"><i class="ti ti-notebook"></i> إنشاء دفتر بطاقات الربح</div>
+                        <div class="booklet-intro">أدخل أول رقم فقط؛ الدفتر يحتوي دائمًا على 48 بطاقة متتالية، ثم اختر الهدايا وكميتها وارفع صورة كل هدية.</div>
                     </div>
                 </div>
-                <form action="{{ route('raffle-cards.random-bulk') }}" method="POST" enctype="multipart/form-data" class="form-grid">
+                @php $bookletGiftOptions = ['مدالية مفاتيح', 'معطر سيارة', 'قداحة', 'سماعة ايربودز']; @endphp
+                <form action="{{ route('raffle-cards.random-bulk') }}" method="POST" enctype="multipart/form-data" class="booklet-form" id="raffleBookletForm">
                     @csrf
-                    <div>
-                        <label for="bulk_prize_title">اسم الهدية</label>
-                        <input id="bulk_prize_title" name="prize_title" value="{{ old('prize_title') }}" placeholder="مثال: سماعة بلوتوث" required>
+                    <div class="booklet-top">
+                        <div>
+                            <label for="booklet_start_number">رقم أول بطاقة في الدفتر</label>
+                            <input id="booklet_start_number" name="booklet_start_number" value="{{ old('booklet_start_number') }}" maxlength="6" pattern="\d{6}" inputmode="numeric" placeholder="000001" dir="ltr" required data-booklet-start>
+                        </div>
+                        <div class="booklet-range-preview" aria-live="polite">
+                            <div><span>دفتر ثابت — 48 بطاقة</span><strong id="bookletRangePreview">أدخل رقم البداية</strong></div>
+                            <i class="ti ti-tickets" aria-hidden="true"></i>
+                        </div>
                     </div>
-                    <div>
-                        <label for="bulk_prize_count">عدد الهدايا</label>
-                        <input id="bulk_prize_count" name="prize_count" type="number" value="{{ old('prize_count') }}" min="1" max="10000" placeholder="مثال: 20" required>
+
+                    <div class="booklet-gifts-head">
+                        <div><h3>الهدايا داخل الدفتر</h3><p>اختر الهدية والكمية وارفع صورتها. التوزيع يكون عشوائيًا بين بطاقات الدفتر.</p></div>
+                        <span class="booklet-total" id="bookletGiftTotal">0 هدية من 48</span>
                     </div>
-                    <div>
-                        <label for="bulk_from_number">رقم البطاقة من</label>
-                        <input id="bulk_from_number" name="from_number" value="{{ old('from_number') }}" maxlength="6" pattern="\d{6}" inputmode="numeric" placeholder="000001" dir="ltr" required>
+                    <div class="booklet-gifts">
+                        @foreach(range(0, 3) as $giftIndex)
+                            <article class="booklet-gift-row">
+                                <span class="booklet-gift-index">{{ str_pad((string) ($giftIndex + 1), 2, '0', STR_PAD_LEFT) }}</span>
+                                <div>
+                                    <label for="booklet_gift_title_{{ $giftIndex }}">نوع الهدية</label>
+                                    <select id="booklet_gift_title_{{ $giftIndex }}" name="gifts[{{ $giftIndex }}][title]" data-gift-select>
+                                        <option value="">بدون هدية</option>
+                                        @foreach($bookletGiftOptions as $giftOption)
+                                            <option value="{{ $giftOption }}" @selected(old("gifts.{$giftIndex}.title") === $giftOption)>{{ $giftOption }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="booklet_gift_count_{{ $giftIndex }}">العدد</label>
+                                    <input id="booklet_gift_count_{{ $giftIndex }}" name="gifts[{{ $giftIndex }}][count]" type="number" min="0" max="48" value="{{ old("gifts.{$giftIndex}.count", 0) }}" inputmode="numeric" data-gift-count>
+                                </div>
+                                <div class="booklet-image-field">
+                                    <label for="booklet_gift_image_{{ $giftIndex }}">صورة الهدية</label>
+                                    <label class="file-card" for="booklet_gift_image_{{ $giftIndex }}"><span data-file-label>ارفع صورة</span><i class="ti ti-photo-up"></i></label>
+                                    <input class="file-input" id="booklet_gift_image_{{ $giftIndex }}" name="gifts[{{ $giftIndex }}][image]" type="file" accept="image/*" data-file-input>
+                                </div>
+                            </article>
+                        @endforeach
                     </div>
-                    <div>
-                        <label for="bulk_to_number">رقم البطاقة إلى</label>
-                        <input id="bulk_to_number" name="to_number" value="{{ old('to_number') }}" maxlength="6" pattern="\d{6}" inputmode="numeric" placeholder="999999" dir="ltr" required>
-                    </div>
-                    <div>
-                        <label for="bulk_prize_image">صورة الهدية</label>
-                        <label class="file-card" for="bulk_prize_image">
-                            <span data-file-label>اختر صورة الهدية</span>
-                            <i class="ti ti-photo-up"></i>
-                        </label>
-                        <input class="file-input" id="bulk_prize_image" name="prize_image" type="file" accept="image/*" data-file-input>
-                    </div>
-                    <label class="check-row">
-                        <input type="checkbox" name="is_active" value="1" checked>
-                        البطاقات نشطة
-                    </label>
-                    <button class="btn btn-primary" type="submit" style="grid-column:1 / -1">
-                        <i class="ti ti-sparkles"></i> إنشاء الأرقام الرابحة عشوائيًا
+                    <p class="booklet-note"><i class="ti ti-info-circle"></i> البطاقات المتبقية بعد الهدايا المختارة تدخل في السحب العادي. لا يمكن تكرار أو تداخل دفتر مع دفتر سابق.</p>
+                    <button class="btn btn-primary" type="submit">
+                        <i class="ti ti-sparkles"></i> إنشاء دفتر الـ48 بطاقة وتوزيع الهدايا
                     </button>
                 </form>
             </section>
@@ -570,12 +606,36 @@
 
         document.querySelectorAll('[data-file-input]').forEach((input) => {
             input.addEventListener('change', () => {
-                const label = input.closest('div, form')?.querySelector(`label[for="${input.id}"] [data-file-label]`);
+                const label = document.querySelector(`label[for="${input.id}"] [data-file-label]`);
                 if (label) {
-                    label.textContent = input.files?.[0]?.name || 'اختر صورة الجائزة';
+                    label.textContent = input.files?.[0]?.name || 'ارفع صورة';
                 }
             });
         });
+
+        const bookletStart = document.querySelector('[data-booklet-start]');
+        const bookletRangePreview = document.getElementById('bookletRangePreview');
+        const bookletGiftTotal = document.getElementById('bookletGiftTotal');
+        const bookletGiftCounts = Array.from(document.querySelectorAll('[data-gift-count]'));
+
+        function updateBookletPreview() {
+            const start = String(bookletStart?.value || '').replace(/\D/g, '');
+            if (bookletRangePreview) {
+                bookletRangePreview.textContent = start.length === 6
+                    ? `${start} — ${String(Number(start) + 47).padStart(6, '0')}`
+                    : 'أدخل رقم البداية';
+            }
+
+            const total = bookletGiftCounts.reduce((sum, input) => sum + Math.max(0, Number(input.value) || 0), 0);
+            if (bookletGiftTotal) {
+                bookletGiftTotal.textContent = `${total} هدية من 48`;
+                bookletGiftTotal.classList.toggle('is-over', total > 48);
+            }
+        }
+
+        bookletStart?.addEventListener('input', updateBookletPreview);
+        bookletGiftCounts.forEach((input) => input.addEventListener('input', updateBookletPreview));
+        updateBookletPreview();
 
         const liveDrawPickBtn = document.getElementById('liveDrawPickBtn');
         const liveDrawModal = document.getElementById('liveDrawModal');

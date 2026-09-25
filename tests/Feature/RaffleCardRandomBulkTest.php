@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\RaffleCard;
+use App\Models\RaffleBooklet;
 use App\Models\RaffleEntry;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class RaffleCardRandomBulkTest extends TestCase
@@ -221,6 +224,64 @@ class RaffleCardRandomBulkTest extends TestCase
 
         $this->assertSame(['190501', '190503', '190505'], array_slice($firstPageNumbers[1], 0, 3));
         $this->assertSame(['190502', '190504', '190506'], array_slice($secondPageNumbers[1], 0, 3));
+    }
+
+    public function test_admin_can_create_a_forty_eight_card_booklet_and_randomly_distribute_selected_gifts(): void
+    {
+        Storage::fake('public');
+        $admin = $this->admin();
+
+        $response = $this->actingAs($admin)->post(route('raffle-cards.random-bulk'), [
+            'booklet_start_number' => '410000',
+            'gifts' => [
+                ['title' => 'مدالية مفاتيح', 'count' => 3, 'image' => UploadedFile::fake()->image('keychain.jpg')],
+                ['title' => 'معطر سيارة', 'count' => 2, 'image' => UploadedFile::fake()->image('freshener.jpg')],
+                ['title' => 'قداحة', 'count' => 1, 'image' => UploadedFile::fake()->image('lighter.jpg')],
+                ['title' => '', 'count' => 0],
+            ],
+        ]);
+
+        $response->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('raffle_booklets', [
+            'start_card_number' => '410000',
+            'end_card_number' => '410047',
+            'cards_count' => 48,
+            'winning_cards_count' => 6,
+            'created_by' => $admin->id,
+        ]);
+
+        $cards = RaffleCard::query()->whereBetween('card_number', ['410000', '410047'])->get();
+        $this->assertCount(6, $cards);
+        $this->assertSame(3, $cards->where('prize_title', 'مدالية مفاتيح')->count());
+        $this->assertSame(2, $cards->where('prize_title', 'معطر سيارة')->count());
+        $this->assertSame(1, $cards->where('prize_title', 'قداحة')->count());
+        $this->assertTrue($cards->every(fn (RaffleCard $card) => filled($card->prize_image)));
+        $this->assertSame(1, RaffleBooklet::count());
+    }
+
+    public function test_booklets_cannot_overlap_an_existing_booklet(): void
+    {
+        RaffleBooklet::create([
+            'start_card_number' => '420000',
+            'end_card_number' => '420047',
+            'cards_count' => 48,
+            'winning_cards_count' => 1,
+        ]);
+
+        $response = $this->actingAs($this->admin())
+            ->from(route('raffle-cards.index'))
+            ->post(route('raffle-cards.random-bulk'), [
+                'booklet_start_number' => '420020',
+                'gifts' => [
+                    ['title' => 'سماعة ايربودز', 'count' => 1, 'image' => UploadedFile::fake()->image('earbuds.jpg')],
+                    ['title' => '', 'count' => 0],
+                    ['title' => '', 'count' => 0],
+                    ['title' => '', 'count' => 0],
+                ],
+            ]);
+
+        $response->assertRedirect(route('raffle-cards.index'));
+        $response->assertSessionHasErrors('booklet_start_number');
     }
 
     public function test_admin_can_bulk_delete_selected_winning_cards_only(): void

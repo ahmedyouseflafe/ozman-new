@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Shop;
 use App\Models\RaffleCard;
 use App\Models\RaffleEntry;
+use App\Models\RaffleBooklet;
 use App\Models\VisitorRegistration;
 use App\Rules\ValidPhoneNumber;
 use ArPHP\I18N\Arabic;
@@ -290,6 +291,10 @@ class RaffleCardController extends Controller
     {
         abort_unless($this->canAccessCurrentRoute(), 403);
 
+        if ($request->has('booklet_start_number') || $request->has('gifts')) {
+            return $this->storeBooklet($request);
+        }
+
         $data = $request->validate([
             'from_number' => ['required', 'digits:6'],
             'to_number' => ['required', 'digits:6'],
@@ -385,6 +390,144 @@ class RaffleCardController extends Controller
         return back()->with(
             'status',
             "تمت إضافة {$requestedCount} بطاقة رابحة بأرقام عشوائية من {$data['from_number']} إلى {$data['to_number']}."
+        );
+    }
+
+    private function storeBooklet(Request $request): RedirectResponse
+    {
+        $giftOptions = ['مدالية مفاتيح', 'معطر سيارة', 'قداحة', 'سماعة ايربودز'];
+        $data = $request->validate([
+            'booklet_start_number' => ['required', 'digits:6'],
+            'gifts' => ['required', 'array', 'size:4'],
+            'gifts.*.title' => ['nullable', 'string', Rule::in($giftOptions)],
+            'gifts.*.count' => ['nullable', 'integer', 'min:0', 'max:48'],
+            'gifts.*.image' => ['nullable', 'image', 'max:4096'],
+        ]);
+
+        $from = (int) $data['booklet_start_number'];
+        $to = $from + 47;
+        if ($to > 999999) {
+            throw ValidationException::withMessages([
+                'booklet_start_number' => 'رقم البداية لا يترك مساحة لدفتر كامل من 48 بطاقة.',
+            ]);
+        }
+
+        $fromNumber = str_pad((string) $from, 6, '0', STR_PAD_LEFT);
+        $toNumber = str_pad((string) $to, 6, '0', STR_PAD_LEFT);
+        $errors = [];
+        $gifts = [];
+        $seenTitles = [];
+
+        foreach ($data['gifts'] as $index => $gift) {
+            $title = trim((string) ($gift['title'] ?? ''));
+            $count = (int) ($gift['count'] ?? 0);
+            $image = $request->file("gifts.{$index}.image");
+
+            if ($title === '' && $count === 0 && ! $image) {
+                continue;
+            }
+
+            if ($title === '') {
+                $errors["gifts.{$index}.title"] = 'اختر نوع الهدية لهذا السطر.';
+            }
+            if ($count < 1) {
+                $errors["gifts.{$index}.count"] = 'أدخل عددًا واحدًا على الأقل للهدية المختارة.';
+            }
+            if (! $image) {
+                $errors["gifts.{$index}.image"] = 'ارفع صورة الهدية المختارة.';
+            }
+            if ($title !== '' && isset($seenTitles[$title])) {
+                $errors["gifts.{$index}.title"] = 'اختر كل نوع هدية مرة واحدة فقط.';
+            }
+
+            $seenTitles[$title] = true;
+            $gifts[] = compact('title', 'count', 'image');
+        }
+
+        if (empty($gifts)) {
+            $errors['gifts'] = 'اختر هدية واحدة على الأقل للدفتر.';
+        }
+
+        $giftsCount = array_sum(array_column($gifts, 'count'));
+        if ($giftsCount > 48) {
+            $errors['gifts'] = 'مجموع الهدايا لا يمكن أن يتجاوز 48 بطاقة في الدفتر الواحد.';
+        }
+
+        if ($errors) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        $hasOverlappingBooklet = RaffleBooklet::query()
+            ->where('start_card_number', '<=', $toNumber)
+            ->where('end_card_number', '>=', $fromNumber)
+            ->exists();
+        $hasExistingNumbers = RaffleCard::query()
+            ->whereBetween('card_number', [$fromNumber, $toNumber])
+            ->exists()
+            || RaffleEntry::query()
+                ->whereBetween('card_number', [$fromNumber, $toNumber])
+                ->exists();
+
+        if ($hasOverlappingBooklet || $hasExistingNumbers) {
+            throw ValidationException::withMessages([
+                'booklet_start_number' => "يوجد دفتر أو رقم مستخدم سابقًا داخل النطاق {$fromNumber} إلى {$toNumber}. اختر رقم بداية آخر.",
+            ]);
+        }
+
+        $storedImages = [];
+        try {
+            foreach ($gifts as $index => $gift) {
+                $storedImages[$index] = 'storage/' . $gift['image']->store('raffle/prizes', 'public');
+                $gifts[$index]['image_path'] = $storedImages[$index];
+            }
+
+            DB::transaction(function () use ($from, $to, $fromNumber, $toNumber, $gifts, $giftsCount) {
+                RaffleBooklet::create([
+                    'start_card_number' => $fromNumber,
+                    'end_card_number' => $toNumber,
+                    'cards_count' => 48,
+                    'winning_cards_count' => $giftsCount,
+                    'is_active' => true,
+                    'created_by' => Auth::id(),
+                ]);
+
+                $cardNumbers = range($from, $to);
+                shuffle($cardNumbers);
+                $prizes = [];
+                foreach ($gifts as $gift) {
+                    for ($count = 0; $count < $gift['count']; $count++) {
+                        $prizes[] = $gift;
+                    }
+                }
+
+                $now = now();
+                $cards = collect($prizes)->values()->map(function (array $gift, int $index) use ($cardNumbers, $now) {
+                    return [
+                        'card_number' => str_pad((string) $cardNumbers[$index], 6, '0', STR_PAD_LEFT),
+                        'prize_title' => $gift['title'],
+                        'prize_image' => $gift['image_path'],
+                        'is_active' => true,
+                        'created_by' => Auth::id(),
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                })->all();
+
+                foreach (array_chunk($cards, 500) as $chunk) {
+                    RaffleCard::insert($chunk);
+                }
+            });
+        } catch (\Throwable $exception) {
+            foreach ($storedImages as $path) {
+                $this->deleteUpload($path);
+            }
+
+            throw $exception;
+        }
+
+        return back()->with(
+            'status',
+            "تم إنشاء دفتر من 48 بطاقة ({$fromNumber} إلى {$toNumber}) وتوزيع {$giftsCount} هدية عشوائيًا بداخله."
         );
     }
 

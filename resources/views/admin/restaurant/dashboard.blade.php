@@ -554,6 +554,84 @@
             padding: 6px 10px
         }
 
+        .preparation-picker {
+            display: grid;
+            gap: 9px;
+            min-width: 0;
+            margin: 0;
+            padding: 11px;
+            border: 1px solid rgba(8, 220, 244, .2);
+            border-radius: 16px;
+            background: linear-gradient(145deg, rgba(8, 220, 244, .07), rgba(8, 13, 19, .72));
+        }
+
+        .preparation-picker legend {
+            padding: 0 4px;
+            color: #dce9f0;
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+        .preparation-picker legend i {
+            margin-inline-end: 4px;
+            color: var(--cyan);
+        }
+
+        .preparation-options {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 7px;
+        }
+
+        .preparation-choice {
+            display: grid;
+            place-content: center;
+            gap: 1px;
+            aspect-ratio: 1;
+            min-width: 0;
+            padding: 3px;
+            border: 1px solid rgba(139, 160, 179, .22);
+            border-radius: 50%;
+            background: rgba(3, 8, 13, .82);
+            color: #94a5b5;
+            cursor: pointer;
+            transition: transform .18s ease, color .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+        }
+
+        .preparation-choice b {
+            font-size: 13px;
+            line-height: 1;
+        }
+
+        .preparation-choice small {
+            color: inherit;
+            font-size: 8px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .preparation-choice:not(:disabled):hover {
+            transform: translateY(-2px) scale(1.04);
+            color: #effcff;
+            border-color: var(--cyan);
+        }
+
+        .preparation-choice:focus-visible {
+            outline: 3px solid var(--cyan);
+            outline-offset: 2px;
+        }
+
+        .preparation-choice.is-selected {
+            color: #06212a;
+            border-color: var(--cyan);
+            background: var(--cyan);
+            box-shadow: 0 0 15px rgba(8, 220, 244, .32);
+        }
+
+        .preparation-choice:disabled {
+            cursor: wait;
+        }
+
         .status-form .btn {
             grid-column: 1/-1;
             min-height: 40px;
@@ -644,6 +722,7 @@
         }
 
         .status-form .status-field,
+        .status-form .preparation-picker,
         .status-form .status-help,
         .status-form .status-save,
         .status-feedback {
@@ -925,6 +1004,10 @@
                 height: 56px;
                 flex-basis: 56px;
                 font-size: 9px
+            }
+
+            .orders-wrap .preparation-options {
+                grid-template-columns: repeat(5, minmax(0, 1fr));
             }
         }
 
@@ -1420,11 +1503,24 @@
                 } else if (orderId) window.location.href = `${dashboardUrl}#restaurant-order-${orderId}`;
             });
 
-            body.addEventListener('keydown', event => {
-                if (event.key !== 'Enter' || event.target.name !== 'estimated_preparation_minutes') return;
-                event.preventDefault();
-                event.target.closest('form')?.requestSubmit(event.target.closest('form').querySelector(
-                    '.status-save'));
+            body.addEventListener('click', event => {
+                const choice = event.target.closest('.preparation-choice');
+                if (!choice || choice.disabled) return;
+
+                const form = choice.closest('.status-form');
+                const minutes = Number(choice.dataset.preparationMinutes);
+                const value = form?.querySelector('input[name="estimated_preparation_minutes"]');
+                const saveButton = form?.querySelector('.status-save');
+                if (!form || !value || !saveButton || !Number.isInteger(minutes)) return;
+
+                value.value = String(minutes);
+                form.querySelectorAll('.preparation-choice').forEach(button => {
+                    const selected = button === choice;
+                    button.classList.toggle('is-selected', selected);
+                    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+                });
+
+                form.requestSubmit(saveButton);
             });
 
             body.addEventListener('submit', async event => {

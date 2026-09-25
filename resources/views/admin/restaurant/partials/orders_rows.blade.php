@@ -52,13 +52,21 @@
                                 @disabled(!in_array($key, $allowedTransitions, true))>{{ $label }}</button>
                         @endforeach
                     </div>
-                    <label class="status-field">
-                        <span><i class="ti ti-clock-hour-4"></i> وقت التجهيز</span>
-                        <input class="field" name="estimated_preparation_minutes" type="number" min="1" max="1440"
-                            value="{{ $order->estimated_preparation_minutes }}" placeholder="مثال: 25" inputmode="numeric"
-                            aria-label="مدة تجهيز الطلب {{ $order->order_number }} بالدقائق">
-                    </label>
-                    <small class="status-help">الدقائق التي ستظهر للعميل في شاشة تتبّع طلبه.</small>
+                    <fieldset class="preparation-picker" aria-describedby="preparation-help-{{ $order->id }}">
+                        <legend><i class="ti ti-clock-hour-4" aria-hidden="true"></i> وقت التجهيز</legend>
+                        <input type="hidden" name="estimated_preparation_minutes" value="{{ $order->estimated_preparation_minutes }}">
+                        <div class="preparation-options" role="group" aria-label="اختر وقت تجهيز الطلب {{ $order->order_number }}">
+                            @foreach(range(10, 60, 5) as $minutes)
+                                <button type="button"
+                                    class="preparation-choice {{ (int) $order->estimated_preparation_minutes === $minutes ? 'is-selected' : '' }}"
+                                    data-preparation-minutes="{{ $minutes }}"
+                                    aria-pressed="{{ (int) $order->estimated_preparation_minutes === $minutes ? 'true' : 'false' }}">
+                                    <b>{{ $minutes }}</b><small>د</small>
+                                </button>
+                            @endforeach
+                        </div>
+                    </fieldset>
+                    <small class="status-help" id="preparation-help-{{ $order->id }}">اختَر المدة من 10 إلى 60 دقيقة. يُحفظ اختيارك فورًا ويصل للعميل.</small>
                     <button class="btn btn-primary status-save" type="submit" name="status" value="{{ $order->status }}"><i class="ti ti-device-floppy"></i> حفظ وإشعار العميل</button>
                     <span class="status-feedback" role="status" aria-live="polite"></span>
                 </form>
