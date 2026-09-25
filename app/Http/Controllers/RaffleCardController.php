@@ -457,20 +457,35 @@ class RaffleCardController extends Controller
             throw ValidationException::withMessages($errors);
         }
 
-        $hasOverlappingBooklet = RaffleBooklet::query()
+        $overlappingBooklet = RaffleBooklet::query()
             ->where('start_card_number', '<=', $toNumber)
             ->where('end_card_number', '>=', $fromNumber)
-            ->exists();
-        $hasExistingNumbers = RaffleCard::query()
+            ->first(['start_card_number', 'end_card_number']);
+        $winningNumbers = RaffleCard::query()
             ->whereBetween('card_number', [$fromNumber, $toNumber])
-            ->exists()
-            || RaffleEntry::query()
-                ->whereBetween('card_number', [$fromNumber, $toNumber])
-                ->exists();
+            ->orderBy('card_number')
+            ->pluck('card_number');
+        $liveDrawNumbers = RaffleEntry::query()
+            ->whereBetween('card_number', [$fromNumber, $toNumber])
+            ->orderBy('card_number')
+            ->pluck('card_number');
 
-        if ($hasOverlappingBooklet || $hasExistingNumbers) {
+        if ($overlappingBooklet || $winningNumbers->isNotEmpty() || $liveDrawNumbers->isNotEmpty()) {
+            $reasons = [];
+            if ($overlappingBooklet) {
+                $reasons[] = "يوجد دفتر سابق من {$overlappingBooklet->start_card_number} إلى {$overlappingBooklet->end_card_number}";
+            }
+            if ($winningNumbers->isNotEmpty()) {
+                $reasons[] = 'بطاقات رابحة موجودة: ' . $winningNumbers->take(5)->implode('، ')
+                    . ($winningNumbers->count() > 5 ? '…' : '');
+            }
+            if ($liveDrawNumbers->isNotEmpty()) {
+                $reasons[] = 'بطاقات دخلت سحب البث المباشر: ' . $liveDrawNumbers->take(5)->implode('، ')
+                    . ($liveDrawNumbers->count() > 5 ? '…' : '');
+            }
+
             throw ValidationException::withMessages([
-                'booklet_start_number' => "يوجد دفتر أو رقم مستخدم سابقًا داخل النطاق {$fromNumber} إلى {$toNumber}. اختر رقم بداية آخر.",
+                'booklet_start_number' => 'لا يمكن استخدام هذا الدفتر: ' . implode(' — ', $reasons) . '. اختر رقم بداية آخر.',
             ]);
         }
 
