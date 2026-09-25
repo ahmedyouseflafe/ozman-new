@@ -284,6 +284,29 @@ class RaffleCardRandomBulkTest extends TestCase
         $response->assertSessionHasErrors('booklet_start_number');
     }
 
+    public function test_booklet_creation_ignores_numbers_that_only_exist_in_live_draw_entries(): void
+    {
+        Storage::fake('public');
+        RaffleEntry::create([
+            'card_number' => '430012',
+            'outcome' => RaffleEntry::OUTCOME_LIVE_DRAW,
+        ]);
+
+        $response = $this->actingAs($this->admin())->post(route('raffle-cards.random-bulk'), [
+            'booklet_start_number' => '430000',
+            'gifts' => [
+                ['title' => 'معطر سيارة', 'count' => 1, 'image' => UploadedFile::fake()->image('freshener.jpg')],
+                ['title' => '', 'count' => 0],
+                ['title' => '', 'count' => 0],
+                ['title' => '', 'count' => 0],
+            ],
+        ]);
+
+        $response->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('raffle_booklets', ['start_card_number' => '430000']);
+        $this->assertSame(1, RaffleCard::query()->whereBetween('card_number', ['430000', '430047'])->count());
+    }
+
     public function test_admin_can_bulk_delete_selected_winning_cards_only(): void
     {
         $admin = $this->admin();

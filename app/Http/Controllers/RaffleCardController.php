@@ -465,12 +465,9 @@ class RaffleCardController extends Controller
             ->whereBetween('card_number', [$fromNumber, $toNumber])
             ->orderBy('card_number')
             ->pluck('card_number');
-        $liveDrawNumbers = RaffleEntry::query()
-            ->whereBetween('card_number', [$fromNumber, $toNumber])
-            ->orderBy('card_number')
-            ->pluck('card_number');
-
-        if ($overlappingBooklet || $winningNumbers->isNotEmpty() || $liveDrawNumbers->isNotEmpty()) {
+        // Live-draw entries are intentionally not treated as blocked numbers:
+        // a new physical booklet may reuse them, as requested by the operator.
+        if ($overlappingBooklet || $winningNumbers->isNotEmpty()) {
             $reasons = [];
             if ($overlappingBooklet) {
                 $reasons[] = "يوجد دفتر سابق من {$overlappingBooklet->start_card_number} إلى {$overlappingBooklet->end_card_number}";
@@ -479,11 +476,6 @@ class RaffleCardController extends Controller
                 $reasons[] = 'بطاقات رابحة موجودة: ' . $winningNumbers->take(5)->implode('، ')
                     . ($winningNumbers->count() > 5 ? '…' : '');
             }
-            if ($liveDrawNumbers->isNotEmpty()) {
-                $reasons[] = 'بطاقات دخلت سحب البث المباشر: ' . $liveDrawNumbers->take(5)->implode('، ')
-                    . ($liveDrawNumbers->count() > 5 ? '…' : '');
-            }
-
             throw ValidationException::withMessages([
                 'booklet_start_number' => 'لا يمكن استخدام هذا الدفتر: ' . implode(' — ', $reasons) . '. اختر رقم بداية آخر.',
             ]);
