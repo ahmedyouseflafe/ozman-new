@@ -345,12 +345,24 @@
         const value = total();
         const rewardWheel = matchingWheel(value);
         const orderLink = $('beautyWhatsappOrder');
+        // Open this synchronously from the customer click. Opening a new tab only
+        // after awaiting the order request is blocked as a popup by many browsers.
+        const whatsappWindow = config.whatsapp ? window.open('', '_blank') : null;
+        if (whatsappWindow) {
+            whatsappWindow.opener = null;
+            whatsappWindow.document.title = 'جارٍ تجهيز طلب واتساب';
+            whatsappWindow.document.body.innerHTML = '<p style="font-family:Arial,sans-serif;padding:24px">جارٍ تجهيز طلبك وفتح واتساب…</p>';
+        }
         orderLink.style.pointerEvents = 'none';
         try {
             localStorage.setItem('beautyCustomer', JSON.stringify({name, whatsapp}));
             const order = await request(config.orderUrl, {shop_id: config.shopId, customer_name: name, customer_phone: whatsapp, customer_whatsapp: whatsapp, items: rewardCart.map(item => ({name: item.name, price: String(item.price), qty: item.qty})), subtotal: value, total: value, order_channel: 'whatsapp', visitor_type: 'customer', reward_wheel_id: rewardWheel?.id || null});
             const message = rewardCart.map(item => `• ${item.name} × ${item.qty} — ${format(item.price * item.qty)}`).join('\n');
-            if (config.whatsapp) window.open(`https://wa.me/${config.whatsapp}?text=${encodeURIComponent(`مرحباً، أود طلب المنتجات التالية من {{ $shop->name }}:\n${message}\n\nالمجموع: ${format(value)}`)}`, '_blank', 'noopener');
+            if (config.whatsapp) {
+                const whatsappUrl = `https://wa.me/${config.whatsapp}?text=${encodeURIComponent(`مرحباً، أود طلب المنتجات التالية من {{ $shop->name }}:\n${message}\n\nالمجموع: ${format(value)}`)}`;
+                if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.location.replace(whatsappUrl);
+                else window.location.assign(whatsappUrl);
+            }
             if (rewardWheel) {
                 orderContext = {orderId: order.order_id, wheel: rewardWheel};
                 renderWheel(rewardWheel);
@@ -359,7 +371,10 @@
                 $('closeBeautyCart')?.click();
                 openModal('beautyWheelModal');
             }
-        } catch (error) { alert(error.message); }
+        } catch (error) {
+            if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
+            alert(error.message);
+        }
         finally { orderLink.style.pointerEvents = ''; }
     });
 
