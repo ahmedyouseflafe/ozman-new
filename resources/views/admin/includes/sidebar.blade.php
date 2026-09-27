@@ -413,7 +413,8 @@
 
     $previewUrl = $previewDistributor
         ? route('front.distributor', $previewDistributor)
-        : route('products.preview', $previewShopId ? ['shop_id' => $previewShopId] : []);
+        : ($catalogNavShop?->publicUrl()
+            ?? route('products.preview', $previewShopId ? ['shop_id' => $previewShopId] : []));
 @endphp
 
 <div class="sidebar admin-neon-sidebar" id="admin-dashboard-sidebar">
@@ -566,10 +567,17 @@
 
         @if($restaurantNavShop && $canSee(['restaurant.dashboard']))
         <a href="{{ route('restaurant.dashboard', $restaurantNavShop) }}"
-             class="admin-sidebar-item nav-item {{ request()->routeIs('restaurant.*') ? 'active' : '' }}">
+             class="admin-sidebar-item nav-item {{ request()->routeIs('restaurant.dashboard') ? 'active' : '' }}">
              <i class="ti ti-tools-kitchen-2" aria-hidden="true"></i>
              إدارة المطعم والطلبات
         </a>
+        @if($canSee(['restaurant.tables.index']))
+        <a href="{{ route('restaurant.tables.index', $restaurantNavShop) }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('restaurant.tables.*') ? 'active' : '' }}">
+             <i class="ti ti-qrcode" aria-hidden="true"></i>
+             طاولات المطعم وQR
+        </a>
+        @endif
         @elseif($realEstateNavShop && $canSee(['real-estate.dashboard']))
         <a href="{{ route('real-estate.dashboard', $realEstateNavShop) }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('real-estate.dashboard*') ? 'active' : '' }}">

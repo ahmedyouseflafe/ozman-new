@@ -48,7 +48,6 @@ class RestaurantController extends Controller
 
         return view('admin.restaurant.dashboard', [
             'shop' => $shop,
-            'tables' => $shop->restaurantTables()->latest()->get(),
             'drivers' => $shop->restaurantDrivers()->with('user')->latest()->get(),
             'orders' => $ordersQuery
                 ->when(in_array($status, $allowedStatuses, true), fn($query) => $query->where('status', $status))
@@ -58,6 +57,17 @@ class RestaurantController extends Controller
             'selectedStatus' => $status,
             'selectedType' => $type,
             'latestOrderId' => $latestOrderId,
+        ]);
+    }
+
+    public function tables(Request $request, Shop $shop): View
+    {
+        $this->authorizeShop($request, $shop);
+        abort_unless($shop->catalog_type === 'restaurant', 404);
+
+        return view('admin.restaurant.tables', [
+            'shop' => $shop,
+            'tables' => $shop->restaurantTables()->latest()->get(),
         ]);
     }
 

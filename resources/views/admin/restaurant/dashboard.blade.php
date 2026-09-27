@@ -1135,6 +1135,9 @@
                         <a class="btn" href="{{ route('products', ['shop_id' => $shop->id]) }}"><i
                                 class="ti ti-tools-kitchen-2"></i> إدارة الوجبات</a>
                     @endif
+                    @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.tables.index'))
+                        <a class="btn" href="{{ route('restaurant.tables.index', $shop) }}"><i class="ti ti-qrcode"></i> طاولات المطعم</a>
+                    @endif
                     <a class="btn btn-primary" href="{{ route('restaurant.menu', $shop) }}" target="_blank"><i
                             class="ti ti-external-link"></i> فتح منيو المطعم</a>
                 </div>
@@ -1176,52 +1179,6 @@
                     المطعم</span><strong id="stat-sales-total">{{ number_format((float) $stats['sales_total'], 2) }}
                     ₪</strong>
             </article>
-        </section>
-
-        <section class="section glass">
-            <div class="section-head">
-                <div class="section-title"><span class="section-icon"><i class="ti ti-tools-kitchen-2"></i></span>
-                    <div>
-                        <h2>الطاولات ورموز QR</h2>
-                        <div class="section-subtitle">أنشئ رمزاً مستقلاً لكل طاولة ليستطيع الزبون فتح المنيو والطلب.
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.tables.store'))
-                <form class="form-row" method="post" action="{{ route('restaurant.tables.store', $shop) }}">
-                    @csrf
-                    <input class="field" name="name" placeholder="مثال: طاولة 1" required maxlength="100">
-                    <input class="field" name="capacity" type="number" min="1" max="100"
-                        placeholder="عدد المقاعد">
-                    <button class="btn btn-primary"><i class="ti ti-plus"></i> إضافة طاولة</button>
-                </form>
-            @endif
-            <div class="tables-grid">
-                @forelse($tables as $table)
-                    <article class="table-card">
-                        <h3>{{ $table->name }}</h3>
-                        <p>{{ $table->capacity ? $table->capacity . ' مقاعد' : 'السعة غير محددة' }}</p>
-                        <div class="qr-box"><img src="{{ route('restaurant.tables.qr', ['table' => $table->code]) }}"
-                                alt="QR {{ $table->name }}"></div>
-                        <div class="table-actions">
-                            <a class="btn" download
-                                href="{{ route('restaurant.tables.qr', ['table' => $table->code]) }}"><i
-                                    class="ti ti-download"></i> تحميل QR</a>
-                            @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.tables.destroy'))
-                                <form method="post" action="{{ route('restaurant.tables.destroy', $table) }}">@csrf
-                                    @method('delete')<button class="btn btn-danger"
-                                        onclick="return confirm('حذف الطاولة؟')"><i class="ti ti-trash"></i></button>
-                                </form>
-                            @endif
-                        </div>
-                    </article>
-                @empty
-                    <div class="empty"><i class="ti ti-table-off" style="font-size:35px"></i>
-                        <p>لا توجد طاولات بعد. أضف أول طاولة لإنشاء رمز QR الخاص بها.</p>
-                    </div>
-                @endforelse
-            </div>
         </section>
 
         @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.drivers.store'))
