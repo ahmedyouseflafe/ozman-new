@@ -578,6 +578,13 @@
              طاولات المطعم وQR
         </a>
         @endif
+        @if($canSee(['restaurant.drivers.index']))
+        <a href="{{ route('restaurant.drivers.index', $restaurantNavShop) }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('restaurant.drivers.*') ? 'active' : '' }}">
+             <i class="ti ti-motorbike" aria-hidden="true"></i>
+             مندوبي التوصيل
+        </a>
+        @endif
         @elseif($realEstateNavShop && $canSee(['real-estate.dashboard']))
         <a href="{{ route('real-estate.dashboard', $realEstateNavShop) }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('real-estate.dashboard*') ? 'active' : '' }}">

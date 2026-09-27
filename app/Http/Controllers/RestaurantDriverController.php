@@ -23,6 +23,16 @@ use Throwable;
 
 class RestaurantDriverController extends Controller
 {
+    public function index(Request $request, Shop $shop): View
+    {
+        $this->authorizeRestaurantManagement($request, $shop);
+
+        return view('admin.restaurant.drivers', [
+            'shop' => $shop,
+            'drivers' => $shop->restaurantDrivers()->with('user')->latest()->get(),
+        ]);
+    }
+
     public function store(Request $request, Shop $shop): RedirectResponse
     {
         $this->authorizeRestaurantManagement($request, $shop);

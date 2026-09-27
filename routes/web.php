@@ -210,11 +210,13 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::patch('/shops/{shop}/real-estate/leads/{lead}', [RealEstateDashboardController::class, 'updateLead'])->name('real-estate.dashboard.leads.update');
     Route::get('/shops/{shop}/restaurant', [RestaurantController::class, 'dashboard'])->name('restaurant.dashboard');
     Route::get('/shops/{shop}/restaurant/tables', [RestaurantController::class, 'tables'])->name('restaurant.tables.index');
+    Route::get('/shops/{shop}/restaurant/orders/{order}', [RestaurantController::class, 'showOrder'])->name('restaurant.orders.show');
     Route::get('/shops/{shop}/restaurant/orders-feed', [RestaurantController::class, 'ordersFeed'])->name('restaurant.orders.feed');
     Route::patch('/shops/{shop}/restaurant/availability', [RestaurantController::class, 'availability'])->name('restaurant.availability');
     Route::post('/shops/{shop}/restaurant/tables', [RestaurantController::class, 'storeTable'])->name('restaurant.tables.store');
     Route::delete('/restaurant-tables/{table}', [RestaurantController::class, 'destroyTable'])->name('restaurant.tables.destroy');
     Route::patch('/restaurant-orders/{order}/status', [RestaurantController::class, 'status'])->name('restaurant.orders.status');
+    Route::get('/shops/{shop}/restaurant/drivers', [RestaurantDriverController::class, 'index'])->name('restaurant.drivers.index');
     Route::post('/shops/{shop}/restaurant/drivers', [RestaurantDriverController::class, 'store'])->name('restaurant.drivers.store');
     Route::patch('/restaurant-drivers/{driver}/status', [RestaurantDriverController::class, 'toggle'])->name('restaurant.drivers.toggle');
     Route::patch('/restaurant-orders/{order}/driver', [RestaurantDriverController::class, 'assign'])->name('restaurant.orders.driver');

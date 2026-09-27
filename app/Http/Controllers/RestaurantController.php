@@ -54,7 +54,6 @@ class RestaurantController extends Controller
 
         return view('admin.restaurant.dashboard', [
             'shop' => $shop,
-            'drivers' => $shop->restaurantDrivers()->with('user')->latest()->get(),
             'orders' => $this->filterOrdersByPeriod($ordersQuery, $period)
                 ->when(in_array($status, $allowedStatuses, true), fn($query) => $query->where('status', $status))
                 ->when(in_array($type, $allowedTypes, true), fn($query) => $query->where('order_type', $type))
@@ -81,6 +80,17 @@ class RestaurantController extends Controller
         return view('admin.restaurant.tables', [
             'shop' => $shop,
             'tables' => $shop->restaurantTables()->latest()->get(),
+        ]);
+    }
+
+    public function showOrder(Request $request, Shop $shop, FrontOrder $order): View
+    {
+        $this->authorizeShop($request, $shop);
+        abort_unless($shop->catalog_type === 'restaurant' && (int) $order->shop_id === (int) $shop->id, 404);
+
+        return view('admin.restaurant.order', [
+            'shop' => $shop,
+            'order' => $order->load('restaurantTable', 'restaurantDriver.user'),
         ]);
     }
 
@@ -128,13 +138,9 @@ class RestaurantController extends Controller
                 'type' => $latestOrder->order_type,
             ] : null,
             'stats' => $stats,
-            'html' => view('admin.restaurant.partials.orders_rows', [
+            'html' => view('admin.restaurant.partials.order_list_rows', [
                 'orders' => $orders,
-                'drivers' => $shop->restaurantDrivers()->with('user')->where('is_active', true)->whereHas('user', fn ($query) => $query->where('is_active', true))->get(),
-                'canManageOrders' => $request->user()->isSuperAdmin()
-                    || $request->user()->canAccessRouteName('restaurant.orders.status'),
-                'canAssignDrivers' => $request->user()->isSuperAdmin()
-                    || $request->user()->canAccessRouteName('restaurant.orders.driver'),
+                'shop' => $shop,
             ])->render(),
         ]);
     }

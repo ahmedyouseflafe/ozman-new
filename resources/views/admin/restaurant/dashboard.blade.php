@@ -484,7 +484,7 @@
 
         table {
             width: 100%;
-            min-width: 1120px;
+            min-width: 680px;
             border-collapse: collapse
         }
 
@@ -516,6 +516,48 @@
 
         small {
             color: var(--muted)
+        }
+
+        .order-summary-row {
+            cursor: pointer
+        }
+
+        .order-summary-row td {
+            padding: 13px 15px;
+            vertical-align: middle
+        }
+
+        .order-number-link {
+            display: inline-block;
+            color: #fff;
+            font-weight: 900;
+            text-decoration: none
+        }
+
+        .order-summary-row:hover .order-number-link {
+            color: var(--cyan)
+        }
+
+        .order-summary-row small {
+            display: block;
+            margin-top: 5px;
+            font-size: 10px
+        }
+
+        .order-meals {
+            min-width: 250px;
+            line-height: 1.75
+        }
+
+        .more-items {
+            color: var(--cyan)
+        }
+
+        .order-total {
+            color: #ffe29a;
+            white-space: nowrap;
+            font-size: 16px;
+            font-weight: 900
         }
 
         .tag {
@@ -1009,6 +1051,27 @@
             .orders-wrap .preparation-options {
                 grid-template-columns: repeat(5, minmax(0, 1fr));
             }
+
+            .orders-wrap tbody tr.order-summary-row {
+                grid-template-columns: minmax(0, 1fr) max-content;
+                cursor: pointer
+            }
+
+            .orders-wrap tbody tr.order-summary-row td:nth-child(1),
+            .orders-wrap tbody tr.order-summary-row td:nth-child(2) {
+                grid-column: auto;
+                background: rgba(8, 220, 244, .045)
+            }
+
+            .orders-wrap tbody tr.order-summary-row td:nth-child(3),
+            .orders-wrap tbody tr.order-summary-row td:nth-child(4) {
+                grid-column: auto;
+                border-top: 1px solid rgba(139, 160, 179, .13)
+            }
+
+            .orders-wrap tbody tr.order-summary-row td::before {
+                font-size: 10px
+            }
         }
 
         @media(max-width:600px) {
@@ -1150,6 +1213,9 @@
                     @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.tables.index'))
                         <a class="btn" href="{{ route('restaurant.tables.index', $shop) }}"><i class="ti ti-qrcode"></i> طاولات المطعم</a>
                     @endif
+                    @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.drivers.index'))
+                        <a class="btn" href="{{ route('restaurant.drivers.index', $shop) }}"><i class="ti ti-motorbike"></i> مندوبي التوصيل</a>
+                    @endif
                     <a class="btn btn-primary" href="{{ route('restaurant.menu', $shop) }}" target="_blank"><i
                             class="ti ti-external-link"></i> فتح منيو المطعم</a>
                 </div>
@@ -1193,7 +1259,8 @@
             </article>
         </section>
 
-        @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.drivers.store'))
+        {{-- نُقلت إدارة المندوبين إلى صفحة مستقلة. --}}
+        {{--
             <section class="section glass" id="restaurant-drivers">
                 <div class="section-head">
                     <div class="section-title"><span class="section-icon"><i class="ti ti-motorbike"></i></span>
@@ -1244,7 +1311,7 @@
                     @endforelse
                 </div>
             </section>
-        @endif
+        --}}
 
         <section class="section glass">
             <div class="live-heading">
@@ -1285,24 +1352,15 @@
                     <thead>
                         <tr>
                             <th>الطلب</th>
-                            <th>المصدر</th>
-                            <th>الزبون / الطاولة</th>
-                            <th>تفاصيل الوجبات</th>
+                            <th>الوجبات</th>
                             <th>المجموع</th>
                             <th>الحالة</th>
                         </tr>
                     </thead>
                     <tbody id="restaurant-orders-body">
-                        @include('admin.restaurant.partials.orders_rows', [
+                        @include('admin.restaurant.partials.order_list_rows', [
                             'orders' => $orders,
-                            'drivers' => $drivers->filter(
-                                fn($driver) => $driver->is_active && $driver->user?->is_active),
-                            'canManageOrders' =>
-                                auth()->user()->isSuperAdmin() ||
-                                auth()->user()->canAccessRouteName('restaurant.orders.status'),
-                            'canAssignDrivers' =>
-                                auth()->user()->isSuperAdmin() ||
-                                auth()->user()->canAccessRouteName('restaurant.orders.driver'),
+                            'shop' => $shop,
                         ])
                     </tbody>
                 </table>
@@ -1475,6 +1533,19 @@
                     });
                     row.style.background = 'rgba(255,212,59,.12)';
                 } else if (orderId) window.location.href = `${dashboardUrl}#restaurant-order-${orderId}`;
+            });
+
+            body.addEventListener('click', event => {
+                const row = event.target.closest('.order-summary-row[data-order-url]');
+                if (!row || event.target.closest('a,button,input,select,label')) return;
+                window.location.href = row.dataset.orderUrl;
+            });
+
+            body.addEventListener('keydown', event => {
+                const row = event.target.closest('.order-summary-row[data-order-url]');
+                if (!row || !['Enter', ' '].includes(event.key)) return;
+                event.preventDefault();
+                window.location.href = row.dataset.orderUrl;
             });
 
             body.addEventListener('click', event => {
