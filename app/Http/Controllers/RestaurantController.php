@@ -34,28 +34,41 @@ class RestaurantController extends Controller
 
         $status = (string) $request->query('status', '');
         $type = (string) $request->query('type', '');
+        $period = (string) $request->query('period', 'today');
         $allowedStatuses = ['new', 'preparing', 'ready', 'out_for_delivery', 'completed', 'cancelled'];
         $allowedTypes = ['dine_in', 'delivery', 'pickup'];
+        $allowedPeriods = ['today', 'week', 'month', 'all'];
+        if (! in_array($period, $allowedPeriods, true)) {
+            $period = 'today';
+        }
         $ordersQuery = FrontOrder::with('restaurantTable', 'restaurantDriver.user')->where('shop_id', $shop->id)->whereNotNull('order_type');
-        $latestOrderId = (int) ((clone $ordersQuery)->max('id') ?? 0);
+        $periodOrdersQuery = $this->filterOrdersByPeriod(clone $ordersQuery, $period);
+        $latestOrderId = (int) ((clone $periodOrdersQuery)->max('id') ?? 0);
         $stats = [
-            'new' => (clone $ordersQuery)->where('status', 'new')->count(),
-            'preparing' => (clone $ordersQuery)->where('status', 'preparing')->count(),
-            'ready' => (clone $ordersQuery)->where('status', 'ready')->count(),
-            'today' => (clone $ordersQuery)->whereDate('created_at', today())->count(),
-            'sales_total' => (float) (clone $ordersQuery)->where('status', 'completed')->sum('total'),
+            'orders' => (clone $periodOrdersQuery)->count(),
+            'new' => (clone $periodOrdersQuery)->where('status', 'new')->count(),
+            'preparing' => (clone $periodOrdersQuery)->where('status', 'preparing')->count(),
+            'ready' => (clone $periodOrdersQuery)->where('status', 'ready')->count(),
+            'sales_total' => (float) (clone $periodOrdersQuery)->where('status', 'completed')->sum('total'),
         ];
 
         return view('admin.restaurant.dashboard', [
             'shop' => $shop,
             'drivers' => $shop->restaurantDrivers()->with('user')->latest()->get(),
-            'orders' => $ordersQuery
+            'orders' => $this->filterOrdersByPeriod($ordersQuery, $period)
                 ->when(in_array($status, $allowedStatuses, true), fn($query) => $query->where('status', $status))
                 ->when(in_array($type, $allowedTypes, true), fn($query) => $query->where('order_type', $type))
                 ->latest()->paginate(50)->withQueryString(),
             'stats' => $stats,
             'selectedStatus' => $status,
             'selectedType' => $type,
+            'selectedPeriod' => $period,
+            'selectedPeriodLabel' => [
+                'today' => 'طلبات اليوم',
+                'week' => 'طلبات هذا الأسبوع',
+                'month' => 'طلبات هذا الشهر',
+                'all' => 'كل الطلبات',
+            ][$period],
             'latestOrderId' => $latestOrderId,
         ]);
     }
@@ -78,28 +91,31 @@ class RestaurantController extends Controller
 
         $status = (string) $request->query('status', '');
         $type = (string) $request->query('type', '');
+        $period = (string) $request->query('period', 'today');
         $allowedStatuses = ['new', 'preparing', 'ready', 'out_for_delivery', 'completed', 'cancelled'];
         $allowedTypes = ['dine_in', 'delivery', 'pickup'];
+        $allowedPeriods = ['today', 'week', 'month', 'all'];
+        if (! in_array($period, $allowedPeriods, true)) {
+            $period = 'today';
+        }
         $ordersQuery = FrontOrder::with('restaurantTable', 'restaurantDriver.user')
             ->where('shop_id', $shop->id)
             ->whereNotNull('order_type');
-        $statsQuery = FrontOrder::query()
-            ->where('shop_id', $shop->id)
-            ->whereNotNull('order_type');
-        $orders = $ordersQuery
+        $periodOrdersQuery = $this->filterOrdersByPeriod(clone $ordersQuery, $period);
+        $orders = $this->filterOrdersByPeriod($ordersQuery, $period)
             ->when(in_array($status, $allowedStatuses, true), fn($query) => $query->where('status', $status))
             ->when(in_array($type, $allowedTypes, true), fn($query) => $query->where('order_type', $type))
             ->latest()
             ->limit(50)
             ->get();
         $stats = [
-            'new' => (clone $statsQuery)->where('status', 'new')->count(),
-            'preparing' => (clone $statsQuery)->where('status', 'preparing')->count(),
-            'ready' => (clone $statsQuery)->where('status', 'ready')->count(),
-            'today' => (clone $statsQuery)->whereDate('created_at', today())->count(),
-            'sales_total' => (float) (clone $statsQuery)->where('status', 'completed')->sum('total'),
+            'orders' => (clone $periodOrdersQuery)->count(),
+            'new' => (clone $periodOrdersQuery)->where('status', 'new')->count(),
+            'preparing' => (clone $periodOrdersQuery)->where('status', 'preparing')->count(),
+            'ready' => (clone $periodOrdersQuery)->where('status', 'ready')->count(),
+            'sales_total' => (float) (clone $periodOrdersQuery)->where('status', 'completed')->sum('total'),
         ];
-        $latestOrder = (clone $statsQuery)
+        $latestOrder = (clone $periodOrdersQuery)
             ->latest('id')
             ->first(['id', 'order_number', 'customer_name', 'order_type']);
 
@@ -527,6 +543,16 @@ class RestaurantController extends Controller
             'created_at' => $order->created_at?->toIso8601String(),
             'updated_at' => $order->updated_at?->toIso8601String(),
         ];
+    }
+
+    private function filterOrdersByPeriod($query, string $period)
+    {
+        return match ($period) {
+            'week' => $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]),
+            'month' => $query->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]),
+            'all' => $query,
+            default => $query->whereDate('created_at', today()),
+        };
     }
 
     private function authorizeShop(Request $request, Shop $shop): void

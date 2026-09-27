@@ -1,6 +1,10 @@
 @forelse($orders as $order)
     <tr id="restaurant-order-{{ $order->id }}" data-order-id="{{ $order->id }}">
-        <td data-label="الطلب">{{ $order->order_number }}<br><small>{{ $order->created_at }}</small></td>
+        <td data-label="الطلب">
+            {{ $order->order_number }}<br>
+            <small><i class="ti ti-calendar-event"></i> وصل {{ $order->created_at?->copy()->locale('ar')->translatedFormat('l، d/m/Y') }}</small>
+            <small><i class="ti ti-clock"></i> {{ $order->created_at?->format('h:i A') }}</small>
+        </td>
         <td data-label="المصدر"><span class="tag">{{ ['dine_in'=>'طلب طاولة','delivery'=>'توصيل','pickup'=>'استلام'][$order->order_type] ?? $order->order_type }}</span></td>
         <td data-label="الزبون / الطاولة">
             @if($order->restaurantTable)

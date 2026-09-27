@@ -337,9 +337,9 @@
 
         .filters {
             display: grid;
-            grid-template-columns: minmax(190px, 1fr) minmax(190px, 1fr) auto;
+            grid-template-columns: repeat(3, minmax(155px, 1fr)) auto;
             gap: 10px;
-            width: min(620px, 100%)
+            width: min(820px, 100%)
         }
 
         .live {
@@ -1055,21 +1055,33 @@
             }
 
             .stats-grid {
-                gap: 10px
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 7px
             }
 
             .stat {
-                min-height: 112px;
-                padding: 15px
+                min-height: 82px;
+                padding: 10px
             }
 
             .stat strong {
-                font-size: 28px
+                margin-top: 3px;
+                font-size: 22px
             }
 
             .stat-icon {
-                width: 39px;
-                height: 39px
+                width: 30px;
+                height: 30px;
+                border-radius:10px;
+                font-size:16px
+            }
+
+            .stat-label {
+                font-size: 10px
+            }
+
+            .stat:last-child {
+                grid-column: span 2
             }
 
             .section {
@@ -1160,7 +1172,7 @@
         <section class="stats-grid">
             <article class="stat glass" style="--accent:var(--cyan)">
                 <div class="stat-icon"><i class="ti ti-receipt"></i></div><span class="stat-label">طلبات
-                    اليوم</span><strong id="stat-today">{{ $stats['today'] }}</strong>
+                    {{ $selectedPeriodLabel }}</span><strong id="stat-orders">{{ $stats['orders'] }}</strong>
             </article>
             <article class="stat glass" style="--accent:var(--green)">
                 <div class="stat-icon"><i class="ti ti-sparkles"></i></div><span class="stat-label">طلبات
@@ -1249,6 +1261,11 @@
                 </div>
             </div>
             <form class="filters" method="get" style="margin:22px 0 16px">
+                <select class="field" name="period">
+                    @foreach (['today' => 'طلبات اليوم', 'week' => 'طلبات هذا الأسبوع', 'month' => 'طلبات هذا الشهر', 'all' => 'كل الطلبات'] as $key => $label)
+                        <option value="{{ $key }}" @selected($selectedPeriod === $key)>{{ $label }}</option>
+                    @endforeach
+                </select>
                 <select class="field" name="type">
                     <option value="">كل أنواع الطلب</option>
                     @foreach (['dine_in' => 'طلبات الطاولات', 'delivery' => 'توصيل', 'pickup' => 'استلام'] as $key => $label)
@@ -1302,8 +1319,8 @@
             const soundToggle = document.getElementById('restaurant-sound-toggle');
             if (!body || !liveStatus || !alarm || !alarmMessage || !soundToggle) return;
             const feedUrl =
-                {{ Illuminate\Support\Js::from(route('restaurant.orders.feed', ['shop' => $shop, 'status' => $selectedStatus, 'type' => $selectedType])) }};
-            const dashboardUrl = {{ Illuminate\Support\Js::from(route('restaurant.dashboard', $shop)) }};
+                {{ Illuminate\Support\Js::from(route('restaurant.orders.feed', ['shop' => $shop, 'period' => $selectedPeriod, 'status' => $selectedStatus, 'type' => $selectedType])) }};
+            const dashboardUrl = {{ Illuminate\Support\Js::from(route('restaurant.dashboard', ['shop' => $shop, 'period' => $selectedPeriod, 'status' => $selectedStatus, 'type' => $selectedType])) }};
             const initialLatestId = Number({{ (int) $latestOrderId }});
             const acknowledgementKey = 'ozman.restaurant.{{ (int) $shop->id }}.acknowledged-order';
             let acknowledgedId = initialLatestId;
@@ -1555,7 +1572,7 @@
                     const data = await response.json();
                     const editingOrder = body.contains(document.activeElement);
                     if (!editingOrder && !statusUpdating) body.innerHTML = data.html;
-                    for (const key of ['today', 'new', 'preparing', 'ready']) {
+                    for (const key of ['orders', 'new', 'preparing', 'ready']) {
                         const element = document.getElementById(`stat-${key}`);
                         if (element) element.textContent = data.stats[key] ?? 0
                     }
