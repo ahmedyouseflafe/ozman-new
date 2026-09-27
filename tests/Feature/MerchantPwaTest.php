@@ -19,7 +19,7 @@ class MerchantPwaTest extends TestCase
             ]));
     }
 
-    public function test_installed_app_returns_to_its_shop_after_owner_login(): void
+    public function test_installed_app_returns_to_its_dashboard_after_owner_login(): void
     {
         [$owner, $shop] = $this->ownerAndShop('Login shop', 'login-shop');
         $launchPath = route('merchant-app.launch', $shop, false);
@@ -33,10 +33,10 @@ class MerchantPwaTest extends TestCase
             'redirect' => $launchPath,
         ])->assertRedirect($launchPath);
 
-        $this->get($launchPath)->assertRedirect($shop->publicUrl());
+        $this->get($launchPath)->assertRedirect(route($shop->dashboardRouteName(), $shop));
     }
 
-    public function test_owner_gets_a_branded_installer_and_launches_their_public_shop(): void
+    public function test_owner_gets_a_branded_installer_and_launches_their_dashboard(): void
     {
         [$owner, $shop] = $this->ownerAndShop('Bankai sushi', 'bankai-pwa');
 
@@ -49,7 +49,7 @@ class MerchantPwaTest extends TestCase
             ->assertSee(asset('merchant-pwa.js'), false);
 
         $this->get(route('merchant-app.launch', $shop))
-            ->assertRedirect($shop->publicUrl());
+            ->assertRedirect(route($shop->dashboardRouteName(), $shop));
 
         $this->assertSame($shop->id, session('merchant_shop_id'));
         $this->assertSame($shop->id, session('current_shop_id'));

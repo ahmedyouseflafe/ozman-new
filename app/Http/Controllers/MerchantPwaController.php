@@ -55,7 +55,7 @@ class MerchantPwaController extends Controller
             'current_shop_id' => $shop->id,
         ]);
 
-        return redirect()->to($shop->publicUrl());
+        return redirect()->route($shop->dashboardRouteName(), $shop);
     }
 
     public function manifest(Shop $shop): Response
