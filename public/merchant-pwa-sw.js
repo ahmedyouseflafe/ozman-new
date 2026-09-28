@@ -15,6 +15,14 @@ self.addEventListener('push', (event) => {
         payload = { body: event.data ? event.data.text() : '' };
     }
 
+    if (payload.closeNotificationTag) {
+        event.waitUntil(
+            self.registration.getNotifications({ tag: payload.closeNotificationTag })
+                .then((notifications) => notifications.forEach((notification) => notification.close()))
+        );
+        return;
+    }
+
     const title = payload.title || 'إشعار جديد';
     const options = {
         body: payload.body || '',

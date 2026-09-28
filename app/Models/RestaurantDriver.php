@@ -29,4 +29,9 @@ class RestaurantDriver extends Model
     {
         return $this->hasMany(FrontOrder::class);
     }
+
+    public function deliveryOffers(): HasMany
+    {
+        return $this->hasMany(RestaurantDeliveryOffer::class);
+    }
 }

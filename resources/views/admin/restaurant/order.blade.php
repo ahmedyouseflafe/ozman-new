@@ -31,40 +31,29 @@
             </section>
             <aside class="order-side">
                 @php
-                    $canManageOrder = in_array($order->status, ['new', 'preparing', 'ready'], true);
-                    $availableStatuses = match ($order->status) {
-                        'new' => ['new' => 'جديد', 'preparing' => 'قيد التحضير', 'cancelled' => 'ملغي'],
-                        'preparing' => ['preparing' => 'قيد التحضير', 'ready' => 'جاهز', 'cancelled' => 'ملغي'],
-                        'ready' => ['ready' => 'جاهز', 'completed' => 'مكتمل', 'cancelled' => 'ملغي'],
-                        default => [$order->status => $order->statusLabel()],
-                    };
+                    $canSetPreparationTime = in_array($order->status, ['new', 'preparing'], true);
                 @endphp
                 <form class="panel glass order-status-form" id="order-status-form" action="{{ route('restaurant.orders.status', $order) }}" method="post">
                     @csrf
                     @method('patch')
                     <h2><i class="ti ti-chef-hat" style="color:var(--cyan)"></i> إدارة الطلب</h2>
-                    <label for="order-status-select">حالة الطلب</label>
-                    <select class="order-status-select" id="order-status-select" name="status" @disabled(! $canManageOrder)>
-                        @foreach($availableStatuses as $statusValue => $statusLabel)
-                            <option value="{{ $statusValue }}" @selected($order->status === $statusValue)>{{ $statusLabel }}</option>
-                        @endforeach
-                    </select>
+                    <input type="hidden" name="status" value="preparing">
                     <input type="hidden" id="preparation-minutes" name="estimated_preparation_minutes" value="{{ $order->estimated_preparation_minutes }}">
-                    <fieldset class="order-preparation-picker" @disabled(! $canManageOrder)>
+                    <fieldset class="order-preparation-picker" @disabled(! $canSetPreparationTime)>
                         <legend><i class="ti ti-clock"></i> وقت التجهيز</legend>
                         <div class="order-preparation-options">
                             @foreach(range(10, 60, 5) as $minutes)
-                                <button type="button" class="order-preparation-choice @if((int) $order->estimated_preparation_minutes === $minutes) is-selected @endif" data-preparation-minutes="{{ $minutes }}" aria-pressed="{{ (int) $order->estimated_preparation_minutes === $minutes ? 'true' : 'false' }}" @disabled(! $canManageOrder)>
+                                <button type="button" class="order-preparation-choice @if((int) $order->estimated_preparation_minutes === $minutes) is-selected @endif" data-preparation-minutes="{{ $minutes }}" aria-pressed="{{ (int) $order->estimated_preparation_minutes === $minutes ? 'true' : 'false' }}" @disabled(! $canSetPreparationTime)>
                                     <b>{{ $minutes }}</b><small>د</small>
                                 </button>
                             @endforeach
                         </div>
                     </fieldset>
-                    @if($canManageOrder)
-                        <p class="order-status-help">اختر وقت التجهيز ثم احفظ ليصل تحديث الطلب للعميل.</p>
-                        <button class="order-status-save" type="submit"><i class="ti ti-device-floppy"></i> حفظ وإشعار العميل</button>
+                    @if($canSetPreparationTime)
+                        <p class="order-status-help">حدد وقت التجهيز؛ يصبح الطلب قيد التحضير ويصل طلب استلام لكل مندوبي التوصيل.</p>
+                        <button class="order-status-save" type="submit"><i class="ti ti-send"></i> إرسال للمندوبين وإشعار العميل</button>
                     @else
-                        <p class="order-status-help">هذا الطلب مغلق ولا يمكن تعديل وقت تجهيزه.</p>
+                        <p class="order-status-help">تم تحديد وقت التجهيز لهذا الطلب، ولا يمكن تغييره بعد انتقاله للمرحلة التالية.</p>
                     @endif
                     <p class="order-status-feedback" id="order-status-feedback" aria-live="polite"></p>
                 </form>
@@ -88,7 +77,6 @@
             if (!form) return;
 
             const minutesInput = document.getElementById('preparation-minutes');
-            const statusSelect = document.getElementById('order-status-select');
             const feedback = document.getElementById('order-status-feedback');
             const saveButton = form.querySelector('.order-status-save');
             const choices = [...form.querySelectorAll('.order-preparation-choice')];
@@ -101,13 +89,13 @@
                     choice.setAttribute('aria-pressed', selected ? 'true' : 'false');
                 });
 
-                if (statusSelect.value === 'new' && statusSelect.querySelector('option[value="preparing"]')) {
-                    statusSelect.value = 'preparing';
-                }
             };
 
             choices.forEach((choice) => {
-                choice.addEventListener('click', () => selectMinutes(choice.dataset.preparationMinutes));
+                choice.addEventListener('click', () => {
+                    selectMinutes(choice.dataset.preparationMinutes);
+                    form.requestSubmit();
+                });
             });
 
             form.addEventListener('submit', async (event) => {

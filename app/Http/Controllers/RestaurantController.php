@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\FrontOrder;
 use App\Models\Product;
 use App\Models\PushDevice;
+use App\Models\RestaurantDeliveryOffer;
+use App\Models\RestaurantDriver;
 use App\Models\RestaurantTable;
 use App\Models\Shop;
 use App\Rules\ValidPhoneNumber;
@@ -360,7 +362,12 @@ class RestaurantController extends Controller
         ])->header('Cache-Control', 'private, no-store');
     }
 
-    public function status(Request $request, FrontOrder $order, FirebaseMessagingService $firebase): JsonResponse|RedirectResponse
+    public function status(
+        Request $request,
+        FrontOrder $order,
+        FirebaseMessagingService $firebase,
+        WebPushService $webPush,
+    ): JsonResponse|RedirectResponse
     {
         abort_unless($order->shop && $order->order_type, 404);
         $this->authorizeShop($request, $order->shop);
@@ -388,10 +395,19 @@ class RestaurantController extends Controller
         $previousStatus = $order->status;
         $previousPreparationMinutes = $order->estimated_preparation_minutes;
         $order->update($data);
+        $order->refresh()->load('shop');
         $statusChanged = $previousStatus !== $order->status;
         $preparationTimeChanged = $previousPreparationMinutes !== $order->estimated_preparation_minutes;
         if ($statusChanged || $preparationTimeChanged) {
-            $this->sendCustomerStatusPush($order->fresh('shop'), $firebase, $statusChanged, $preparationTimeChanged);
+            $this->sendCustomerStatusPush($order, $firebase, $statusChanged, $preparationTimeChanged);
+        }
+        if (
+            $order->order_type === 'delivery'
+            && ! $order->restaurant_driver_id
+            && in_array($order->status, ['preparing', 'ready'], true)
+            && ($statusChanged || $preparationTimeChanged)
+        ) {
+            $this->offerDeliveryOrderToDrivers($order, $firebase, $webPush);
         }
         if ($request->expectsJson()) {
             return response()->json([
@@ -407,6 +423,56 @@ class RestaurantController extends Controller
             ]);
         }
         return back()->with('status', 'تم حفظ حالة الطلب ومدة التجهيز وإبلاغ العميل.');
+    }
+
+    private function offerDeliveryOrderToDrivers(
+        FrontOrder $order,
+        FirebaseMessagingService $firebase,
+        WebPushService $webPush,
+    ): void {
+        $drivers = RestaurantDriver::query()
+            ->with(['user', 'shop'])
+            ->where('shop_id', $order->shop_id)
+            ->where('is_active', true)
+            ->whereHas('user', fn ($query) => $query->where('is_active', true))
+            ->get();
+
+        foreach ($drivers as $driver) {
+            $offer = RestaurantDeliveryOffer::query()->firstOrCreate(
+                ['front_order_id' => $order->id, 'restaurant_driver_id' => $driver->id],
+                ['status' => 'offered', 'offered_at' => now()],
+            );
+            if ($offer->status !== 'offered') {
+                continue;
+            }
+
+            $title = 'طلب توصيل جديد · '.$order->shop->name;
+            $body = "الطلب {$order->order_number} قيد التحضير، والوقت المتوقع {$order->estimated_preparation_minutes} دقيقة. اقبل الطلب أو ارفضه الآن.";
+            $url = route('driver.dashboard').'#delivery-offer-'.$offer->id;
+            $data = [
+                'type' => 'driver_delivery_offer',
+                'offer_id' => $offer->id,
+                'order_id' => $order->id,
+                'shop_id' => $order->shop_id,
+                'estimated_preparation_minutes' => $order->estimated_preparation_minutes,
+                'notification_tag' => 'driver-offer-'.$order->id,
+            ];
+
+            try {
+                $tokens = PushDevice::query()->where('user_id', $driver->user_id)->pluck('token');
+                if ($tokens->isNotEmpty()) {
+                    $firebase->sendToTokens($tokens, $title, $body, $url, $data);
+                }
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+
+            try {
+                $webPush->sendToDriver($driver, $title, $body, $url, $data);
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+        }
     }
 
     private function pricedOptions(array $values): array

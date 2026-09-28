@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FrontOrder extends Model
 {
@@ -80,6 +81,11 @@ class FrontOrder extends Model
     public function restaurantDriver(): BelongsTo
     {
         return $this->belongsTo(RestaurantDriver::class);
+    }
+
+    public function deliveryOffers(): HasMany
+    {
+        return $this->hasMany(RestaurantDeliveryOffer::class, 'front_order_id');
     }
 
     public function distributor(): BelongsTo

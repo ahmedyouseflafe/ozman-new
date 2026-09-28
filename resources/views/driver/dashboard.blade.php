@@ -31,6 +31,7 @@
         .order-items{margin:10px 0 0;padding:0;border:0}.order-items summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid rgba(139,160,179,.18);border-radius:10px;color:#dce6eb;font-size:12px;font-weight:800;cursor:pointer;list-style:none}.order-items summary::-webkit-details-marker{display:none}.order-items summary i{color:var(--cyan);transition:transform .2s}.order-items[open] summary i{transform:rotate(180deg)}.order-items-list{padding:8px 10px 0;color:#dce6eb;font-size:12px;line-height:1.75}
         .order-actions{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;margin-top:11px;padding-top:11px;border-top:1px solid rgba(139,160,179,.15)}.order-actions .delivery-eta-form{display:grid;grid-template-columns:90px 74px minmax(145px,1fr);align-items:end;gap:7px;min-width:0;flex:1}.order-actions .delivery-eta-form label{grid-column:1/-1}.order-actions .delivery-eta-form input{min-height:39px}.order-actions .delivery-eta-form button{min-height:39px;padding:7px 10px}.order-actions>form:not(.delivery-eta-form){display:flex}.order-actions>form:not(.delivery-eta-form) .action{min-height:39px}.order-wait{color:var(--muted);font-size:12px}
         @media(max-width:600px){main{padding:10px 10px 45px}.hero{padding:14px;border-radius:16px}.hero-actions{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:7px}.hero-actions .btn{min-height:38px;padding:7px 8px;font-size:12px}.stats{margin:10px 0;gap:7px}.stat{min-height:70px;padding:8px;border-radius:13px}.stat small{font-size:10px}.stat strong{font-size:21px}.feed-head{margin:13px 0 8px}.feed-head h2{font-size:17px}.order-card{padding:11px;border-radius:15px}.order-top{grid-template-columns:minmax(0,1fr) auto;gap:7px}.order-top .badge{grid-column:2;grid-row:1}.order-total{grid-column:2;grid-row:2;min-width:65px;font-size:14px}.order-number{font-size:14px}.order-customer-row{gap:6px;margin:9px 0 7px}.customer-chip,.quick-contact,.map-link{min-height:31px;padding:5px 7px;font-size:11px}.order-address strong{white-space:normal}.order-actions{display:grid;grid-template-columns:1fr;margin-top:9px;padding-top:9px}.order-actions .delivery-eta-form{grid-template-columns:1fr 62px;gap:6px;width:100%}.order-actions .delivery-eta-form label{font-size:11px}.order-actions .delivery-eta-form button{grid-column:1/-1}.order-actions>form:not(.delivery-eta-form),.order-actions>form:not(.delivery-eta-form) .action{width:100%}.order-items summary{font-size:11px}.order-notes{font-size:10px}}
+        .stats{grid-template-columns:repeat(4,1fr)}.offers{display:grid;gap:9px}.offer-card{padding:14px 16px;border:1px solid rgba(8,220,244,.35);border-radius:17px;background:linear-gradient(135deg,rgba(8,220,244,.11),rgba(11,23,29,.96));box-shadow:0 13px 32px rgba(0,0,0,.16);scroll-margin-top:15px}.offer-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.offer-kicker{display:block;color:var(--cyan);font-size:11px;font-weight:900}.offer-top strong{display:block;margin-top:2px;font-size:16px}.offer-preparation{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;padding:6px 9px;border-radius:10px;background:rgba(40,220,136,.13);color:#8df5b9;font-size:12px;font-weight:900}.offer-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;color:#dce6eb;font-size:11px}.offer-meta span{display:inline-flex;align-items:center;gap:4px}.offer-meta i{color:var(--cyan)}.offer-actions{display:flex;gap:7px;margin-top:12px}.offer-actions form{flex:1}.offer-accept,.offer-reject{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:38px;border-radius:10px;font:900 12px Cairo,Arial,sans-serif;cursor:pointer}.offer-accept{border:0;background:var(--green);color:#032116}.offer-reject{border:1px solid rgba(255,121,135,.55);background:rgba(255,121,135,.08);color:#ffadb7}.offer-empty{padding:18px;border:1px dashed var(--border);border-radius:14px;color:var(--muted);font-size:12px;text-align:center}.offer-empty i{color:var(--cyan)}@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}.offer-card{padding:12px}.offer-meta{font-size:10px}}
     </style>
 </head>
 <body>
@@ -46,16 +47,20 @@
     @if(session('status'))<p class="notice">{{ session('status') }}</p>@endif
     @if($errors->any())<p class="notice error">{{ $errors->first() }}</p>@endif
     <div class="stats">
+        <div class="stat"><small>طلبات متاحة</small><strong id="stat-available">{{ $stats['available'] }}</strong></div>
         <div class="stat"><small>بانتظار الاستلام</small><strong id="stat-assigned">{{ $stats['assigned'] }}</strong></div>
         <div class="stat"><small>في الطريق</small><strong id="stat-on-the-way">{{ $stats['on_the_way'] }}</strong></div>
         <div class="stat"><small>تم تسليمها اليوم</small><strong id="stat-delivered-today">{{ $stats['delivered_today'] }}</strong></div>
     </div>
+    <div class="feed-head"><h2>طلبات متاحة للاستلام</h2><span>الأول يقبل يستلم الطلب</span></div>
+    <div class="offers" id="driver-offers">@include('driver.partials.offers', ['offers' => $offers])</div>
     <div class="feed-head"><h2>الطلبات المسندة إليك</h2><span id="feed-status">تحديث مباشر</span></div>
     <div class="orders" id="driver-orders">@include('driver.partials.orders', ['orders' => $orders])</div>
 </main>
 <script>
 (() => {
     const orders = document.getElementById('driver-orders');
+    const offers = document.getElementById('driver-offers');
     const feedStatus = document.getElementById('feed-status');
     const notificationButton = document.getElementById('driver-notifications');
     const notificationMessage = document.getElementById('notification-message');
@@ -72,7 +77,8 @@
             if (!response.ok) throw new Error('feed');
             const data = await response.json();
             if (!orders.contains(document.activeElement)) orders.innerHTML = data.html;
-            for (const [key,id] of Object.entries({assigned:'stat-assigned',on_the_way:'stat-on-the-way',delivered_today:'stat-delivered-today'})) {
+            if (!offers.contains(document.activeElement)) offers.innerHTML = data.offers_html;
+            for (const [key,id] of Object.entries({available:'stat-available',assigned:'stat-assigned',on_the_way:'stat-on-the-way',delivered_today:'stat-delivered-today'})) {
                 document.getElementById(id).textContent = data.stats[key] ?? 0;
             }
             feedStatus.textContent = 'متصل · تحديث مباشر';

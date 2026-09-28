@@ -171,6 +171,8 @@ Route::post('/logout', [AuthController::class, 'logout'])
 Route::middleware('auth')->group(function () {
     Route::get('/driver', [RestaurantDriverController::class, 'dashboard'])->name('driver.dashboard');
     Route::get('/driver/orders-feed', [RestaurantDriverController::class, 'feed'])->name('driver.orders.feed');
+    Route::patch('/driver/delivery-offers/{offer}/accept', [RestaurantDriverController::class, 'acceptOffer'])->name('driver.delivery-offers.accept');
+    Route::patch('/driver/delivery-offers/{offer}/reject', [RestaurantDriverController::class, 'rejectOffer'])->name('driver.delivery-offers.reject');
     Route::patch('/driver/orders/{order}/status', [RestaurantDriverController::class, 'updateStatus'])->name('driver.orders.status');
     Route::patch('/driver/orders/{order}/delivery-time', [RestaurantDriverController::class, 'updateDeliveryTime'])->name('driver.orders.delivery-time');
     Route::post('/driver/push/subscription', [WebPushSubscriptionController::class, 'storeDriver'])->name('driver.push.store');

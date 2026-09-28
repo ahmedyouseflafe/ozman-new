@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FrontOrder;
 use App\Models\PushDevice;
+use App\Models\RestaurantDeliveryOffer;
 use App\Models\RestaurantDriver;
 use App\Models\Shop;
 use App\Models\User;
@@ -134,7 +135,9 @@ class RestaurantDriverController extends Controller
         return view('driver.dashboard', [
             'driver' => $driver->loadMissing('shop', 'user'),
             'orders' => (clone $ordersQuery)->latest()->limit(50)->get(),
+            'offers' => $this->openOffersQuery($driver)->latest('offered_at')->limit(30)->get(),
             'stats' => [
+                'available' => $this->openOffersQuery($driver)->count(),
                 'assigned' => (clone $ordersQuery)->whereIn('status', ['new', 'preparing', 'ready'])->count(),
                 'on_the_way' => (clone $ordersQuery)->where('status', 'out_for_delivery')->count(),
                 'delivered_today' => (clone $ordersQuery)->where('status', 'completed')->whereDate('delivered_at', today())->count(),
@@ -153,6 +156,7 @@ class RestaurantDriverController extends Controller
 
         return response()->json([
             'stats' => [
+                'available' => $this->openOffersQuery($driver)->count(),
                 'assigned' => (clone $ordersQuery)->whereIn('status', ['new', 'preparing', 'ready'])->count(),
                 'on_the_way' => (clone $ordersQuery)->where('status', 'out_for_delivery')->count(),
                 'delivered_today' => (clone $ordersQuery)->where('status', 'completed')->whereDate('delivered_at', today())->count(),
@@ -160,7 +164,84 @@ class RestaurantDriverController extends Controller
             'html' => view('driver.partials.orders', [
                 'orders' => (clone $ordersQuery)->latest()->limit(50)->get(),
             ])->render(),
+            'offers_html' => view('driver.partials.offers', [
+                'offers' => $this->openOffersQuery($driver)->latest('offered_at')->limit(30)->get(),
+            ])->render(),
         ]);
+    }
+
+    public function acceptOffer(
+        Request $request,
+        RestaurantDeliveryOffer $offer,
+        FirebaseMessagingService $firebase,
+        WebPushService $webPush,
+    ): RedirectResponse {
+        $driver = $this->activeDriver($request);
+
+        [$order, $otherDriverIds] = DB::transaction(function () use ($offer, $driver): array {
+            $lockedOffer = RestaurantDeliveryOffer::query()
+                ->whereKey($offer->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+            abort_unless(
+                (int) $lockedOffer->restaurant_driver_id === (int) $driver->id && $lockedOffer->status === 'offered',
+                422,
+                'هذا الطلب لم يعد متاحاً لك.',
+            );
+
+            $order = FrontOrder::query()->whereKey($lockedOffer->front_order_id)->lockForUpdate()->firstOrFail();
+            abort_unless(
+                (int) $order->shop_id === (int) $driver->shop_id
+                && $order->order_type === 'delivery'
+                && in_array($order->status, ['preparing', 'ready'], true)
+                && ! $order->restaurant_driver_id,
+                422,
+                'تم استلام هذا الطلب من مندوب آخر أو لم يعد متاحاً.',
+            );
+
+            $otherDriverIds = RestaurantDeliveryOffer::query()
+                ->where('front_order_id', $order->id)
+                ->where('status', 'offered')
+                ->whereKeyNot($lockedOffer->id)
+                ->pluck('restaurant_driver_id');
+
+            $order->update([
+                'restaurant_driver_id' => $driver->id,
+                'driver_assigned_at' => now(),
+            ]);
+            $lockedOffer->update(['status' => 'accepted', 'responded_at' => now()]);
+            RestaurantDeliveryOffer::query()
+                ->where('front_order_id', $order->id)
+                ->whereKeyNot($lockedOffer->id)
+                ->where('status', 'offered')
+                ->update(['status' => 'closed', 'responded_at' => now()]);
+
+            return [$order->fresh(['shop', 'restaurantDriver.user']), $otherDriverIds];
+        });
+
+        $this->sendAssignmentNotifications($order, $firebase, $webPush);
+        $this->closeOfferNotifications($order, collect($otherDriverIds)->push($driver->id), $webPush);
+
+        return back()->with('status', 'تم استلام الطلب وإسناده إليك. تم إخفاؤه عن المندوبين الآخرين.');
+    }
+
+    public function rejectOffer(Request $request, RestaurantDeliveryOffer $offer): RedirectResponse
+    {
+        $driver = $this->activeDriver($request);
+        $updated = RestaurantDeliveryOffer::query()
+            ->whereKey($offer->id)
+            ->where('restaurant_driver_id', $driver->id)
+            ->where('status', 'offered')
+            ->whereHas('order', fn ($query) => $query
+                ->where('shop_id', $driver->shop_id)
+                ->where('order_type', 'delivery')
+                ->whereNull('restaurant_driver_id')
+                ->whereIn('status', ['preparing', 'ready']))
+            ->update(['status' => 'declined', 'responded_at' => now()]);
+
+        abort_unless($updated, 422, 'هذا الطلب لم يعد متاحاً للرفض.');
+
+        return back()->with('status', 'تم رفض الطلب، ولن يظهر لك مرة أخرى.');
     }
 
     public function updateStatus(
@@ -238,6 +319,19 @@ class RestaurantDriverController extends Controller
             ->firstOrFail();
     }
 
+    private function openOffersQuery(RestaurantDriver $driver)
+    {
+        return RestaurantDeliveryOffer::query()
+            ->with(['order.shop'])
+            ->where('restaurant_driver_id', $driver->id)
+            ->where('status', 'offered')
+            ->whereHas('order', fn ($query) => $query
+                ->where('shop_id', $driver->shop_id)
+                ->where('order_type', 'delivery')
+                ->whereNull('restaurant_driver_id')
+                ->whereIn('status', ['preparing', 'ready']));
+    }
+
     private function authorizeRestaurantManagement(Request $request, Shop $shop): void
     {
         $user = $request->user();
@@ -288,6 +382,32 @@ class RestaurantDriverController extends Controller
             );
         } catch (Throwable $exception) {
             report($exception);
+        }
+    }
+
+    private function closeOfferNotifications(FrontOrder $order, iterable $driverIds, WebPushService $webPush): void
+    {
+        $drivers = RestaurantDriver::query()
+            ->with('shop')
+            ->whereIn('id', collect($driverIds)->filter()->unique()->values())
+            ->get();
+
+        foreach ($drivers as $driver) {
+            try {
+                $webPush->sendToDriver(
+                    $driver,
+                    '',
+                    '',
+                    route('driver.dashboard'),
+                    [
+                        'type' => 'driver_delivery_offer_closed',
+                        'order_id' => $order->id,
+                        'close_notification_tag' => 'driver-offer-'.$order->id,
+                    ],
+                );
+            } catch (Throwable $exception) {
+                report($exception);
+            }
         }
     }
 

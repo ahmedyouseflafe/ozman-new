@@ -72,8 +72,9 @@ class WebPushService
             'url' => $url,
             'icon' => $icon,
             'badge' => $icon,
-            'tag' => 'driver-order-'.($data['order_id'] ?? now()->timestamp),
+            'tag' => $data['notification_tag'] ?? 'driver-order-'.($data['order_id'] ?? now()->timestamp),
             'requireInteraction' => true,
+            'closeNotificationTag' => $data['close_notification_tag'] ?? null,
             'data' => $data,
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 
