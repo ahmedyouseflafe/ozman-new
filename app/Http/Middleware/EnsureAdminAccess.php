@@ -21,7 +21,19 @@ class EnsureAdminAccess
             return redirect()->route('login');
         }
 
-        abort_unless(in_array($user->role, ['super_admin', 'shop_owner', 'agent', 'distributor', 'marketer', 'employee'], true), 403);
+        if ($user->isRestaurantDriver()) {
+            return redirect()->route('driver.dashboard');
+        }
+
+        // Do not leave a stale or non-admin web session on a Forbidden page.
+        // Clear it so the next destination is always the normal login screen.
+        if (! in_array($user->role, ['super_admin', 'shop_owner', 'agent', 'distributor', 'marketer', 'employee'], true)) {
+            auth()->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login');
+        }
 
         if ($user->isSuperAdmin()) {
             $this->rememberCurrentShop($request);
