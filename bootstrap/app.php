@@ -14,6 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withCommands([ImportIphoneCatalog::class, ImportSalemKhatibMenu::class])
     ->withMiddleware(function (Middleware $middleware): void {
+        // Protected pages must send logged-out visitors to the login screen.
+        // Without this Laravel returns an authentication error instead of a redirect.
+        $middleware->redirectGuestsTo('/login');
+
         $middleware->web(append: [
             \App\Http\Middleware\CanonicalDomain::class,
             \App\Http\Middleware\LanguageMiddleware::class,
