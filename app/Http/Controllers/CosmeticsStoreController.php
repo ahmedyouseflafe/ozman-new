@@ -36,7 +36,7 @@ class CosmeticsStoreController extends Controller
                 CASE
                     WHEN name LIKE '%كيرلي%' OR LOWER(name) LIKE '%curly%' THEN 0
                     WHEN name LIKE '%كوزمت%' OR LOWER(name) LIKE '%cosmetic%' THEN 1
-                    WHEN name LIKE '%عطر%' OR LOWER(name) LIKE '%perfume%' THEN 3
+                    WHEN (name LIKE '%عطر%' AND name NOT LIKE '%معطر%') OR LOWER(name) LIKE '%perfume%' THEN 3
                     ELSE 2
                 END
             ");
