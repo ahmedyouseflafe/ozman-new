@@ -15,7 +15,13 @@ class EnsureAdminAccess
     {
         $user = $request->user();
 
-        abort_unless($user && in_array($user->role, ['super_admin', 'shop_owner', 'agent', 'distributor', 'marketer', 'employee'], true), 403);
+        // A guest reaching an admin URL after logout must be sent to the login
+        // screen. A 403 is reserved for authenticated accounts without access.
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        abort_unless(in_array($user->role, ['super_admin', 'shop_owner', 'agent', 'distributor', 'marketer', 'employee'], true), 403);
 
         if ($user->isSuperAdmin()) {
             $this->rememberCurrentShop($request);
