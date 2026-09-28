@@ -28,7 +28,7 @@ return [
                 'products.view' => ['label' => 'عرض منتجات المتاجر', 'description' => 'مشاهدة قائمة المنتجات وتفاصيلها.', 'routes' => ['products', 'products.show']],
                 'products.preview' => ['label' => 'معاينة واجهة المتجر', 'description' => 'معاينة طريقة ظهور المنتجات للعملاء.', 'routes' => ['products.preview']],
                 'products.create' => ['label' => 'إضافة منتج لمتجر', 'description' => 'إنشاء منتج في متجر مسموح بإدارته.', 'routes' => ['products.create', 'products.store']],
-                'products.edit' => ['label' => 'تعديل منتج وأسعاره ومخزونه', 'description' => 'تعديل بيانات المنتج وظهوره وأسعاره.', 'routes' => ['products.edit', 'products.update']],
+                'products.edit' => ['label' => 'تعديل منتج وأسعاره ومخزونه', 'description' => 'تعديل بيانات المنتج وظهوره وأسعاره.', 'routes' => ['products.edit', 'products.update', 'products.quick-settings']],
                 'products.delete' => ['label' => 'حذف منتج من متجر', 'description' => 'حذف المنتج؛ صلاحية حساسة.', 'routes' => ['products.destroy']],
             ],
         ],

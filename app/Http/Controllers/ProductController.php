@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\ProductCampaign;
 use App\Models\ProductImage;
 use App\Models\Shop;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -256,6 +257,29 @@ class ProductController extends Controller
         return redirect()
             ->route('products')
             ->with('status', $isRestaurant ? 'تم تحديث الوجبة بنجاح.' : 'تم تحديث المنتج بنجاح.');
+    }
+
+    public function quickSettings(Request $request, Product $product): JsonResponse
+    {
+        $this->authorizeProductManagement($product);
+        $this->authorizeShopAccess($product);
+        abort_unless($product->shop?->catalog_type === 'restaurant', 404);
+
+        $data = $request->validate([
+            'price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $product->update([
+            'price' => $data['price'],
+            'is_active' => (bool) $data['is_active'],
+        ]);
+
+        return response()->json([
+            'message' => 'تم حفظ إعدادات الوجبة.',
+            'price' => (float) $product->price,
+            'is_active' => (bool) $product->is_active,
+        ]);
     }
 
     public function destroy(Product $product): RedirectResponse

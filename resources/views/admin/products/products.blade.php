@@ -438,6 +438,167 @@
             box-shadow: 0 0 16px rgba(0, 229, 255, .32);
         }
 
+        .meal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 18px;
+        }
+
+        .meal-card {
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            background: linear-gradient(160deg, rgba(17, 29, 38, .95), rgba(8, 10, 18, .98));
+            box-shadow: 0 16px 34px rgba(0, 0, 0, .3);
+            transition: transform .25s ease, border-color .25s ease, opacity .25s ease;
+        }
+
+        .meal-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 229, 255, .5);
+        }
+
+        .meal-card.is-inactive {
+            opacity: .62;
+        }
+
+        .meal-card-form {
+            display: block;
+        }
+
+        .meal-media {
+            position: relative;
+            height: 184px;
+            background: #05070b;
+            overflow: hidden;
+        }
+
+        .meal-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .meal-media .meal-placeholder {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            place-items: center;
+            color: var(--primary);
+            font-size: 54px;
+            background: radial-gradient(circle, rgba(0, 229, 255, .15), transparent 65%);
+        }
+
+        .meal-power {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            min-height: 34px;
+            padding: 6px 10px;
+            border: 1px solid rgba(37, 211, 102, .65);
+            border-radius: 999px;
+            background: rgba(4, 23, 18, .9);
+            color: #73f3ad;
+            font: inherit;
+            font-size: 11px;
+            font-weight: 900;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+
+        .meal-power:not(.is-active) {
+            border-color: rgba(255, 59, 48, .65);
+            background: rgba(39, 8, 12, .9);
+            color: #ff9b95;
+        }
+
+        .meal-card-body {
+            padding: 14px;
+        }
+
+        .meal-card-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 13px;
+        }
+
+        .meal-name {
+            color: #fff;
+            font-size: 15px;
+            font-weight: 900;
+            line-height: 1.5;
+        }
+
+        .meal-category {
+            display: block;
+            color: var(--dim);
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 3px;
+        }
+
+        .meal-price-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 42px;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .meal-price-input {
+            width: 100%;
+            min-width: 0;
+            height: 42px;
+            padding: 0 12px;
+            border: 1px solid rgba(0, 229, 255, .26);
+            border-radius: 12px;
+            outline: 0;
+            background: rgba(0, 0, 0, .3);
+            color: #fff;
+            font: inherit;
+            font-weight: 900;
+            direction: ltr;
+        }
+
+        .meal-price-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 14px rgba(0, 229, 255, .18);
+        }
+
+        .meal-save {
+            width: 42px;
+            height: 42px;
+            border: 0;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), #39bdf5);
+            color: #001014;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .meal-quick-feedback {
+            display: block;
+            min-height: 18px;
+            margin-top: 8px;
+            color: var(--dim);
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .meal-quick-feedback.is-success { color: var(--green); }
+        .meal-quick-feedback.is-error { color: #ff9b95; }
+
+        .meal-detail-link {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+        }
+
         .empty-state {
             padding: 46px 18px;
             text-align: center;
@@ -483,6 +644,14 @@
             .search-inp,
             .filter-select { width: 100%; }
             h1 { font-size: 28px; }
+            .meal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+            .meal-media { height: 132px; }
+            .meal-card-body { padding: 11px; }
+            .meal-name { font-size: 13px; }
+            .meal-power { top: 7px; right: 7px; padding: 5px 7px; font-size: 10px; }
+            .meal-price-row { grid-template-columns: minmax(0, 1fr) 38px; gap: 6px; }
+            .meal-price-input, .meal-save { height: 38px; }
+            .meal-save { width: 38px; }
         }
     </style>
 </head>
@@ -661,6 +830,73 @@
                         </div>
                     </div>
 
+                    @if($isRestaurantContext)
+                        <div class="meal-grid" id="restaurantMeals">
+                            @forelse($productItems as $product)
+                                @php
+                                    $categoryName = data_get($product, 'category.name', data_get($product, 'category_name', '-'));
+                                    $image = data_get($product, 'main_image');
+                                    $isActive = (bool) data_get($product, 'is_active', true);
+                                    $canQuickManageMeal = $canManageProduct($product) && $canEditProducts;
+                                @endphp
+                                <article class="meal-card {{ $isActive ? '' : 'is-inactive' }}" data-cat="{{ $categoryName }}">
+                                    @if($canQuickManageMeal)
+                                        <form class="meal-card-form js-meal-quick-form" action="{{ route('products.quick-settings', $product) }}" method="post">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="hidden" name="is_active" value="{{ $isActive ? 1 : 0 }}">
+                                            <div class="meal-media">
+                                                @if($image)
+                                                    <img src="{{ asset($image) }}" alt="{{ data_get($product, 'name', '') }}">
+                                                @else
+                                                    <span class="meal-placeholder"><i class="ti ti-tools-kitchen-2"></i></span>
+                                                @endif
+                                                <button type="button" class="meal-power {{ $isActive ? 'is-active' : '' }}" data-meal-toggle aria-label="{{ $isActive ? 'إيقاف الوجبة' : 'تشغيل الوجبة' }}">
+                                                    <i class="ti {{ $isActive ? 'ti-power' : 'ti-power' }}"></i>
+                                                    <span data-meal-power-copy>{{ $isActive ? 'متاحة' : 'موقوفة' }}</span>
+                                                </button>
+                                            </div>
+                                            <div class="meal-card-body">
+                                                <div class="meal-card-head">
+                                                    <div>
+                                                        <div class="meal-name">{{ data_get($product, 'name', '-') }}</div>
+                                                        <span class="meal-category">{{ $categoryName }}</span>
+                                                    </div>
+                                                    <a href="{{ route('products.edit', $product) }}" class="icon-btn meal-detail-link" aria-label="تعديل كامل">
+                                                        <i class="ti ti-edit"></i>
+                                                    </a>
+                                                </div>
+                                                <div class="meal-price-row">
+                                                    <input class="meal-price-input" type="number" name="price" min="0" max="99999999.99" step="0.01" value="{{ data_get($product, 'price', 0) }}" aria-label="سعر الوجبة">
+                                                    <button class="meal-save" type="submit" aria-label="حفظ السعر"><i class="ti ti-check"></i></button>
+                                                </div>
+                                                <span class="meal-quick-feedback" aria-live="polite"></span>
+                                            </div>
+                                        </form>
+                                    @else
+                                        <div class="meal-media">
+                                            @if($image)
+                                                <img src="{{ asset($image) }}" alt="{{ data_get($product, 'name', '') }}">
+                                            @else
+                                                <span class="meal-placeholder"><i class="ti ti-tools-kitchen-2"></i></span>
+                                            @endif
+                                            <span class="meal-power {{ $isActive ? 'is-active' : '' }}"><i class="ti ti-power"></i>{{ $isActive ? 'متاحة' : 'موقوفة' }}</span>
+                                        </div>
+                                        <div class="meal-card-body">
+                                            <div class="meal-name">{{ data_get($product, 'name', '-') }}</div>
+                                            <span class="meal-category">{{ $categoryName }}</span>
+                                            <div class="price" style="margin-top:12px">{{ data_get($product, 'price', 0) }}₪</div>
+                                        </div>
+                                    @endif
+                                </article>
+                            @empty
+                                <div class="empty-state">
+                                    <i class="ti ti-tools-kitchen-2" aria-hidden="true"></i>
+                                    لا توجد وجبات لعرضها حاليًا
+                                </div>
+                            @endforelse
+                        </div>
+                    @else
                     <div class="table-wrap">
                         <table id="prodTable">
                             <thead>
@@ -791,6 +1027,7 @@
                             </tbody>
                         </table>
                     </div>
+                    @endif
                 </section>
             </div>
         </main>
@@ -799,7 +1036,7 @@
     <script>
         const prodSearch = document.getElementById('prodSearch');
         const catFilter = document.getElementById('catFilter');
-        const prodRows = document.querySelectorAll('#prodTable tbody tr');
+        const prodRows = document.querySelectorAll('#prodTable tbody tr, #restaurantMeals .meal-card');
 
         function filterProducts() {
             const query = (prodSearch?.value || '').trim().toLowerCase();
@@ -814,6 +1051,79 @@
 
         prodSearch?.addEventListener('input', filterProducts);
         catFilter?.addEventListener('change', filterProducts);
+
+        async function saveQuickMeal(form) {
+            if (form.dataset.saving === 'true') return;
+
+            const card = form.closest('.meal-card');
+            const feedback = form.querySelector('.meal-quick-feedback');
+            const activeInput = form.querySelector('input[name="is_active"]');
+            const priceInput = form.querySelector('input[name="price"]');
+            const powerButton = form.querySelector('[data-meal-toggle]');
+            const saveButton = form.querySelector('.meal-save');
+            const previousActive = activeInput?.value;
+            const controls = [powerButton, saveButton].filter(Boolean);
+
+            form.dataset.saving = 'true';
+            controls.forEach(control => control.disabled = true);
+            if (feedback) {
+                feedback.textContent = 'جارٍ الحفظ...';
+                feedback.className = 'meal-quick-feedback';
+            }
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    credentials: 'same-origin',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    const validationError = Object.values(data.errors || {}).flat()[0];
+                    throw new Error(validationError || data.message || 'تعذر حفظ الوجبة.');
+                }
+
+                const isActive = Boolean(data.is_active);
+                activeInput.value = isActive ? '1' : '0';
+                if (priceInput && data.price !== undefined) priceInput.value = data.price;
+                card?.classList.toggle('is-inactive', !isActive);
+                powerButton?.classList.toggle('is-active', isActive);
+                powerButton?.setAttribute('aria-label', isActive ? 'إيقاف الوجبة' : 'تشغيل الوجبة');
+                const powerCopy = powerButton?.querySelector('[data-meal-power-copy]');
+                if (powerCopy) powerCopy.textContent = isActive ? 'متاحة' : 'موقوفة';
+                if (feedback) {
+                    feedback.textContent = 'تم الحفظ ✓';
+                    feedback.classList.add('is-success');
+                }
+            } catch (error) {
+                if (activeInput && previousActive !== undefined) activeInput.value = previousActive;
+                if (feedback) {
+                    feedback.textContent = error.message || 'تعذر حفظ الوجبة.';
+                    feedback.classList.add('is-error');
+                }
+            } finally {
+                delete form.dataset.saving;
+                controls.forEach(control => control.disabled = false);
+            }
+        }
+
+        document.querySelectorAll('.js-meal-quick-form').forEach(form => {
+            form.addEventListener('submit', event => {
+                event.preventDefault();
+                saveQuickMeal(form);
+            });
+
+            form.querySelector('[data-meal-toggle]')?.addEventListener('click', () => {
+                const activeInput = form.querySelector('input[name="is_active"]');
+                if (!activeInput) return;
+                activeInput.value = activeInput.value === '1' ? '0' : '1';
+                saveQuickMeal(form);
+            });
+        });
     </script>
 </body>
 
