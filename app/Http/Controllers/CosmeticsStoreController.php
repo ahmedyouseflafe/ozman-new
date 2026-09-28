@@ -24,9 +24,25 @@ class CosmeticsStoreController extends Controller
         abort_unless($shop->is_active && $shop->catalog_type === 'cosmetics', 404);
 
         $shop->loadMissing('social');
-        $categories = $shop->categories()
+        $categoriesQuery = $shop->categories()
             ->where('is_active', true)
-            ->with(['products' => fn ($query) => $query->where('is_active', true)->latest()])
+            ->with(['products' => fn ($query) => $query->where('is_active', true)->latest()]);
+
+        // Curly Waves asked for a deliberate storefront order: curly first,
+        // cosmetics second and perfumes last. Other sections keep their
+        // existing alphabetical order.
+        if ($shop->slug === 'curly-waves' || strtolower(trim($shop->name)) === 'curly waves') {
+            $categoriesQuery->orderByRaw("
+                CASE
+                    WHEN name LIKE '%كيرلي%' OR LOWER(name) LIKE '%curly%' THEN 0
+                    WHEN name LIKE '%كوزمت%' OR LOWER(name) LIKE '%cosmetic%' THEN 1
+                    WHEN name LIKE '%عطر%' OR LOWER(name) LIKE '%perfume%' THEN 3
+                    ELSE 2
+                END
+            ");
+        }
+
+        $categories = $categoriesQuery
             ->orderBy('name')
             ->get();
         $uncategorizedProducts = Product::query()
