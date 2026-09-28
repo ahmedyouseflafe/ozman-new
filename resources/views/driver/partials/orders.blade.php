@@ -1,49 +1,76 @@
 @forelse($orders as $order)
+    @php
+        $items = collect($order->items ?? []);
+        $itemCount = $items->sum(fn ($item) => (int) ($item['qty'] ?? 1));
+        $itemsPreview = $items->take(2)->map(fn ($item) => ($item['qty'] ?? 1).'× '.($item['name'] ?? ''))->filter()->join('، ');
+    @endphp
     <article class="order-card" id="delivery-order-{{ $order->id }}">
-        <div class="order-head">
-            <div><small>طلب توصيل · {{ $order->created_at?->format('Y-m-d H:i') }}</small><h2>{{ $order->order_number }}</h2></div>
+        <div class="order-top">
+            <div>
+                <span class="order-number">{{ $order->order_number }}</span>
+                <small class="order-time"><i class="ti ti-clock"></i> {{ $order->created_at?->format('H:i · d/m/Y') }}</small>
+            </div>
             <span class="badge">{{ $order->statusLabel() }}</span>
+            <strong class="order-total"><small>المجموع</small>{{ $order->total }} ₪</strong>
         </div>
-        <div class="order-details">
-            <div><small>العميل</small><strong>{{ $order->customer_name }}</strong></div>
-            <div><small>الجوال</small><a href="tel:{{ $order->customer_phone }}" dir="ltr">{{ $order->customer_phone }}</a></div>
-            @if($order->customer_address)<div class="full"><small>العنوان</small><strong>{{ $order->customer_address }}</strong></div>@endif
-            @if($order->customer_notes)<div class="full"><small>ملاحظات العميل</small><strong>{{ $order->customer_notes }}</strong></div>@endif
-            @if($order->map_link)<div class="full"><a class="map-link" href="{{ $order->map_link }}" target="_blank" rel="noopener"><i class="ti ti-map-pin"></i> فتح موقع التوصيل على الخريطة</a></div>@endif
+
+        <div class="order-customer-row">
+            <span class="customer-chip"><i class="ti ti-user"></i><small>العميل</small> {{ $order->customer_name }}</span>
+            @if($order->customer_phone)
+                <a class="quick-contact" href="tel:{{ $order->customer_phone }}" dir="ltr"><i class="ti ti-phone"></i> {{ $order->customer_phone }}</a>
+            @endif
+            @if($order->map_link)
+                <a class="map-link" href="{{ $order->map_link }}" target="_blank" rel="noopener"><i class="ti ti-map-pin"></i> الخريطة</a>
+            @endif
         </div>
-        <div class="order-items">
-            <small>الوجبات</small>
-            @foreach($order->items ?? [] as $item)
-                <div>{{ $item['qty'] ?? 1 }}× {{ $item['name'] ?? '' }} {{ $item['size'] ?? '' }}</div>
-            @endforeach
-        </div>
-        <div class="order-foot">
-            <strong>المجموع: {{ $order->total }} ₪</strong>
+
+        @if($order->customer_address)
+            <div class="order-address"><i class="ti ti-map-pin"></i><div><small>العنوان</small><strong>{{ $order->customer_address }}</strong></div></div>
+        @endif
+
+        @if($order->customer_notes)
+            <details class="order-notes"><summary><i class="ti ti-notes"></i> ملاحظات العميل</summary><div>{{ $order->customer_notes }}</div></details>
+        @endif
+
+        <details class="order-items">
+            <summary>
+                <span><i class="ti ti-bowl-spoon"></i> {{ $itemCount }} وجبة @if($itemsPreview) · {{ $itemsPreview }} @endif</span>
+                <i class="ti ti-chevron-down"></i>
+            </summary>
+            <div class="order-items-list">
+                @forelse($items as $item)
+                    <div>{{ $item['qty'] ?? 1 }}× {{ $item['name'] ?? '' }} {{ $item['size'] ?? '' }}</div>
+                @empty
+                    <div>لا توجد وجبات مسجلة.</div>
+                @endforelse
+            </div>
+        </details>
+
+        <div class="order-actions">
             @if($order->status === 'ready')
                 <form class="delivery-eta-form" method="post" action="{{ route('driver.orders.status', $order) }}">
                     @csrf @method('patch')
                     <input type="hidden" name="status" value="out_for_delivery">
-                    <label for="delivery-minutes-{{ $order->id }}">وقت التوصيل التقريبي بالدقائق</label>
-                    <input id="delivery-minutes-{{ $order->id }}" type="number" name="estimated_delivery_minutes" min="1" max="240" inputmode="numeric" placeholder="مثلاً 20" required>
-                    <button type="submit" class="action"><i class="ti ti-motorbike"></i> استلمت الطلب وخرجت للتوصيل</button>
+                    <label for="delivery-minutes-{{ $order->id }}">وقت الوصول المتوقع (دقائق)</label>
+                    <input id="delivery-minutes-{{ $order->id }}" type="number" name="estimated_delivery_minutes" min="1" max="240" inputmode="numeric" placeholder="20" required>
+                    <button type="submit" class="action"><i class="ti ti-motorbike"></i> استلام وبدء التوصيل</button>
                 </form>
             @elseif($order->status === 'out_for_delivery')
                 <form class="delivery-eta-form" method="post" action="{{ route('driver.orders.delivery-time', $order) }}">
                     @csrf @method('patch')
-                    <label for="delivery-minutes-{{ $order->id }}">تعديل الوقت المتبقي بالدقائق</label>
-                    <input id="delivery-minutes-{{ $order->id }}" type="number" name="estimated_delivery_minutes" min="1" max="240" inputmode="numeric" placeholder="مثلاً 15" required>
-                    @if($order->estimated_delivery_at)
-                        <small>الوقت الحالي: {{ $order->estimated_delivery_at->isFuture() ? 'حوالي '.max(1, (int) ceil(now()->diffInSeconds($order->estimated_delivery_at, false) / 60)).' دقيقة' : 'تجاوز الوقت المقدر' }}</small>
-                    @endif
-                    <button type="submit" class="btn"><i class="ti ti-clock"></i> تحديث وقت الوصول</button>
+                    <label for="delivery-minutes-{{ $order->id }}">تحديث الوقت المتبقي</label>
+                    <input id="delivery-minutes-{{ $order->id }}" type="number" name="estimated_delivery_minutes" min="1" max="240" inputmode="numeric" placeholder="15" required>
+                    <button type="submit" class="btn"><i class="ti ti-clock"></i> حفظ الوقت</button>
                 </form>
                 <form method="post" action="{{ route('driver.orders.status', $order) }}">
                     @csrf @method('patch')
                     <input type="hidden" name="status" value="completed">
-                    <button type="submit" class="action"><i class="ti ti-circle-check"></i> تم تسليم الطلب للعميل</button>
+                    <button type="submit" class="action"><i class="ti ti-circle-check"></i> تم التسليم</button>
                 </form>
             @elseif(in_array($order->status, ['new', 'preparing'], true))
-                <small>الطلب عند المطعم؛ سيظهر زر الاستلام عندما يصبح جاهزًا.</small>
+                <span class="order-wait"><i class="ti ti-chef-hat"></i> الطلب عند المطعم؛ سيصبح متاحًا عند التجهيز.</span>
+            @elseif($order->status === 'completed')
+                <span class="order-wait"><i class="ti ti-circle-check"></i> تم تسليم الطلب.</span>
             @endif
         </div>
     </article>
