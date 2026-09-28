@@ -46,7 +46,7 @@ class FrontController extends Controller
         $shopSummaries = Shop::query()
             ->where('is_active', true)
             ->select([
-                'id', 'name', 'slug', 'catalog_type', 'logo', 'banner',
+                'id', 'name', 'slug', 'catalog_type', 'home_section', 'logo', 'banner',
                 'phone', 'whatsapp', 'address', 'latitude', 'longitude',
             ])
             ->latest()
@@ -466,6 +466,7 @@ class FrontController extends Controller
                 'id' => $shop->id,
                 'title' => $shop->name,
                 'catalog_type' => $shop->catalog_type,
+                'home_section' => $shop->home_section ?: $shop->catalog_type,
                 'public_url' => $this->shopPublicUrl($shop),
                 'img' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
                 'logo' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
@@ -505,6 +506,7 @@ class FrontController extends Controller
                 'id' => $ozmanShop->id,
                 'title' => $ozmanShop->name,
                 'catalog_type' => $ozmanShop->catalog_type,
+                'home_section' => $ozmanShop->home_section ?: $ozmanShop->catalog_type,
                 'public_url' => $this->shopPublicUrl($ozmanShop),
                 'img' => $this->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
                 'logo' => $this->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
@@ -547,6 +549,7 @@ class FrontController extends Controller
             'id' => $shop->id,
             'title' => $shop->name,
             'catalog_type' => $shop->catalog_type,
+            'home_section' => $shop->home_section ?: $shop->catalog_type,
             'public_url' => $this->shopPublicUrl($shop),
             'img' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
             'logo' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),

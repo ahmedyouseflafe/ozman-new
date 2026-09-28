@@ -431,6 +431,7 @@ class ShopController extends Controller
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'catalog_type' => ['nullable', Rule::in(array_keys(config('catalog_types', [])))],
+            'home_section' => ['nullable', Rule::in(array_keys(config('home_sections', [])))],
             'slug' => [
                 'nullable',
                 'string',

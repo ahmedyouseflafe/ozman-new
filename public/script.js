@@ -3814,7 +3814,8 @@ document.addEventListener('DOMContentLoaded', () => {
             clothing: { title: 'ملابس وأزياء', icon: 'fa-shirt' },
             shoes: { title: 'أحذية', icon: 'fa-shoe-prints' },
             sweets: { title: 'حلويات ومخبوزات', icon: 'fa-cake-candles' },
-            cosmetics: { title: 'تجميل وعناية', icon: 'fa-spray-can-sparkles' }
+            cosmetics: { title: 'تجميل وعناية', icon: 'fa-spray-can-sparkles' },
+            skin_care: { title: 'عناية بالبشرة', icon: 'fa-spa' }
         };
 
         function renderShopSectionsCarousel() {
@@ -3824,7 +3825,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const groupedSections = new Map();
 
             centersData.forEach((shop, shopIndex) => {
-                const key = String(shop.catalog_type || 'general');
+                const key = String(shop.home_section || shop.catalog_type || 'general');
                 if (!groupedSections.has(key)) groupedSections.set(key, []);
                 groupedSections.get(key).push({ shop, shopIndex });
             });
@@ -4066,11 +4067,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 clothing: { label: 'ملابس وأزياء', icon: 'fa-shirt' },
                 shoes: { label: 'أحذية', icon: 'fa-shoe-prints' },
                 sweets: { label: 'حلويات ومخبوزات', icon: 'fa-cake-candles' },
-                cosmetics: { label: 'كوزمتكس وعناية', icon: 'fa-spray-can-sparkles' }
+                cosmetics: { label: 'كوزمتكس وعناية', icon: 'fa-spray-can-sparkles' },
+                skin_care: { label: 'عناية بالبشرة', icon: 'fa-spa' }
             };
 
             const availableNearestTypes = () => [...new Set(
-                centersData.map(shop => String(shop.catalog_type || 'general'))
+                centersData.map(shop => String(shop.home_section || shop.catalog_type || 'general'))
             )];
 
             const renderNearestTypes = () => {
@@ -4152,7 +4154,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const sortedShops = shopsSortedByDistance(location)
-                    .filter(({ shop }) => String(shop.catalog_type || 'general') === nearestSelectedType);
+                    .filter(({ shop }) => String(shop.home_section || shop.catalog_type || 'general') === nearestSelectedType);
                 const selectionIsVisible = sortedShops.some(({ index }) => index === nearestSelectedIndex);
                 if ((preferNearest || !selectionIsVisible) && sortedShops[0]) {
                     nearestSelectedIndex = sortedShops[0].index;
@@ -4217,7 +4219,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     saveCustomerLocation(location);
                     const details = [formatLocationAccuracy(location), formatLocationCoordinates(location)].filter(Boolean).join(' - ');
                     const shopsWithCoordinatesCount = centersData.filter(shop =>
-                        String(shop.catalog_type || 'general') === nearestSelectedType && hasShopCoordinates(shop)
+                        String(shop.home_section || shop.catalog_type || 'general') === nearestSelectedType && hasShopCoordinates(shop)
                     ).length;
                     const locationMessage = shopsWithCoordinatesCount > 0
                         ? `تم تحديد موقعك الآن. ${details} اختر المتجر الأقرب لك لعرض أقسامه.`

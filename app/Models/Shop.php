@@ -18,6 +18,7 @@ class Shop extends Model
         'name',
         'slug',
         'catalog_type',
+        'home_section',
         'description',
         'logo',
         'banner',

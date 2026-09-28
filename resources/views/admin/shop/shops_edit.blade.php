@@ -683,6 +683,19 @@
                             </div>
 
                             <div class="form-group full">
+                                <label class="form-label" for="home_section"><i class="ti ti-layout-grid" aria-hidden="true"></i>قسم العرض في الصفحة الرئيسية</label>
+                                <div class="field">
+                                    <select id="home_section" name="home_section">
+                                        <option value="">حسب نوع نشاط المتجر</option>
+                                        @foreach(config('home_sections', []) as $sectionKey => $section)
+                                            <option value="{{ $sectionKey }}" @selected(old('home_section', data_get($shop, 'home_section')) === $sectionKey)>{{ $section['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <small style="color:rgba(255,255,255,.55)">اختياري: يغيّر مكان ظهور المتجر في الصفحة الرئيسية فقط، من دون تغيير واجهة المتجر أو خدماته.</small>
+                            </div>
+
+                            <div class="form-group full">
                                 <label class="form-label" for="description"><i class="ti ti-align-right" aria-hidden="true"></i>وصف المتجر</label>
                                 <div class="field">
                                     <textarea id="description" name="description">{{ old('description', data_get($shop, 'description')) }}</textarea>
