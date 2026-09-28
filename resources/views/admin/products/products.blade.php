@@ -161,6 +161,10 @@
             margin-bottom: 22px;
         }
 
+        .restaurant-stats-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
         .stat-card,
         .panel {
             border: 1px solid var(--border);
@@ -641,6 +645,29 @@
             }
             .filter-row { width: 100%; }
             .stats-grid { grid-template-columns: 1fr; }
+            .restaurant-stats-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 8px;
+                margin-bottom: 14px;
+            }
+            .restaurant-stats-grid .stat-card {
+                min-height: 94px;
+                padding: 11px 9px;
+                border-radius: 17px;
+            }
+            .restaurant-stats-grid .stat-label {
+                font-size: 10px;
+                line-height: 1.35;
+            }
+            .restaurant-stats-grid .stat-val {
+                margin-top: 10px;
+                font-size: 26px;
+            }
+            .restaurant-stats-grid .stat-icon {
+                left: 9px;
+                bottom: 9px;
+                font-size: 28px;
+            }
             .search-inp,
             .filter-select { width: 100%; }
             h1 { font-size: 28px; }
@@ -780,7 +807,7 @@
                     <div class="status-alert">{{ session('status') }}</div>
                 @endif
 
-                <section class="stats-grid" aria-label="إحصائيات {{ $itemsLabel }}">
+                <section class="stats-grid {{ $isRestaurantContext ? 'restaurant-stats-grid' : '' }}" aria-label="إحصائيات {{ $itemsLabel }}">
                     <article class="stat-card" style="--card-color: var(--primary)">
                         <div class="stat-label">إجمالي {{ $itemsLabel }}</div>
                         <div class="stat-val">{{ $productsTotal }}</div>
