@@ -30,6 +30,7 @@ self.addEventListener('push', (event) => {
         badge: payload.badge || payload.icon || '/ozman-favicon.png',
         tag: payload.tag || 'ozman-merchant-notification',
         renotify: true,
+        silent: false,
         requireInteraction: Boolean(payload.requireInteraction),
         vibrate: [240, 90, 240, 90, 360],
         data: {

@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>إدارة مطعم {{ $shop->name }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1369,7 +1370,7 @@
                 </div>
                 <div class="live-tools">
                     <button type="button" class="btn sound-toggle" id="restaurant-sound-toggle"><i
-                            class="ti ti-volume"></i> تفعيل صوت الطلبات</button>
+                            class="ti ti-bell-ringing"></i> تفعيل صوت وإشعارات الطلبات</button>
                     <span class="live" id="live-status"><i class="live-dot"></i> متصل وتحديث مباشر</span>
                 </div>
             </div>
@@ -1428,6 +1429,10 @@
             const feedEndpoint =
                 {{ Illuminate\Support\Js::from(route('restaurant.orders.feed', ['shop' => $shop, 'period' => $selectedPeriod, 'status' => $selectedStatus, 'type' => $selectedType])) }};
             let feedUrl = feedEndpoint;
+            const pushPublicKeyUrl = {{ Illuminate\Support\Js::from(route('merchant-app.push.public-key')) }};
+            const pushSubscriptionUrl = {{ Illuminate\Support\Js::from(route('merchant-app.push.store')) }};
+            const serviceWorkerUrl = {{ Illuminate\Support\Js::from(asset('merchant-pwa-sw.js')) }};
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             const dashboardUrl = {{ Illuminate\Support\Js::from(route('restaurant.dashboard', ['shop' => $shop, 'period' => $selectedPeriod, 'status' => $selectedStatus, 'type' => $selectedType])) }};
             const initialLatestId = Number({{ (int) $latestOrderId }});
             const acknowledgementKey = 'ozman.restaurant.{{ (int) $shop->id }}.acknowledged-order';
@@ -1445,6 +1450,58 @@
             let polling = false;
             let statusUpdating = false;
             let feedController = null;
+
+            const decodePushKey = key => {
+                const base64 = (key + '='.repeat((4 - key.length % 4) % 4))
+                    .replace(/-/g, '+').replace(/_/g, '/');
+                return Uint8Array.from(atob(base64), character => character.charCodeAt(0));
+            };
+
+            async function enableBackgroundNotifications(requestPermission = false) {
+                if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+                    throw new Error('هذا المتصفح لا يدعم إشعارات الخلفية.');
+                }
+
+                let permission = Notification.permission;
+                if (permission === 'default' && requestPermission) {
+                    permission = await Notification.requestPermission();
+                }
+                if (permission !== 'granted') {
+                    throw new Error('اسمح بإشعارات الطلبات من إعدادات المتصفح ليصل الطلب حتى والشاشة مقفلة.');
+                }
+
+                const keyResponse = await fetch(pushPublicKeyUrl, {
+                    headers: { Accept: 'application/json' },
+                    credentials: 'same-origin',
+                });
+                if (!keyResponse.ok) throw new Error('تعذّر تجهيز إشعارات الخلفية.');
+                const { public_key: publicKey } = await keyResponse.json();
+
+                const registration = await navigator.serviceWorker.register(serviceWorkerUrl, { scope: '/' });
+                let subscription = await registration.pushManager.getSubscription();
+                if (!subscription) {
+                    subscription = await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: decodePushKey(publicKey),
+                    });
+                }
+                const serialized = subscription.toJSON();
+                serialized.contentEncoding = window.PushManager?.supportedContentEncodings?.[0] || 'aes128gcm';
+                const saveResponse = await fetch(pushSubscriptionUrl, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    body: JSON.stringify({
+                        shop_id: {{ (int) $shop->id }},
+                        subscription: serialized,
+                    }),
+                });
+                if (!saveResponse.ok) throw new Error('تعذّر ربط هذا الجهاز بإشعارات المطعم.');
+            }
 
             const periodLabels = {
                 today: 'طلبات اليوم',
@@ -1590,7 +1647,20 @@
                 startAlarm();
             }
 
-            soundToggle.addEventListener('click', () => enableSound(true));
+            soundToggle.addEventListener('click', async () => {
+                await enableSound(true);
+                try {
+                    await enableBackgroundNotifications(true);
+                    soundToggle.classList.remove('attention');
+                    soundToggle.innerHTML = '<i class="ti ti-bell-check"></i> صوت وإشعارات الطلبات مفعّلة';
+                    liveStatus.innerHTML = '<i class="live-dot"></i> إشعارات الخلفية مفعّلة حتى عند قفل الشاشة';
+                    liveStatus.style.color = 'var(--green)';
+                } catch (error) {
+                    soundToggle.classList.add('attention');
+                    liveStatus.innerHTML = '<i class="live-dot"></i> فعّل إذن الإشعارات ليصل الطلب عند قفل الشاشة';
+                    liveStatus.style.color = 'var(--yellow)';
+                }
+            });
             const unlockOnFirstInteraction = () => enableSound(false);
             document.addEventListener('pointerdown', unlockOnFirstInteraction, {
                 once: true,
@@ -1600,6 +1670,11 @@
                 once: true,
                 capture: true
             });
+            if ('Notification' in window && Notification.permission === 'granted') {
+                enableBackgroundNotifications().then(() => {
+                    soundToggle.innerHTML = '<i class="ti ti-bell-check"></i> إشعارات الخلفية مفعّلة';
+                }).catch(() => {});
+            }
 
             alarm.addEventListener('click', () => {
                 const orderId = pendingOrderId;
