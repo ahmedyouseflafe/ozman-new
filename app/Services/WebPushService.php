@@ -24,13 +24,9 @@ class WebPushService
 
     public function sendToShop(Shop $shop, string $title, string $body, string $url, array $data = []): int
     {
-        if (! $shop->user_id) {
-            return 0;
-        }
-
         $subscriptions = WebPushSubscription::query()
             ->where('shop_id', $shop->id)
-            ->where('user_id', $shop->user_id)
+            ->whereHas('user', fn ($query) => $query->where('is_active', true))
             ->get();
 
         if ($subscriptions->isEmpty()) {

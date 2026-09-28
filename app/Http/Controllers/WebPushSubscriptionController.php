@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\WebPushSubscription;
+use App\Models\Shop;
 use App\Services\WebPushService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,8 +26,12 @@ class WebPushSubscriptionController extends Controller
         ]);
 
         $user = $request->user();
-        abort_unless($user?->isShopOwner(), 403);
-        $shop = $user->shops()->whereKey($data['shop_id'])->where('is_active', true)->firstOrFail();
+        abort_unless($user, 403);
+        $shop = Shop::query()->whereKey($data['shop_id'])->where('is_active', true)->firstOrFail();
+        abort_unless(
+            $user->isSuperAdmin() || in_array((int) $shop->id, $user->accessibleShopIds(), true),
+            403,
+        );
         $endpoint = $data['subscription']['endpoint'];
         $endpointHash = hash('sha256', $endpoint);
 
@@ -53,7 +58,7 @@ class WebPushSubscriptionController extends Controller
     {
         $data = $request->validate(['endpoint' => ['required', 'url:https', 'max:2048']]);
         $user = $request->user();
-        abort_unless($user?->isShopOwner(), 403);
+        abort_unless($user, 403);
 
         WebPushSubscription::query()
             ->where('user_id', $user->id)
