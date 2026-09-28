@@ -944,6 +944,52 @@
             }
         }
 
+        @media(max-width:620px) {
+            .hero {
+                padding: 18px
+            }
+
+            .hero-actions {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                align-items: stretch;
+                gap: 9px;
+            }
+
+            .hero-actions .availability-form {
+                grid-column: 1 / -1;
+                width: 100%;
+            }
+
+            .hero-actions .availability-toggle {
+                min-width: 0;
+                min-height: 52px;
+                padding: 10px 14px;
+                font-size: 15px;
+                white-space: nowrap;
+            }
+
+            .hero-actions > .btn {
+                width: 100%;
+                min-width: 0;
+                min-height: 52px;
+                padding: 9px 8px;
+                border-radius: 13px;
+                gap: 6px;
+                font-size: 13px;
+                line-height: 1.25;
+            }
+
+            .hero-actions > .btn i {
+                flex: 0 0 auto;
+                font-size: 18px;
+            }
+
+            .hero-actions > .btn:last-child {
+                grid-column: 1 / -1;
+            }
+        }
+
         @media(max-width:900px) {
             .orders-wrap {
                 overflow: visible;
