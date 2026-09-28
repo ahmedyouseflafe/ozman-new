@@ -1238,7 +1238,7 @@
         <section class="stats-grid">
             <article class="stat glass" style="--accent:var(--cyan)">
                 <div class="stat-icon"><i class="ti ti-receipt"></i></div><span class="stat-label">طلبات
-                    {{ $selectedPeriodLabel }}</span><strong id="stat-orders">{{ $stats['orders'] }}</strong>
+                    <span id="stat-period-label">{{ $selectedPeriodLabel }}</span></span><strong id="stat-orders">{{ $stats['orders'] }}</strong>
             </article>
             <article class="stat glass" style="--accent:var(--green)">
                 <div class="stat-icon"><i class="ti ti-sparkles"></i></div><span class="stat-label">طلبات
@@ -1327,7 +1327,7 @@
                     <span class="live" id="live-status"><i class="live-dot"></i> متصل وتحديث مباشر</span>
                 </div>
             </div>
-            <form class="filters" method="get" style="margin:22px 0 16px">
+            <form class="filters" id="restaurant-orders-filter" method="get" style="margin:22px 0 16px">
                 <select class="field" name="period">
                     @foreach (['today' => 'طلبات اليوم', 'week' => 'طلبات هذا الأسبوع', 'month' => 'طلبات هذا الشهر', 'all' => 'كل الطلبات'] as $key => $label)
                         <option value="{{ $key }}" @selected($selectedPeriod === $key)>{{ $label }}</option>
@@ -1345,7 +1345,7 @@
                         <option value="{{ $key }}" @selected($selectedStatus === $key)>{{ $label }}</option>
                     @endforeach
                 </select>
-                <button class="btn btn-primary"><i class="ti ti-filter"></i> فلترة</button>
+                <button class="btn btn-primary" id="restaurant-orders-filter-submit"><i class="ti ti-filter"></i> فلترة</button>
             </form>
             <div class="orders-wrap">
                 <table>
@@ -1375,9 +1375,13 @@
             const alarm = document.getElementById('restaurant-order-alarm');
             const alarmMessage = document.getElementById('restaurant-order-alarm-message');
             const soundToggle = document.getElementById('restaurant-sound-toggle');
-            if (!body || !liveStatus || !alarm || !alarmMessage || !soundToggle) return;
-            const feedUrl =
+            const filterForm = document.getElementById('restaurant-orders-filter');
+            const filterSubmit = document.getElementById('restaurant-orders-filter-submit');
+            const periodLabel = document.getElementById('stat-period-label');
+            if (!body || !liveStatus || !alarm || !alarmMessage || !soundToggle || !filterForm) return;
+            const feedEndpoint =
                 {{ Illuminate\Support\Js::from(route('restaurant.orders.feed', ['shop' => $shop, 'period' => $selectedPeriod, 'status' => $selectedStatus, 'type' => $selectedType])) }};
+            let feedUrl = feedEndpoint;
             const dashboardUrl = {{ Illuminate\Support\Js::from(route('restaurant.dashboard', ['shop' => $shop, 'period' => $selectedPeriod, 'status' => $selectedStatus, 'type' => $selectedType])) }};
             const initialLatestId = Number({{ (int) $latestOrderId }});
             const acknowledgementKey = 'ozman.restaurant.{{ (int) $shop->id }}.acknowledged-order';
@@ -1394,6 +1398,44 @@
             let soundUnlocked = false;
             let polling = false;
             let statusUpdating = false;
+            let feedController = null;
+
+            const periodLabels = {
+                today: 'طلبات اليوم',
+                week: 'طلبات هذا الأسبوع',
+                month: 'طلبات هذا الشهر',
+                all: 'كل الطلبات'
+            };
+
+            function updateFeedUrl() {
+                const params = new URLSearchParams(new FormData(filterForm));
+                const nextUrl = new URL(feedEndpoint, window.location.origin);
+                nextUrl.search = params.toString();
+                feedUrl = nextUrl.toString();
+
+                const dashboardUrl = new URL(window.location.href);
+                ['period', 'type', 'status'].forEach(key => {
+                    const value = params.get(key);
+                    if (value) dashboardUrl.searchParams.set(key, value);
+                    else dashboardUrl.searchParams.delete(key);
+                });
+                window.history.replaceState({}, '', dashboardUrl);
+
+                if (periodLabel) periodLabel.textContent = periodLabels[params.get('period')] || periodLabels.today;
+            }
+
+            async function applyFilters() {
+                updateFeedUrl();
+                if (filterSubmit) {
+                    filterSubmit.disabled = true;
+                    filterSubmit.classList.add('is-loading');
+                }
+                await refreshOrders();
+                if (filterSubmit) {
+                    filterSubmit.disabled = false;
+                    filterSubmit.classList.remove('is-loading');
+                }
+            }
 
             function getAlarmOutput() {
                 if (alarmOutput) return alarmOutput;
@@ -1466,7 +1508,8 @@
                         soundToggle.innerHTML = '<i class="ti ti-volume-2"></i> صوت الطلبات مفعّل';
                         if (preview || pendingOrderId) playAlarmPulse();
                     }
-                } catch (_) {
+                } catch (error) {
+                    if (error.name === 'AbortError') return;
                     soundToggle.innerHTML = '<i class="ti ti-volume-off"></i> اضغط للسماح بالصوت';
                 }
             }
@@ -1623,16 +1666,20 @@
             });
 
             async function refreshOrders() {
-                if (polling) return;
+                if (polling) feedController?.abort();
+                const requestUrl = feedUrl;
+                const controller = new AbortController();
+                feedController = controller;
                 polling = true;
                 try {
-                    const response = await fetch(feedUrl, {
+                    const response = await fetch(requestUrl, {
                         headers: {
                             Accept: 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
                         },
                         credentials: 'same-origin',
-                        cache: 'no-store'
+                        cache: 'no-store',
+                        signal: controller.signal
                     });
                     if (response.status === 401 || response.status === 403) {
                         liveStatus.innerHTML = '<i class="live-dot"></i> لا توجد صلاحية أو انتهت الجلسة';
@@ -1641,6 +1688,7 @@
                     }
                     if (!response.ok) throw new Error('feed');
                     const data = await response.json();
+                    if (requestUrl !== feedUrl) return;
                     const editingOrder = body.contains(document.activeElement);
                     if (!editingOrder && !statusUpdating) body.innerHTML = data.html;
                     for (const key of ['orders', 'new', 'preparing', 'ready']) {
@@ -1659,9 +1707,19 @@
                     liveStatus.innerHTML = '<i class="live-dot"></i> جاري إعادة الاتصال';
                     liveStatus.style.color = 'var(--yellow)'
                 } finally {
-                    polling = false
+                    if (feedController === controller) {
+                        feedController = null;
+                        polling = false;
+                    }
                 }
             }
+            filterForm.addEventListener('submit', event => {
+                event.preventDefault();
+                applyFilters();
+            });
+            filterForm.querySelectorAll('select').forEach(select => {
+                select.addEventListener('change', applyFilters);
+            });
             window.setInterval(refreshOrders, 3000);
             document.addEventListener('visibilitychange', () => {
                 if (!document.hidden) refreshOrders()
