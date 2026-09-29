@@ -310,7 +310,7 @@
             {transform: 'translate(0, 0) scale(1)', opacity: 1, borderRadius: '16px'},
             {transform: 'translate(' + (x * .35) + 'px, ' + (y * .18 - 74) + 'px) scale(.82) rotate(-9deg)', opacity: 1, offset: .42},
             {transform: 'translate(' + x + 'px, ' + y + 'px) scale(.16) rotate(12deg)', opacity: .22, borderRadius: '50%'}
-        ], {duration: 1180, easing: 'cubic-bezier(.16,.8,.24,1)', fill: 'forwards'});
+        ], {duration: 5000, easing: 'cubic-bezier(.16,.8,.24,1)', fill: 'forwards'});
 
         flight.finished.catch(() => {}).finally(() => {
             flyer.remove();
