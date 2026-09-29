@@ -34,6 +34,7 @@ use App\Http\Controllers\ShopController;
 use App\Http\Controllers\ShopStoryController;
 use App\Http\Controllers\TextToSpeechController;
 use App\Http\Controllers\TranslationController;
+use App\Http\Controllers\SweetsStoreController;
 use App\Http\Controllers\VisitorRegistrationAdminController;
 use App\Http\Controllers\VisitorRegistrationController;
 use App\Http\Controllers\WebPushSubscriptionController;
@@ -102,6 +103,7 @@ Route::get('/restaurants/{shop:slug}', [RestaurantController::class, 'menu'])->n
 Route::get('/advertising/{shop:slug}', [AdvertisingStoreController::class, 'index'])->name('advertising.store');
 Route::get('/electronics/{shop:slug}', [ElectronicsStoreController::class, 'index'])->name('electronics.store');
 Route::get('/cosmetics/{shop:slug}', [CosmeticsStoreController::class, 'index'])->name('cosmetics.store');
+Route::get('/sweets/{shop:slug}', [SweetsStoreController::class, 'index'])->name('sweets.store');
 Route::get('/cosmetics/{shop:slug}/booking', [CosmeticsStoreController::class, 'booking'])->name('cosmetics.booking');
 Route::get('/cosmetics/{shop:slug}/booking/availability', [SalonAppointmentController::class, 'availability'])->name('cosmetics.booking.availability');
 Route::post('/cosmetics/{shop:slug}/booking', [SalonAppointmentController::class, 'store'])->name('cosmetics.booking.store');

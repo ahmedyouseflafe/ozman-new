@@ -226,6 +226,7 @@ class Shop extends Model
             'advertising_services' => 'advertising.store',
             'electronics' => 'electronics.store',
             'cosmetics' => 'cosmetics.store',
+            'sweets' => 'sweets.store',
             'real_estate' => 'real-estate.company',
             default => 'front.shop.slug',
         };
