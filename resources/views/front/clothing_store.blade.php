@@ -49,8 +49,8 @@
 <button class="bag" id="bag" type="button"><i class="ti ti-shopping-bag"></i><span><strong><span id="bagCount">0</span> قطعة في السلة</strong><small id="bagTotal">0.00 ₪</small></span></button>
 <div class="overlay" id="bagLayer"><section class="sheet"><header class="sheet-head"><h2>سلتك</h2><button class="x" type="button" data-close="bagLayer">×</button></header><div class="cart-items" id="cartItems"></div><div class="total"><span>المجموع</span><span id="sheetTotal">0.00 ₪</span></div><div class="buyer"><input id="buyerName" placeholder="الاسم"><input id="buyerPhone" inputmode="tel" placeholder="رقم الجوال"></div><button class="send" id="sendOrder" type="button"><i class="ti ti-brand-whatsapp"></i> إرسال الطلب للمحل</button></section></div>
 <div class="overlay quick" id="quickLayer"><section class="quick-card"><button class="x" type="button" data-close="quickLayer">×</button><img id="quickImage" src="" alt=""><div class="quick-copy"><small>PIECE DETAILS</small><h2 id="quickName"></h2><strong id="quickPrice"></strong><p id="quickDescription"></p><span class="option-label" id="sizeLabel">المقاس</span><div class="options" id="sizeOptions"></div><span class="option-label" id="colorLabel">اللون</span><div class="options" id="colorOptions"></div><button class="try-on" id="tryOn" type="button"><i class="ti ti-scan"></i> جرّبها عليك بالكاميرا <small>BETA</small></button><button class="quick-add" id="quickAdd" type="button"><i class="ti ti-shopping-bag-plus"></i> أضف للسلة</button></div></section></div>
-<div class="overlay try-on-overlay" id="tryOnLayer"><section class="try-on-card"><header><div><small>OZMAN VIRTUAL FIT / BETA</small><h2>جرّب القطعة عليك</h2></div><button class="x" type="button" data-close="tryOnLayer">×</button></header><div class="try-stage"><video id="tryVideo" autoplay playsinline muted></video><canvas id="tryCanvas"></canvas><div class="try-hud"><span><i class="ti ti-scan"></i> ثبّت كتفيك داخل الإطار</span><strong id="tryStatus">جاري تجهيز الكاميرا…</strong></div></div><p>تجربة مرئية مباشرة: تتحرك القطعة مع كتفيك. أفضل نتيجة تكون بصور المنتج بخلفية شفافة.</p></section></div>
-<style>.demo-try{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:46px;padding:0 16px;border:1px solid #d6ff38;border-radius:13px;background:#151516;color:var(--acid);font-size:11px;font-weight:900}.demo-try i{font-size:17px}.try-on{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:42px;margin-top:13px;border:1px solid #d6ff38;background:#252529;color:#f9f5ed;border-radius:12px;font-size:11px;font-weight:900}.try-on i{color:var(--acid);font-size:17px}.try-on small{padding:2px 5px;border-radius:5px;background:var(--acid);color:#171719;font-size:7px;letter-spacing:.08em}.try-on-overlay{align-items:center}.try-on-card{width:min(660px,100%);overflow:hidden;border:1px solid #d6ff388c;border-radius:25px;background:#161618;color:#f5f1ea;box-shadow:0 25px 80px #000b}.try-on-card header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid #ffffff18}.try-on-card header small{color:var(--acid);font-size:8px;font-weight:900;letter-spacing:.1em}.try-on-card h2{margin:4px 0 0;font-size:19px}.try-on-card header .x{border-color:#ffffff4d;color:#fff}.try-stage{position:relative;aspect-ratio:3/4;overflow:hidden;background:radial-gradient(circle at 50% 20%,#d6ff3824,transparent 33%),#09090a}.try-stage video,.try-stage canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}.try-stage canvas{pointer-events:none}.try-hud{position:absolute;z-index:2;right:14px;bottom:14px;left:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border:1px solid #ffffff37;border-radius:12px;background:#101011bd;backdrop-filter:blur(10px);font-size:9px}.try-hud span{color:#e6e3e9}.try-hud i{color:var(--acid);font-size:15px;vertical-align:middle}.try-hud strong{color:var(--acid);font-size:9px}.try-on-card>p{margin:0;padding:11px 18px;color:#aaa7ae;font-size:9px;line-height:1.7}@media(max-width:520px){.demo-try{width:100%}.try-on-card{border-radius:19px}.try-hud{align-items:flex-start;flex-direction:column}.try-stage{aspect-ratio:9/13}}</style>
+<div class="overlay try-on-overlay" id="tryOnLayer"><section class="try-on-card"><header><div><small>OZMAN VIRTUAL FIT / BETA</small><h2>جرّب القطعة عليك</h2></div><button class="x" type="button" data-close="tryOnLayer">×</button></header><div class="try-stage"><video id="tryVideo" autoplay playsinline muted></video><img class="try-garment" id="tryGarment" alt="القطعة التجريبية"><canvas id="tryCanvas"></canvas><div class="try-hud"><span><i class="ti ti-scan"></i> ثبّت كتفيك داخل الإطار</span><strong id="tryStatus">جاري تجهيز الكاميرا…</strong></div></div><p>تجربة مرئية مباشرة: تتحرك القطعة مع كتفيك. أفضل نتيجة تكون بصور المنتج بخلفية شفافة.</p></section></div>
+<style>.demo-try{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:46px;padding:0 16px;border:1px solid #d6ff38;border-radius:13px;background:#151516;color:var(--acid);font-size:11px;font-weight:900}.demo-try i{font-size:17px}.try-on{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:42px;margin-top:13px;border:1px solid #d6ff38;background:#252529;color:#f9f5ed;border-radius:12px;font-size:11px;font-weight:900}.try-on i{color:var(--acid);font-size:17px}.try-on small{padding:2px 5px;border-radius:5px;background:var(--acid);color:#171719;font-size:7px;letter-spacing:.08em}.try-on-overlay{align-items:center}.try-on-card{width:min(660px,100%);overflow:hidden;border:1px solid #d6ff388c;border-radius:25px;background:#161618;color:#f5f1ea;box-shadow:0 25px 80px #000b}.try-on-card header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid #ffffff18}.try-on-card header small{color:var(--acid);font-size:8px;font-weight:900;letter-spacing:.1em}.try-on-card h2{margin:4px 0 0;font-size:19px}.try-on-card header .x{border-color:#ffffff4d;color:#fff}.try-stage{position:relative;aspect-ratio:3/4;overflow:hidden;background:radial-gradient(circle at 50% 20%,#d6ff3824,transparent 33%),#09090a}.try-stage video,.try-stage canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}.try-stage canvas{display:none}.try-garment{position:absolute;z-index:1;top:21%;left:17%;display:block;width:66%;height:auto;max-height:72%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 18px 16px #0008);transition:width .12s ease,top .12s ease,left .12s ease,transform .12s ease}.try-hud{position:absolute;z-index:2;right:14px;bottom:14px;left:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border:1px solid #ffffff37;border-radius:12px;background:#101011bd;backdrop-filter:blur(10px);font-size:9px}.try-hud span{color:#e6e3e9}.try-hud i{color:var(--acid);font-size:15px;vertical-align:middle}.try-hud strong{color:var(--acid);font-size:9px}.try-on-card>p{margin:0;padding:11px 18px;color:#aaa7ae;font-size:9px;line-height:1.7}@media(max-width:520px){.demo-try{width:100%}.try-on-card{border-radius:19px}.try-hud{align-items:flex-start;flex-direction:column}.try-stage{aspect-ratio:9/13}}</style>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
 <script>
@@ -61,6 +61,7 @@
     const layer = document.getElementById('tryOnLayer');
     const video = document.getElementById('tryVideo');
     const canvas = document.getElementById('tryCanvas');
+    const garmentLayer = document.getElementById('tryGarment');
     const status = document.getElementById('tryStatus');
     const trigger = document.getElementById('tryOn');
     const closeButtons = [...document.querySelectorAll('[data-close="tryOnLayer"]')];
@@ -75,6 +76,7 @@
         if (stream) stream.getTracks().forEach(track => track.stop());
         stream = null;
         video.srcObject = null;
+        garmentLayer.removeAttribute('src');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
     const makeTransparent = source => {
@@ -106,9 +108,10 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const width = canvas.width * .66;
         const height = width * (garment.height / garment.width);
-        ctx.globalAlpha = .92;
-        ctx.drawImage(garment, (canvas.width - width) / 2, canvas.height * .21, width, height);
-        ctx.globalAlpha = 1;
+        garmentLayer.style.width = (width / canvas.width * 100) + '%';
+        garmentLayer.style.left = ((canvas.width - width) / 2 / canvas.width * 100) + '%';
+        garmentLayer.style.top = '21%';
+        garmentLayer.style.transform = 'none';
     };
     const drawGarment = results => {
         if (!active || !garment) return;
@@ -127,12 +130,10 @@
         const centerX = ((left.x + right.x) / 2) * canvas.width;
         const centerY = ((left.y + right.y) / 2) * canvas.height;
         const angle = Math.atan2((right.y - left.y) * canvas.height, (right.x - left.x) * canvas.width);
-        ctx.save();
-        ctx.translate(centerX, centerY + height * .28);
-        ctx.rotate(angle);
-        ctx.globalAlpha = .92;
-        ctx.drawImage(garment, -width / 2, -height * .42, width, height);
-        ctx.restore();
+        garmentLayer.style.width = (width / canvas.width * 100) + '%';
+        garmentLayer.style.left = ((centerX - width / 2) / canvas.width * 100) + '%';
+        garmentLayer.style.top = ((centerY - height * .42) / canvas.height * 100) + '%';
+        garmentLayer.style.transform = 'rotate(' + (angle * 180 / Math.PI) + 'deg)';
         setStatus('القطعة تتبع حركتك الآن');
     };
     const loop = async () => {
@@ -150,6 +151,7 @@
         setStatus('اسمح للكاميرا ليبدأ القياس');
         const image = new Image();
         image.crossOrigin = 'anonymous';
+        garmentLayer.src = imageUrl;
         image.onload = () => { garment = makeTransparent(image); drawFallback(); };
         image.onerror = () => { garment = null; setStatus('تعذر تحميل صورة القطعة'); };
         image.src = imageUrl;
