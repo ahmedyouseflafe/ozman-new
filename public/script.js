@@ -3879,7 +3879,8 @@ document.addEventListener('DOMContentLoaded', () => {
             shoes: { title: 'أحذية', icon: 'fa-shoe-prints' },
             sweets: { title: 'حلويات ومخبوزات', icon: 'fa-cake-candles' },
             cosmetics: { title: 'تجميل وعناية', icon: 'fa-spray-can-sparkles' },
-            skin_care: { title: 'عناية بالبشرة', icon: 'fa-spa' }
+            skin_care: { title: 'عناية بالبشرة', icon: 'fa-spa' },
+            home_furniture: { title: 'أدوات منزلية وأثاث', icon: 'fa-couch' }
         };
 
         function renderShopSectionsCarousel() {
@@ -4132,7 +4133,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 shoes: { label: 'أحذية', icon: 'fa-shoe-prints' },
                 sweets: { label: 'حلويات ومخبوزات', icon: 'fa-cake-candles' },
                 cosmetics: { label: 'كوزمتكس وعناية', icon: 'fa-spray-can-sparkles' },
-                skin_care: { label: 'عناية بالبشرة', icon: 'fa-spa' }
+                skin_care: { label: 'عناية بالبشرة', icon: 'fa-spa' },
+                home_furniture: { label: 'أدوات منزلية وأثاث', icon: 'fa-couch' }
             };
 
             const availableNearestTypes = () => [...new Set(
