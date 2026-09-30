@@ -946,10 +946,10 @@ document.addEventListener('DOMContentLoaded', () => {
             pendingUnitChoice = null;
         }
 
-        function openUnitChoiceModal(product, qty = 1, openPanel = false) {
+        function openUnitChoiceModal(product, qty = 1, openPanel = false, flightSource = null) {
             const options = productUnitOptions(product);
             if (!options.length) {
-                addToCart(product, qty, openPanel, true);
+                addToCart(product, qty, openPanel, true, flightSource);
                 return;
             }
 
@@ -957,11 +957,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const title = document.getElementById('unitChoiceTitle');
             const optionsEl = document.getElementById('unitChoiceOptions');
             if (!modal || !optionsEl) {
-                addToCart(productWithUnit(product, options[0]), qty, openPanel, true);
+                addToCart(productWithUnit(product, options[0]), qty, openPanel, true, flightSource);
                 return;
             }
 
-            pendingUnitChoice = { product, qty, openPanel };
+            pendingUnitChoice = { product, qty, openPanel, flightSource };
             if (title) title.textContent = product.name || 'إضافة المنتج للسلة';
 
             optionsEl.innerHTML = options.map((option) => `
@@ -986,7 +986,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         productWithUnit(pendingUnitChoice.product, choice),
                         pendingUnitChoice.qty,
                         pendingUnitChoice.openPanel,
-                        true
+                        true,
+                        pendingUnitChoice.flightSource
                     );
                     closeUnitChoiceModal();
                 });
@@ -1537,11 +1538,73 @@ document.addEventListener('DOMContentLoaded', () => {
             badge.classList.toggle('show', count > 0);
         }
 
-        function addToCart(product, qty = 1, openPanel = false, skipUnitChoice = false) {
+        let cartFlightPopTimer;
+        function animateCartFlight(source) {
+            const target = document.getElementById('navCartBtn');
+            const pop = () => {
+                if (!target) return;
+                clearTimeout(cartFlightPopTimer);
+                target.animate([
+                    { transform: 'scale(1)', filter: 'drop-shadow(0 0 0 rgba(8,222,244,0))' },
+                    { transform: 'scale(1.3) rotate(-5deg)', filter: 'drop-shadow(0 0 14px rgba(8,222,244,.9))', offset: .38 },
+                    { transform: 'scale(.96) rotate(1deg)', filter: 'drop-shadow(0 0 5px rgba(8,222,244,.4))', offset: .7 },
+                    { transform: 'scale(1)', filter: 'drop-shadow(0 0 0 rgba(8,222,244,0))' }
+                ], { duration: 900, easing: 'cubic-bezier(.16,.9,.2,1)' });
+            };
+            if (!target || !source || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+                pop();
+                return;
+            }
+            const sourceImage = source.matches?.('img') ? source : source.querySelector?.('img');
+            if (!sourceImage) {
+                pop();
+                return;
+            }
+            const from = sourceImage.getBoundingClientRect(), to = target.getBoundingClientRect();
+            if (!from.width || !from.height) {
+                pop();
+                return;
+            }
+            const size = Math.min(68, Math.max(46, Math.min(from.width, from.height) * .34));
+            const flight = document.createElement('div');
+            Object.assign(flight.style, {
+                position: 'fixed', zIndex: '10000', width: size + 'px', height: size + 'px',
+                left: (from.left + (from.width - size) / 2) + 'px', top: (from.top + (from.height - size) / 2) + 'px',
+                pointerEvents: 'none', overflow: 'visible', willChange: 'transform,opacity'
+            });
+            const image = sourceImage.cloneNode(true);
+            Object.assign(image.style, {
+                width: '100%', height: '100%', objectFit: 'cover', borderRadius: '16px',
+                border: '2px solid #e8fbff', background: '#08141b', boxShadow: '0 12px 24px rgba(8,222,244,.55)'
+            });
+            const stars = document.createElement('span');
+            stars.innerHTML = '✦&nbsp;✧&nbsp;✦';
+            Object.assign(stars.style, {
+                position: 'absolute', zIndex: '-1', inset: '0', color: '#d8fbff', fontSize: '17px',
+                lineHeight: '62px', whiteSpace: 'nowrap', textShadow: '0 0 10px #08def4'
+            });
+            const x = to.left + to.width / 2 - (from.left + from.width / 2);
+            const y = to.top + to.height / 2 - (from.top + from.height / 2);
+            const distance = Math.hypot(x, y) || 1;
+            stars.style.transform = 'translate(' + (-x / distance * 55) + 'px,' + (-y / distance * 55) + 'px)';
+            flight.append(image, stars);
+            document.body.append(flight);
+            stars.animate([{ opacity: .3, transform: stars.style.transform + ' scale(.55)' }, { opacity: 1, transform: stars.style.transform + ' scale(1.25)' }], { duration: 700, iterations: 7, direction: 'alternate', easing: 'ease-in-out' });
+            flight.animate([
+                { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                { transform: 'translate(' + (x * .35) + 'px,' + (y * .18 - 74) + 'px) scale(.82) rotate(-9deg)', opacity: 1, offset: .42 },
+                { transform: 'translate(' + x + 'px,' + y + 'px) scale(.16) rotate(12deg)', opacity: .22 }
+            ], { duration: 5000, easing: 'cubic-bezier(.16,.8,.24,1)', fill: 'forwards' }).finished.catch(() => {}).finally(() => {
+                flight.remove();
+                pop();
+            });
+        }
+
+        function addToCart(product, qty = 1, openPanel = false, skipUnitChoice = false, flightSource = null) {
             if (!product || !product.name) return;
 
             if (!skipUnitChoice && !product.unit_key && productUnitOptions(product).length) {
-                openUnitChoiceModal(product, qty, openPanel);
+                openUnitChoiceModal(product, qty, openPanel, flightSource);
                 return;
             }
 
@@ -1572,6 +1635,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             saveCart();
             renderCart();
+            animateCartFlight(flightSource);
             showCartToast(`تمت إضافة "${product.name}"${product.unit_label ? ` - ${product.unit_label}` : ''} إلى السلة`);
 
             if (openPanel) {
@@ -2405,7 +2469,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (addCartButton) {
                     addCartButton.addEventListener('click', (event) => {
                         event.stopPropagation();
-                        addToCart(prod, 1, true);
+                        addToCart(prod, 1, true, false, el.querySelector('img'));
                     });
                 }
 
@@ -5302,7 +5366,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         price: document.getElementById('modalProductPrice')?.innerText || '',
                         img: document.getElementById('modalMainImg')?.src || ''
                     };
-                    addToCart(modalProduct, qty, true);
+                    addToCart(modalProduct, qty, true, false, document.getElementById('modalMainImg'));
                     pModal.classList.remove('active');
                 });
             }

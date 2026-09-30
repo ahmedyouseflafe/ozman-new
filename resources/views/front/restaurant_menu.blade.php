@@ -1696,6 +1696,18 @@
             }
         }
     </style>
+    <style>
+        .mobile-cart.cart-flight-pop{animation:restaurant-cart-pop .9s cubic-bezier(.16,.9,.2,1);box-shadow:0 16px 38px rgba(0,0,0,.45),0 0 40px rgba(8,222,244,.82)}
+        @keyframes restaurant-cart-pop{0%,100%{transform:translateX(50%) scale(1)}38%{transform:translateX(50%) scale(1.22) rotate(-2deg)}70%{transform:translateX(50%) scale(.97) rotate(1deg)}}
+        .restaurant-cart-flight{position:fixed;z-index:90;display:grid;place-items:center;overflow:visible;width:62px;height:62px;pointer-events:none;will-change:transform,opacity}
+        .restaurant-cart-flight-media{position:relative;z-index:2;display:grid;place-items:center;overflow:hidden;width:100%;height:100%;border:2px solid #dffcff;border-radius:16px;background:#07151b;box-shadow:0 12px 24px rgba(8,222,244,.5)}
+        .restaurant-cart-flight-media img{width:100%;height:100%;object-fit:cover}.restaurant-cart-flight-media i{font-size:27px;color:#58edf8}
+        .restaurant-cart-flight-stars{position:absolute;z-index:1;inset:0;transform:translate(var(--trail-x,0),var(--trail-y,0));pointer-events:none}
+        .restaurant-cart-flight-stars b{position:absolute;color:#bafaff;font-size:17px;line-height:1;text-shadow:0 0 10px #08def4;animation:restaurant-cart-sparkle .7s ease-in-out infinite alternate}
+        .restaurant-cart-flight-stars b:nth-child(1){left:7px;top:10px}.restaurant-cart-flight-stars b:nth-child(2){left:23px;top:38px;font-size:12px;animation-delay:.16s}.restaurant-cart-flight-stars b:nth-child(3){left:43px;top:19px;font-size:10px;animation-delay:.32s}
+        @keyframes restaurant-cart-sparkle{from{opacity:.28;transform:scale(.55) rotate(0)}to{opacity:1;transform:scale(1.3) rotate(45deg)}}
+        @media(prefers-reduced-motion:reduce){.mobile-cart.cart-flight-pop{animation:none}.restaurant-cart-flight{display:none}}
+    </style>
 </head>
 
 <body>
@@ -2336,6 +2348,60 @@
             const closeModal = () => modal.close();
             $('modalClose').onclick = closeModal;
             $('modalCancel').onclick = closeModal;
+            let restaurantCartPopTimer;
+            const popRestaurantCart = () => {
+                const target = $('mobileCart');
+                clearTimeout(restaurantCartPopTimer);
+                target.classList.remove('cart-flight-pop');
+                void target.offsetWidth;
+                target.classList.add('cart-flight-pop');
+                restaurantCartPopTimer = setTimeout(() => target.classList.remove('cart-flight-pop'), 950);
+            };
+            const flyRestaurantMealToCart = productId => {
+                const target = $('mobileCart');
+                const source = document.querySelector('.meal[data-product-id="' + productId + '"] .meal-image');
+                if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || !source) {
+                    popRestaurantCart();
+                    return;
+                }
+                const from = source.getBoundingClientRect(), to = target.getBoundingClientRect();
+                const size = Math.min(68, Math.max(46, Math.min(from.width, from.height) * .34));
+                const flight = document.createElement('div');
+                flight.className = 'restaurant-cart-flight';
+                flight.style.width = size + 'px';
+                flight.style.height = size + 'px';
+                flight.style.left = (from.left + (from.width - size) / 2) + 'px';
+                flight.style.top = (from.top + (from.height - size) / 2) + 'px';
+                const media = document.createElement('span');
+                media.className = 'restaurant-cart-flight-media';
+                const image = source.tagName === 'IMG' ? source : source.querySelector('img');
+                if (image?.currentSrc || image?.src) {
+                    const clone = document.createElement('img');
+                    clone.src = image.currentSrc || image.src;
+                    clone.alt = '';
+                    media.append(clone);
+                } else {
+                    media.innerHTML = '<i class="ti ti-tools-kitchen-2"></i>';
+                }
+                const stars = document.createElement('span');
+                stars.className = 'restaurant-cart-flight-stars';
+                stars.innerHTML = '<b>✦</b><b>✧</b><b>✦</b>';
+                flight.append(media, stars);
+                document.body.append(flight);
+                const x = to.left + to.width / 2 - (from.left + from.width / 2);
+                const y = to.top + to.height / 2 - (from.top + from.height / 2);
+                const distance = Math.hypot(x, y) || 1;
+                stars.style.setProperty('--trail-x', (-x / distance * 56) + 'px');
+                stars.style.setProperty('--trail-y', (-y / distance * 56) + 'px');
+                flight.animate([
+                    {transform:'translate(0,0) scale(1)',opacity:1},
+                    {transform:'translate(' + (x * .35) + 'px,' + (y * .18 - 74) + 'px) scale(.82) rotate(-9deg)',opacity:1,offset:.42},
+                    {transform:'translate(' + x + 'px,' + y + 'px) scale(.16) rotate(12deg)',opacity:.22}
+                ], {duration:5000,easing:'cubic-bezier(.16,.8,.24,1)',fill:'forwards'}).finished.catch(() => {}).finally(() => {
+                    flight.remove();
+                    popRestaurantCart();
+                });
+            };
             $('confirm').onclick = () => {
                 const selectedSize = $('sizes').querySelector(':checked');
                 const selectedAddons = [...$('addons').querySelectorAll(':checked')];
@@ -2354,6 +2420,7 @@
                 });
                 closeModal();
                 render();
+                flyRestaurantMealToCart(current.id);
             };
             window.removeRestaurantCartItem = index => {
                 cart.splice(index, 1);

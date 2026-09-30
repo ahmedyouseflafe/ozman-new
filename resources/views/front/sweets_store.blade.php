@@ -49,6 +49,18 @@
         .content{padding:18px;border:1px solid #f6cf9460;border-radius:29px;background:linear-gradient(145deg,#35140feb,#1a0807f2);box-shadow:0 20px 48px #0005}.pane-head{padding-bottom:12px;border-bottom:1px dashed #f7d7ae48}.pane-head h3{font-family:'Playfair Display',Cairo,serif;font-size:26px;color:#ffdfab}.grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}.card{border-radius:25px;background:linear-gradient(165deg,#fff2d5,#d99b70);color:#4b2116;box-shadow:0 14px 25px #0004}.card:hover{border-color:#fff0c5;box-shadow:0 20px 35px #0007}.picture{aspect-ratio:1/.84;background:#7d3c23}.badge{border-color:#ffe5ad;background:#582117;color:#ffe4ad}.body{padding:12px}.small-brand{color:#a4493d}.name{color:#512015;font-size:14px}.description{color:#80523e}.foot{border-color:#a957442c}.price{color:#753119}.was{color:#a56b55}.add{border-radius:999px;background:#562015;color:#fff2d5;box-shadow:inset 0 -3px #2c100b}.empty{min-height:185px;border:1px dashed #efbf8155;background:radial-gradient(circle at 75% 28%,#f5bd7424,transparent 25%),#2d100d;color:#f2c8a6}.cart-button{border-color:#f0b96e;background:#fff0ce;color:#4b2015;box-shadow:0 14px 36px #0008}.cart-button i{background:#5b2317;color:#ffe8bb}.cart-button small{color:#8c543c}.sheet{border-color:#efbe78;background:linear-gradient(145deg,#fff1d5,#e2a077);color:#4b2116}.sheet .close{border-color:#a75e3e;color:#4b2116}.row{background:#fff7e799}.total{border-color:#a85d4333;color:#64301e}.fields input{border-color:#a65d443f;background:#fff9ea;color:#4b2116}.send{border-radius:999px;background:#5a2116;color:#fff1d3}.lightbox button{background:#fff0d5;color:#4b2116}
         @media(max-width:720px){.hero{min-height:475px;border-radius:25px}.brand{right:18px;bottom:23px;width:calc(100% - 36px);min-height:295px;padding:58px 18px 20px}.brand h1{font-size:25px}.brand p{font-size:9px}.logo{width:82px;height:82px}.tools{left:11px;top:12px}.bakery-moments{grid-template-columns:1fr;gap:8px;margin:10px 0}.bakery-moment{min-height:88px;padding:13px 15px}.bakery-moment strong{font-size:15px}.bakery-moment i{font-size:46px}.catalog-header{align-items:end}.catalog h2{font-size:24px}.categories{padding-bottom:9px}.category{flex-basis:94px;padding:6px 4px}.category figure{width:43px;height:43px}.content{padding:10px;border-radius:22px}.pane-head h3{font-size:20px}.grid{grid-template-columns:1fr;gap:10px}.card{grid-template-columns:116px minmax(0,1fr);border-radius:18px}.picture{min-height:142px}.description{display:none}}
     </style>
+    <style>
+        .cart-button.cart-flight-pop{animation:sweet-cart-pop .9s cubic-bezier(.16,.9,.2,1);box-shadow:0 14px 36px #0008,0 0 38px rgba(242,194,108,.82)}
+        @keyframes sweet-cart-pop{0%,100%{transform:scale(1)}38%{transform:scale(1.27) rotate(-3deg)}70%{transform:scale(.96) rotate(1deg)}}
+        .shopping-cart-flight{position:fixed;z-index:90;display:grid;place-items:center;overflow:visible;width:62px;height:62px;pointer-events:none;will-change:transform,opacity}
+        .shopping-cart-flight-media{position:relative;z-index:2;display:grid;place-items:center;overflow:hidden;width:100%;height:100%;border:2px solid #fff5dd;border-radius:16px;background:#4a1b12;box-shadow:0 12px 24px rgba(237,117,154,.5)}
+        .shopping-cart-flight-media img{width:100%;height:100%;object-fit:cover}.shopping-cart-flight-media i{font-size:27px;color:#ffe5a2}
+        .shopping-cart-flight-stars{position:absolute;z-index:1;inset:0;transform:translate(var(--trail-x,0),var(--trail-y,0));pointer-events:none}
+        .shopping-cart-flight-stars b{position:absolute;color:#ffe4a2;font-size:17px;line-height:1;text-shadow:0 0 10px #ef8c91;animation:cart-flight-sparkle .7s ease-in-out infinite alternate}
+        .shopping-cart-flight-stars b:nth-child(1){left:7px;top:10px}.shopping-cart-flight-stars b:nth-child(2){left:23px;top:38px;font-size:12px;animation-delay:.16s}.shopping-cart-flight-stars b:nth-child(3){left:43px;top:19px;font-size:10px;animation-delay:.32s}
+        @keyframes cart-flight-sparkle{from{opacity:.28;transform:scale(.55) rotate(0)}to{opacity:1;transform:scale(1.3) rotate(45deg)}}
+        @media(prefers-reduced-motion:reduce){.cart-button.cart-flight-pop{animation:none}.shopping-cart-flight{display:none}}
+    </style>
 </head>
 <body>
 <main class="shell">
@@ -118,7 +130,42 @@
         count.textContent = cart.reduce((value, item) => value + item.quantity, 0); total.textContent = money(sum); sheetTotal.textContent = money(sum);
         items.innerHTML = cart.length ? cart.map(item => '<div class="row"><span>' + item.quantity + '× ' + item.name + '</span><span>' + money(item.price * item.quantity) + ' <button class="remove" type="button" data-remove="' + item.id + '">×</button></span></div>').join('') : '<div class="empty" style="min-height:120px">السلة فارغة، اختار صنفًا لذيذًا أولًا 🍩</div>';
     }
-    document.addEventListener('click', event => { const button = event.target.closest('[data-add]'); if (!button) return; const found = cart.find(item => item.id === button.dataset.add); if (found) found.quantity += 1; else cart.push({id:button.dataset.add,name:button.dataset.name,price:Number(button.dataset.price),quantity:1}); renderCart(); document.getElementById('cartButton').animate([{transform:'scale(1)'},{transform:'scale(1.08)'},{transform:'scale(1)'}],{duration:260}); });
+    let cartPopTimer;
+    const popCart = () => {
+        const cartButton = document.getElementById('cartButton');
+        clearTimeout(cartPopTimer);
+        cartButton.classList.remove('cart-flight-pop');
+        void cartButton.offsetWidth;
+        cartButton.classList.add('cart-flight-pop');
+        cartPopTimer = setTimeout(() => cartButton.classList.remove('cart-flight-pop'), 950);
+    };
+    const flyToSweetCart = button => {
+        const cartButton = document.getElementById('cartButton');
+        const source = button.closest('.card')?.querySelector('.picture');
+        if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || !source) {
+            popCart();
+            return;
+        }
+        const from = source.getBoundingClientRect(), to = cartButton.getBoundingClientRect();
+        const size = Math.min(68, Math.max(46, Math.min(from.width, from.height) * .34));
+        const flight = document.createElement('div');
+        flight.className = 'shopping-cart-flight';
+        flight.style.width = size + 'px'; flight.style.height = size + 'px';
+        flight.style.left = (from.left + (from.width - size) / 2) + 'px';
+        flight.style.top = (from.top + (from.height - size) / 2) + 'px';
+        const media = document.createElement('span'); media.className = 'shopping-cart-flight-media';
+        const image = source.querySelector('img');
+        if (image?.currentSrc || image?.src) { const clone = document.createElement('img'); clone.src = image.currentSrc || image.src; clone.alt = ''; media.append(clone); }
+        else media.innerHTML = '<i class="ti ti-shopping-bag"></i>';
+        const stars = document.createElement('span'); stars.className = 'shopping-cart-flight-stars'; stars.innerHTML = '<b>✦</b><b>✧</b><b>✦</b>';
+        flight.append(media, stars); document.body.append(flight);
+        const x = to.left + to.width / 2 - (from.left + from.width / 2), y = to.top + to.height / 2 - (from.top + from.height / 2);
+        const distance = Math.hypot(x, y) || 1;
+        stars.style.setProperty('--trail-x', (-x / distance * 56) + 'px');
+        stars.style.setProperty('--trail-y', (-y / distance * 56) + 'px');
+        flight.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:'translate(' + (x*.35) + 'px,' + (y*.18-74) + 'px) scale(.82) rotate(-9deg)',opacity:1,offset:.42},{transform:'translate(' + x + 'px,' + y + 'px) scale(.16) rotate(12deg)',opacity:.22}],{duration:5000,easing:'cubic-bezier(.16,.8,.24,1)',fill:'forwards'}).finished.catch(() => {}).finally(() => { flight.remove(); popCart(); });
+    };
+    document.addEventListener('click', event => { const button = event.target.closest('[data-add]'); if (!button) return; const found = cart.find(item => item.id === button.dataset.add); if (found) found.quantity += 1; else cart.push({id:button.dataset.add,name:button.dataset.name,price:Number(button.dataset.price),quantity:1}); renderCart(); flyToSweetCart(button); });
     items.onclick = event => { const button = event.target.closest('[data-remove]'); if (!button) return; const index = cart.findIndex(item => item.id === button.dataset.remove); if (index >= 0) cart.splice(index,1); renderCart(); };
     const layer = document.getElementById('cartLayer'); document.getElementById('cartButton').onclick = () => { layer.classList.add('open'); renderCart(); }; document.getElementById('cartClose').onclick = () => layer.classList.remove('open'); layer.onclick = event => { if (event.target === layer) layer.classList.remove('open'); };
     document.getElementById('sendOrder').onclick = () => { if (!cart.length) return; const name = document.getElementById('customerName').value.trim(), phone = document.getElementById('customerPhone').value.trim(); if (!name || !phone) { alert('اكتب الاسم ورقم الجوال أولًا.'); return; } const sum = cart.reduce((value, item) => value + item.price * item.quantity, 0); const lines = cart.map(item => '- ' + item.quantity + '× ' + item.name + ': ' + money(item.price * item.quantity)); const target = @json($whatsappNumber); if (!target) { alert('لا يوجد رقم واتساب مضاف للمحل بعد.'); return; } window.open('https://wa.me/' + target + '?text=' + encodeURIComponent('طلب جديد من ' + name + '\nرقم التواصل: ' + phone + '\n\n' + lines.join('\n') + '\n\nالمجموع: ' + money(sum)), '_blank', 'noopener'); };
