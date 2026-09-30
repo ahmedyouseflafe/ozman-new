@@ -229,6 +229,7 @@ class Shop extends Model
             'restaurant' => 'restaurant.menu',
             'advertising_services' => 'advertising.store',
             'electronics' => 'electronics.store',
+            'clothing' => 'clothing.store',
             'cosmetics' => 'cosmetics.store',
             'sweets' => 'sweets.store',
             'real_estate' => 'real-estate.company',

@@ -3754,7 +3754,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const selectedCenter = centersData[index % centersData.length];
             if (
                 (
-                    ['restaurant', 'electronics', 'cosmetics', 'sweets', 'real_estate', 'advertising_services', 'furniture_appliances'].includes(selectedCenter?.catalog_type)
+                    ['restaurant', 'electronics', 'clothing', 'cosmetics', 'sweets', 'real_estate', 'advertising_services', 'furniture_appliances'].includes(selectedCenter?.catalog_type)
                     || selectedCenter?.home_section === 'home_furniture'
                 )
                 && selectedCenter?.public_url

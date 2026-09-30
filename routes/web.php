@@ -5,6 +5,7 @@ use App\Http\Controllers\AdvertisingStoreController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ClothingStoreController;
 use App\Http\Controllers\CosmeticsStoreController;
 use App\Http\Controllers\DistributorController;
 use App\Http\Controllers\ElectronicsStoreController;
@@ -103,6 +104,7 @@ Route::get('/stores/{shop:slug}', [FrontController::class, 'index'])->name('fron
 Route::get('/restaurants/{shop:slug}', [RestaurantController::class, 'menu'])->name('restaurant.menu');
 Route::get('/advertising/{shop:slug}', [AdvertisingStoreController::class, 'index'])->name('advertising.store');
 Route::get('/electronics/{shop:slug}', [ElectronicsStoreController::class, 'index'])->name('electronics.store');
+Route::get('/fashion/{shop:slug}', [ClothingStoreController::class, 'index'])->name('clothing.store');
 Route::get('/cosmetics/{shop:slug}', [CosmeticsStoreController::class, 'index'])->name('cosmetics.store');
 Route::get('/sweets/{shop:slug}', [SweetsStoreController::class, 'index'])->name('sweets.store');
 Route::get('/home-furniture/{shop:slug}', [FurnitureStoreController::class, 'index'])->name('furniture.store');
