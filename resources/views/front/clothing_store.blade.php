@@ -93,16 +93,31 @@
         } catch (_) { /* Image remains intact if a remote image blocks pixel access. */ }
         return surface;
     };
-    const drawGarment = results => {
-        if (!active || !garment) return;
+    const prepareCanvas = () => {
+        if (!video.videoWidth || !video.videoHeight) return false;
         if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
         }
+        return true;
+    };
+    const drawFallback = () => {
+        if (!garment || !prepareCanvas()) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const width = canvas.width * .66;
+        const height = width * (garment.height / garment.width);
+        ctx.globalAlpha = .92;
+        ctx.drawImage(garment, (canvas.width - width) / 2, canvas.height * .21, width, height);
+        ctx.globalAlpha = 1;
+    };
+    const drawGarment = results => {
+        if (!active || !garment) return;
+        if (!prepareCanvas()) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const points = results.poseLandmarks && results.poseLandmarks[0];
         if (!points || !points[11] || !points[12] || points[11].visibility < .45 || points[12].visibility < .45) {
-            setStatus('خلّي كتفيك ظاهرين بالكاميرا');
+            drawFallback();
+            setStatus('اظهر كتفيك للكاميرا حتى تثبت القطعة');
             return;
         }
         const left = points[11], right = points[12];
@@ -122,7 +137,10 @@
     };
     const loop = async () => {
         if (!active) return;
-        if (video.readyState >= 2 && pose) await pose.send({ image: video });
+        if (video.readyState >= 2 && pose) {
+            try { await pose.send({ image: video }); }
+            catch (_) { drawFallback(); setStatus('ظهرت القطعة — حرّك كتفيك لتفعيل التتبع'); }
+        }
         frame = requestAnimationFrame(loop);
     };
     const start = async (demoImage = '') => {
@@ -132,13 +150,14 @@
         setStatus('اسمح للكاميرا ليبدأ القياس');
         const image = new Image();
         image.crossOrigin = 'anonymous';
-        image.onload = () => { garment = makeTransparent(image); };
+        image.onload = () => { garment = makeTransparent(image); drawFallback(); };
         image.onerror = () => { garment = null; setStatus('تعذر تحميل صورة القطعة'); };
         image.src = imageUrl;
         try {
             stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } }, audio: false });
             video.srcObject = stream;
             await video.play();
+            video.onloadeddata = drawFallback;
             if (!window.Pose) throw new Error('Pose library unavailable');
             pose = new Pose({ locateFile: file => 'https://cdn.jsdelivr.net/npm/@mediapipe/pose/' + file });
             pose.setOptions({ modelComplexity: 0, smoothLandmarks: true, enableSegmentation: false, minDetectionConfidence: .55, minTrackingConfidence: .55 });
