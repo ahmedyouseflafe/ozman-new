@@ -105,6 +105,16 @@ Route::get('/restaurants/{shop:slug}', [RestaurantController::class, 'menu'])->n
 Route::get('/advertising/{shop:slug}', [AdvertisingStoreController::class, 'index'])->name('advertising.store');
 Route::get('/electronics/{shop:slug}', [ElectronicsStoreController::class, 'index'])->name('electronics.store');
 Route::get('/fashion/{shop:slug}', [ClothingStoreController::class, 'index'])->name('clothing.store');
+Route::get('/virtual-tryon/demo-garment', function () {
+    $path = public_path('images/virtual-tryon/demo-oversized-black-tee.png');
+
+    abort_unless(is_file($path), 404);
+
+    return response()->file($path, [
+        'Content-Type' => 'image/png',
+        'Cache-Control' => 'public, max-age=86400',
+    ]);
+})->name('virtual-tryon.demo-garment');
 Route::get('/cosmetics/{shop:slug}', [CosmeticsStoreController::class, 'index'])->name('cosmetics.store');
 Route::get('/sweets/{shop:slug}', [SweetsStoreController::class, 'index'])->name('sweets.store');
 Route::get('/home-furniture/{shop:slug}', [FurnitureStoreController::class, 'index'])->name('furniture.store');

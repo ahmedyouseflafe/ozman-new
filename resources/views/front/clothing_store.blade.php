@@ -37,7 +37,7 @@
             <span class="season"><i class="ti ti-sparkles"></i> NEW SEASON / 2026</span>
             <h1>لبسك مش بس قطعة.<br><em>هذا ستايلك.</em></h1>
             <p>{{ $shop->description ?: 'اختيارات جريئة، قطع يومية، وتفاصيل تخليك تطلع بطريقتك.' }}</p>
-            <div class="hero-actions"><a href="#catalog"><i class="ti ti-hanger-2"></i> شوف المجموعة</a><a class="alt" href="#lookbook"><i class="ti ti-aperture"></i> اللوك بوك</a><button class="demo-try" id="demoTryOn" type="button" data-image="{{ asset('images/virtual-tryon/demo-oversized-black-tee.png') }}"><i class="ti ti-scan"></i> جرّب تيشيرت بالكاميرا</button></div>
+            <div class="hero-actions"><a href="#catalog"><i class="ti ti-hanger-2"></i> شوف المجموعة</a><a class="alt" href="#lookbook"><i class="ti ti-aperture"></i> اللوك بوك</a><button class="demo-try" id="demoTryOn" type="button" data-image="{{ route('virtual-tryon.demo-garment') }}"><i class="ti ti-scan"></i> جرّب تيشيرت بالكاميرا</button></div>
         </div>
         <div class="brand-signature"><img src="{{ $mediaUrl($shop->logo ?: $shop->banner) }}" alt="{{ $shop->name }}"><div><strong>{{ $shop->name }}</strong><span>CURATED FOR YOUR NEXT LOOK</span></div></div>
     </section>
