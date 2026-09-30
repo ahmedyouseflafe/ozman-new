@@ -11,6 +11,7 @@ use App\Http\Controllers\ElectronicsStoreController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\FrontAssetController;
 use App\Http\Controllers\FrontController;
+use App\Http\Controllers\FurnitureStoreController;
 use App\Http\Controllers\FrontOrderController;
 use App\Http\Controllers\MerchantPwaController;
 use App\Http\Controllers\ModularServiceController;
@@ -104,6 +105,7 @@ Route::get('/advertising/{shop:slug}', [AdvertisingStoreController::class, 'inde
 Route::get('/electronics/{shop:slug}', [ElectronicsStoreController::class, 'index'])->name('electronics.store');
 Route::get('/cosmetics/{shop:slug}', [CosmeticsStoreController::class, 'index'])->name('cosmetics.store');
 Route::get('/sweets/{shop:slug}', [SweetsStoreController::class, 'index'])->name('sweets.store');
+Route::get('/home-furniture/{shop:slug}', [FurnitureStoreController::class, 'index'])->name('furniture.store');
 Route::get('/cosmetics/{shop:slug}/booking', [CosmeticsStoreController::class, 'booking'])->name('cosmetics.booking');
 Route::get('/cosmetics/{shop:slug}/booking/availability', [SalonAppointmentController::class, 'availability'])->name('cosmetics.booking.availability');
 Route::post('/cosmetics/{shop:slug}/booking', [SalonAppointmentController::class, 'store'])->name('cosmetics.booking.store');
