@@ -48,9 +48,112 @@
 </main>
 <button class="bag" id="bag" type="button"><i class="ti ti-shopping-bag"></i><span><strong><span id="bagCount">0</span> قطعة في السلة</strong><small id="bagTotal">0.00 ₪</small></span></button>
 <div class="overlay" id="bagLayer"><section class="sheet"><header class="sheet-head"><h2>سلتك</h2><button class="x" type="button" data-close="bagLayer">×</button></header><div class="cart-items" id="cartItems"></div><div class="total"><span>المجموع</span><span id="sheetTotal">0.00 ₪</span></div><div class="buyer"><input id="buyerName" placeholder="الاسم"><input id="buyerPhone" inputmode="tel" placeholder="رقم الجوال"></div><button class="send" id="sendOrder" type="button"><i class="ti ti-brand-whatsapp"></i> إرسال الطلب للمحل</button></section></div>
-<div class="overlay quick" id="quickLayer"><section class="quick-card"><button class="x" type="button" data-close="quickLayer">×</button><img id="quickImage" src="" alt=""><div class="quick-copy"><small>PIECE DETAILS</small><h2 id="quickName"></h2><strong id="quickPrice"></strong><p id="quickDescription"></p><span class="option-label" id="sizeLabel">المقاس</span><div class="options" id="sizeOptions"></div><span class="option-label" id="colorLabel">اللون</span><div class="options" id="colorOptions"></div><button class="quick-add" id="quickAdd" type="button"><i class="ti ti-shopping-bag-plus"></i> أضف للسلة</button></div></section></div>
+<div class="overlay quick" id="quickLayer"><section class="quick-card"><button class="x" type="button" data-close="quickLayer">×</button><img id="quickImage" src="" alt=""><div class="quick-copy"><small>PIECE DETAILS</small><h2 id="quickName"></h2><strong id="quickPrice"></strong><p id="quickDescription"></p><span class="option-label" id="sizeLabel">المقاس</span><div class="options" id="sizeOptions"></div><span class="option-label" id="colorLabel">اللون</span><div class="options" id="colorOptions"></div><button class="try-on" id="tryOn" type="button"><i class="ti ti-scan"></i> جرّبها عليك بالكاميرا <small>BETA</small></button><button class="quick-add" id="quickAdd" type="button"><i class="ti ti-shopping-bag-plus"></i> أضف للسلة</button></div></section></div>
+<div class="overlay try-on-overlay" id="tryOnLayer"><section class="try-on-card"><header><div><small>OZMAN VIRTUAL FIT / BETA</small><h2>جرّب القطعة عليك</h2></div><button class="x" type="button" data-close="tryOnLayer">×</button></header><div class="try-stage"><video id="tryVideo" autoplay playsinline muted></video><canvas id="tryCanvas"></canvas><div class="try-hud"><span><i class="ti ti-scan"></i> ثبّت كتفيك داخل الإطار</span><strong id="tryStatus">جاري تجهيز الكاميرا…</strong></div></div><p>تجربة مرئية مباشرة: تتحرك القطعة مع كتفيك. أفضل نتيجة تكون بصور المنتج بخلفية شفافة.</p></section></div>
+<style>.try-on{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:42px;margin-top:13px;border:1px solid #d6ff38;background:#252529;color:#f9f5ed;border-radius:12px;font-size:11px;font-weight:900}.try-on i{color:var(--acid);font-size:17px}.try-on small{padding:2px 5px;border-radius:5px;background:var(--acid);color:#171719;font-size:7px;letter-spacing:.08em}.try-on-overlay{align-items:center}.try-on-card{width:min(660px,100%);overflow:hidden;border:1px solid #d6ff388c;border-radius:25px;background:#161618;color:#f5f1ea;box-shadow:0 25px 80px #000b}.try-on-card header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid #ffffff18}.try-on-card header small{color:var(--acid);font-size:8px;font-weight:900;letter-spacing:.1em}.try-on-card h2{margin:4px 0 0;font-size:19px}.try-on-card header .x{border-color:#ffffff4d;color:#fff}.try-stage{position:relative;aspect-ratio:3/4;overflow:hidden;background:radial-gradient(circle at 50% 20%,#d6ff3824,transparent 33%),#09090a}.try-stage video,.try-stage canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}.try-stage canvas{pointer-events:none}.try-hud{position:absolute;z-index:2;right:14px;bottom:14px;left:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border:1px solid #ffffff37;border-radius:12px;background:#101011bd;backdrop-filter:blur(10px);font-size:9px}.try-hud span{color:#e6e3e9}.try-hud i{color:var(--acid);font-size:15px;vertical-align:middle}.try-hud strong{color:var(--acid);font-size:9px}.try-on-card>p{margin:0;padding:11px 18px;color:#aaa7ae;font-size:9px;line-height:1.7}@media(max-width:520px){.try-on-card{border-radius:19px}.try-hud{align-items:flex-start;flex-direction:column}.try-stage{aspect-ratio:9/13}}</style>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
 <script>
 (() => {const cart=[],money=v=>Number(v||0).toFixed(2)+' ₪',$=id=>document.getElementById(id),toList=values=>Array.isArray(values)?values:(typeof values==='string'?values.split(',').map(value=>value.trim()).filter(Boolean):[]);let selected=null,size='',color='';const render=()=>{const total=cart.reduce((sum,item)=>sum+item.price*item.qty,0);$('bagCount').textContent=cart.reduce((sum,item)=>sum+item.qty,0);$('bagTotal').textContent=$('sheetTotal').textContent=money(total);$('cartItems').innerHTML=cart.length?cart.map(item=>'<div class="cart-row"><span>'+item.qty+'× '+item.name+'</span><span>'+money(item.price*item.qty)+' <button class="remove" data-remove="'+item.key+'">×</button></span></div>').join(''):'<div class="empty" style="min-height:120px">السلة فاضية — اختار قطعة تعجبك.</div>'};const add=item=>{const name=item.name+(item.size?' · '+item.size:'')+(item.color?' · '+item.color:'');const key=item.id+'|'+(item.size||'')+'|'+(item.color||'');const existing=cart.find(entry=>entry.key===key);if(existing)existing.qty++;else cart.push({key,id:item.id,name,price:Number(item.price),qty:1});render();$('bag').animate([{transform:'scale(1)'},{transform:'scale(1.18)'},{transform:'scale(1)'}],{duration:480,easing:'ease-out'})};const open=layer=>layer.classList.add('open'),close=layer=>layer.classList.remove('open');document.querySelectorAll('[data-close]').forEach(button=>button.onclick=()=>close($(button.dataset.close)));document.querySelectorAll('.overlay').forEach(layer=>layer.onclick=e=>{if(e.target===layer)close(layer)});$('bag').onclick=()=>open($('bagLayer'));document.querySelectorAll('[data-filter]').forEach(button=>button.onclick=()=>{document.querySelectorAll('[data-filter]').forEach(item=>item.classList.toggle('active',item===button));document.querySelectorAll('[data-card]').forEach(card=>card.hidden=button.dataset.filter!=='all'&&card.dataset.card!==button.dataset.filter)});document.querySelectorAll('.direct-add').forEach(button=>button.onclick=()=>add(button.dataset));const makeOptions=(target,values,kind)=>{target.innerHTML='';values.forEach((value,index)=>{const button=document.createElement('button');button.type='button';button.textContent=value;button.classList.toggle('active',index===0);button.onclick=()=>{[...target.children].forEach(x=>x.classList.toggle('active',x===button));if(kind==='size')size=value;else color=value};target.append(button)});if(kind==='size')size=values[0]||'';else color=values[0]||''};document.querySelectorAll('.preview').forEach(button=>button.onclick=()=>{selected=button.dataset;size='';color='';$('quickImage').src=selected.image;$('quickImage').alt=selected.name;$('quickName').textContent=selected.name;$('quickPrice').textContent=money(selected.price);$('quickDescription').textContent=selected.description||'قطعة مختارة لتكمل ستايلك.';let sizes=[],colors=[];try{sizes=JSON.parse(selected.sizes||'[]')}catch(_){ }try{colors=JSON.parse(selected.colors||'[]')}catch(_){ }sizes=toList(sizes);colors=toList(colors);$('sizeLabel').hidden=!sizes.length;$('sizeOptions').hidden=!sizes.length;$('colorLabel').hidden=!colors.length;$('colorOptions').hidden=!colors.length;makeOptions($('sizeOptions'),sizes,'size');makeOptions($('colorOptions'),colors,'color');open($('quickLayer'))});$('quickAdd').onclick=()=>{if(!selected)return;add({...selected,size,color});close($('quickLayer'))};$('cartItems').onclick=e=>{const button=e.target.closest('[data-remove]');if(!button)return;const index=cart.findIndex(item=>item.key===button.dataset.remove);if(index>-1)cart.splice(index,1);render()};$('sendOrder').onclick=()=>{if(!cart.length)return;const name=$('buyerName').value.trim(),phone=$('buyerPhone').value.trim();if(!name||!phone){alert('اكتب الاسم ورقم الجوال أولاً.');return}const number=@json($whatsappNumber);if(!number){alert('لا يوجد رقم واتساب للمحل بعد.');return}const lines=cart.map(item=>'- '+item.qty+'× '+item.name+' : '+money(item.price*item.qty));const total=cart.reduce((sum,item)=>sum+item.price*item.qty,0);window.open('https://wa.me/'+number+'?text='+encodeURIComponent('طلب أزياء جديد من '+name+'\nرقم التواصل: '+phone+'\n\n'+lines.join('\n')+'\n\nالمجموع: '+money(total)),'_blank','noopener')};render()})();
+</script>
+<script>
+(() => {
+    const layer = document.getElementById('tryOnLayer');
+    const video = document.getElementById('tryVideo');
+    const canvas = document.getElementById('tryCanvas');
+    const status = document.getElementById('tryStatus');
+    const trigger = document.getElementById('tryOn');
+    const closeButtons = [...document.querySelectorAll('[data-close="tryOnLayer"]')];
+    const ctx = canvas.getContext('2d');
+    let stream = null, pose = null, garment = null, frame = null, active = false;
+
+    const setStatus = text => { status.textContent = text; };
+    const stop = () => {
+        active = false;
+        if (frame) cancelAnimationFrame(frame);
+        frame = null;
+        if (stream) stream.getTracks().forEach(track => track.stop());
+        stream = null;
+        video.srcObject = null;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    };
+    const makeTransparent = source => {
+        const surface = document.createElement('canvas');
+        surface.width = source.naturalWidth || source.width;
+        surface.height = source.naturalHeight || source.height;
+        const surfaceCtx = surface.getContext('2d', { willReadFrequently: true });
+        surfaceCtx.drawImage(source, 0, 0, surface.width, surface.height);
+        try {
+            const pixels = surfaceCtx.getImageData(0, 0, surface.width, surface.height);
+            for (let i = 0; i < pixels.data.length; i += 4) {
+                const [r, g, b] = [pixels.data[i], pixels.data[i + 1], pixels.data[i + 2]];
+                if (r > 238 && g > 238 && b > 238) pixels.data[i + 3] = 0;
+            }
+            surfaceCtx.putImageData(pixels, 0, 0);
+        } catch (_) { /* Image remains intact if a remote image blocks pixel access. */ }
+        return surface;
+    };
+    const drawGarment = results => {
+        if (!active || !garment) return;
+        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const points = results.poseLandmarks && results.poseLandmarks[0];
+        if (!points || !points[11] || !points[12] || points[11].visibility < .45 || points[12].visibility < .45) {
+            setStatus('خلّي كتفيك ظاهرين بالكاميرا');
+            return;
+        }
+        const left = points[11], right = points[12];
+        const shoulderWidth = Math.hypot((right.x - left.x) * canvas.width, (right.y - left.y) * canvas.height);
+        const width = Math.max(100, shoulderWidth * 1.7);
+        const height = width * (garment.height / garment.width);
+        const centerX = ((left.x + right.x) / 2) * canvas.width;
+        const centerY = ((left.y + right.y) / 2) * canvas.height;
+        const angle = Math.atan2((right.y - left.y) * canvas.height, (right.x - left.x) * canvas.width);
+        ctx.save();
+        ctx.translate(centerX, centerY + height * .28);
+        ctx.rotate(angle);
+        ctx.globalAlpha = .92;
+        ctx.drawImage(garment, -width / 2, -height * .42, width, height);
+        ctx.restore();
+        setStatus('القطعة تتبع حركتك الآن');
+    };
+    const loop = async () => {
+        if (!active) return;
+        if (video.readyState >= 2 && pose) await pose.send({ image: video });
+        frame = requestAnimationFrame(loop);
+    };
+    const start = async () => {
+        const imageUrl = document.getElementById('quickImage').src;
+        if (!imageUrl) return;
+        layer.classList.add('open');
+        setStatus('اسمح للكاميرا ليبدأ القياس');
+        const image = new Image();
+        image.crossOrigin = 'anonymous';
+        image.onload = () => { garment = makeTransparent(image); };
+        image.onerror = () => { garment = null; setStatus('تعذر تحميل صورة القطعة'); };
+        image.src = imageUrl;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } }, audio: false });
+            video.srcObject = stream;
+            await video.play();
+            if (!window.Pose) throw new Error('Pose library unavailable');
+            pose = new Pose({ locateFile: file => 'https://cdn.jsdelivr.net/npm/@mediapipe/pose/' + file });
+            pose.setOptions({ modelComplexity: 0, smoothLandmarks: true, enableSegmentation: false, minDetectionConfidence: .55, minTrackingConfidence: .55 });
+            pose.onResults(drawGarment);
+            active = true;
+            setStatus('ابحث عن كتفيك…');
+            loop();
+        } catch (error) {
+            setStatus('لازم تسمح للكاميرا حتى تشتغل التجربة');
+        }
+    };
+    trigger.addEventListener('click', start);
+    closeButtons.forEach(button => button.addEventListener('click', stop));
+    layer.addEventListener('click', event => { if (event.target === layer) { layer.classList.remove('open'); stop(); } });
+})();
 </script>
 </body>
 </html>
