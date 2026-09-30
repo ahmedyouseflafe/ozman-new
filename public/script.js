@@ -3903,7 +3903,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     title: details.title,
                     icon: details.icon,
                     shops,
-                    onSelect: () => renderSectionShopsCarousel(details.title, shops)
+                    onSelect: () => key === 'furniture_appliances' || key === 'home_furniture'
+                        ? window.location.assign('/home-furniture')
+                        : renderSectionShopsCarousel(details.title, shops)
                 };
             });
 

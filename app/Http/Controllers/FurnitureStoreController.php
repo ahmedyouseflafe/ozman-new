@@ -8,6 +8,23 @@ use Illuminate\View\View;
 
 class FurnitureStoreController extends Controller
 {
+    public function directory(): View
+    {
+        $shops = Shop::query()
+            ->where('is_active', true)
+            ->where(fn ($query) => $query
+                ->where('catalog_type', 'furniture_appliances')
+                ->orWhere('home_section', 'home_furniture'))
+            ->with([
+                'categories' => fn ($query) => $query->where('is_active', true)->orderBy('name'),
+                'products' => fn ($query) => $query->where('is_active', true)->latest()->limit(4),
+            ])
+            ->latest()
+            ->get();
+
+        return view('front.furniture_directory', compact('shops'));
+    }
+
     public function index(Shop $shop): View
     {
         abort_unless(
