@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 
@@ -14,14 +13,16 @@ class TranslationController extends Controller
     {
         $validated = $request->validate([
             'text' => ['required', 'string', 'max:1000'],
+            'source' => ['nullable', Rule::in(['ar', 'en', 'he'])],
             'targets' => ['required', 'array', 'min:1', 'max:2'],
             'targets.*' => ['required', Rule::in(['en', 'he'])],
         ]);
 
         $translations = [];
+        $source = $validated['source'] ?? 'ar';
 
         foreach (array_unique($validated['targets']) as $target) {
-            $translations[$target] = $this->translateFromArabic($validated['text'], $target);
+            $translations[$target] = $this->translate($validated['text'], $source, $target);
         }
 
         return response()->json([
@@ -29,31 +30,29 @@ class TranslationController extends Controller
         ]);
     }
 
-    private function translateFromArabic(string $text, string $target): ?string
+    private function translate(string $text, string $source, string $target): ?string
     {
         $text = trim($text);
 
-        if ($glossaryTranslation = $this->glossaryTranslation($text, $target)) {
+        if ($source === $target) {
+            return $text;
+        }
+
+        if ($source === 'ar' && ($glossaryTranslation = $this->glossaryTranslation($text, $target))) {
             return $glossaryTranslation;
         }
 
-        return Cache::remember(
-            'auto-translation:'.sha1($target.'|'.$text),
-            now()->addDays(30),
-            function () use ($text, $target) {
-                // Google has rate-limited the shared server IP (HTTP 429), so use the
-                // reliable provider first and reserve Google for a genuine fallback.
-                if ($memoryTranslation = $this->myMemoryTranslate($text, $target)) {
-                    return $this->cleanTranslation($memoryTranslation, $text);
-                }
+        // Google has rate-limited the shared server IP (HTTP 429), so use the
+        // reliable provider first and reserve Google for a genuine fallback.
+        if ($memoryTranslation = $this->myMemoryTranslate($text, $source, $target)) {
+            return $this->cleanTranslation($memoryTranslation, $text);
+        }
 
-                if ($googleTranslation = $this->googleTranslate($text, $target)) {
-                    return $this->cleanTranslation($googleTranslation, $text);
-                }
+        if ($googleTranslation = $this->googleTranslate($text, $source, $target)) {
+            return $this->cleanTranslation($googleTranslation, $text);
+        }
 
-                return null;
-            }
-        );
+        return null;
     }
 
     private function glossaryTranslation(string $text, string $target): ?string
@@ -78,16 +77,17 @@ class TranslationController extends Controller
         return $phrases[$normalized][$target] ?? null;
     }
 
-    private function googleTranslate(string $text, string $target): ?string
+    private function googleTranslate(string $text, string $source, string $target): ?string
     {
         $googleTarget = $target === 'he' ? 'iw' : $target;
+        $googleSource = $source === 'he' ? 'iw' : $source;
 
         try {
             $response = Http::timeout(10)
                 ->acceptJson()
                 ->get('https://translate.googleapis.com/translate_a/single', [
                     'client' => 'gtx',
-                    'sl' => 'ar',
+                    'sl' => $googleSource,
                     'tl' => $googleTarget,
                     'dt' => 't',
                     'q' => $text,
@@ -108,14 +108,14 @@ class TranslationController extends Controller
         }
     }
 
-    private function myMemoryTranslate(string $text, string $target): ?string
+    private function myMemoryTranslate(string $text, string $source, string $target): ?string
     {
         try {
             $response = Http::timeout(10)
                 ->acceptJson()
                 ->get('https://api.mymemory.translated.net/get', [
                     'q' => $text,
-                    'langpair' => "ar|{$target}",
+                    'langpair' => "{$source}|{$target}",
                 ]);
 
             if (! $response->ok()) {

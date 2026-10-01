@@ -30,6 +30,50 @@
             target.placeholder = busy ? 'جاري الترجمة...' : target.dataset.originalPlaceholder || '';
         }
 
+        function sourceLocale(text) {
+            if (/[\u0600-\u06FF]/u.test(text)) {
+                return 'ar';
+            }
+
+            if (/[\u0590-\u05FF]/u.test(text)) {
+                return 'he';
+            }
+
+            return 'en';
+        }
+
+        async function translateInBrowser(text, source, locales) {
+            const translations = {};
+
+            await Promise.all(locales.map(async (locale) => {
+                if (locale === source) {
+                    translations[locale] = text;
+                    return;
+                }
+
+                const params = new URLSearchParams({
+                    q: text,
+                    langpair: `${source}|${locale}`,
+                });
+                const response = await fetch(`https://api.mymemory.translated.net/get?${params}`, {
+                    headers: { Accept: 'application/json' },
+                });
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const data = await response.json();
+                const translation = data?.responseData?.translatedText;
+
+                if (typeof translation === 'string' && translation.trim()) {
+                    translations[locale] = translation.trim();
+                }
+            }));
+
+            return translations;
+        }
+
         async function translateField(source) {
             const text = source.value.trim();
             const allTargets = ['en', 'he']
@@ -63,33 +107,50 @@
             });
 
             try {
-                const response = await fetch(translateUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                    },
-                    body: JSON.stringify({
-                        text,
-                        targets: targets.map(([locale]) => locale),
-                    }),
-                });
+                const source = sourceLocale(text);
+                let translations = {};
 
-                if (!response.ok) {
-                    return;
+                // This request runs in the browser because this provider permits CORS.
+                // It keeps auto-translation working even if PHP outbound connections fail.
+                try {
+                    translations = await translateInBrowser(text, source, targets.map(([locale]) => locale));
+                } catch (_) {
+                    translations = {};
                 }
 
-                const data = await response.json();
+                const remainingTargets = targets
+                    .map(([locale]) => locale)
+                    .filter((locale) => !translations[locale]);
+
+                if (remainingTargets.length) {
+                    try {
+                        const response = await fetch(translateUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                            },
+                            body: JSON.stringify({ text, source, targets: remainingTargets }),
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            translations = { ...translations, ...(data.translations || {}) };
+                        }
+                    } catch (_) {
+                        // Browser translation above remains available if the server fallback fails.
+                    }
+                }
 
                 targets.forEach(([locale, target]) => {
-                    if (!target.value.trim() && data.translations?.[locale]) {
-                        target.value = data.translations[locale];
-                        target.dataset.autoTranslatedValue = data.translations[locale];
+                    if (!target.value.trim() && translations[locale]) {
+                        target.value = translations[locale];
+                        target.dataset.autoTranslatedValue = translations[locale];
                         target.dispatchEvent(new Event('input', { bubbles: true }));
-                    } else if (target.dataset.autoTranslatedValue && target.value === target.dataset.autoTranslatedValue && data.translations?.[locale]) {
-                        target.value = data.translations[locale];
-                        target.dataset.autoTranslatedValue = data.translations[locale];
+                    } else if (target.dataset.autoTranslatedValue && target.value === target.dataset.autoTranslatedValue && translations[locale]) {
+                        target.value = translations[locale];
+                        target.dataset.autoTranslatedValue = translations[locale];
                         target.dispatchEvent(new Event('input', { bubbles: true }));
                     }
                 });
