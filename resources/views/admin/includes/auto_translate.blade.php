@@ -4,6 +4,63 @@
         const csrfToken = @json(csrf_token());
         const sourceSelector = '[data-auto-translate-source]';
         const pendingTimers = new WeakMap();
+        const translationCachePrefix = 'ozman:auto-translation:v1:';
+        let translationQueue = Promise.resolve();
+
+        const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+        function translationCacheKey(text, source, locale) {
+            let hash = 0;
+
+            for (let index = 0; index < text.length; index += 1) {
+                hash = ((hash << 5) - hash) + text.charCodeAt(index);
+                hash |= 0;
+            }
+
+            return `${translationCachePrefix}${source}:${locale}:${text.length}:${hash}`;
+        }
+
+        function readCachedTranslation(text, source, locale) {
+            try {
+                const cacheKey = translationCacheKey(text, source, locale);
+                const stored = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+
+                if (stored?.value && stored?.expiresAt > Date.now()) {
+                    return stored.value;
+                }
+
+                localStorage.removeItem(cacheKey);
+            } catch (_) {
+                // Private browsing or storage restrictions should not stop translation.
+            }
+
+            return null;
+        }
+
+        function cacheTranslation(text, source, locale, value) {
+            try {
+                localStorage.setItem(translationCacheKey(text, source, locale), JSON.stringify({
+                    value,
+                    expiresAt: Date.now() + (1000 * 60 * 60 * 24 * 30),
+                }));
+            } catch (_) {
+                // Translation still works when browser storage is unavailable.
+            }
+        }
+
+        function queueTranslation(request) {
+            const queuedRequest = translationQueue.then(async () => {
+                // MyMemory limits bursts from the same visitor. Keep requests gentle.
+                await pause(500);
+
+                return request();
+            });
+
+            // Keep the queue alive when one individual translation fails.
+            translationQueue = queuedRequest.catch(() => undefined);
+
+            return queuedRequest;
+        }
 
         function findTarget(source, locale) {
             const sourceName = source.getAttribute('name');
@@ -45,31 +102,63 @@
         async function translateInBrowser(text, source, locales) {
             const translations = {};
 
-            await Promise.all(locales.map(async (locale) => {
+            for (const locale of locales) {
                 if (locale === source) {
                     translations[locale] = text;
-                    return;
+                    continue;
                 }
 
-                const params = new URLSearchParams({
-                    q: text,
-                    langpair: `${source}|${locale}`,
-                });
-                const response = await fetch(`https://api.mymemory.translated.net/get?${params}`, {
-                    headers: { Accept: 'application/json' },
-                });
+                const cachedTranslation = readCachedTranslation(text, source, locale);
 
-                if (!response.ok) {
-                    return;
+                if (cachedTranslation) {
+                    translations[locale] = cachedTranslation;
+                    continue;
                 }
 
-                const data = await response.json();
-                const translation = data?.responseData?.translatedText;
+                const requestTranslation = async () => {
+                    const params = new URLSearchParams({
+                        q: text,
+                        langpair: `${source}|${locale}`,
+                    });
+                    const response = await fetch(`https://api.mymemory.translated.net/get?${params}`, {
+                        headers: { Accept: 'application/json' },
+                    });
 
-                if (typeof translation === 'string' && translation.trim()) {
-                    translations[locale] = translation.trim();
+                    if (!response.ok) {
+                        const error = new Error(`Translation request failed (${response.status})`);
+                        error.status = response.status;
+                        throw error;
+                    }
+
+                    const data = await response.json();
+                    const translation = data?.responseData?.translatedText;
+
+                    if (typeof translation !== 'string' || !translation.trim()) {
+                        throw new Error('Translation response was empty');
+                    }
+
+                    return translation.trim();
+                };
+
+                let translation = null;
+
+                for (let attempt = 0; attempt < 2 && !translation; attempt += 1) {
+                    try {
+                        translation = await queueTranslation(requestTranslation);
+                    } catch (error) {
+                        // Retry once after a provider rate-limit or temporary outage.
+                        if (attempt === 0 && [429, 503].includes(error?.status)) {
+                            await pause(1400);
+                            continue;
+                        }
+                    }
                 }
-            }));
+
+                if (translation) {
+                    translations[locale] = translation;
+                    cacheTranslation(text, source, locale, translation);
+                }
+            }
 
             return translations;
         }
