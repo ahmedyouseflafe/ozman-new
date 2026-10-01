@@ -4,7 +4,7 @@
         const csrfToken = @json(csrf_token());
         const sourceSelector = '[data-auto-translate-source]';
         const pendingTimers = new WeakMap();
-        const translationCachePrefix = 'ozman:auto-translation:v1:';
+        const translationCachePrefix = 'ozman:auto-translation:v2:';
         let translationQueue = Promise.resolve();
 
         const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -50,7 +50,7 @@
 
         function queueTranslation(request) {
             const queuedRequest = translationQueue.then(async () => {
-                // MyMemory limits bursts from the same visitor. Keep requests gentle.
+                // Keep provider requests gentle and avoid burst rate limits.
                 await pause(500);
 
                 return request();
@@ -118,9 +118,12 @@
                 const requestTranslation = async () => {
                     const params = new URLSearchParams({
                         q: text,
-                        langpair: `${source}|${locale}`,
+                        client: 'gtx',
+                        sl: source,
+                        tl: locale,
+                        dt: 't',
                     });
-                    const response = await fetch(`https://api.mymemory.translated.net/get?${params}`, {
+                    const response = await fetch(`https://translate.googleapis.com/translate_a/single?${params}`, {
                         headers: { Accept: 'application/json' },
                     });
 
@@ -131,7 +134,9 @@
                     }
 
                     const data = await response.json();
-                    const translation = data?.responseData?.translatedText;
+                    const translation = Array.isArray(data?.[0])
+                        ? data[0].map((segment) => segment?.[0] || '').join('')
+                        : null;
 
                     if (typeof translation !== 'string' || !translation.trim()) {
                         throw new Error('Translation response was empty');
