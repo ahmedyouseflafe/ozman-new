@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 
@@ -36,15 +37,23 @@ class TranslationController extends Controller
             return $glossaryTranslation;
         }
 
-        if ($googleTranslation = $this->googleTranslate($text, $target)) {
-            return $this->cleanTranslation($googleTranslation, $text);
-        }
+        return Cache::remember(
+            'auto-translation:'.sha1($target.'|'.$text),
+            now()->addDays(30),
+            function () use ($text, $target) {
+                // Google has rate-limited the shared server IP (HTTP 429), so use the
+                // reliable provider first and reserve Google for a genuine fallback.
+                if ($memoryTranslation = $this->myMemoryTranslate($text, $target)) {
+                    return $this->cleanTranslation($memoryTranslation, $text);
+                }
 
-        if ($memoryTranslation = $this->myMemoryTranslate($text, $target)) {
-            return $this->cleanTranslation($memoryTranslation, $text);
-        }
+                if ($googleTranslation = $this->googleTranslate($text, $target)) {
+                    return $this->cleanTranslation($googleTranslation, $text);
+                }
 
-        return null;
+                return null;
+            }
+        );
     }
 
     private function glossaryTranslation(string $text, string $target): ?string

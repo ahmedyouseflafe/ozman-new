@@ -120,5 +120,32 @@
                 translateField(event.target);
             }
         }, true);
+
+        // Existing products and restored browser drafts can have Arabic content while
+        // their English/Hebrew fields are empty. Translate those fields on load too,
+        // not only after the merchant edits the source again.
+        function fillMissingTranslations() {
+            document.querySelectorAll(sourceSelector).forEach((source) => {
+                if (source.value.trim().length < 2) {
+                    return;
+                }
+
+                const hasEmptyTarget = ['en', 'he'].some((locale) => {
+                    const target = findTarget(source, locale);
+
+                    return target && !target.value.trim();
+                });
+
+                if (hasEmptyTarget) {
+                    schedule(source);
+                }
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => setTimeout(fillMissingTranslations, 120), { once: true });
+        } else {
+            setTimeout(fillMissingTranslations, 120);
+        }
     })();
 </script>
