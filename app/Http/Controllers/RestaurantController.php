@@ -342,6 +342,7 @@ class RestaurantController extends Controller
             'estimated_preparation_minutes' => $order->estimated_preparation_minutes,
             'tracking_url' => URL::signedRoute('restaurant.orders.track', $order),
             'tracking' => $this->trackingPayload($order),
+            'whatsapp_url' => $this->restaurantWhatsappUrl($shop, $order),
         ]);
     }
 
@@ -482,6 +483,75 @@ class RestaurantController extends Controller
             $name = trim($name);
             return $name !== '' && is_numeric($price) ? [$name => max(0, (float) $price)] : [];
         })->all();
+    }
+
+    private function restaurantWhatsappUrl(Shop $shop, FrontOrder $order): ?string
+    {
+        $number = preg_replace('/\D+/', '', (string) ($shop->whatsapp ?: $shop->social?->whatsapp ?: $shop->phone));
+        $number = str_starts_with($number, '00') ? substr($number, 2) : $number;
+
+        if (str_starts_with($number, '0')) {
+            $countryCode = preg_replace('/\D+/', '', (string) config('services.whatsapp_cloud.default_country_code', '972')) ?: '972';
+            $number = $countryCode.ltrim($number, '0');
+        }
+
+        if (! $number || strlen($number) < 8) {
+            return null;
+        }
+
+        return 'https://wa.me/'.$number.'?text='.rawurlencode($this->restaurantWhatsappMessage($shop, $order));
+    }
+
+    private function restaurantWhatsappMessage(Shop $shop, FrontOrder $order): string
+    {
+        $type = match ($order->order_type) {
+            'delivery' => 'توصيل إلى العنوان',
+            'pickup' => 'استلام من المطعم',
+            'dine_in' => 'طلب داخل المطعم'.($order->restaurantTable?->name ? ' · طاولة '.$order->restaurantTable->name : ''),
+            default => 'طلب جديد',
+        };
+
+        $items = collect($order->items ?? [])->map(function (array $item): string {
+            $details = array_filter([
+                filled($item['size'] ?? null) ? 'الحجم: '.$item['size'] : null,
+                filled($item['addons'] ?? null) ? 'إضافات: '.implode('، ', $item['addons']) : null,
+                filled($item['excluded'] ?? null) ? 'بدون: '.implode('، ', $item['excluded']) : null,
+                filled($item['notes'] ?? null) ? 'ملاحظة: '.$item['notes'] : null,
+            ]);
+
+            return '• '.((int) ($item['qty'] ?? 1)).'× '.($item['name'] ?? 'صنف')
+                .($details ? ' ('.implode(' | ', $details).')' : '')
+                .' — '.number_format((float) ($item['line_total'] ?? 0), 2).' ₪';
+        })->all();
+
+        $lines = [
+            '🆕 طلب جديد · '.$shop->name,
+            'رقم الطلب: '.$order->order_number,
+            'نوع الطلب: '.$type,
+            '',
+            '👤 العميل: '.$order->customer_name,
+            '📞 الجوال: '.($order->customer_phone ?: '-'),
+        ];
+
+        if (filled($order->customer_address)) {
+            $lines[] = '📍 العنوان: '.$order->customer_address;
+        }
+
+        if (filled($order->map_link)) {
+            $lines[] = '🗺 الموقع على الخريطة: '.$order->map_link;
+        }
+
+        if (filled($order->customer_notes)) {
+            $lines[] = '📝 ملاحظات العميل: '.$order->customer_notes;
+        }
+
+        $lines = array_merge($lines, ['', '🍽 الأصناف:', ...$items, '', '💰 المجموع: '.number_format((float) $order->total, 2).' ₪']);
+
+        if ($order->estimated_preparation_minutes) {
+            $lines[] = '⏱ وقت التجهيز المتوقع: '.$order->estimated_preparation_minutes.' دقيقة';
+        }
+
+        return implode("\n", $lines);
     }
 
     private function sendNewOrderPush(Shop $shop, FrontOrder $order, FirebaseMessagingService $firebase): void

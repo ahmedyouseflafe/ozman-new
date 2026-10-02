@@ -2586,6 +2586,11 @@
                     message.classList.add('success');
                     message.textContent = `${ui.sent_success} ${data.order_number}`;
                     activateTracking(data);
+                    if (data.whatsapp_url) {
+                        // Move to the restaurant chat after the order has safely been recorded.
+                        // WhatsApp opens the fully prepared message for the customer to review and send.
+                        setTimeout(() => window.location.assign(data.whatsapp_url), 700);
+                    }
                 } catch (error) {
                     message.classList.add('error');
                     message.textContent = error.message || ui.send_error
