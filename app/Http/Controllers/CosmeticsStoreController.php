@@ -40,6 +40,23 @@ class CosmeticsStoreController extends Controller
                     ELSE 2
                 END
             ");
+        } elseif ($shop->slug === 'elegance-perfumes' || strtolower(trim($shop->name)) === 'elegance perfumes') {
+            $categoriesQuery->orderByRaw("
+                CASE
+                    WHEN (name LIKE '%عطور%' OR name LIKE '%عطر%' OR LOWER(name) LIKE '%perfume%')
+                        AND (name LIKE '%رجال%' OR (LOWER(name) LIKE '%men%' AND LOWER(name) NOT LIKE '%women%')) THEN 0
+                    WHEN (name LIKE '%عطور%' OR name LIKE '%عطر%' OR LOWER(name) LIKE '%perfume%')
+                        AND (name LIKE '%عرب%' OR LOWER(name) LIKE '%arab%') THEN 1
+                    WHEN (name LIKE '%عطور%' OR name LIKE '%عطر%' OR LOWER(name) LIKE '%perfume%')
+                        AND (name LIKE '%نسائ%' OR LOWER(name) LIKE '%women%' OR LOWER(name) LIKE '%female%') THEN 2
+                    WHEN name LIKE '%يون%سكس%' OR LOWER(name) LIKE '%unisex%' THEN 3
+                    WHEN (name LIKE '%ساع%' OR LOWER(name) LIKE '%watch%')
+                        AND (name LIKE '%رجال%' OR (LOWER(name) LIKE '%men%' AND LOWER(name) NOT LIKE '%women%')) THEN 4
+                    WHEN (name LIKE '%ساع%' OR LOWER(name) LIKE '%watch%')
+                        AND (name LIKE '%نسائ%' OR LOWER(name) LIKE '%women%' OR LOWER(name) LIKE '%female%') THEN 5
+                    ELSE 6
+                END
+            ");
         }
 
         $categories = $categoriesQuery
