@@ -347,9 +347,22 @@
 
         .restaurant-social-links {
             display: grid;
-            grid-template-columns: repeat(2, 38px);
+            grid-template-columns: repeat(2, max-content);
             gap: 8px;
             align-self: center
+        }
+
+        .restaurant-contact-stack {
+            display: flex;
+            flex-direction: column;
+            align-self: stretch;
+            justify-content: flex-end;
+            gap: 10px
+        }
+
+        .restaurant-contact-stack .restaurant-social-links {
+            margin-block: auto;
+            align-content: center
         }
 
         .restaurant-social-link {
@@ -372,6 +385,13 @@
             transform: translateY(-2px);
             border-color: currentColor;
             outline: none
+        }
+
+        .restaurant-social-link.is-facebook,
+        .restaurant-social-link.is-instagram {
+            width: 50px;
+            height: 50px;
+            font-size: 25px
         }
 
         .restaurant-social-link.is-facebook { color: #5d9cff }
@@ -480,7 +500,10 @@
             display: inline-flex;
             align-items: center;
             gap: 7px;
-            width: fit-content;
+            width: 92px;
+            height: 44px;
+            justify-content: center;
+            flex-shrink: 0;
             margin-top: 0;
             padding: 8px 15px;
             border: 1px solid currentColor;
@@ -489,7 +512,7 @@
             font-weight: 900
         }
 
-        .restaurant-availability i {
+        .restaurant-availability > i:not(.ti) {
             width: 8px;
             height: 8px;
             border-radius: 50%;
@@ -505,6 +528,21 @@
         .restaurant-availability.is-closed {
             color: var(--red);
             background: rgba(255, 102, 120, .1)
+        }
+
+        .restaurant-whatsapp {
+            text-decoration: none
+        }
+
+        .restaurant-whatsapp .ti {
+            font-size: 26px
+        }
+
+        .restaurant-whatsapp:hover,
+        .restaurant-whatsapp:focus-visible {
+            background: rgba(39, 221, 134, .2);
+            outline: 2px solid currentColor;
+            outline-offset: 3px
         }
 
         .restaurant-closed-notice {
@@ -1548,11 +1586,27 @@
                 margin-top: 8px
             }
 
+            .restaurant-contact-stack {
+                display: contents
+            }
+
+            .restaurant-contact-stack .restaurant-social-links {
+                margin-block: 8px 42px
+            }
+
             .restaurant-social-link {
                 width: 29px;
                 height: 29px;
                 flex: 0 0 29px;
                 font-size: 14px
+            }
+
+            .restaurant-social-link.is-facebook,
+            .restaurant-social-link.is-instagram {
+                width: 42px;
+                height: 42px;
+                flex-basis: 42px;
+                font-size: 22px
             }
 
             .logo {
@@ -1587,8 +1641,19 @@
                 position: absolute;
                 right: 0;
                 bottom: 0;
+                width: calc(50% - 3px);
+                height: 34px;
                 padding: 7px 11px;
                 font-size: 11px
+            }
+
+            .restaurant-whatsapp {
+                right: auto;
+                left: 0
+            }
+
+            .restaurant-whatsapp .ti {
+                font-size: 23px
             }
 
             .layout {
@@ -1874,6 +1939,8 @@
             ['key' => 'youtube', 'label' => 'YouTube', 'icon' => 'ti-brand-youtube', 'url' => $normalizeSocialProfile($restaurantSocial->youtube, 'https://youtube.com/', true)],
             ['key' => 'whatsapp', 'label' => 'WhatsApp', 'icon' => 'ti-brand-whatsapp', 'url' => $normalizeSocialWhatsapp($restaurantSocial->whatsapp ?: $shop->whatsapp)],
         ])->filter(fn ($link) => filled($link['url']))->values();
+        $restaurantWhatsappLink = $restaurantSocialLinks->firstWhere('key', 'whatsapp');
+        $restaurantSocialLinks = $restaurantSocialLinks->reject(fn ($link) => $link['key'] === 'whatsapp')->values();
         $restaurantDisplayItems = collect($displayItems ?? [])->filter(fn ($item) => filled($item->media))->values();
         $displayMediaUrl = function (?string $path): string {
             if (! filled($path)) {
@@ -1956,7 +2023,9 @@
                             {{ $availabilityShortLabel }}
                         </span>
                     </div>
-                    @if($restaurantSocialLinks->isNotEmpty())
+                    @if($restaurantSocialLinks->isNotEmpty() || $restaurantWhatsappLink)
+                        <div class="restaurant-contact-stack">
+                        @if($restaurantSocialLinks->isNotEmpty())
                         <nav class="restaurant-social-links" aria-label="{{ $socialMediaLabel }}">
                             @foreach($restaurantSocialLinks as $socialLink)
                                 <a class="restaurant-social-link is-{{ $socialLink['key'] }}"
@@ -1966,6 +2035,15 @@
                                 </a>
                             @endforeach
                         </nav>
+                        @endif
+                        @if($restaurantWhatsappLink)
+                            <a class="restaurant-availability is-open restaurant-whatsapp"
+                                href="{{ $restaurantWhatsappLink['url'] }}" target="_blank" rel="noopener noreferrer"
+                                aria-label="{{ $restaurantWhatsappLink['label'] }}" title="{{ $restaurantWhatsappLink['label'] }}">
+                                <i class="ti ti-brand-whatsapp" aria-hidden="true"></i>
+                            </a>
+                        @endif
+                        </div>
                     @endif
                 </div>
             </header>
