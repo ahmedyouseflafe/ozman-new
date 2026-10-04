@@ -106,7 +106,7 @@ Route::get('/advertising/{shop:slug}', [AdvertisingStoreController::class, 'inde
 Route::get('/electronics/{shop:slug}', [ElectronicsStoreController::class, 'index'])->name('electronics.store');
 Route::get('/fashion/{shop:slug}', [ClothingStoreController::class, 'index'])->name('clothing.store');
 Route::get('/virtual-tryon/demo-garment', function () {
-    $path = public_path('images/virtual-tryon/demo-oversized-black-tee.png');
+    $path = public_path('images/virtual-tryon/demo-smooth-blue-tee.png');
 
     abort_unless(is_file($path), 404);
 

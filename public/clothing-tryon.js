@@ -3,7 +3,8 @@ export function garmentPlacement(points, videoWidth, videoHeight, imageRatio) {
     const visible = point => point && Number.isFinite(point.x) && Number.isFinite(point.y)
         && Number.isFinite(point.visibility) && point.visibility >= 0.55;
     if (!videoWidth || !videoHeight || !(imageRatio > 0)
-        || !visible(points?.[11]) || !visible(points?.[12])) return null;
+        || !visible(points?.[11]) || !visible(points?.[12])
+        || points[11].visibility < 0.75 || points[12].visibility < 0.75) return null;
 
     const shoulders = [points[11], points[12]]
         .map(p => ({ x: p.x * videoWidth, y: p.y * videoHeight }))
@@ -16,7 +17,7 @@ export function garmentPlacement(points, videoWidth, videoHeight, imageRatio) {
     const x = (shoulders[0].x + shoulders[1].x) / 2;
     const y = (shoulders[0].y + shoulders[1].y) / 2;
     const angle = Math.atan2(dy, dx);
-    const width = span * 1.8; // Include the sleeves beyond the shoulder seams.
+    const width = span / 0.552; // Calibrated shoulder seams at u=.224 and u=.776.
     const naturalHeight = width * imageRatio;
     let height = naturalHeight;
     if (visible(points[23]) && visible(points[24])) {
@@ -24,7 +25,7 @@ export function garmentPlacement(points, videoWidth, videoHeight, imageRatio) {
         const hipY = (points[23].y + points[24].y) * videoHeight / 2;
         const torso = -(hipX - x) * Math.sin(angle) + (hipY - y) * Math.cos(angle);
         if (torso > span * 0.4) {
-            height = Math.max(naturalHeight * 0.75, Math.min(naturalHeight * 1.35, torso / 0.72));
+            height = Math.max(naturalHeight * 0.75, Math.min(naturalHeight * 1.35, torso / 0.80));
         }
     }
     return { x, y, width, height, angle };
@@ -56,45 +57,53 @@ export function smoothLandmarks(previous, points, amount = 0.55) {
 // the two sleeve regions rotate independently around their own shoulder.
 export function garmentMesh(points, fit, videoWidth, videoHeight) {
     const project = (u, v) => {
-        const x = (u - 0.5) * fit.width, y = (v - 0.16) * fit.height;
+        // The anatomical shoulder joint is inside the sleeve cap, below its top seam.
+        const x = (u - 0.5) * fit.width, y = (v - 0.20) * fit.height;
         return { x: fit.x + x * Math.cos(fit.angle) - y * Math.sin(fit.angle),
             y: fit.y + x * Math.sin(fit.angle) + y * Math.cos(fit.angle) };
     };
     const ids = points[11].x < points[12].x ? [11, 12] : [12, 11];
-    const arms = ids.map((id, side) => {
+    const vertices = [], triangles = [];
+    const addQuad = corners => {
+        const start = vertices.length;
+        vertices.push(...corners);
+        triangles.push([start, start + 1, start + 2], [start, start + 2, start + 3]);
+    };
+    // Two articulated panels, stitched to fixed shoulder/underarm anchors.
+    // Unlike blended skinning, these panels cannot fold the chest mesh over itself.
+    ids.forEach((id, side) => {
+        const mirror = u => side === 0 ? u : 1 - u;
+        const uv = [[0.224, 0.15], [0, 0.245], [0.08, 0.445], [0.20, 0.43]]
+            .map(([u, v]) => ({ u: mirror(u), v }));
+        const corners = uv.map(p => ({ ...p, ...project(p.u, p.v) }));
         const shoulder = points[id], elbow = points[id + 2];
-        if (!reliable(elbow)) return null;
-        const direction = side === 0 ? -1 : 1;
-        const pivot = project(0.5 + direction / 3.6, 0.16);
-        const cuff = project(side === 0 ? 0.1 : 0.9, 0.47);
-        const dx = (elbow.x - shoulder.x) * videoWidth;
-        const dy = (elbow.y - shoulder.y) * videoHeight;
-        const length = Math.hypot(dx, dy);
-        if (length < fit.width * 0.08) return null;
-        const angle = Math.atan2(dy, dx) - Math.atan2(cuff.y - pivot.y, cuff.x - pivot.x);
-        const scale = clamp(length * 0.76 / Math.hypot(cuff.x - pivot.x, cuff.y - pivot.y), 0.65, 1.45);
-        return { pivot, angle, scale };
-    });
-    const columns = [0, 0.12, 0.24, 0.36, 0.5, 0.64, 0.76, 0.88, 1];
-    const rows = [0, 0.16, 0.32, 0.48, 0.64, 0.82, 1];
-    const vertices = rows.flatMap(v => columns.map(u => {
-        const base = project(u, v);
-        const arm = arms[u < 0.5 ? 0 : 1];
-        const weight = ease(0.14, 0.3, Math.abs(u - 0.5)) * (1 - ease(0.44, 0.64, v));
-        if (!arm || !weight) return { u, v, ...base };
-        const x = base.x - arm.pivot.x, y = base.y - arm.pivot.y;
-        const warped = {
-            x: arm.pivot.x + arm.scale * (x * Math.cos(arm.angle) - y * Math.sin(arm.angle)),
-            y: arm.pivot.y + arm.scale * (x * Math.sin(arm.angle) + y * Math.cos(arm.angle)),
-        };
-        return { u, v, x: base.x + (warped.x - base.x) * weight, y: base.y + (warped.y - base.y) * weight };
-    }));
-    const triangles = [];
-    for (let row = 0; row < rows.length - 1; row++) {
-        for (let col = 0; col < columns.length - 1; col++) {
-            const a = row * columns.length + col, b = a + 1, c = a + columns.length, d = c + 1;
-            triangles.push([a, b, d], [a, d, c]);
+        if (reliable(elbow)) {
+            const dx = (elbow.x - shoulder.x) * videoWidth;
+            const dy = (elbow.y - shoulder.y) * videoHeight;
+            const length = Math.hypot(dx, dy);
+            if (length > fit.width * 0.08) {
+                const direction = side === 0 ? -1 : 1;
+                const cuffLength = clamp(length * 0.72, fit.width * 0.16, fit.width * 0.5);
+                const halfCuff = fit.width * 0.085;
+                const joint = project(mirror(0.224), 0.20);
+                const center = { x: joint.x + dx / length * cuffLength,
+                    y: joint.y + dy / length * cuffLength };
+                const normal = { x: direction * dy / length, y: -direction * dx / length };
+                corners[1] = { ...uv[1], x: center.x + normal.x * halfCuff, y: center.y + normal.y * halfCuff };
+                corners[2] = { ...uv[2], x: center.x - normal.x * halfCuff, y: center.y - normal.y * halfCuff };
+            }
         }
+        addQuad(corners);
+    });
+    // Draw the torso last to cover sleeve joins. Each horizontal strip is rigid
+    // across the chest; elbow motion never pulls or crumples the central texture.
+    const rows = [0, 0.15, 0.43, 0.7, 1];
+    const edge = v => 0.224 - ease(0.15, 0.43, v) * 0.024;
+    for (let row = 0; row < rows.length - 1; row++) {
+        const top = rows[row], bottom = rows[row + 1];
+        const uv = [[edge(top), top], [1 - edge(top), top],
+            [1 - edge(bottom), bottom], [edge(bottom), bottom]];
+        addQuad(uv.map(([u, v]) => ({ u, v, ...project(u, v) })));
     }
     return { vertices, triangles };
 }
@@ -153,9 +162,7 @@ function drawMesh(ctx, image, mesh) {
         ctx.closePath(); ctx.clip();
         ctx.transform(m11, m12, m21, m22, a.x - m11 * a.u * iw - m21 * a.v * ih,
             a.y - m12 * a.u * iw - m22 * a.v * ih);
-        const x = Math.min(a.u, b.u, c.u) * iw, y = Math.min(a.v, b.v, c.v) * ih;
-        const w = Math.max(a.u, b.u, c.u) * iw - x, h = Math.max(a.v, b.v, c.v) * ih - y;
-        ctx.drawImage(image, x, y, w, h, x, y, w, h);
+        ctx.drawImage(image, 0, 0);
         ctx.restore();
     }
 }
@@ -185,6 +192,25 @@ function drawForeground(ctx, buffer, source, mask, arms) {
     }
     front.restore();
     ctx.drawImage(buffer, 0, 0);
+}
+
+function drawTrackingGuides(ctx, points) {
+    if (!points) return;
+    ctx.save();
+    ctx.lineWidth = Math.max(2, ctx.canvas.width / 320);
+    ctx.strokeStyle = '#38e8ca';
+    for (const [a, b] of [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16]]) {
+        if (!reliable(points[a]) || !reliable(points[b])) continue;
+        ctx.beginPath(); ctx.moveTo(points[a].x * ctx.canvas.width, points[a].y * ctx.canvas.height);
+        ctx.lineTo(points[b].x * ctx.canvas.width, points[b].y * ctx.canvas.height); ctx.stroke();
+    }
+    for (const id of [11, 12, 13, 14, 15, 16]) {
+        if (!reliable(points[id])) continue;
+        ctx.fillStyle = points[id].visibility >= 0.75 ? '#d6ff38' : '#ffb454';
+        ctx.beginPath(); ctx.arc(points[id].x * ctx.canvas.width, points[id].y * ctx.canvas.height,
+            Math.max(4, ctx.canvas.width / 180), 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
 }
 
 export function initClothingTryOn(root = document) {
@@ -267,6 +293,7 @@ export function initClothingTryOn(root = document) {
                 if (!placement) {
                     run.previous = null;
                     run.points = null;
+                    if (root.getElementById('tryShowGuides')?.checked) drawTrackingGuides(ctx, results.poseLandmarks);
                     setStatus('قف مقابل الكاميرا وأظهر كتفيك داخل الإطار');
                     return;
                 }
@@ -276,6 +303,7 @@ export function initClothingTryOn(root = document) {
                 drawMesh(ctx, run.garment, garmentMesh(run.points, fit, canvas.width, canvas.height));
                 drawForeground(ctx, run.foreground, run.cameraFrame, results.segmentationMask,
                     foregroundArms(results.poseLandmarks, canvas.width, canvas.height));
+                if (root.getElementById('tryShowGuides')?.checked) drawTrackingGuides(ctx, results.poseLandmarks);
                 setStatus(reliable(results.poseLandmarks[13]) && reliable(results.poseLandmarks[14])
                     ? 'حرّك ذراعيك بهدوء — الأكمام تتبع حركتك'
                     : 'أظهر مرفقيك داخل الإطار حتى تتحرك الأكمام');

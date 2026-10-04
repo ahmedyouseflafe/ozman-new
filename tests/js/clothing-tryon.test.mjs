@@ -72,10 +72,9 @@ test('raising one elbow lifts its sleeve without moving the other sleeve or tors
     const resting = meshFor(points);
     points[13] = { ...points[13], x: 0.9, y: 0.13 };
     const raised = meshFor(points);
-    assert.ok(vertex(raised, 0.88, 0.48).y < vertex(resting, 0.88, 0.48).y - 80);
-    assert.deepEqual(vertex(raised, 0.12, 0.48), vertex(resting, 0.12, 0.48));
-    assert.deepEqual(vertex(raised, 0.5, 0.48), vertex(resting, 0.5, 0.48));
-    assert.deepEqual(vertex(raised, 0.76, 0.82), vertex(resting, 0.76, 0.82));
+    assert.ok(vertex(raised, 1, 0.245).y < vertex(resting, 1, 0.245).y - 80);
+    assert.deepEqual(vertex(raised, 0, 0.245), vertex(resting, 0, 0.245));
+    assert.deepEqual(raised.vertices.slice(8), resting.vertices.slice(8));
 });
 test('both sleeves follow opposite arm movements, including an arm across the chest', () => {
     const points = armedPose();
@@ -83,10 +82,10 @@ test('both sleeves follow opposite arm movements, including an arm across the ch
     points[13] = { ...points[13], x: 0.46, y: 0.4 };
     points[14] = { ...points[14], x: 0.1, y: 0.1 };
     const after = meshFor(points);
-    assert.notDeepEqual(vertex(after, 0.88, 0.48), vertex(before, 0.88, 0.48));
-    assert.notDeepEqual(vertex(after, 0.12, 0.48), vertex(before, 0.12, 0.48));
+    assert.notDeepEqual(vertex(after, 1, 0.245), vertex(before, 1, 0.245));
+    assert.notDeepEqual(vertex(after, 0, 0.245), vertex(before, 0, 0.245));
     assert.ok(after.vertices.every(p => Number.isFinite(p.x) && Number.isFinite(p.y)));
-    assert.equal(after.triangles.length, 96);
+    assert.equal(after.triangles.length, 12);
 });
 test('lost elbow confidence reverts that sleeve and never keeps a stale arm pose', () => {
     const points = armedPose();
@@ -94,7 +93,7 @@ test('lost elbow confidence reverts that sleeve and never keeps a stale arm pose
     const smoothed = smoothLandmarks(points, hidden);
     assert.equal(smoothed[13].visibility, 0);
     const noArms = pose();
-    assert.deepEqual(vertex(meshFor(smoothed), 0.88, 0.48), vertex(meshFor(noArms), 0.88, 0.48));
+    assert.deepEqual(vertex(meshFor(smoothed), 1, 0.245), vertex(meshFor(noArms), 1, 0.245));
 });
 test('foreground forearms follow wrists while arms behind the torso remain covered', () => {
     const points = armedPose();
@@ -114,4 +113,17 @@ test('a forearm crossing the torso depth plane only restores its visible section
     assert.ok(arm.from.y > points[13].y * 960);
     assert.ok(arm.from.y < points[15].y * 960);
     assert.equal(arm.to.y, points[15].y * 960);
+});
+
+test('calibrated shoulder joints sit inside the sleeve cap, including tilted shoulders', () => {
+    const points = armedPose();
+    for (const tilt of [0, 0.04, -0.06]) {
+        points[11].y = 0.3 + tilt;
+        const fit = garmentPlacement(points, 720, 960, 1);
+        const mesh = meshFor(points);
+        const left = vertex(mesh, 0.224, 0.15), right = vertex(mesh, 0.776, 0.15);
+        const offset = { x: -Math.sin(fit.angle) * fit.height * 0.05, y: Math.cos(fit.angle) * fit.height * 0.05 };
+        assert.ok(Math.hypot(left.x + offset.x - points[12].x * 720, left.y + offset.y - points[12].y * 960) < 0.001);
+        assert.ok(Math.hypot(right.x + offset.x - points[11].x * 720, right.y + offset.y - points[11].y * 960) < 0.001);
+    }
 });
