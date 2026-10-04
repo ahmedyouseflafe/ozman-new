@@ -22,15 +22,15 @@ class ClothingTryOnTest extends TestCase
             ->assertSee('id="tryShowGuides"', false)
             ->assertSee('export function initClothingTryOn', false)
             ->assertDontSee('src="'.asset('clothing-tryon.js'), false)
-            ->assertSee('smooth-blue-2', false);
+            ->assertSee('ivory-navy-3', false);
     }
 
     public function test_demo_image_route_serves_the_new_transparent_png(): void
     {
-        $response = $this->get(route('virtual-tryon.demo-garment', ['v' => 'smooth-blue-2']));
+        $response = $this->get(route('virtual-tryon.demo-garment', ['v' => 'ivory-navy-3']));
         $response->assertOk()->assertHeader('Content-Type', 'image/png');
         $file = $response->baseResponse->getFile()->getPathname();
-        $this->assertSame(realpath(public_path('images/virtual-tryon/demo-smooth-blue-tee.png')), realpath($file));
+        $this->assertSame(realpath(public_path('images/virtual-tryon/demo-ivory-navy-tee.png')), realpath($file));
         $header = file_get_contents($file, false, null, 0, 26);
         $this->assertSame("\x89PNG\r\n\x1a\n", substr($header, 0, 8));
         $this->assertSame(6, ord($header[25]), 'The shirt must retain RGBA transparency.');
