@@ -1,5 +1,6 @@
 @php
     $locale = app()->getLocale();
+    $hasCustomerWelcome = $shop->slug === 'bankai-sushi';
     $isRtl = in_array($locale, ['ar', 'he'], true);
     $restaurantDictionary = [
         'ar' => [
@@ -78,7 +79,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    @include('front.partials.merchant_pwa_head', ['pwaShop' => $shop])
+    @include('front.partials.merchant_pwa_head', ['pwaShop' => $shop, 'offerNotificationsPrompt' => ! $hasCustomerWelcome])
     @php
         $restaurantCanonical = route('restaurant.menu', $shop);
         $restaurantDescription = $shop->description ?: "تصفح منيو {$shop->name} والأسعار واطلب مباشرة عبر Ozman.";
@@ -2046,6 +2047,9 @@
                         </div>
                     @endif
                 </div>
+                @if($hasCustomerWelcome)
+                    <button type="button" class="bankai-profile-edit" id="bankaiProfileEdit"><i class="ti ti-user-circle" aria-hidden="true"></i> {{ match ($locale) { 'en' => 'My details', 'he' => 'הפרטים שלי', default => 'بياناتي' } }}</button>
+                @endif
             </header>
         </div>
 
@@ -2225,6 +2229,9 @@
         </div>
     </dialog>
     @include('front.shop_stories', ['showStoryList' => false])
+    @if($hasCustomerWelcome)
+        @include('front.partials.restaurant_customer_welcome')
+    @endif
     <script>
         (() => {
             const products = new Map(@json($restaurantProducts).map(product => [Number(product.id), product]));
@@ -2553,6 +2560,7 @@
                     status.innerHTML =
                         `<i class="ti ti-circle-check"></i> ${escapeHtml(ui.location_success)} — <a style="color:var(--cyan)" target="_blank" href="https://www.google.com/maps?q=${$('latitude').value},${$('longitude').value}">${escapeHtml(ui.open_location)}</a>`;
                     status.classList.add('ready');
+                    document.dispatchEvent(new Event('restaurant:location-selected'));
                 }, () => {
                     status.textContent = ui.location_failed;
                     status.classList.remove('ready')
