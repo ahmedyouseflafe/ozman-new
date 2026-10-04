@@ -457,6 +457,12 @@
                                 <option value="merchant" @selected($selectedType === 'merchant')>أصحاب متاجر</option>
                             </select>
 
+                            <select class="filter-select" name="shop_id" aria-label="المحل الذي تم التسجيل منه">
+                                <option value="">كل المحلات</option>
+                                @foreach($registrationShops as $registrationShop)
+                                    <option value="{{ $registrationShop->id }}" @selected($selectedShopId === $registrationShop->id)>{{ $registrationShop->name }}</option>
+                                @endforeach
+                            </select>
                             <button class="filter-btn" type="submit">
                                 <i class="ti ti-search"></i>
                                 بحث
@@ -470,9 +476,9 @@
                                 <tr>
                                     <th>النوع</th>
                                     <th>الاسم والهاتف</th>
-                                    <th>بيانات المتجر</th>
-                                    <th>مكان السكن</th>
-                                    <th>لوكيشن المحل</th>
+                                    <th>المحل / بيانات المتجر</th>
+                                    <th>العنوان</th>
+                                    <th>اللوكيشن</th>
                                     <th>الحالة</th>
                                     <th>الإجراء</th>
                                     <th>تاريخ التسجيل</th>
@@ -492,6 +498,14 @@
                                             <div class="main-cell">
                                                 {{ $registration->name }}
                                                 <span class="sub-line">{{ $registration->phone }}</span>
+                                                @if($registration->type === 'customer')
+                                                    @php
+                                                        $whatsappDigits = preg_replace('/\D+/', '', $registration->phone);
+                                                        if (str_starts_with($whatsappDigits, '00')) $whatsappDigits = substr($whatsappDigits, 2);
+                                                        if (str_starts_with($whatsappDigits, '05')) $whatsappDigits = (in_array(substr($whatsappDigits, 0, 3), ['056', '059']) ? '970' : '972').substr($whatsappDigits, 1);
+                                                    @endphp
+                                                    <a class="map-link" href="https://wa.me/{{ $whatsappDigits }}" target="_blank" rel="noopener noreferrer" aria-label="واتساب {{ $registration->name }}"><i class="ti ti-brand-whatsapp"></i> واتساب</a>
+                                                @endif
                                             </div>
                                         </td>
                                         <td>
@@ -501,7 +515,7 @@
                                                     <span class="sub-line">الملف الضريبي: {{ $registration->tax_file ?: '-' }}</span>
                                                 </div>
                                             @else
-                                                -
+                                                {{ $registration->shop?->name ?: 'الموقع العام' }}
                                             @endif
                                         </td>
                                         <td>{{ $registration->residence_address }}</td>
@@ -513,7 +527,7 @@
                                                 </a>
                                                 <span class="sub-line">{{ $registration->latitude }}, {{ $registration->longitude }}</span>
                                             @else
-                                                -
+                                                لم يُحدّد بعد
                                             @endif
                                         </td>
                                         <td>

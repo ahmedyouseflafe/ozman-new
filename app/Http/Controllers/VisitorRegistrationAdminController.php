@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\VisitorRegistration;
+use App\Models\Shop;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
@@ -16,8 +17,11 @@ class VisitorRegistrationAdminController extends Controller
 
         $type = $request->query('type');
         $search = trim((string) $request->query('search', ''));
+        $shopId = $request->integer('shop_id');
 
         $registrations = VisitorRegistration::query()
+            ->with('shop:id,name')
+            ->when($shopId > 0, fn ($query) => $query->where('shop_id', $shopId))
             ->when(in_array($type, ['customer', 'merchant'], true), fn($query) => $query->where('type', $type))
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
@@ -25,7 +29,8 @@ class VisitorRegistrationAdminController extends Controller
                         ->orWhere('phone', 'like', "%{$search}%")
                         ->orWhere('shop_name', 'like', "%{$search}%")
                         ->orWhere('tax_file', 'like', "%{$search}%")
-                        ->orWhere('residence_address', 'like', "%{$search}%");
+                        ->orWhere('residence_address', 'like', "%{$search}%")
+                        ->orWhereHas('shop', fn ($shop) => $shop->where('name', 'like', "%{$search}%"));
                 });
             })
             ->latest()
@@ -39,6 +44,8 @@ class VisitorRegistrationAdminController extends Controller
             'merchantsCount' => VisitorRegistration::where('type', 'merchant')->count(),
             'pendingMerchantsCount' => VisitorRegistration::where('type', 'merchant')->where('status', 'pending')->count(),
             'selectedType' => $type,
+            'selectedShopId' => $shopId,
+            'registrationShops' => Shop::whereIn('id', VisitorRegistration::whereNotNull('shop_id')->select('shop_id'))->orderBy('name')->get(['id', 'name']),
             'search' => $search,
         ]);
     }

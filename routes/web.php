@@ -102,6 +102,9 @@ Route::get('/market', [FrontController::class, 'index'])->name('front.home');
 Route::get('/front/shops/{shop}', [FrontController::class, 'index'])->name('front.shop');
 Route::get('/stores/{shop:slug}', [FrontController::class, 'index'])->name('front.shop.slug');
 Route::get('/restaurants/{shop:slug}', [RestaurantController::class, 'menu'])->name('restaurant.menu');
+Route::post('/restaurants/{shop:slug}/customer-registration', [\App\Http\Controllers\RestaurantCustomerRegistrationController::class, 'store'])
+    ->middleware('throttle:20,1')
+    ->name('restaurant.customer-registration.store');
 Route::get('/advertising/{shop:slug}', [AdvertisingStoreController::class, 'index'])->name('advertising.store');
 Route::get('/electronics/{shop:slug}', [ElectronicsStoreController::class, 'index'])->name('electronics.store');
 Route::get('/fashion/{shop:slug}', [ClothingStoreController::class, 'index'])->name('clothing.store');

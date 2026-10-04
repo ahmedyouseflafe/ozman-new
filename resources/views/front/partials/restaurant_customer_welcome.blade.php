@@ -15,7 +15,9 @@
             'pushDismissed' => 'Permission was not granted. You can enable notifications later.',
             'pushError' => 'Could not enable notifications. Try again; you can still enter the menu.',
             'pushUnavailable' => 'Notifications are unavailable in this browser. On iPhone, try adding the site to your Home Screen.',
-            'submit' => 'Save & explore the menu', 'privacy' => 'Your details stay on this device and are included when you place an order.',
+            'submit' => 'Save & explore the menu', 'privacy' => 'Saving registers your details with Ozman for Bankai and remembers them on this device for your orders.',
+            'saving' => 'Saving your details…', 'saveError' => 'Could not save your details. Check your connection and try again.',
+            'confirmSaved' => 'Your details are filled in. Save them to complete your registration with Bankai.',
             'phoneError' => 'Enter a valid mobile number, such as 0591234567.', 'required' => 'Please enter your name and address.',
             'storageError' => 'Saved for this visit. Your browser is not allowing details to be remembered on this device.',
             'continue' => 'Continue to menu', 'cancel' => 'Back to menu', 'locationChoice' => 'Locate yourself or choose to set the location when ordering.',
@@ -35,7 +37,9 @@
             'pushDismissed' => 'לא ניתן אישור. אפשר להפעיל התראות בהמשך.',
             'pushError' => 'לא ניתן להפעיל התראות. נסו שוב; אפשר להמשיך לתפריט.',
             'pushUnavailable' => 'התראות אינן זמינות בדפדפן זה. באייפון נסו להוסיף את האתר למסך הבית.',
-            'submit' => 'שמירה וכניסה לתפריט', 'privacy' => 'הפרטים נשמרים במכשיר הזה ונשלחים עם ביצוע ההזמנה.',
+            'submit' => 'שמירה וכניסה לתפריט', 'privacy' => 'השמירה רושמת את הפרטים ב-Ozman עבור בנקאי ושומרת אותם במכשיר להזמנות שלך.',
+            'saving' => 'שומר את הפרטים…', 'saveError' => 'לא ניתן לשמור את הפרטים. בדקו את החיבור ונסו שוב.',
+            'confirmSaved' => 'הפרטים מולאו. שמרו אותם כדי להשלים את ההרשמה לבנקאי.',
             'phoneError' => 'יש להזין מספר נייד תקין, למשל 0501234567.', 'required' => 'יש להזין שם וכתובת.',
             'storageError' => 'הפרטים נשמרו לביקור הזה. הדפדפן אינו מאפשר לשמור אותם במכשיר.',
             'continue' => 'המשך לתפריט', 'cancel' => 'חזרה לתפריט', 'locationChoice' => 'יש לאתר את המיקום או לבחור להגדיר אותו בזמן ההזמנה.',
@@ -55,7 +59,9 @@
             'pushDismissed' => 'ما تم السماح بالإشعارات. بتقدر تفعّلها لاحقًا.',
             'pushError' => 'تعذّر تفعيل الإشعارات. جرّب مرة ثانية؛ بتقدر تكمل للمنيو.',
             'pushUnavailable' => 'الإشعارات غير متاحة بهالمتصفح. على آيفون جرّب إضافة الموقع للشاشة الرئيسية.',
-            'submit' => 'احفظ بياناتي وافتح المنيو', 'privacy' => 'بياناتك بتنحفظ على هالجهاز، وبتنرسل للمطعم لما تعمل طلب.',
+            'submit' => 'احفظ بياناتي وافتح المنيو', 'privacy' => 'بالحفظ، بتسجّل بياناتك لدى إدارة Ozman لبانكاي، وبنحفظها على هالجهاز لتسهيل طلباتك.',
+            'saving' => 'جارٍ حفظ بياناتك…', 'saveError' => 'ما قدرنا نحفظ بياناتك. تأكد من اتصالك وجرّب مرة ثانية.',
+            'confirmSaved' => 'بياناتك معبّاية. احفظها حتى نكمّل تسجيلك لدى بانكاي.',
             'phoneError' => 'اكتب رقم جوال صحيح، مثل 0591234567.', 'required' => 'اكتب اسمك وعنوانك حتى نكمل.',
             'storageError' => 'حفظنا بياناتك لهالزيارة. المتصفح مش سامح نحفظها للمرة الجاي على الجهاز.',
             'continue' => 'كمّل للمنيو', 'cancel' => 'رجوع للمنيو', 'locationChoice' => 'حدّد موقعك أو اختار تحديده وقت الطلب.',
@@ -102,7 +108,7 @@
     #bankaiWelcome .bankai-welcome-cancel{justify-self:center}
     @media(max-width:650px){#bankaiWelcome{width:calc(100% - 20px);max-height:calc(100dvh - 20px);border-radius:22px}.bankai-welcome-layout{grid-template-columns:1fr;min-height:0}.bankai-welcome-brand{padding:22px 20px 18px}.bankai-welcome-logo{width:70px;height:70px;border-radius:18px;margin-bottom:12px}.bankai-welcome-kicker{font-size:8px;margin-bottom:5px}#bankaiWelcome h2{font-size:23px;margin-bottom:5px}.bankai-welcome-intro{font-size:11px;max-width:310px}.bankai-welcome-form{padding:20px;gap:13px}.bankai-welcome-fields{grid-template-columns:1fr}.bankai-welcome-brand:before{top:-160px}.bankai-welcome-brand:after{top:-205px}}
 </style>
-<dialog id="bankaiWelcome" aria-labelledby="bankaiWelcomeTitle" aria-describedby="bankaiWelcomeIntro" dir="{{ $isRtl ? 'rtl' : 'ltr' }}" data-storage-key="ozman.restaurant.{{ $shop->id }}.customer.v1">
+<dialog id="bankaiWelcome" aria-labelledby="bankaiWelcomeTitle" aria-describedby="bankaiWelcomeIntro" dir="{{ $isRtl ? 'rtl' : 'ltr' }}" data-storage-key="ozman.restaurant.{{ $shop->id }}.customer.v1" data-registration-url="{{ route('restaurant.customer-registration.store', $shop) }}">
     <div class="bankai-welcome-layout">
         <section class="bankai-welcome-brand">
             @if($shop->logo)<img class="bankai-welcome-logo" src="{{ asset($shop->logo) }}" alt="{{ $shop->name }}">@endif

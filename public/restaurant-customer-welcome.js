@@ -12,6 +12,9 @@
         const name = $('bankaiName'), phone = $('bankaiWhatsapp'), address = $('bankaiAddress');
         let profile = null, point = null, deferredLocation = false, locationRequest = 0;
         let storageWarningShown = false, previousOverflow = '';
+        let registrationToken = '', saving = false, syncQueue = Promise.resolve();
+        try { registrationToken = localStorage.getItem(key + '.token') || ''; } catch (_) {}
+        if (!/^[a-f0-9]{64}$/.test(registrationToken)) registrationToken = '';
         const normalizePhone = value => String(value || '').replace(/[٠-٩۰-۹]/g, digit => {
             const code = digit.charCodeAt(0);
             return String(code - (code >= 0x6f0 ? 0x6f0 : 0x660));
@@ -32,6 +35,32 @@
         const persist = () => {
             try { localStorage.setItem(key, JSON.stringify(profile)); return true; }
             catch (_) { return false; }
+        };
+        const saveRegistration = candidate => {
+            // Serialize updates so a slow older request cannot overwrite newer details.
+            const operation = syncQueue.catch(() => {}).then(async () => {
+                if (!registrationToken) {
+                    registrationToken = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte => byte.toString(16).padStart(2, '0')).join('');
+                    try { localStorage.setItem(key + '.token', registrationToken); } catch (_) {}
+                }
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 15000);
+                try {
+                    const response = await fetch(dialog.dataset.registrationUrl, {
+                        method: 'POST', credentials: 'same-origin', signal: controller.signal,
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
+                        body: JSON.stringify({ registration_token: registrationToken,
+                            name: candidate.name, whatsapp: candidate.whatsapp, address: candidate.address,
+                            location_deferred: candidate.locationDeferred,
+                            latitude: candidate.location?.latitude ?? null, longitude: candidate.location?.longitude ?? null }),
+                    });
+                    const data = await response.json();
+                    if (!response.ok || data.registered !== true) throw new Error(ui.saveError);
+                } finally { clearTimeout(timeout); }
+            });
+            syncQueue = operation;
+            return operation;
         };
         const applyToOrder = () => {
             if (!profile) return;
@@ -56,6 +85,7 @@
             }
         };
         const close = () => {
+            if (saving) return;
             locationRequest++;
             dialog.close();
             document.body.style.overflow = previousOverflow;
@@ -67,7 +97,7 @@
             address.value = profile?.address || '';
             point = profile?.location || null;
             deferredLocation = profile?.locationDeferred || false;
-            $('bankaiWelcomeCancel').hidden = !profile;
+            $('bankaiWelcomeCancel').hidden = !profile?.registered;
             $('bankaiLocate').disabled = false;
             status('bankaiWelcomeMessage', '');
             showLocation();
@@ -160,14 +190,31 @@
             showLocation();
         });
         phone.addEventListener('input', () => phone.setCustomValidity(''));
-        form.addEventListener('submit', event => {
+        form.addEventListener('submit', async event => {
             event.preventDefault();
+            if (saving) return;
             status('bankaiWelcomeMessage', '');
             if (!name.value.trim() || !address.value.trim()) { status('bankaiWelcomeMessage', ui.required, 'error'); return; }
             if (!validPhone(phone.value)) { phone.setCustomValidity(ui.phoneError); phone.reportValidity(); return; }
             if (!point && !deferredLocation) { status('bankaiWelcomeMessage', ui.locationChoice, 'error'); $('bankaiLocate').focus(); return; }
-            profile = { name: name.value.trim(), whatsapp: normalizePhone(phone.value), address: address.value.trim(), location: point, locationDeferred: deferredLocation };
-            applyToOrder();
+            const candidate = { name: name.value.trim(), whatsapp: normalizePhone(phone.value), address: address.value.trim(), location: point, locationDeferred: deferredLocation };
+            saving = true;
+            $('bankaiWelcomeSave').disabled = true;
+            $('bankaiWelcomeCancel').disabled = true;
+            $('bankaiWelcomeSave').textContent = ui.saving;
+            try {
+                await saveRegistration(candidate);
+                profile = { ...candidate, registered: true };
+                applyToOrder();
+            } catch (_) {
+                status('bankaiWelcomeMessage', ui.saveError, 'error');
+                return;
+            } finally {
+                saving = false;
+                $('bankaiWelcomeSave').disabled = false;
+                $('bankaiWelcomeCancel').disabled = false;
+                $('bankaiWelcomeSave').textContent = ui.submit;
+            }
             if (!persist() && !storageWarningShown) {
                 storageWarningShown = true;
                 status('bankaiWelcomeMessage', ui.storageError);
@@ -178,7 +225,7 @@
         });
         dialog.addEventListener('cancel', event => {
             event.preventDefault();
-            if (profile) close();
+            if (profile?.registered) close();
         });
         $('bankaiWelcomeCancel').addEventListener('click', close);
         edit?.addEventListener('click', open);
@@ -191,7 +238,18 @@
                     ? { latitude: Number($('latitude').value), longitude: Number($('longitude').value) } : null,
                 locationDeferred: $('latitude').value === '' || $('longitude').value === '',
             };
-            if (validProfile(candidate)) { profile = candidate; persist(); }
+            if (validProfile(candidate)) {
+                profile = candidate;
+                persist();
+                saveRegistration(candidate).then(() => {
+                    if (profile === candidate) { profile.registered = true; persist(); }
+                }).catch(() => {
+                    if (profile === candidate && $('message')) {
+                        $('message').textContent = ui.saveError;
+                        $('message').className = 'message error';
+                    }
+                });
+            }
         };
         ['name', 'phone'].forEach(id => $(id).addEventListener('change', saveOrderDetails));
         $('address').addEventListener('change', () => {
@@ -207,7 +265,11 @@
             const stored = JSON.parse(localStorage.getItem(key) || 'null');
             if (validProfile(stored)) profile = stored;
         } catch (_) { /* A damaged or unavailable store should still show the welcome form. */ }
-        if (profile) applyToOrder(); else open();
+        if (profile) applyToOrder();
+        if (!profile?.registered || !registrationToken) {
+            open();
+            if (profile) status('bankaiWelcomeMessage', ui.confirmSaved);
+        }
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
     else init();
