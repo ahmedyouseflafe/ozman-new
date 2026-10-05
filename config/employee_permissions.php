@@ -126,6 +126,7 @@ return [
             'label' => 'عجلات الربح والشراء والتسويق',
             'description' => 'كل نوع عجلة مستقل؛ امنح فقط النوع الذي يحتاجه المستخدم.',
             'permissions' => [
+                'reward_wheels.shop_signup' => ['label' => 'إدارة عجلة التسجيل للمحل', 'description' => 'إنشاء وتفعيل وتعديل عجلة أول تسجيل ضمن المحل المسموح فقط.', 'routes' => ['reward-wheels.shop-signup.edit', 'reward-wheels.shop-signup.update']],
                 'reward_wheels.customer_signup.view' => ['label' => 'عرض عجلة تسجيل العملاء', 'description' => 'مشاهدة إعدادات عجلة ما بعد التسجيل.', 'routes' => ['reward-wheels.customer-signup.edit']],
                 'reward_wheels.customer_signup.edit' => ['label' => 'تعديل عجلة تسجيل العملاء', 'description' => 'تعديل شرائح وجوائز عجلة التسجيل.', 'routes' => ['reward-wheels.customer-signup.update']],
                 'reward_wheels.purchase.view' => ['label' => 'عرض عجلات شراء المتاجر', 'description' => 'مشاهدة عجلات شراء المتاجر ضمن نطاق الحساب.', 'routes' => ['reward-wheels.purchase.index', 'reward-wheels.purchase.edit']],

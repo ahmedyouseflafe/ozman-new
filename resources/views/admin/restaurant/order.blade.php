@@ -27,6 +27,10 @@
                 @empty
                     <p class="empty">لا توجد وجبات مسجلة لهذا الطلب.</p>
                 @endforelse
+                @if((float) $order->discount > 0)
+                    <div class="total"><span>قبل الخصم</span><strong>{{ number_format((float) $order->subtotal, 2) }} ₪</strong></div>
+                    <div class="total"><span>خصم التسجيل</span><strong>−{{ number_format((float) $order->discount, 2) }} ₪</strong></div>
+                @endif
                 <div class="total"><span>المجموع</span><strong>{{ number_format((float) $order->total, 2) }} ₪</strong></div>
             </section>
             <aside class="order-side">

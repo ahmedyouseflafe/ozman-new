@@ -105,6 +105,8 @@ Route::get('/restaurants/{shop:slug}', [RestaurantController::class, 'menu'])->n
 Route::post('/restaurants/{shop:slug}/customer-registration', [\App\Http\Controllers\RestaurantCustomerRegistrationController::class, 'store'])
     ->middleware('throttle:20,1')
     ->name('restaurant.customer-registration.store');
+Route::post('/restaurants/{shop:slug}/signup-reward', [\App\Http\Controllers\ShopSignupRewardController::class, 'state'])
+    ->middleware('throttle:30,1')->name('restaurant.signup-reward');
 Route::get('/advertising/{shop:slug}', [AdvertisingStoreController::class, 'index'])->name('advertising.store');
 Route::get('/electronics/{shop:slug}', [ElectronicsStoreController::class, 'index'])->name('electronics.store');
 Route::get('/fashion/{shop:slug}', [ClothingStoreController::class, 'index'])->name('clothing.store');
@@ -412,6 +414,8 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
 
     Route::get('/reward-wheels/customer-signup', [RewardWheelController::class, 'edit'])
         ->name('reward-wheels.customer-signup.edit');
+    Route::get('/shops/{shop}/signup-wheel', [RewardWheelController::class, 'shopSignupEdit'])->name('reward-wheels.shop-signup.edit');
+    Route::put('/shops/{shop}/signup-wheel', [RewardWheelController::class, 'shopSignupUpdate'])->name('reward-wheels.shop-signup.update');
     Route::put('/reward-wheels/customer-signup', [RewardWheelController::class, 'update'])
         ->name('reward-wheels.customer-signup.update');
     Route::get('/reward-wheels/purchase', [RewardWheelController::class, 'purchaseIndex'])

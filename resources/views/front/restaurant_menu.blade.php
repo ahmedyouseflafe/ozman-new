@@ -1,6 +1,6 @@
 @php
     $locale = app()->getLocale();
-    $hasCustomerWelcome = $shop->slug === 'bankai-sushi';
+    $hasCustomerWelcome = $shop->slug === 'bankai-sushi' || \App\Models\RewardWheel::where('key', 'shop_signup_'.$shop->id)->exists();
     $isRtl = in_array($locale, ['ar', 'he'], true);
     $restaurantDictionary = [
         'ar' => [
@@ -2145,6 +2145,7 @@
                 </div>
                 <div class="cart-items" id="cartItems"></div>
                 <div class="cart-total"><span>{{ $copy['total'] }}</span><strong><span id="total">0.00</span> ₪</strong></div>
+                @if($hasCustomerWelcome)<p id="signupDiscountLine" hidden style="color:#51e4b0;font-size:12px" aria-live="polite"></p>@endif
                 @if($table)
                     <div class="table-context">
                         <i class="ti ti-table" aria-hidden="true"></i>
@@ -2231,6 +2232,7 @@
     @include('front.shop_stories', ['showStoryList' => false])
     @if($hasCustomerWelcome)
         @include('front.partials.restaurant_customer_welcome')
+        @include('front.partials.shop_signup_wheel')
     @endif
     <script>
         (() => {
@@ -2517,7 +2519,12 @@
                     `<article class="cart-item"><div class="cart-item-head"><strong>${item.qty}× ${escapeHtml(item.name)}</strong><button class="remove" onclick="removeRestaurantCartItem(${index})"><i class="ti ti-trash"></i></button></div><small>${escapeHtml(item.size||'')} ${item.addons.length?'• '+escapeHtml(item.addons.join('، ')):''}${item.preparation_time?' • '+escapeHtml(ui.about)+' '+item.preparation_time+' '+escapeHtml(ui.minute):''}</small><span class="price">${(item.unit*item.qty).toFixed(2)} ₪</span></article>`
                     ).join('') : `<div class="empty"><i class="ti ti-shopping-bag"></i>${escapeHtml(ui.empty_cart)}</div>`;
                 const total = cart.reduce((sum, item) => sum + item.unit * item.qty, 0);
-                $('total').textContent = $('mobileTotal').textContent = total.toFixed(2);
+                const signupDiscount = window.OzmanSignupReward?.discount(total) || 0;
+                $('total').textContent = $('mobileTotal').textContent = Math.max(0, total - signupDiscount).toFixed(2);
+                if ($('signupDiscountLine')) {
+                    $('signupDiscountLine').hidden = signupDiscount <= 0;
+                    $('signupDiscountLine').textContent = (window.OzmanSignupReward?.discountLabel || '') + ' −' + signupDiscount.toFixed(2) + ' ₪';
+                }
                 $('cartCount').textContent = $('mobileCount').textContent = cart.reduce((sum, item) => sum + item.qty,
                     0);
             }
@@ -2627,7 +2634,9 @@
                 }
             } catch (_) {}
 
+            let sendingOrder = false;
             $('send').onclick = async () => {
+                if (sendingOrder) return;
                 const message = $('message');
                 message.className = 'message';
                 message.textContent = '';
@@ -2641,7 +2650,12 @@
                     message.textContent = ui.set_location_error;
                     return
                 }
+                sendingOrder = true;
+                $('send').disabled = true;
+                try {
+                if (window.OzmanSignupReward && !await window.OzmanSignupReward.beforeOrder()) return;
                 const payload = {
+                    registration_token: window.OzmanRestaurantCustomer?.token() || null,
                     order_type: type.value,
                     table_code: @json($table?->code),
                     customer_name: $('name').value,
@@ -2667,6 +2681,7 @@
                         const errors = data.errors ? Object.values(data.errors).flat().join(' ') : '';
                         throw new Error(errors || data.message || 'تحقق من البيانات')
                     }
+                    window.OzmanSignupReward?.consumed();
                     cart.length = 0;
                     render();
                     message.classList.add('success');
@@ -2681,7 +2696,12 @@
                     message.classList.add('error');
                     message.textContent = error.message || ui.send_error
                 }
+                } finally {
+                    sendingOrder = false;
+                    $('send').disabled = @json(! $shop->is_accepting_orders);
+                }
             };
+            document.addEventListener('restaurant:reward-changed', render);
             render();
         })();
     </script>

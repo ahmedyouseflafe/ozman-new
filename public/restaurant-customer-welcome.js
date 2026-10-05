@@ -90,6 +90,7 @@
             dialog.close();
             document.body.style.overflow = previousOverflow;
             edit?.focus({ preventScroll: true });
+            if (profile?.registered) document.dispatchEvent(new Event('restaurant:registered'));
         };
         const open = () => {
             name.value = profile?.name || '';
@@ -265,10 +266,13 @@
             const stored = JSON.parse(localStorage.getItem(key) || 'null');
             if (validProfile(stored)) profile = stored;
         } catch (_) { /* A damaged or unavailable store should still show the welcome form. */ }
+        window.OzmanRestaurantCustomer = { token: () => profile?.registered ? registrationToken : '' };
         if (profile) applyToOrder();
         if (!profile?.registered || !registrationToken) {
             open();
             if (profile) status('bankaiWelcomeMessage', ui.confirmSaved);
+        } else {
+            document.dispatchEvent(new Event('restaurant:registered'));
         }
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });

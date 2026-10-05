@@ -17,6 +17,59 @@ use Illuminate\View\View;
 
 class RewardWheelController extends Controller
 {
+    public function shopSignupEdit(Request $request, Shop $shop): View
+    {
+        $this->authorizeShopSignup($request, $shop);
+        $wheel = RewardWheel::with('segments')->where('key', 'shop_signup_'.$shop->id)->first();
+        if (! $wheel) {
+            $wheel = new RewardWheel(['title' => 'هدية تسجيلك في '.$shop->name, 'is_active' => false]);
+            $wheel->setRelation('segments', collect([
+                new RewardWheelSegment(['label' => 'خصم 5%', 'discount_type' => 'percent', 'discount_value' => 5, 'color' => '#00cfe8', 'is_active' => true]),
+                new RewardWheelSegment(['label' => 'خصم 10%', 'discount_type' => 'percent', 'discount_value' => 10, 'color' => '#7000ff', 'is_active' => true]),
+            ]));
+        }
+        return view('admin.reward_wheels.customer_signup', compact('wheel', 'shop'));
+    }
+
+    public function shopSignupUpdate(Request $request, Shop $shop): RedirectResponse
+    {
+        $this->authorizeShopSignup($request, $shop);
+        $data = $request->validate(array_replace($this->wheelValidationRules(), [
+            'segments' => ['required', 'array', 'min:2', 'max:12'],
+            'segments.*.label' => ['required', 'string', 'max:60'],
+            'segments.*.discount_type' => ['required', Rule::in(['percent', 'amount'])],
+        ]));
+        foreach ($data['segments'] as $index => $segment) {
+            if (in_array($segment['discount_type'], ['percent', 'amount'], true)
+                && ((! isset($segment['discount_value']) || $segment['discount_value'] < 1)
+                    || ($segment['discount_type'] === 'percent' && $segment['discount_value'] > 100))) {
+                throw ValidationException::withMessages(["segments.$index.discount_value" => 'أدخل قيمة خصم صحيحة؛ النسبة بين 1 و100.']);
+            }
+        }
+        if (($data['is_active'] ?? false) && collect($data['segments'])->where('is_active', true)->count() < 2) {
+            throw ValidationException::withMessages(['segments' => 'فعّل شريحتين على الأقل لتشغيل العجلة.']);
+        }
+        DB::transaction(function () use ($data, $shop) {
+            $wheel = RewardWheel::firstOrCreate(['key' => 'shop_signup_'.$shop->id], [
+                'shop_id' => $shop->id, 'wheel_type' => RewardWheel::TYPE_CUSTOMER_SIGNUP,
+                'title' => $data['title'], 'is_active' => false,
+            ]);
+            $wheel = RewardWheel::whereKey($wheel->id)->lockForUpdate()->firstOrFail();
+            $wheel->update(['title' => $data['title'], 'is_active' => (bool) ($data['is_active'] ?? false)]);
+            $this->replaceSegments($wheel, collect($data['segments'])->map(fn ($segment) =>
+                \Illuminate\Support\Arr::only($segment, ['label', 'discount_type', 'discount_value', 'color', 'is_active'])
+            )->all());
+        });
+        return to_route('reward-wheels.shop-signup.edit', $shop)->with('status', 'تم حفظ عجلة التسجيل الخاصة بالمحل.');
+    }
+
+    private function authorizeShopSignup(Request $request, Shop $shop): void
+    {
+        abort_unless($request->user()?->canAccessRouteName($request->route()->getName()), 403);
+        abort_unless($request->user()->isSuperAdmin() || in_array($shop->id, $request->user()->accessibleShopIds(), true), 403);
+        abort_unless($shop->is_active && $shop->catalog_type === 'restaurant', 404);
+    }
+
     public function edit(): View
     {
         abort_unless($this->canAccessCurrentRoute(), 403);

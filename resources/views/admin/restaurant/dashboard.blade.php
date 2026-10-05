@@ -1273,6 +1273,9 @@
                     @if (auth()->user()->canAccessRouteName('restaurant.customers.index'))
                         <a class="btn" href="{{ route('restaurant.customers.index', $shop) }}"><i class="ti ti-users"></i> العملاء المسجّلون</a>
                     @endif
+                    @if (auth()->user()->canAccessRouteName('reward-wheels.shop-signup.edit'))
+                        <a class="btn" href="{{ route('reward-wheels.shop-signup.edit', $shop) }}"><i class="ti ti-discount"></i> عجلة التسجيل</a>
+                    @endif
                     <a class="btn btn-primary" href="{{ route('restaurant.menu', $shop) }}" target="_blank"><i
                             class="ti ti-external-link"></i> فتح منيو المطعم</a>
                 </div>

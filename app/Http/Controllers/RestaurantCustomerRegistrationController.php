@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Shop;
 use App\Models\VisitorRegistration;
+use App\Models\RewardWheel;
+use App\Services\ShopSignupRewardService;
+use Illuminate\Support\Facades\DB;
 use App\Rules\ValidPhoneNumber;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,7 +16,8 @@ class RestaurantCustomerRegistrationController extends Controller
 {
     public function store(Request $request, Shop $shop): JsonResponse
     {
-        abort_unless($shop->is_active && $shop->catalog_type === 'restaurant' && $shop->slug === 'bankai-sushi', 404);
+        abort_unless($shop->is_active && $shop->catalog_type === 'restaurant'
+            && ($shop->slug === 'bankai-sushi' || RewardWheel::where('key', 'shop_signup_'.$shop->id)->exists()), 404);
 
         $request->validate(['whatsapp' => ['required', 'string', 'max:30']]);
         $phone = strtr((string) $request->input('whatsapp', ''), array_combine(
@@ -46,14 +50,17 @@ class RestaurantCustomerRegistrationController extends Controller
             'latitude' => $latitude, 'longitude' => $longitude,
             'map_link' => $deferred ? null : 'https://www.google.com/maps?q='.$latitude.','.$longitude,
         ];
-        $registration = VisitorRegistration::firstOrCreate(['public_token' => $token], [
-            'shop_id' => $shop->id, 'type' => 'customer', 'status' => 'approved',
-            'marketing_source' => 'restaurant_welcome', 'approved_at' => now(),
-            ...$details,
-        ]);
-        abort_unless($registration->type === 'customer' && (int) $registration->shop_id === (int) $shop->id
-            && $registration->marketing_source === 'restaurant_welcome', 404);
-        $registration->update($details);
+        DB::transaction(function () use ($token, $shop, $details) {
+            $registration = VisitorRegistration::firstOrCreate(['public_token' => $token], [
+                'shop_id' => $shop->id, 'type' => 'customer', 'status' => 'approved',
+                'marketing_source' => 'restaurant_welcome', 'approved_at' => now(),
+                ...$details,
+            ]);
+            abort_unless($registration->type === 'customer' && (int) $registration->shop_id === (int) $shop->id
+                && $registration->marketing_source === 'restaurant_welcome', 404);
+            $registration->update($details);
+            if ($registration->wasRecentlyCreated) app(ShopSignupRewardService::class)->issue($shop, $registration);
+        });
 
         return response()->json(['registered' => true], 200, ['Cache-Control' => 'no-store']);
     }

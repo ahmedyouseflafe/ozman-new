@@ -16,6 +16,7 @@ return [
         'restaurant' => [
             'restaurant.view',
             'restaurant.customers.view',
+            'reward_wheels.shop_signup',
             'restaurant.tables.manage',
             'restaurant.orders.manage',
             'restaurant.drivers.manage',
@@ -30,7 +31,7 @@ return [
     ],
     'required' => ['dashboard.view', 'shops.view'],
     'catalog_type_required' => [
-        'restaurant' => ['restaurant.view', 'restaurant.drivers.manage', 'restaurant.customers.view'],
+        'restaurant' => ['restaurant.view', 'restaurant.drivers.manage', 'restaurant.customers.view', 'reward_wheels.shop_signup'],
         'real_estate' => ['real_estate.view'],
     ],
     'catalog_type_excluded' => [

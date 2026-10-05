@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 
 <head>
-    <title>عجلة خصومات العملاء - Ozman</title>
+    <title>{{ isset($shop) ? 'عجلة التسجيل · '.$shop->name : 'عجلة خصومات العملاء' }} - Ozman</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -454,8 +454,9 @@
                 <div class="page-head">
                     <div>
                         <div class="page-kicker">عجلات الربح</div>
-                        <h1>عجلة خصومات العملاء</h1>
-                        <p>هذه العجلة مخصصة لأول تسجيل كعميل على الموقع. أضف العنوان والخصومات التي ستظهر داخل العجلة.</p>
+                        <h1>{{ isset($shop) ? 'عجلة التسجيل · '.$shop->name : 'عجلة خصومات العملاء' }}</h1>
+                        <p>{{ isset($shop) ? 'تظهر بعد أول تسجيل جديد في هذا المحل عند تفعيلها، والخصم يطبّق تلقائيًا مرة واحدة على أول طلب. اختر 2–12 شريحة؛ الشرائح الفعالة لها فرص متساوية. حفظ الإعدادات يضيف واجهة تسجيل العملاء للمطعم.' : 'هذه العجلة مخصصة لأول تسجيل كعميل على الموقع. أضف العنوان والخصومات التي ستظهر داخل العجلة.' }}</p>
+                        @isset($shop)<p>التعديل والإيقاف يؤثران على التسجيلات الجديدة. الجوائز المحفوظة للعملاء تبقى صالحة لأول طلب؛ إلغاء الطلب لا يعيد الجائزة.</p>@endisset
                     </div>
                     <button class="save-btn" type="submit" form="wheelForm">
                         <i class="ti ti-device-floppy"></i>
@@ -475,7 +476,7 @@
                     </div>
                 @endif
 
-                <form id="wheelForm" method="POST" action="{{ route('reward-wheels.customer-signup.update') }}">
+                <form id="wheelForm" method="POST" action="{{ isset($shop) ? route('reward-wheels.shop-signup.update', $shop) : route('reward-wheels.customer-signup.update') }}">
                     @csrf
                     @method('PUT')
 
@@ -499,6 +500,7 @@
                                 </label>
 
                                 <label class="switch">
+                                    <input type="hidden" name="is_active" value="0">
                                     <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $wheel->is_active))>
                                     <span>العجلة مفعلة</span>
                                 </label>
@@ -535,8 +537,10 @@
                                             <select data-name="discount_type" required>
                                                 <option value="percent" @selected(($segment['discount_type'] ?? '') === 'percent')>نسبة %</option>
                                                 <option value="amount" @selected(($segment['discount_type'] ?? '') === 'amount')>مبلغ ثابت</option>
-                                                <option value="free_shipping" @selected(($segment['discount_type'] ?? '') === 'free_shipping')>توصيل مجاني</option>
-                                                <option value="gift" @selected(($segment['discount_type'] ?? '') === 'gift')>هدية</option>
+                                                @unless(isset($shop))
+                                                    <option value="free_shipping" @selected(($segment['discount_type'] ?? '') === 'free_shipping')>توصيل مجاني</option>
+                                                    <option value="gift" @selected(($segment['discount_type'] ?? '') === 'gift')>هدية</option>
+                                                @endunless
                                             </select>
                                         </label>
 
@@ -598,8 +602,10 @@
                 <select data-name="discount_type" required>
                     <option value="percent">نسبة %</option>
                     <option value="amount">مبلغ ثابت</option>
-                    <option value="free_shipping">توصيل مجاني</option>
-                    <option value="gift">هدية</option>
+                    @unless(isset($shop))
+                        <option value="free_shipping">توصيل مجاني</option>
+                        <option value="gift">هدية</option>
+                    @endunless
                 </select>
             </label>
 

@@ -271,6 +271,7 @@ class RestaurantController extends Controller
             'latitude' => ['required_if:order_type,delivery', 'nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['required_if:order_type,delivery', 'nullable', 'numeric', 'between:-180,180'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
+            'registration_token' => ['nullable', 'string', 'regex:/\A[a-f0-9]{64}\z/'],
             'items' => ['required', 'array', 'min:1', 'max:100'],
             'items.*.product_id' => ['required', 'integer'],
             'items.*.qty' => ['required', 'integer', 'min:1', 'max:100'],
@@ -338,7 +339,7 @@ class RestaurantController extends Controller
             $customerPushToken = null;
         }
 
-        $order = FrontOrder::create([
+        $order = app(\App\Services\ShopSignupRewardService::class)->placeOrder($shop, $data['registration_token'] ?? null, [
             'shop_id' => $shop->id, 'restaurant_table_id' => $table?->id,
             'order_number' => 'RST-' . now()->format('ymd') . '-' . Str::upper(Str::random(6)),
             'customer_name' => $data['customer_name'], 'customer_phone' => $data['customer_phone'] ?? null,
@@ -568,7 +569,12 @@ class RestaurantController extends Controller
             $lines[] = '📝 ملاحظات العميل: '.$order->customer_notes;
         }
 
-        $lines = array_merge($lines, ['', '🍽 الأصناف:', ...$items, '', '💰 المجموع: '.number_format((float) $order->total, 2).' ₪']);
+        $lines = array_merge($lines, ['', '🍽 الأصناف:', ...$items]);
+        if ((float) $order->discount > 0) {
+            $lines[] = 'قبل الخصم: '.number_format((float) $order->subtotal, 2).' ₪';
+            $lines[] = 'خصم التسجيل: -'.number_format((float) $order->discount, 2).' ₪';
+        }
+        $lines[] = '💰 المجموع: '.number_format((float) $order->total, 2).' ₪';
 
         if ($order->estimated_preparation_minutes) {
             $lines[] = '⏱ وقت التجهيز المتوقع: '.$order->estimated_preparation_minutes.' دقيقة';

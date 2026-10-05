@@ -67,6 +67,11 @@
             'continue' => 'كمّل للمنيو', 'cancel' => 'رجوع للمنيو', 'locationChoice' => 'حدّد موقعك أو اختار تحديده وقت الطلب.',
         ],
     };
+    if ($shop->slug !== 'bankai-sushi') {
+        foreach (['title', 'privacy', 'confirmSaved'] as $label) {
+            $welcome[$label] = str_replace(['Bankai', 'בנקאי', 'بانكاي'], $shop->name, $welcome[$label]);
+        }
+    }
 @endphp
 <style>
     .bankai-profile-edit{align-self:center;display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;padding:7px 14px;border:1px solid #25454c;border-radius:20px;background:#092027;color:#aeeef4;font:700 12px Cairo,Arial,sans-serif;cursor:pointer}
