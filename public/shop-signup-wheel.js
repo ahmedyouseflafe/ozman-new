@@ -3,10 +3,18 @@
     const dialog = $('shopSignupWheel');
     if (!dialog) return;
     const ui = window.OZMAN_SIGNUP_WHEEL_COPY;
+    const preview = dialog.dataset.preview === '1';
     let reward = null, busy = false, failed = false, loading = null;
     const notify = () => document.dispatchEvent(new Event('restaurant:reward-changed'));
     const error = message => { $('signupWheelError').textContent = message; $('signupWheelError').hidden = !message; };
     const request = async spin => {
+        if (preview) {
+            if (!reward || !spin) return reward;
+            const quotas = reward.segments.map(segment => Math.max(0, Number(segment.win_quota) || 0));
+            let ticket = Math.random() * quotas.reduce((sum, value) => sum + value, 0);
+            const index = quotas.findIndex(value => {ticket -= value;return ticket < 0;});
+            return {...reward, selected_index: index < 0 ? 0 : index};
+        }
         const token = window.OzmanRestaurantCustomer?.token();
         if (!token) return null;
         const controller = new AbortController();
@@ -24,7 +32,7 @@
     const draw = () => {
         $('signupWheelTitle').textContent = reward?.title || ui.open;
         $('signupWheelWrap').hidden = !reward;
-        $('signupWheelReopen').hidden = !reward && !failed;
+        $('signupWheelReopen').hidden = preview || (!reward && !failed);
         $('signupWheelSpin').hidden = Boolean(reward && reward.selected_index !== null);
         $('signupWheelSpin').textContent = failed ? ui.retry : ui.spin;
         $('signupWheelResult').hidden = !reward || reward.selected_index === null;
@@ -91,6 +99,16 @@
     $('signupWheelClose').addEventListener('click', () => { if(!busy)dialog.close(); });
     dialog.addEventListener('cancel', event => { if(busy)event.preventDefault(); });
     $('signupWheelReopen').addEventListener('click', () => {draw();open();});
+    if (preview) {
+        $('signupWheelClose').textContent = ui.close;
+        window.OzmanSignupWheelPreview = data => {
+            if (busy) return;
+            reward = {...data, selected_index: null};failed = false;error('');
+            const disc = $('signupWheelDisc');disc.style.transition = 'none';disc.style.transform = 'rotate(0deg)';
+            draw();open();void disc.offsetWidth;disc.style.transition = '';
+        };
+        return;
+    }
     document.addEventListener('restaurant:registered', () => refresh(true));
     // Give the reminder its own row below the header, clear of the logo and cart.
     document.querySelector('.restaurant-hero-layout')?.after($('signupWheelReopen'));

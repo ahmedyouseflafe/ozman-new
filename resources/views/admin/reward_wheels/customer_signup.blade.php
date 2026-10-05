@@ -595,6 +595,7 @@
                             </div>
 
                             <div class="preview-title" id="previewTitle">{{ old('title', $wheel->title) }}</div>
+                            @isset($shop)<button type="button" class="add-btn" id="previewCustomerWheel" style="display:flex;margin:0 auto 18px">معاينة تجربة العميل</button>@endisset
                             <div class="wheel-preview-wrap">
                                 <div class="wheel-pointer"></div>
                                 <div class="wheel-preview" id="wheelPreview">
@@ -667,6 +668,9 @@
         .save-btn{flex-shrink:0}
         @media(max-width:600px){.segment-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
     </style>
+    @endisset
+    @isset($shop)
+        @include('front.partials.shop_signup_wheel', ['locale' => 'ar', 'signupPreview' => true])
     @endisset
     <script>
         const segmentsList = document.getElementById('segmentsList');
@@ -808,6 +812,21 @@
         });
 
         wheelTitleInput.addEventListener('input', updatePreview);
+        document.getElementById('previewCustomerWheel')?.addEventListener('click', () => {
+            updatePreview();
+            const segments = rows().filter(row => row.querySelector('[data-name="is_active"]').checked).map(row => ({
+                label: row.querySelector('[data-name="label"]').value,
+                color: row.querySelector('[data-name="color"]').value,
+                discount_type: row.querySelector('[data-name="discount_type"]').value,
+                discount_value: Number(row.querySelector('[data-name="discount_value"]').value || 0),
+                win_quota: Number(row.querySelector('[data-name="win_quota"]').value || 0),
+                gift_image: row.querySelector('.signup-gift-preview').hidden ? null : row.querySelector('.signup-gift-preview').src,
+            }));
+            if (segments.length < 2 || !segments.some(segment => segment.win_quota > 0)) {
+                alert('فعّل خانتين على الأقل وحدد عدد ظهور موجب لجائزة واحدة على الأقل لمعاينة العجلة.');return;
+            }
+            window.OzmanSignupWheelPreview({title: wheelTitleInput.value, segments});
+        });
         reindexSegments();
         updatePreview();
     </script>

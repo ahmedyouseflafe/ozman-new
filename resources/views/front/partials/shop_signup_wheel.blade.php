@@ -13,6 +13,7 @@
     };
 @endphp
 <style>
+    #shopSignupWheel{margin:auto}
     #shopSignupWheel{width:min(470px,calc(100% - 24px));max-height:calc(100dvh - 24px);padding:26px;border:1px solid #168797;border-radius:27px;background:radial-gradient(circle at 50% 20%,#094455,#08121a 65%);color:#effcff;text-align:center;font-family:Cairo,Arial,sans-serif;overflow:auto}
     #shopSignupWheel::backdrop{background:#000b;backdrop-filter:blur(9px)}#shopSignupWheel [hidden]{display:none!important}
     .signup-wheel-kicker{color:#0cd9ed;font-size:11px;font-weight:900;margin:0}.signup-wheel-title{font-size:24px;line-height:1.6;margin:8px 0}.signup-wheel-hint{color:#abc3ce;font-size:12px;line-height:1.8}
@@ -30,7 +31,8 @@
     @media(prefers-reduced-motion:reduce){#signupWheelDisc{transition:none}}
 </style>
 <button type="button" id="signupWheelReopen" hidden>{{ $signupWheelCopy['open'] }}</button>
-<dialog id="shopSignupWheel" aria-labelledby="signupWheelTitle" data-url="{{ route('restaurant.signup-reward', $shop) }}">
+<dialog id="shopSignupWheel" aria-labelledby="signupWheelTitle" data-preview="{{ !empty($signupPreview) ? '1' : '0' }}" data-url="{{ empty($signupPreview) ? route('restaurant.signup-reward', $shop) : '' }}">
+    @if(!empty($signupPreview))<p style="color:#ffe29a;font-size:12px;margin-bottom:10px">معاينة تجريبية — لا تُحفظ جائزة ولا تُستهلك مرات ظهور.</p>@endif
     <p class="signup-wheel-kicker">{{ $shop->name }} · {{ $signupWheelCopy['intro'] }}</p>
     <h2 class="signup-wheel-title" id="signupWheelTitle"></h2>
     <p class="signup-wheel-hint">{{ $signupWheelCopy['hint'] }}</p>
@@ -41,5 +43,9 @@
     <button class="signup-wheel-button" type="button" id="signupWheelSpin">{{ $signupWheelCopy['spin'] }}</button>
     <button class="signup-wheel-button signup-wheel-secondary" type="button" id="signupWheelClose">{{ $signupWheelCopy['close'] }}</button>
 </dialog>
+@if(!empty($signupPreview))
+    @php($signupWheelCopy['saved'] = 'نتيجة تجريبية فقط، لم تُضف إلى حسابك.')
+    @php($signupWheelCopy['close'] = 'إغلاق المعاينة')
+@endif
 <script>window.OZMAN_SIGNUP_WHEEL_COPY = @json($signupWheelCopy);</script>
 <script>{!! file_get_contents(base_path('public/shop-signup-wheel.js')) !!}</script>
