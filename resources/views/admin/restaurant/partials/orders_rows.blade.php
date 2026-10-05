@@ -25,6 +25,7 @@
                     </small>
                 </div>
             @endforeach
+            @if($order->reward_discount_type === 'gift')<div style="color:#51e4b0">🎁 {{ $order->reward_label }} — هدية مع الطلب</div>@endif
             @if($order->estimated_preparation_minutes)
                 <div class="tag" style="margin-top:8px"><i class="ti ti-clock"></i> تجهيز متوقع: {{ $order->estimated_preparation_minutes }} دقيقة</div>
             @endif

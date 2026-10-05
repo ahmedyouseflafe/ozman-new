@@ -2146,6 +2146,7 @@
                 <div class="cart-items" id="cartItems"></div>
                 <div class="cart-total"><span>{{ $copy['total'] }}</span><strong><span id="total">0.00</span> ₪</strong></div>
                 @if($hasCustomerWelcome)<p id="signupDiscountLine" hidden style="color:#51e4b0;font-size:12px" aria-live="polite"></p>@endif
+                @if($hasCustomerWelcome)<div id="signupGiftLine" hidden style="color:#51e4b0;padding:12px 0;font-size:13px" aria-live="polite"><img id="signupCartGiftImage" alt="" hidden style="width:64px;height:64px;object-fit:contain;vertical-align:middle;border-radius:10px;background:white;margin-inline-end:10px"><span id="signupCartGiftLabel"></span></div>@endif
                 @if($table)
                     <div class="table-context">
                         <i class="ti ti-table" aria-hidden="true"></i>
@@ -2520,6 +2521,13 @@
                     ).join('') : `<div class="empty"><i class="ti ti-shopping-bag"></i>${escapeHtml(ui.empty_cart)}</div>`;
                 const total = cart.reduce((sum, item) => sum + item.unit * item.qty, 0);
                 const signupDiscount = window.OzmanSignupReward?.discount(total) || 0;
+                if ($('signupGiftLine')) {
+                    const gift = window.OzmanSignupReward?.gift();
+                    $('signupGiftLine').hidden = !gift;
+                    $('signupCartGiftLabel').textContent = gift ? @json(match ($locale) {'en' => 'Gift with your first order: ', 'he' => 'מתנה להזמנה הראשונה: ', default => 'هدية مع أول طلب: '}) + gift.label : '';
+                    $('signupCartGiftImage').hidden = !gift?.gift_image;
+                    if (gift?.gift_image) {$('signupCartGiftImage').src = gift.gift_image;$('signupCartGiftImage').alt = gift.label;}
+                }
                 $('total').textContent = $('mobileTotal').textContent = Math.max(0, total - signupDiscount).toFixed(2);
                 if ($('signupDiscountLine')) {
                     $('signupDiscountLine').hidden = signupDiscount <= 0;

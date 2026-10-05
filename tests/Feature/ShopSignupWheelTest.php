@@ -31,7 +31,7 @@ class ShopSignupWheelTest extends TestCase
     public function test_wheel_validation_rejects_invalid_discounts_and_insufficient_active_segments(): void
     {
         $shop = $this->shop('bankai-sushi');$this->actingAs($shop->user);
-        foreach ([['discount_value'=>101], ['discount_value'=>-1], ['discount_type'=>'gift'], ['color'=>'red']] as $bad) {
+        foreach ([['discount_value'=>101], ['discount_value'=>-1], ['discount_type'=>'free_shipping'], ['color'=>'red'], ['win_quota'=>-1], ['win_quota'=>3]] as $bad) {
             $settings=$this->settings();$settings['segments'][0]=[...$settings['segments'][0],...$bad];
             $this->putJson(route('reward-wheels.shop-signup.update',$shop),$settings)->assertUnprocessable();
         }
@@ -115,9 +115,9 @@ class ShopSignupWheelTest extends TestCase
     }
     private function settings(): array
     {
-        return ['title'=>'Welcome gift','is_active'=>true,'segments'=>[
-            ['label'=>'10% A','discount_type'=>'percent','discount_value'=>10,'color'=>'#00cfe8','is_active'=>true],
-            ['label'=>'10% B','discount_type'=>'percent','discount_value'=>10,'color'=>'#7000ff','is_active'=>true],
+        return ['title'=>'Welcome gift','is_active'=>true,'win_quota_total'=>2,'segments'=>[
+            ['label'=>'10% A','discount_type'=>'percent','discount_value'=>10,'color'=>'#00cfe8','is_active'=>true,'win_quota'=>1],
+            ['label'=>'10% B','discount_type'=>'percent','discount_value'=>10,'color'=>'#7000ff','is_active'=>true,'win_quota'=>1],
         ]];
     }
     private function wheel(Shop $shop,bool $active=true,string $type='percent',int $value=10): void

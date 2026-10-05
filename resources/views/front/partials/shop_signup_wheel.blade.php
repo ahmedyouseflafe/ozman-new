@@ -5,6 +5,13 @@
         default => ['intro' => 'هدية ترحيب، مخصوص إلك', 'hint' => 'لفّة واحدة، وخصمك بننقص تلقائيًا من أول طلب إلك.', 'spin' => 'لف العجلة', 'busy' => 'العجلة بتلف…', 'close' => 'كمّل للمنيو', 'result' => 'هديتك:', 'saved' => 'حفظناها لأول طلب إلك من هالمطعم.', 'error' => 'ما قدرنا نحمّل هديتك. تأكد من النت وجرّب مرة ثانية.', 'retry' => 'جرّب مرة ثانية', 'open' => 'هدية تسجيلي', 'discount' => 'خصم التسجيل', 'pending' => 'لف عجلة التسجيل قبل إرسال الطلب لتحصل على خصمك.'],
     };
 @endphp
+@php
+    $signupWheelCopy['hint'] = match ($locale) {
+        'en' => 'Spin once. Your discount or gift is added automatically to your first order.',
+        'he' => 'סיבוב אחד. ההנחה או המתנה תתווסף אוטומטית להזמנה הראשונה שלך.',
+        default => 'لفّة واحدة، وخصمك أو هديتك بتنضاف تلقائيًا لأول طلب إلك.',
+    };
+@endphp
 <style>
     #shopSignupWheel{width:min(470px,calc(100% - 24px));max-height:calc(100dvh - 24px);padding:26px;border:1px solid #168797;border-radius:27px;background:radial-gradient(circle at 50% 20%,#094455,#08121a 65%);color:#effcff;text-align:center;font-family:Cairo,Arial,sans-serif;overflow:auto}
     #shopSignupWheel::backdrop{background:#000b;backdrop-filter:blur(9px)}#shopSignupWheel [hidden]{display:none!important}
@@ -25,6 +32,7 @@
     <p class="signup-wheel-hint">{{ $signupWheelCopy['hint'] }}</p>
     <div class="signup-wheel-wrap" id="signupWheelWrap"><div id="signupWheelDisc"></div></div>
     <p id="signupWheelResult" role="status" hidden></p>
+    <img id="signupWheelGiftImage" alt="" hidden style="width:160px;height:160px;max-width:100%;object-fit:contain;border-radius:18px;background:#fff;padding:8px;margin:0 auto 14px">
     <p id="signupWheelError" role="alert" hidden></p>
     <button class="signup-wheel-button" type="button" id="signupWheelSpin">{{ $signupWheelCopy['spin'] }}</button>
     <button class="signup-wheel-button signup-wheel-secondary" type="button" id="signupWheelClose">{{ $signupWheelCopy['close'] }}</button>

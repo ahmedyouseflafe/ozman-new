@@ -63,6 +63,12 @@
                 </form>
                 <section class="panel glass">
                 <h2>بيانات الطلب</h2>
+                @if($order->reward_discount_type === 'gift')
+                    <div class="info-row" style="margin-bottom:12px">
+                        <span>هدية التسجيل — تُرفق مع الطلب</span><b>{{ $order->reward_label }}</b>
+                        @if($order->reward_gift_image)<img src="{{ asset($order->reward_gift_image) }}" alt="{{ $order->reward_label }}" style="display:block;width:120px;height:120px;object-fit:contain;background:#fff;border-radius:12px;margin-top:10px">@endif
+                    </div>
+                @endif
                 <div class="info">
                     <div class="info-row"><span>الحالة</span><b><span class="tag">{{ $order->statusLabel() }}</span></b></div>
                     <div class="info-row"><span>نوع الطلب</span><b>{{ ['dine_in' => 'طلب طاولة', 'delivery' => 'توصيل', 'pickup' => 'استلام'][$order->order_type] ?? $order->order_type }}</b></div>

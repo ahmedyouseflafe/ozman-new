@@ -12,6 +12,7 @@
                 <span>لا توجد وجبات مسجلة</span>
             @endforelse
             @if($items->count() > 2)<small class="more-items">+ {{ $items->count() - 2 }} وجبات أخرى</small>@endif
+            @if($order->reward_discount_type === 'gift')<div style="color:#51e4b0">🎁 {{ $order->reward_label }} — هدية مع الطلب</div>@endif
         </td>
         <td data-label="المجموع" class="order-total">{{ number_format((float) $order->total, 2) }} ₪</td>
         <td data-label="الحالة"><span class="tag">{{ $order->statusLabel() }}</span></td>

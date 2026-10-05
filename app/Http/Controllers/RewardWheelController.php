@@ -37,7 +37,10 @@ class RewardWheelController extends Controller
         $data = $request->validate(array_replace($this->wheelValidationRules(), [
             'segments' => ['required', 'array', 'min:2', 'max:12'],
             'segments.*.label' => ['required', 'string', 'max:60'],
-            'segments.*.discount_type' => ['required', Rule::in(['percent', 'amount'])],
+            'segments.*.discount_type' => ['required', Rule::in(['percent', 'amount', 'gift'])],
+            'segments.*.win_quota' => ['required', 'integer', 'min:0', 'max:10000'],
+            'win_quota_total' => ['required', 'integer', 'min:1', 'max:10000'],
+            'segments.*.gift_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
         ]));
         foreach ($data['segments'] as $index => $segment) {
             if (in_array($segment['discount_type'], ['percent', 'amount'], true)
@@ -49,16 +52,25 @@ class RewardWheelController extends Controller
         if (($data['is_active'] ?? false) && collect($data['segments'])->where('is_active', true)->count() < 2) {
             throw ValidationException::withMessages(['segments' => 'فعّل شريحتين على الأقل لتشغيل العجلة.']);
         }
-        DB::transaction(function () use ($data, $shop) {
+        $this->assertActiveSegmentsQuotaTotal($data['segments'], (int) $data['win_quota_total'], 'مجموع مرات ظهور الشرائح الفعالة يجب أن يساوي إجمالي لفات الدورة.');
+        DB::transaction(function () use ($data, $shop, $request) {
             $wheel = RewardWheel::firstOrCreate(['key' => 'shop_signup_'.$shop->id], [
                 'shop_id' => $shop->id, 'wheel_type' => RewardWheel::TYPE_CUSTOMER_SIGNUP,
                 'title' => $data['title'], 'is_active' => false,
             ]);
             $wheel = RewardWheel::whereKey($wheel->id)->lockForUpdate()->firstOrFail();
-            $wheel->update(['title' => $data['title'], 'is_active' => (bool) ($data['is_active'] ?? false)]);
+            $ownedImages = $wheel->segments()->whereNotNull('gift_image')->pluck('gift_image')->all();
+            foreach ($data['segments'] as $index => $segment) {
+                if (! empty($segment['existing_gift_image']) && ! in_array($segment['existing_gift_image'], $ownedImages, true)) {
+                    throw ValidationException::withMessages(["segments.$index.existing_gift_image" => 'اختر صورة هدية من هذا المحل أو ارفع صورة جديدة.']);
+                }
+            }
+            $wheel->update(['title' => $data['title'], 'is_active' => (bool) ($data['is_active'] ?? false),
+                'win_quota_total' => $data['win_quota_total'], 'spin_cycle' => null]);
             $this->replaceSegments($wheel, collect($data['segments'])->map(fn ($segment) =>
-                \Illuminate\Support\Arr::only($segment, ['label', 'discount_type', 'discount_value', 'color', 'is_active'])
-            )->all());
+                [...\Illuminate\Support\Arr::only($segment, ['label', 'discount_type', 'discount_value', 'color', 'is_active', 'win_quota', 'existing_gift_image']),
+                    'discount_value' => $segment['discount_type'] === 'gift' ? null : $segment['discount_value']]
+            )->all(), $request);
         });
         return to_route('reward-wheels.shop-signup.edit', $shop)->with('status', 'تم حفظ عجلة التسجيل الخاصة بالمحل.');
     }

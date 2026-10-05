@@ -570,6 +570,10 @@ class RestaurantController extends Controller
         }
 
         $lines = array_merge($lines, ['', '🍽 الأصناف:', ...$items]);
+        if ($order->reward_discount_type === 'gift') {
+            $lines[] = '🎁 هدية التسجيل مع الطلب: '.$order->reward_label;
+            if ($order->reward_gift_image) $lines[] = 'صورة الهدية: '.asset($order->reward_gift_image);
+        }
         if ((float) $order->discount > 0) {
             $lines[] = 'قبل الخصم: '.number_format((float) $order->subtotal, 2).' ₪';
             $lines[] = 'خصم التسجيل: -'.number_format((float) $order->discount, 2).' ₪';

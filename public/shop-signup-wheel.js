@@ -28,6 +28,7 @@
         $('signupWheelSpin').hidden = Boolean(reward && reward.selected_index !== null);
         $('signupWheelSpin').textContent = failed ? ui.retry : ui.spin;
         $('signupWheelResult').hidden = !reward || reward.selected_index === null;
+        $('signupWheelGiftImage').hidden = true;
         if (!reward) return;
         const segments = reward.segments, step = 360 / segments.length;
         const disc = $('signupWheelDisc');
@@ -40,7 +41,13 @@
         if (reward.selected_index !== null) {
             disc.style.transform = `rotate(${1800 - step*(reward.selected_index+.5)}deg)`;
             const selected = segments[reward.selected_index];
-            $('signupWheelResult').textContent = `${ui.result} ${selected.label} — ${selected.discount_value}${selected.discount_type === 'percent' ? '%' : ' ₪'}. ${ui.saved}`;
+            const value = selected.discount_type === 'gift' ? '' : ` — ${selected.discount_value}${selected.discount_type === 'percent' ? '%' : ' ₪'}`;
+            $('signupWheelResult').textContent = `${ui.result} ${selected.label}${value}. ${ui.saved}`;
+            if (selected.discount_type === 'gift' && selected.gift_image) {
+                $('signupWheelGiftImage').src = selected.gift_image;
+                $('signupWheelGiftImage').alt = selected.label;
+                $('signupWheelGiftImage').hidden = false;
+            }
         }
     };
     const refresh = (autoOpen = false) => {
@@ -76,9 +83,13 @@
     document.querySelector('.restaurant-hero-layout')?.after($('signupWheelReopen'));
     window.OzmanSignupReward = {
         discountLabel: ui.discount,
+        gift: () => {
+            const selected = reward?.segments[reward?.selected_index];
+            return selected?.discount_type === 'gift' ? selected : null;
+        },
         discount: subtotal => {
             const segment = reward?.selected_index !== null ? reward?.segments[reward?.selected_index] : null;
-            if (!segment) return 0;
+            if (!segment || segment.discount_type === 'gift') return 0;
             return Math.round(Math.min(subtotal, segment.discount_type === 'percent' ? subtotal*segment.discount_value/100 : segment.discount_value)*100)/100;
         },
         beforeOrder: async () => {

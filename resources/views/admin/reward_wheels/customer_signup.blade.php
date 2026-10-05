@@ -455,8 +455,8 @@
                     <div>
                         <div class="page-kicker">عجلات الربح</div>
                         <h1>{{ isset($shop) ? 'عجلة التسجيل · '.$shop->name : 'عجلة خصومات العملاء' }}</h1>
-                        <p>{{ isset($shop) ? 'تظهر بعد أول تسجيل جديد في هذا المحل عند تفعيلها، والخصم يطبّق تلقائيًا مرة واحدة على أول طلب. اختر 2–12 شريحة؛ الشرائح الفعالة لها فرص متساوية. حفظ الإعدادات يضيف واجهة تسجيل العملاء للمطعم.' : 'هذه العجلة مخصصة لأول تسجيل كعميل على الموقع. أضف العنوان والخصومات التي ستظهر داخل العجلة.' }}</p>
-                        @isset($shop)<p>التعديل والإيقاف يؤثران على التسجيلات الجديدة. الجوائز المحفوظة للعملاء تبقى صالحة لأول طلب؛ إلغاء الطلب لا يعيد الجائزة.</p>@endisset
+                        <p>{{ isset($shop) ? 'تظهر بعد أول تسجيل جديد، وتُضاف الجائزة تلقائيًا إلى أول طلب: خصم أو هدية. اختر 2–12 خانة وحدد عدد مرات فوز كل جائزة ضمن الدورة.' : 'هذه العجلة مخصصة لأول تسجيل كعميل على الموقع. أضف العنوان والخصومات التي ستظهر داخل العجلة.' }}</p>
+                        @isset($shop)<p>بعد اكتمال لفات الدورة يتكرر نفس التوزيع. العدد صفر يمنع الفوز بالخانة. حفظ الإعدادات يبدأ توزيعًا جديدًا للتسجيلات القادمة؛ الجوائز السابقة تبقى محفوظة. إلغاء الطلب لا يعيد الجائزة.</p>@endisset
                     </div>
                     <button class="save-btn" type="submit" form="wheelForm">
                         <i class="ti ti-device-floppy"></i>
@@ -476,7 +476,7 @@
                     </div>
                 @endif
 
-                <form id="wheelForm" method="POST" action="{{ isset($shop) ? route('reward-wheels.shop-signup.update', $shop) : route('reward-wheels.customer-signup.update') }}">
+                <form id="wheelForm" method="POST" enctype="multipart/form-data" action="{{ isset($shop) ? route('reward-wheels.shop-signup.update', $shop) : route('reward-wheels.customer-signup.update') }}">
                     @csrf
                     @method('PUT')
 
@@ -489,7 +489,7 @@
                                 </div>
                                 <button class="add-btn" type="button" id="addSegmentBtn">
                                     <i class="ti ti-plus"></i>
-                                    إضافة خصم
+                                    إضافة جائزة
                                 </button>
                             </div>
 
@@ -506,6 +506,13 @@
                                 </label>
                             </div>
 
+                            @isset($shop)
+                                <label class="field" style="margin-bottom:18px">
+                                    <span>إجمالي لفات الدورة</span>
+                                    <input type="number" id="signupQuotaTotal" name="win_quota_total" min="1" max="10000" required value="{{ old('win_quota_total', $wheel->win_quota_total ?? $wheel->segments->where('is_active', true)->sum(fn($segment) => $segment->win_quota ?? 1)) }}">
+                                    <small id="signupQuotaSummary" role="status"></small>
+                                </label>
+                            @endisset
                             <div class="segments-list" id="segmentsList">
                                 @php
                                     $oldSegments = old('segments');
@@ -517,6 +524,8 @@
                                             'discount_type' => $segment->discount_type,
                                             'color' => $segment->color,
                                             'is_active' => $segment->is_active,
+                                            'win_quota' => $segment->win_quota ?? 1,
+                                            'existing_gift_image' => $segment->gift_image,
                                         ]);
                                 @endphp
 
@@ -539,8 +548,8 @@
                                                 <option value="amount" @selected(($segment['discount_type'] ?? '') === 'amount')>مبلغ ثابت</option>
                                                 @unless(isset($shop))
                                                     <option value="free_shipping" @selected(($segment['discount_type'] ?? '') === 'free_shipping')>توصيل مجاني</option>
-                                                    <option value="gift" @selected(($segment['discount_type'] ?? '') === 'gift')>هدية</option>
                                                 @endunless
+                                                <option value="gift" @selected(($segment['discount_type'] ?? '') === 'gift')>هدية</option>
                                             </select>
                                         </label>
 
@@ -549,6 +558,14 @@
                                             <input type="color" data-name="color" value="{{ $segment['color'] ?? '#00e5ff' }}" required>
                                         </label>
 
+                                        @isset($shop)
+                                            <label class="field"><span>عدد مرات الظهور</span><input type="number" data-name="win_quota" min="0" max="10000" required value="{{ $segment['win_quota'] ?? 1 }}"></label>
+                                            <label class="field signup-gift-field" hidden><span>صورة الهدية (حتى 2 MB)</span>
+                                                <input type="hidden" data-name="existing_gift_image" value="{{ $segment['existing_gift_image'] ?? '' }}">
+                                                <input type="file" data-name="gift_image" accept="image/png,image/jpeg,image/webp,image/gif">
+                                                <img class="signup-gift-preview" alt="معاينة الهدية" hidden>
+                                            </label>
+                                        @endisset
                                         <label class="switch">
                                             <input type="checkbox" data-name="is_active" value="1" @checked((bool) ($segment['is_active'] ?? false))>
                                             <span>فعّال</span>
@@ -604,8 +621,8 @@
                     <option value="amount">مبلغ ثابت</option>
                     @unless(isset($shop))
                         <option value="free_shipping">توصيل مجاني</option>
-                        <option value="gift">هدية</option>
                     @endunless
+                    <option value="gift">هدية</option>
                 </select>
             </label>
 
@@ -619,12 +636,31 @@
                 <span>فعّال</span>
             </label>
 
+            @isset($shop)
+                <label class="field"><span>عدد مرات الظهور</span><input type="number" data-name="win_quota" min="0" max="10000" required value="1"></label>
+                <label class="field signup-gift-field" hidden><span>صورة الهدية (حتى 2 MB)</span>
+                    <input type="hidden" data-name="existing_gift_image" value="">
+                    <input type="file" data-name="gift_image" accept="image/png,image/jpeg,image/webp,image/gif">
+                    <img class="signup-gift-preview" alt="معاينة الهدية" hidden>
+                </label>
+            @endisset
             <button class="remove-btn" type="button" data-remove-segment title="حذف">
                 <i class="ti ti-trash"></i>
             </button>
         </div>
     </template>
 
+    @isset($shop)
+    <style>
+        #wheelForm [hidden]{display:none!important}
+        .segment-row{grid-template-columns:repeat(3,minmax(0,1fr));align-items:end}
+        .signup-gift-field{grid-column:1/-1}.signup-gift-field[hidden]{display:none}
+        .signup-gift-preview{width:90px;height:90px;object-fit:contain;border-radius:12px;background:#fff;padding:4px}
+        .preview-segment img{width:42px;height:42px;object-fit:contain;border-radius:8px;vertical-align:middle;margin-inline:8px;background:#fff}
+        .save-btn{flex-shrink:0}
+        @media(max-width:600px){.segment-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    </style>
+    @endisset
     <script>
         const segmentsList = document.getElementById('segmentsList');
         const segmentTemplate = document.getElementById('segmentTemplate');
@@ -659,6 +695,28 @@
         }
 
         function updatePreview() {
+            const totalInput = document.getElementById('signupQuotaTotal');
+            if (totalInput) {
+                let sum = 0;
+                rows().forEach(row => {
+                    if (row.querySelector('[data-name="is_active"]').checked) sum += Number(row.querySelector('[data-name="win_quota"]').value || 0);
+                    const gift = row.querySelector('[data-name="discount_type"]').value === 'gift';
+                    const value = row.querySelector('[data-name="discount_value"]');
+                    value.disabled = gift;value.closest('label').hidden = gift;
+                    row.querySelector('.signup-gift-field').hidden = !gift;
+                    const fileInput = row.querySelector('[data-name="gift_image"]');
+                    if (fileInput.files[0] !== row._giftFile) {
+                        if (row._giftUrl) URL.revokeObjectURL(row._giftUrl);
+                        row._giftFile = fileInput.files[0];row._giftUrl = row._giftFile ? URL.createObjectURL(row._giftFile) : '';
+                    }
+                    const path = row.querySelector('[data-name="existing_gift_image"]').value;
+                    const src = row._giftUrl || (path ? @json(rtrim(asset('/'), '/')) + '/' + path.replace(/^\/+/, '') : '');
+                    const img = row.querySelector('.signup-gift-preview');
+                    img.hidden = !gift || !src;if (src) img.src = src;
+                });
+                document.getElementById('signupQuotaSummary').textContent = `مجموع الظهور: ${sum} / ${totalInput.value}. لازم المجموع يساوي إجمالي الدورة.`;
+                totalInput.setCustomValidity(sum === Number(totalInput.value) ? '' : 'مجموع مرات الظهور لا يساوي إجمالي الدورة.');
+            }
             previewTitle.textContent = wheelTitleInput.value || 'عنوان العجلة';
 
             const segments = activeSegments();
@@ -687,6 +745,15 @@
                     <span>فعّال</span>
                 </div>
             `).join('');
+            if (totalInput) {
+                const activeRows = rows().filter(row => row.querySelector('[data-name="is_active"]').checked && row.querySelector('[data-name="label"]').value.trim());
+                [...previewSegments.children].forEach((item, index) => {
+                    const row = activeRows[index];
+                    item.lastElementChild.textContent = row.querySelector('[data-name="win_quota"]').value + ' مرة / دورة';
+                    const img = row.querySelector('.signup-gift-preview');
+                    if (!img.hidden) item.firstElementChild.prepend(img.cloneNode());
+                });
+            }
         }
 
         function escapeHtml(value) {
@@ -699,6 +766,7 @@
         }
 
         addSegmentBtn.addEventListener('click', () => {
+            if (document.getElementById('signupQuotaTotal') && rows().length >= 12) {alert('الحد الأقصى 12 خانة.');return;}
             const clone = segmentTemplate.content.firstElementChild.cloneNode(true);
             const colors = ['#00e5ff', '#7000ff', '#25d366', '#ffd60a', '#ff3b30'];
             clone.querySelector('[data-name="color"]').value = colors[rows().length % colors.length];
@@ -711,7 +779,7 @@
             const button = event.target.closest('[data-remove-segment]');
             if (!button) return;
             if (rows().length <= 2) {
-                alert('العجلة تحتاج على الأقل خصمين.');
+                alert('العجلة تحتاج على الأقل خانتين.');
                 return;
             }
             button.closest('[data-segment-row]').remove();
@@ -723,6 +791,7 @@
             reindexSegments();
             updatePreview();
         });
+        document.getElementById('signupQuotaTotal')?.addEventListener('input', updatePreview);
 
         segmentsList.addEventListener('change', () => {
             reindexSegments();
