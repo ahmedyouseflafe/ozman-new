@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class MerchantPwaController extends Controller
@@ -20,9 +21,10 @@ class MerchantPwaController extends Controller
             ]);
         }
 
-        abort_unless($request->user()->isShopOwner(), 403);
+        abort_unless($request->user()->isShopOwner() && $request->user()->is_active, 403);
         $shop = $this->ownerShop($request);
         abort_unless($shop, 403, 'هذا الحساب غير مرتبط بمحل فعال.');
+        $this->persistOwnerLogin($request);
 
         $request->session()->put([
             'merchant_shop_id' => $shop->id,
@@ -45,10 +47,13 @@ class MerchantPwaController extends Controller
 
         abort_unless(
             $request->user()->isShopOwner()
+            && $request->user()->is_active
             && $shop->is_active
             && $request->user()->shops()->whereKey($shop->id)->exists(),
             403,
         );
+
+        $this->persistOwnerLogin($request);
 
         $request->session()->put([
             'merchant_shop_id' => $shop->id,
@@ -56,6 +61,15 @@ class MerchantPwaController extends Controller
         ]);
 
         return redirect()->route($shop->dashboardRouteName(), $shop);
+    }
+
+    private function persistOwnerLogin(Request $request): void
+    {
+        // Also upgrade owners who installed the app from an older session-only
+        // login. Never remember an administrator's temporary owner impersonation.
+        if (! $request->session()->has('impersonator_admin_id')) {
+            Auth::login($request->user(), true);
+        }
     }
 
     public function manifest(Shop $shop): Response

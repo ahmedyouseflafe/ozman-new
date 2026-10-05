@@ -45,6 +45,12 @@ class AuthController extends Controller
                 ->onlyInput('email');
         }
 
+        // Owners can arrive through /login as well as /merchant-login, including
+        // from installed-app shortcuts. Both paths must persist their sign-in.
+        if (! $remember && Auth::user()->isShopOwner()) {
+            Auth::login(Auth::user(), true);
+        }
+
         $request->session()->regenerate();
         $this->attachAppPushDevice($request);
 
