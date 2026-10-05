@@ -1761,6 +1761,34 @@
                 width: 100%
             }
         }
+        /* Header content stays in normal flow so tools never cover the logo. */
+        .restaurant-hero-layout .hero{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:16px;padding:18px;min-width:0;min-height:310px}
+        .hero .hero-tools{position:relative;inset:auto;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;width:100%}
+        .hero .brand{position:relative;inset:auto;width:100%;max-width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;justify-content:center;gap:16px;direction:inherit;flex:1}
+        .hero .restaurant-logo-stack{width:100%;align-items:center;gap:8px}
+        .hero .restaurant-story-avatar{width:min(190px,100%)}
+        .hero .restaurant-story-logo-frame{width:100%}
+        .hero .logo{width:100%;height:auto;aspect-ratio:1}
+        .hero .restaurant-contact-stack{display:flex;align-self:center;justify-content:center;min-width:0}
+        .hero .restaurant-social-links{margin:0;display:flex;flex-wrap:wrap;justify-content:center;max-width:108px;gap:8px}
+        .restaurant-quick-actions{display:flex;justify-content:center;gap:10px;position:relative;z-index:2}
+        .hero .restaurant-availability{position:static;inset:auto;width:auto;min-width:80px;height:42px;margin:0;flex:1;max-width:130px}
+        .restaurant-location-link{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid #17616c;border-radius:13px;background:#082830;color:#70e8f0;text-decoration:none;font-size:12px;font-weight:800;line-height:1.5;text-align:center;overflow-wrap:anywhere}
+        .restaurant-location-link small{display:block;color:#b1c4cc;font-size:10px;font-weight:600}
+        .hero .bankai-profile-edit{position:relative;z-index:2;margin:0}
+        @media(max-width:720px){
+            .restaurant-hero-layout .hero{padding:8px 7px 12px;gap:10px;min-height:380px}
+            .hero .hero-tools{flex-direction:column;align-items:stretch;gap:7px}
+            .hero .brand{display:flex;flex-direction:column;align-items:center;gap:10px;flex:0}
+            .hero .restaurant-contact-stack{width:100%}
+            .hero .restaurant-social-links{max-width:none;width:100%;gap:5px}
+            .hero .restaurant-social-link.is-facebook,.hero .restaurant-social-link.is-instagram{width:32px;height:32px;flex-basis:32px;font-size:18px}
+            .restaurant-quick-actions{gap:5px}
+            .hero .restaurant-availability{min-width:0;max-width:none;height:34px;padding:6px;font-size:10px;white-space:nowrap}
+            .restaurant-location-link{padding:8px 4px;font-size:10px;gap:4px}
+            .restaurant-location-link small{font-size:9px}
+            .hero .bankai-profile-edit{font-size:10px;padding:6px 8px}
+        }
     </style>
     <style>
         .mobile-cart.cart-flight-pop{animation:restaurant-cart-pop .9s cubic-bezier(.16,.9,.2,1);box-shadow:0 16px 38px rgba(0,0,0,.45),0 0 40px rgba(8,222,244,.82)}
@@ -1941,6 +1969,11 @@
             ['key' => 'whatsapp', 'label' => 'WhatsApp', 'icon' => 'ti-brand-whatsapp', 'url' => $normalizeSocialWhatsapp($restaurantSocial->whatsapp ?: $shop->whatsapp)],
         ])->filter(fn ($link) => filled($link['url']))->values();
         $restaurantWhatsappLink = $restaurantSocialLinks->firstWhere('key', 'whatsapp');
+        $restaurantLocationLabel = match ($locale) {'en' => 'Restaurant location', 'he' => 'מיקום המסעדה', default => 'موقع المطعم'};
+        $restaurantMapQuery = is_numeric($shop->latitude) && is_numeric($shop->longitude)
+            ? $shop->latitude.','.$shop->longitude
+            : (filled($shop->address) ? implode(', ', array_filter([$shop->name, $shop->address, $shop->city, $shop->country])) : null);
+        $restaurantMapUrl = $restaurantMapQuery ? 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($restaurantMapQuery) : null;
         $restaurantSocialLinks = $restaurantSocialLinks->reject(fn ($link) => $link['key'] === 'whatsapp')->values();
         $restaurantDisplayItems = collect($displayItems ?? [])->filter(fn ($item) => filled($item->media))->values();
         $displayMediaUrl = function (?string $path): string {
@@ -2019,14 +2052,9 @@
                                 <span class="restaurant-story-live"><i class="ti ti-player-play-filled" aria-hidden="true"></i> {{ $storyLabel }}</span>
                             </button>
                         @endif
-                        <span class="restaurant-availability {{ $shop->is_accepting_orders ? 'is-open' : 'is-closed' }}">
-                            <i aria-hidden="true"></i>
-                            {{ $availabilityShortLabel }}
-                        </span>
                     </div>
-                    @if($restaurantSocialLinks->isNotEmpty() || $restaurantWhatsappLink)
+                    @if($restaurantSocialLinks->isNotEmpty())
                         <div class="restaurant-contact-stack">
-                        @if($restaurantSocialLinks->isNotEmpty())
                         <nav class="restaurant-social-links" aria-label="{{ $socialMediaLabel }}">
                             @foreach($restaurantSocialLinks as $socialLink)
                                 <a class="restaurant-social-link is-{{ $socialLink['key'] }}"
@@ -2036,17 +2064,20 @@
                                 </a>
                             @endforeach
                         </nav>
-                        @endif
-                        @if($restaurantWhatsappLink)
-                            <a class="restaurant-availability is-open restaurant-whatsapp"
-                                href="{{ $restaurantWhatsappLink['url'] }}" target="_blank" rel="noopener noreferrer"
-                                aria-label="{{ $restaurantWhatsappLink['label'] }}" title="{{ $restaurantWhatsappLink['label'] }}">
-                                <i class="ti ti-brand-whatsapp" aria-hidden="true"></i>
-                            </a>
-                        @endif
                         </div>
                     @endif
                 </div>
+                <div class="restaurant-quick-actions">
+                    <span class="restaurant-availability {{ $shop->is_accepting_orders ? 'is-open' : 'is-closed' }}"><i aria-hidden="true"></i>{{ $availabilityShortLabel }}</span>
+                    @if($restaurantWhatsappLink)
+                        <a class="restaurant-availability is-open restaurant-whatsapp" href="{{ $restaurantWhatsappLink['url'] }}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i></a>
+                    @endif
+                </div>
+                @if($restaurantMapUrl)
+                    <a class="restaurant-location-link" href="{{ $restaurantMapUrl }}" target="_blank" rel="noopener noreferrer">
+                        <i class="ti ti-map-pin" aria-hidden="true"></i><span>{{ $restaurantLocationLabel }}@if(filled($shop->address))<small>{{ $shop->address }}</small>@endif</span>
+                    </a>
+                @endif
                 @if($hasCustomerWelcome)
                     <button type="button" class="bankai-profile-edit" id="bankaiProfileEdit"><i class="ti ti-user-circle" aria-hidden="true"></i> {{ match ($locale) { 'en' => 'My details', 'he' => 'הפרטים שלי', default => 'بياناتي' } }}</button>
                 @endif
