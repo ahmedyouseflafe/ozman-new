@@ -375,6 +375,13 @@
             box-shadow: 0 0 20px rgba(0, 0, 0, .45);
         }
 
+        .wheel-preview-label.has-gift-image{width:72px;flex-direction:column;gap:3px;border-radius:12px;padding:4px;font-size:10px;line-height:1.2}
+        .wheel-preview-label.has-gift-image img{width:40px;height:40px;object-fit:contain;background:#fff;border-radius:7px;padding:2px;flex-shrink:0}
+        .wheel-preview-label.has-gift-image img[hidden]{display:none}
+        .wheel-preview-label.has-gift-image span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:100%}
+        .wheel-preview-label.has-gift-image.dense{width:48px;font-size:8px}
+        .wheel-preview-label.has-gift-image.dense img{width:28px;height:28px}
+
         .wheel-pointer {
             width: 0;
             height: 0;
@@ -688,6 +695,8 @@
             return rows()
                 .map((row) => ({
                     label: row.querySelector('[data-name="label"]')?.value || '',
+                    giftImage: row.querySelector('[data-name="discount_type"]')?.value === 'gift' && !row.querySelector('.signup-gift-preview')?.hidden
+                        ? row.querySelector('.signup-gift-preview')?.src || '' : '',
                     color: row.querySelector('[data-name="color"]')?.value || '#00e5ff',
                     isActive: row.querySelector('[data-name="is_active"]')?.checked ?? false,
                 }))
@@ -737,7 +746,7 @@
             wheelPreview.style.setProperty('--wheel-gradient', gradient);
             wheelPreviewLabels.innerHTML = segments.map((segment, index) => {
                 const angle = (index * step) + (step / 2);
-                return `<div class="wheel-preview-label" style="--angle:${angle}deg">${escapeHtml(segment.label)}</div>`;
+                return `<div class="wheel-preview-label ${segment.giftImage ? 'has-gift-image' : ''} ${segments.length > 8 ? 'dense' : ''}" style="--angle:${angle}deg">${segment.giftImage ? `<img src="${escapeHtml(segment.giftImage)}" alt="" onerror="this.hidden=true">` : ''}<span>${escapeHtml(segment.label)}</span></div>`;
             }).join('');
             previewSegments.innerHTML = segments.map((segment) => `
                 <div class="preview-segment">

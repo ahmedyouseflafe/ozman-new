@@ -36,7 +36,20 @@
         disc.style.background = `conic-gradient(${segments.map((s, i) => `${/^#[0-9a-f]{6}$/i.test(s.color) ? s.color : '#00cfe8'} ${step*i}deg ${step*(i+1)}deg`).join(',')})`;
         segments.forEach((segment, index) => {
             const label = document.createElement('span');label.className = 'signup-wheel-label';label.dir = 'auto';label.textContent = segment.label;
-            label.style.transform = `translateY(-50%) rotate(${step*(index+.5)-90}deg)`;disc.append(label);
+            label.style.transform = `translateY(-50%) rotate(${step*(index+.5)-90}deg)`;
+            if (segment.discount_type === 'gift' && segment.gift_image) {
+                label.classList.add('has-gift-image');
+                if (segments.length > 8) label.classList.add('dense');
+                const angle = step*(index+.5)*Math.PI/180;
+                label.style.left = `${50 + 32*Math.sin(angle)}%`;
+                label.style.top = `${50 - 32*Math.cos(angle)}%`;
+                label.style.transform = 'translate(-50%,-50%)';
+                const picture = document.createElement('img');picture.src = segment.gift_image;picture.alt = '';
+                picture.addEventListener('error', () => {picture.hidden = true;});
+                const caption = document.createElement('span');caption.textContent = segment.label;
+                label.replaceChildren(picture, caption);
+            }
+            disc.append(label);
         });
         if (reward.selected_index !== null) {
             disc.style.transform = `rotate(${1800 - step*(reward.selected_index+.5)}deg)`;

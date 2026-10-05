@@ -20,6 +20,10 @@
     #signupWheelDisc{width:100%;height:100%;border-radius:50%;border:7px solid #d4f7fc;box-shadow:0 0 40px #04d6f020;transition:transform 3.6s cubic-bezier(.15,.75,.15,1);position:relative;direction:ltr}
     #signupWheelDisc:after{content:'✦';display:grid;place-items:center;position:absolute;inset:calc(50% - 28px);background:#09232e;color:#1ae0f5;border:4px solid #c7f5ff;border-radius:50%;font-size:22px}
     .signup-wheel-label{position:absolute;left:50%;top:50%;width:45%;font-size:10px;line-height:1.2;font-weight:900;color:#fff;text-shadow:0 1px 3px #000;transform-origin:left center;text-align:center;padding:0 6px 0 25px;overflow-wrap:anywhere}
+    .signup-wheel-label.has-gift-image{width:58px;padding:3px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;border-radius:10px;background:#0003;transform-origin:center}
+    .signup-wheel-label.has-gift-image img{width:34px;height:34px;object-fit:contain;border-radius:6px;background:#fff;padding:2px}
+    .signup-wheel-label.has-gift-image span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:100%}
+    .signup-wheel-label.has-gift-image.dense{width:38px;font-size:8px}.signup-wheel-label.has-gift-image.dense img{width:25px;height:25px}
     .signup-wheel-button{display:block;width:100%;min-height:46px;padding:11px;border:0;border-radius:12px;background:#08d6ed;color:#00232b;font:900 14px Cairo,Arial,sans-serif;cursor:pointer}.signup-wheel-button:disabled{opacity:.65;cursor:wait}.signup-wheel-secondary{margin-top:9px;background:#102833;color:#bbd9e4;border:1px solid #2a5869}
     #signupWheelResult{padding:14px;border:1px solid #29d6b37a;background:#0c342e;color:#81f4cf;border-radius:14px;margin:12px 0;font-size:17px;font-weight:900;line-height:1.8}#signupWheelError{color:#ffb0b0;font-size:12px;line-height:1.8}
     #signupWheelReopen{display:block;margin:12px auto;padding:9px 15px;border:1px solid #19b6c5;border-radius:18px;background:#0b2931;color:#60ebef;font:800 12px Cairo,Arial,sans-serif;cursor:pointer}#signupWheelReopen[hidden]{display:none}
