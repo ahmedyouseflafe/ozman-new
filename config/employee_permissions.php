@@ -88,6 +88,7 @@ return [
             'description' => 'طلبات واجهة المتجر، طلبات التسجيل، وجوائز بطاقات السحب.',
             'permissions' => [
                 'restaurant.view' => ['label' => 'عرض لوحة المطعم وطلباته مباشرة', 'description' => 'مشاهدة طلبات المطعم والطاولات واستقبال الطلبات الجديدة تلقائياً ضمن المتجر المسموح فقط.', 'routes' => ['restaurant.dashboard', 'restaurant.orders.show', 'restaurant.orders.feed']],
+                'restaurant.customers.view' => ['label' => 'عرض العملاء المسجّلين للمطعم', 'description' => 'عرض بيانات العملاء المسجّلين ضمن المطعم المسموح فقط والبحث فيها.', 'routes' => ['restaurant.customers.index']],
                 'restaurant.tables.manage' => ['label' => 'إدارة طاولات المطعم وQR', 'description' => 'إضافة وحذف طاولات المطعم وتحميل رموز QR.', 'routes' => ['restaurant.tables.index', 'restaurant.tables.store', 'restaurant.tables.destroy', 'restaurant.tables.qr']],
                 'restaurant.orders.manage' => ['label' => 'إدارة حالة المطعم والطلبات', 'description' => 'فتح وإغلاق استقبال الطلبات ونقل الطلب من جديد إلى التحضير ثم جاهز ومكتمل أو إلغائه.', 'routes' => ['restaurant.availability', 'restaurant.orders.status']],
                 'restaurant.drivers.manage' => ['label' => 'إدارة مندوبي المطعم', 'description' => 'إنشاء حسابات مندوبي المطعم وتفعيلها وتعيين طلبات التوصيل لهم.', 'routes' => ['restaurant.drivers.index', 'restaurant.drivers.store', 'restaurant.drivers.toggle', 'restaurant.orders.driver']],

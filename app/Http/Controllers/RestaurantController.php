@@ -9,6 +9,7 @@ use App\Models\RestaurantDeliveryOffer;
 use App\Models\RestaurantDriver;
 use App\Models\RestaurantTable;
 use App\Models\Shop;
+use App\Models\VisitorRegistration;
 use App\Rules\ValidPhoneNumber;
 use App\Services\FirebaseMessagingService;
 use App\Services\WebPushService;
@@ -71,6 +72,28 @@ class RestaurantController extends Controller
                 'all' => 'كل الطلبات',
             ][$period],
             'latestOrderId' => $latestOrderId,
+        ]);
+    }
+
+    public function customers(Request $request, Shop $shop): View
+    {
+        $this->authorizeShop($request, $shop);
+        abort_unless($shop->catalog_type === 'restaurant', 404);
+        $validated = $request->validate(['search' => ['nullable', 'string', 'max:120']]);
+        $search = trim($validated['search'] ?? '');
+        $query = VisitorRegistration::query()->where('shop_id', $shop->id)->where('type', 'customer');
+
+        return view('admin.restaurant.customers', [
+            'shop' => $shop,
+            'search' => $search,
+            'customersCount' => (clone $query)->count(),
+            'customers' => $query->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('residence_address', 'like', "%{$search}%");
+                });
+            })->latest()->orderByDesc('id')->paginate(25)->withQueryString(),
         ]);
     }
 

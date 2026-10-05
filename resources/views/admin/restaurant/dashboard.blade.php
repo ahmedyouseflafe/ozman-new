@@ -89,6 +89,13 @@
             position: relative
         }
 
+        .hero-top { flex-wrap: wrap; }
+        .hero-top > :first-child { flex: 1 1 270px; min-width: 0; }
+        .hero-actions { flex: 2 1 580px; flex-wrap: wrap; justify-content: flex-start; }
+        @media(max-width:900px) {
+            .hero-top > :first-child, .hero-actions { flex: 0 1 auto; }
+        }
+
         .eyebrow {
             color: var(--cyan);
             font-weight: 800;
@@ -1262,6 +1269,9 @@
                     @endif
                     @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.drivers.index'))
                         <a class="btn" href="{{ route('restaurant.drivers.index', $shop) }}"><i class="ti ti-motorbike"></i> مندوبي التوصيل</a>
+                    @endif
+                    @if (auth()->user()->canAccessRouteName('restaurant.customers.index'))
+                        <a class="btn" href="{{ route('restaurant.customers.index', $shop) }}"><i class="ti ti-users"></i> العملاء المسجّلون</a>
                     @endif
                     <a class="btn btn-primary" href="{{ route('restaurant.menu', $shop) }}" target="_blank"><i
                             class="ti ti-external-link"></i> فتح منيو المطعم</a>

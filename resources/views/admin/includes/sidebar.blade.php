@@ -441,6 +441,13 @@
         @endif
 
         <div class="admin-sidebar-section">{{ $catalogTerms['place_singular'] ?? 'المتجر' }}</div>
+        @if($restaurantNavShop && $canSee(['restaurant.customers.index']))
+        <a href="{{ route('restaurant.customers.index', $restaurantNavShop) }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('restaurant.customers.index') ? 'active' : '' }}">
+             <i class="ti ti-users" aria-hidden="true"></i>
+             العملاء المسجّلون
+        </a>
+        @endif
 
         @if($isMarketer && ! $hasAssignedPermissions)
         @if($canSee(['front-orders.index']))

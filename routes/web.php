@@ -230,6 +230,7 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::get('/shops/{shop}/real-estate/properties/{property}/facebook-images', [RealEstateDashboardController::class, 'facebookImages'])->name('real-estate.dashboard.facebook-images');
     Route::patch('/shops/{shop}/real-estate/leads/{lead}', [RealEstateDashboardController::class, 'updateLead'])->name('real-estate.dashboard.leads.update');
     Route::get('/shops/{shop}/restaurant', [RestaurantController::class, 'dashboard'])->name('restaurant.dashboard');
+    Route::get('/shops/{shop}/restaurant/customers', [RestaurantController::class, 'customers'])->name('restaurant.customers.index');
     Route::get('/shops/{shop}/restaurant/tables', [RestaurantController::class, 'tables'])->name('restaurant.tables.index');
     Route::get('/shops/{shop}/restaurant/orders/{order}', [RestaurantController::class, 'showOrder'])->name('restaurant.orders.show');
     Route::get('/shops/{shop}/restaurant/orders-feed', [RestaurantController::class, 'ordersFeed'])->name('restaurant.orders.feed');

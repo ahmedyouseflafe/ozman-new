@@ -15,6 +15,7 @@ return [
     'catalog_type_permissions' => [
         'restaurant' => [
             'restaurant.view',
+            'restaurant.customers.view',
             'restaurant.tables.manage',
             'restaurant.orders.manage',
             'restaurant.drivers.manage',
@@ -29,7 +30,7 @@ return [
     ],
     'required' => ['dashboard.view', 'shops.view'],
     'catalog_type_required' => [
-        'restaurant' => ['restaurant.view', 'restaurant.drivers.manage'],
+        'restaurant' => ['restaurant.view', 'restaurant.drivers.manage', 'restaurant.customers.view'],
         'real_estate' => ['real_estate.view'],
     ],
     'catalog_type_excluded' => [

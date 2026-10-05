@@ -6,6 +6,8 @@ This is a customer-details form, not authenticated account access or verificatio
 
 Customers appear in the site dashboard under **تسجيلات الزوار**, with their name, WhatsApp link, address, map coordinates/link, restaurant and registration date. The list can be filtered by shop and searched by customer, phone, address or shop name. Existing dashboard permissions remain in force; there is no public endpoint for reading customer details.
 
+Restaurant owners also have a dedicated **العملاء المسجّلون** page at `/shops/{shopId}/restaurant/customers`, linked near the top of the sidebar and in the restaurant dashboard header. It lists only customer registrations belonging to the route's restaurant, with search, pagination, WhatsApp, map and registration/update dates. A separate `restaurant.customers.view` permission is automatically assigned to existing restaurant owners through the existing account service; it does not grant access to the global visitor list. Staff need both the permission and access to the restaurant. Dashboard header buttons now wrap to fit the extra action.
+
 Details are also remembered under `ozman.restaurant.{shopId}.customer.v1`, automatically fill checkout, and can be edited through **بياناتي / My details**. A random browser secret is stored separately; the server stores its scoped SHA-256 digest. Retries and edits from the same browser update one record. Another browser using the same phone number cannot overwrite that record: phone numbers are not authentication. Clearing browser storage or using another device can create another registration.
 
 Customers whose details exist only in the previous local version see the prefilled form on their next visit and must press Save to register with the site. The interface states that details are sent to Ozman for Bankai. Existing local data cannot appear in the dashboard before that visit. Checkout edits synchronize to the same record; failures remain pending locally and show a retry message instead of claiming successful registration.
@@ -23,10 +25,18 @@ The form supports Arabic, Hebrew and English, keyboard focus and mobile scrollin
 - `app/Http/Controllers/VisitorRegistrationAdminController.php`
 - `resources/views/admin/visitor_registrations/index.blade.php`
 - `routes/web.php`
+- `app/Http/Controllers/RestaurantController.php`
+- `config/employee_permissions.php`
+- `config/shop_owner_permissions.php`
+- `resources/views/admin/includes/sidebar.blade.php`
+- `resources/views/admin/restaurant/dashboard.blade.php`
+- `resources/views/admin/restaurant/customers.blade.php`
 
 JavaScript is embedded from the Git-managed file by Blade to support the existing hosting layout with a separate `public_html`. Upload these together. If route/view caches are enabled, refresh them using the project's usual deployment procedure (`php artisan optimize:clear`). No deployment was performed.
 
 ## Validation
+
+- Owner-page addition: `RestaurantCustomersTest` and `RestaurantCustomerWelcomeTest`: **13 passed, 111 assertions**. Tests cover existing-owner access and links, automatic permission assignment, rejection of cross-shop URLs and filters, scoped counts/search, guest/staff restrictions, pagination and the full registration flow. Browser review covers desktop and mobile layouts using isolated fixtures.
 
 - Current welcome/registration and offer-notification tests: **13 passed, 91 assertions**. Covers real SQLite persistence and dashboard output, retry/edit deduplication, invalid fields/coordinates, Arabic phone digits, generated map URLs, untrusted fields, isolation from other restaurants, same-phone overwrite protection, search/filter and access restrictions.
 - Earlier restaurant regression run: six existing dashboard/driver presentation assertions also failed against the pre-change menu. Those unrelated views were not changed here.
