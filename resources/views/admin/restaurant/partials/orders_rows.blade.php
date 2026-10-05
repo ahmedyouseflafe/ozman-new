@@ -22,7 +22,7 @@
                     <b>{{ $item['qty'] }}× {{ $item['name'] }}</b> {{ $item['size'] ?? '' }}<br>
                     <small>إضافات: {{ implode('، ',$item['addons'] ?? []) ?: '-' }} | بدون: {{ implode('، ',$item['excluded'] ?? []) ?: '-' }} {{ $item['notes'] ?? '' }}
                         
-                    </small>
+                    </small>@if(!empty($item['choices']))<p>{{ \App\Services\MealChoiceService::summary($item['choices']) }}</p>@endif
                 </div>
             @endforeach
             @if($order->reward_discount_type === 'gift')<div style="color:#51e4b0">🎁 {{ $order->reward_label }} — هدية مع الطلب</div>@endif

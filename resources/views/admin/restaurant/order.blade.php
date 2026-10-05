@@ -23,7 +23,7 @@
             <section class="panel glass">
                 <h2><i class="ti ti-receipt-2" style="color:var(--cyan)"></i> الوجبات المطلوبة</h2>
                 @forelse($order->items ?? [] as $item)
-                    <article class="item"><div style="display:flex;gap:10px"><span class="qty">{{ $item['qty'] ?? 1 }}×</span><div><h3>{{ $item['name'] ?? 'وجبة' }} {{ $item['size'] ?? '' }}</h3><p>@if(!empty($item['addons'])) إضافات: {{ implode('، ', $item['addons']) }} @endif @if(!empty($item['excluded'])) · بدون: {{ implode('، ', $item['excluded']) }} @endif @if(!empty($item['notes'])) · {{ $item['notes'] }} @endif</p></div></div><strong class="price">{{ number_format((float) (($item['price'] ?? 0) * ($item['qty'] ?? 1)), 2) }} ₪</strong></article>
+                    <article class="item"><div style="display:flex;gap:10px"><span class="qty">{{ $item['qty'] ?? 1 }}×</span><div><h3>{{ $item['name'] ?? 'وجبة' }} {{ $item['size'] ?? '' }}</h3><p>@if(!empty($item['addons'])) إضافات: {{ implode('، ', $item['addons']) }} @endif @if(!empty($item['excluded'])) · بدون: {{ implode('، ', $item['excluded']) }} @endif @if(!empty($item['notes'])) · {{ $item['notes'] }} @endif</p>@if(!empty($item['choices']))<p>{{ \App\Services\MealChoiceService::summary($item['choices']) }}</p>@endif</div></div><strong class="price">{{ number_format((float) (($item['price'] ?? 0) * ($item['qty'] ?? 1)), 2) }} ₪</strong></article>
                 @empty
                     <p class="empty">لا توجد وجبات مسجلة لهذا الطلب.</p>
                 @endforelse

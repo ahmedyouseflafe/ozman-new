@@ -1807,7 +1807,7 @@
 <body>
     @php
         $restaurantProducts = $products
-            ->map(function ($product) {
+            ->map(function ($product) use ($products) {
                 $attributes = $product->catalog_attributes ?? [];
                 return [
                     'id' => $product->id,
@@ -1815,6 +1815,7 @@
                     'price' => (float) ($product->discount_price ?: $product->price),
                     'sizes' => $attributes['meal_size_prices'] ?? [],
                     'addons' => $attributes['addon_prices'] ?? [],
+                    'choice_groups' => app(\App\Services\MealChoiceService::class)->forProduct($product, $products),
                     'ingredients' => $attributes['removable_ingredients'] ?? [],
                     'preparation_time' => max(0, (int) ($attributes['preparation_time'] ?? 0)),
                 ];
@@ -2244,6 +2245,8 @@
                 <h4>{{ $copy['choose_size'] }}</h4>
                 <div class="choices" id="sizes"></div>
             </section>
+            <div id="mealChoices"></div>
+            <p id="mealChoicesError" role="alert" hidden style="color:#ff9da9"></p>
             <section class="option-section" id="addonsSection">
                 <h4>{{ $copy['addons'] }}</h4>
                 <div class="choices" id="addons"></div>
@@ -2262,6 +2265,8 @@
         </div>
     </dialog>
     @include('front.shop_stories', ['showStoryList' => false])
+    <style>.meal-choice-section .choice{margin:7px 0}.meal-choice-hint{color:#a9c2cb;font-size:12px;margin:5px 0}.meal-choice-section [data-count]{color:#08dcf4}.meal-choice-qty{width:76px!important;min-width:60px;text-align:center}.meal-choice-section[data-valid="false"]{border-color:#4e6171}</style>
+    <script>{!! file_get_contents(base_path('public/restaurant-meal-choices.js')) !!}</script>
     @if($hasCustomerWelcome)
         @include('front.partials.restaurant_customer_welcome')
         @include('front.partials.shop_signup_wheel')
@@ -2437,6 +2442,7 @@
                     ? `${ui.estimated_prep} ${Number(current.preparation_time)} ${ui.minute}`
                     : '';
                 $('qty').value = 1;
+                window.OzmanMealChoices.render(current.choice_groups);
                 $('notes').value = '';
                 const sizes = parseOptions(current.sizes),
                     addons = parseOptions(current.addons);
@@ -2522,6 +2528,8 @@
                 });
             };
             $('confirm').onclick = () => {
+                const mealChoices=window.OzmanMealChoices.selection();
+                if (!mealChoices) return;
                 const selectedSize = $('sizes').querySelector(':checked');
                 const selectedAddons = [...$('addons').querySelectorAll(':checked')];
                 const unit = selectedSize ? Number(selectedSize.dataset.price) : Number(current.price);
@@ -2534,7 +2542,9 @@
                     addons: selectedAddons.map(input => input.value),
                     excluded: [...$('excluded').querySelectorAll(':checked')].map(input => input.value),
                     notes: $('notes').value,
-                    unit: unit + addonTotal,
+                    unit: unit + addonTotal + mealChoices.extra,
+                    choices: mealChoices.values,
+                    choice_summary: mealChoices.summary,
                     preparation_time: Number(current.preparation_time) || 0
                 });
                 closeModal();
@@ -2548,7 +2558,7 @@
 
             function render() {
                 $('cartItems').innerHTML = cart.length ? cart.map((item, index) =>
-                    `<article class="cart-item"><div class="cart-item-head"><strong>${item.qty}× ${escapeHtml(item.name)}</strong><button class="remove" onclick="removeRestaurantCartItem(${index})"><i class="ti ti-trash"></i></button></div><small>${escapeHtml(item.size||'')} ${item.addons.length?'• '+escapeHtml(item.addons.join('، ')):''}${item.preparation_time?' • '+escapeHtml(ui.about)+' '+item.preparation_time+' '+escapeHtml(ui.minute):''}</small><span class="price">${(item.unit*item.qty).toFixed(2)} ₪</span></article>`
+                    `<article class="cart-item"><div class="cart-item-head"><strong>${item.qty}× ${escapeHtml(item.name)}</strong><button class="remove" onclick="removeRestaurantCartItem(${index})"><i class="ti ti-trash"></i></button></div><small>${escapeHtml(item.size||'')} ${item.addons.length?'• '+escapeHtml(item.addons.join('، ')):''}${item.preparation_time?' • '+escapeHtml(ui.about)+' '+item.preparation_time+' '+escapeHtml(ui.minute):''}</small><p>${escapeHtml(item.choice_summary||'')}</p><span class="price">${(item.unit*item.qty).toFixed(2)} ₪</span></article>`
                     ).join('') : `<div class="empty"><i class="ti ti-shopping-bag"></i>${escapeHtml(ui.empty_cart)}</div>`;
                 const total = cart.reduce((sum, item) => sum + item.unit * item.qty, 0);
                 const signupDiscount = window.OzmanSignupReward?.discount(total) || 0;

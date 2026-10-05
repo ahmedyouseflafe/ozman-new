@@ -83,6 +83,7 @@
             }
 
             const fields = draft.fields || {};
+            window.restoreMealChoiceDraft?.(fields);
             const maxCampaignIndex = campaignMaxIndex(fields);
 
             if (maxCampaignIndex >= 0 && typeof window.ensureProductCampaignCards === 'function') {

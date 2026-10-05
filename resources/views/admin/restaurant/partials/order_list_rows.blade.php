@@ -7,7 +7,7 @@
         </td>
         <td data-label="الوجبات" class="order-meals">
             @forelse($items->take(2) as $item)
-                <div><b>{{ $item['qty'] ?? 1 }}× {{ $item['name'] ?? 'وجبة' }}</b></div>
+                <div><b>{{ $item['qty'] ?? 1 }}× {{ $item['name'] ?? 'وجبة' }}</b>@if(!empty($item['choices']))<small>{{ \App\Services\MealChoiceService::summary($item['choices']) }}</small>@endif</div>
             @empty
                 <span>لا توجد وجبات مسجلة</span>
             @endforelse

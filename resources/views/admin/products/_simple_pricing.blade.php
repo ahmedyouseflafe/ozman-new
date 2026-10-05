@@ -28,3 +28,4 @@
         </div>
     </div>
 </section>
+@include('admin.products._meal_choices')

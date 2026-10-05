@@ -281,6 +281,11 @@ class RestaurantController extends Controller
             'items.*.excluded' => ['nullable', 'array', 'max:30'],
             'items.*.excluded.*' => ['string', 'max:100'],
             'items.*.notes' => ['nullable', 'string', 'max:500'],
+            'items.*.choices' => ['nullable','array','max:10'],
+            'items.*.choices.*.group_id' => ['required','string','max:64'],
+            'items.*.choices.*.options' => ['required','array','max:30'],
+            'items.*.choices.*.options.*.option_id' => ['required','string','max:64'],
+            'items.*.choices.*.options.*.qty' => ['required','integer','min:1','max:20'],
         ]);
 
         $table = null;
@@ -323,12 +328,15 @@ class RestaurantController extends Controller
             abort_if($requestedExcluded->diff($removable)->isNotEmpty(), 422, 'لا يمكن حذف أحد المكونات المحددة.');
             $addons = $requestedAddons;
             $unit += $addons->sum(fn($name) => $addonPrices[$name]);
+            $choices = app(\App\Services\MealChoiceService::class)->resolve(app(\App\Services\MealChoiceService::class)->forProduct($product), $row['choices'] ?? []);
+            $unit += $choices['extra'];
             $line = round($unit * (int) $row['qty'], 2);
             $subtotal += $line;
             $items[] = [
                 'product_id' => $product->id, 'name' => $product->name, 'price' => $unit,
                 'qty' => (int) $row['qty'], 'size' => $size, 'addons' => $addons->all(),
                 'excluded' => $requestedExcluded->all(),
+                'choices' => $choices['groups'],
                 'notes' => $row['notes'] ?? null, 'line_total' => $line,
                 'preparation_time' => $preparationMinutes ?: null,
             ];
@@ -539,6 +547,7 @@ class RestaurantController extends Controller
             $details = array_filter([
                 filled($item['size'] ?? null) ? 'الحجم: '.$item['size'] : null,
                 filled($item['addons'] ?? null) ? 'إضافات: '.implode('، ', $item['addons']) : null,
+                filled($item['choices'] ?? null) ? \App\Services\MealChoiceService::summary($item['choices']) : null,
                 filled($item['excluded'] ?? null) ? 'بدون: '.implode('، ', $item['excluded']) : null,
                 filled($item['notes'] ?? null) ? 'ملاحظة: '.$item['notes'] : null,
             ]);

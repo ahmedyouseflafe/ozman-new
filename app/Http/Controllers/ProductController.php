@@ -576,6 +576,10 @@ class ProductController extends Controller
             }
         }
 
+        if ($shop->catalog_type === 'restaurant') {
+            $request->validate(['meal_choice_groups'=>['nullable','array','max:10']]);
+            $attributes['meal_choice_groups'] = app(\App\Services\MealChoiceService::class)->normalize($request->input('meal_choice_groups', []) ?? []);
+        }
         return $attributes;
     }
 
