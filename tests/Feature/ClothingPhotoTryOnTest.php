@@ -55,4 +55,31 @@ class ClothingPhotoTryOnTest extends TestCase
         $this->postJson($url,['photo'=>UploadedFile::fake()->image('photo.jpg',600,800),'consent'=>true])->assertStatus(429);
         Http::assertSentCount(54); // Six generations plus 48 status requests; blocked request never reaches FASHN.
     }
+
+    public function test_detail_mode_uses_uploaded_original_and_correct_max_parameters(): void
+    {
+        $shop=$this->shop();config(['services.fashn.key'=>'test-secret','services.fashn.shops'=>[$shop->slug]]);
+        Http::fake(['*'=>Http::response(['id'=>'max-demo'])]);
+        $garment=UploadedFile::fake()->image('real-shirt.jpg',1200,1600);
+        $expected=base64_encode(file_get_contents($garment->getRealPath()));
+        $this->postJson(route('clothing.photo-tryon',$shop),[
+            'photo'=>UploadedFile::fake()->image('person.jpg',900,1200),'garment'=>$garment,'consent'=>true,'quality'=>'detail',
+        ])->assertStatus(202);
+        Http::assertSent(fn($r)=>$r['model_name']==='tryon-max'
+            && $r['inputs']['product_image']==='data:image/jpeg;base64,'.$expected
+            && $r['inputs']['resolution']==='2k' && $r['inputs']['generation_mode']==='quality'
+            && $r['inputs']['num_images']===1 && $r['inputs']['output_format']==='png'
+            && !isset($r['inputs']['garment_image']) && str_contains($r['inputs']['prompt'],'untucked'));
+    }
+
+    public function test_bad_garment_and_unknown_quality_are_rejected_before_provider_charge(): void
+    {
+        $shop=$this->shop();config(['services.fashn.key'=>'test-secret','services.fashn.shops'=>[$shop->slug]]);Http::fake();
+        $this->postJson(route('clothing.photo-tryon',$shop),[
+            'photo'=>UploadedFile::fake()->image('person.jpg',900,1200),'consent'=>true,'quality'=>'unknown',
+        ])->assertUnprocessable();
+        $this->postJson(route('clothing.photo-tryon',$shop),[
+            'photo'=>UploadedFile::fake()->image('person.jpg',900,1200),'consent'=>true,'garment'=>UploadedFile::fake()->create('bad.txt',1),
+        ])->assertUnprocessable();Http::assertNothingSent();
+    }
 }

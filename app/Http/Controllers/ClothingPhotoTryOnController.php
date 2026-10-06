@@ -22,8 +22,13 @@ class ClothingPhotoTryOnController extends Controller
             'photo'=>['required','image','mimes:jpeg,png,webp','max:6144','dimensions:min_width=256,min_height=256,max_width=4096,max_height=4096'],
             'consent'=>['required','accepted'],
             'product_id'=>['nullable','integer'],
+            'garment'=>['nullable','image','mimes:jpeg,png,webp','max:6144','dimensions:min_width=256,min_height=256,max_width=4096,max_height=4096'],
+            'quality'=>['nullable','in:standard,detail'],
         ]);
-        if (!empty($data['product_id'])) {
+        if ($request->hasFile('garment')) {
+            $file=$data['garment'];
+            $garment='data:'.$file->getMimeType().';base64,'.base64_encode(file_get_contents($file->getRealPath()));
+        } elseif (!empty($data['product_id'])) {
             $product=Product::where('shop_id',$shop->id)->where('is_active',true)->findOrFail($data['product_id']);
             abort_unless(filled($product->main_image),422,'صورة القطعة غير متاحة.');
             $path=$product->main_image;
@@ -32,14 +37,16 @@ class ClothingPhotoTryOnController extends Controller
             $garment='data:image/png;base64,'.base64_encode(file_get_contents(base_path('public/images/virtual-tryon/demo-ivory-navy-tee.png')));
         }
         $photo=$data['photo'];
+        $detail=($data['quality']??'standard')==='detail';
+        $inputs=['model_image'=>'data:'.$photo->getMimeType().';base64,'.base64_encode(file_get_contents($photo->getRealPath())), 'return_base64'=>true,'output_format'=>'png'];
+        $inputs += $detail ? [
+            'product_image'=>$garment,'resolution'=>'2k','generation_mode'=>'quality','num_images'=>1,
+            'prompt'=>'Replace only the upper-body shirt with the reference garment. Preserve the exact logos, lettering, printed pattern, collar, cuffs, seams and fabric texture. Wear it naturally untucked with its original proportions and hem length; do not crop or tuck it. Preserve the person, face, body proportions, pose, hands, trousers, background and original camera lighting. Match the photo grain and natural shadows. Avoid skin smoothing, studio relighting and glossy or painted fabric.',
+        ] : ['garment_image'=>$garment,'category'=>'tops','mode'=>'quality','num_samples'=>1,
+            'garment_photo_type'=>empty($data['product_id'])&&!$request->hasFile('garment')?'flat-lay':'auto','segmentation_free'=>false];
         try {
             $response=Http::withToken(config('services.fashn.key'))->connectTimeout(10)->timeout(30)->post('https://api.fashn.ai/v1/run',[
-                'model_name'=>'tryon-v1.6','inputs'=>[
-                    'model_image'=>'data:'.$photo->getMimeType().';base64,'.base64_encode(file_get_contents($photo->getRealPath())),
-                    'garment_image'=>$garment,'category'=>'tops','mode'=>'quality','num_samples'=>1,'return_base64'=>true,
-                    'garment_photo_type'=>empty($data['product_id'])?'flat-lay':'auto',
-                    'segmentation_free'=>false,
-                ],
+                'model_name'=>$detail?'tryon-max':'tryon-v1.6','inputs'=>$inputs,
             ]);
             $providerId=$response->json('id');
             if (!$response->successful() || !is_string($providerId) || !preg_match('/^[a-zA-Z0-9_-]{1,150}$/',$providerId)) return $this->unavailable();
