@@ -28,7 +28,8 @@ class ClothingPhotoTryOnTest extends TestCase
         $this->postJson($url,['consent'=>true])->assertUnprocessable();
         $this->postJson($url,['photo'=>UploadedFile::fake()->image('photo.jpg',600,800)])->assertUnprocessable();Http::assertNothingSent();
         $result=$this->postJson($url,['photo'=>UploadedFile::fake()->image('photo.jpg',600,800),'consent'=>true])->assertStatus(202);
-        Http::assertSent(fn($r)=>$r['model_name']==='tryon-v1.6' && str_starts_with($r['inputs']['model_image'],'data:image/jpeg;base64,') && $r['inputs']['return_base64']===true);
+        Http::assertSent(fn($r)=>$r['model_name']==='tryon-v1.6' && str_starts_with($r['inputs']['model_image'],'data:image/jpeg;base64,') && $r['inputs']['return_base64']===true
+            && $r['inputs']['garment_photo_type']==='flat-lay' && $r['inputs']['segmentation_free']===false && $r['inputs']['mode']==='quality');
         $status=route('clothing.photo-tryon.status',[$shop,$result->json('job')]);
         $this->getJson($status)->assertOk()->assertJsonPath('image','data:image/png;base64,YWJj')->assertHeader('Cache-Control','no-store, private');
         $this->app['session']->invalidate();$this->getJson($status)->assertNotFound();

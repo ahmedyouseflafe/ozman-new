@@ -37,6 +37,8 @@ class ClothingPhotoTryOnController extends Controller
                 'model_name'=>'tryon-v1.6','inputs'=>[
                     'model_image'=>'data:'.$photo->getMimeType().';base64,'.base64_encode(file_get_contents($photo->getRealPath())),
                     'garment_image'=>$garment,'category'=>'tops','mode'=>'quality','num_samples'=>1,'return_base64'=>true,
+                    'garment_photo_type'=>empty($data['product_id'])?'flat-lay':'auto',
+                    'segmentation_free'=>false,
                 ],
             ]);
             $providerId=$response->json('id');
