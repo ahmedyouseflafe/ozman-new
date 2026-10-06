@@ -40,4 +40,18 @@ class ClothingPhotoTryOnTest extends TestCase
         config(['services.fashn.shops'=>[$shop->slug]]);Http::fake(['*'=>Http::response(['error'=>'private provider details'],500)]);
         $this->postJson($url,['photo'=>UploadedFile::fake()->image('photo.jpg',600,800),'consent'=>true])->assertStatus(502)->assertDontSee('private provider details');
     }
+
+    public function test_polling_does_not_consume_generation_limit_and_seventh_generation_is_limited(): void
+    {
+        $shop=$this->shop();config(['services.fashn.key'=>'test-secret','services.fashn.shops'=>[$shop->slug]]);
+        Http::fake(['*/run'=>Http::response(['id'=>'provider-demo']),'*/status/*'=>Http::response(['status'=>'processing'])]);
+        $url=route('clothing.photo-tryon',$shop);
+        for($attempt=0;$attempt<6;$attempt++) {
+            $result=$this->postJson($url,['photo'=>UploadedFile::fake()->image('photo.jpg',600,800),'consent'=>true])->assertStatus(202);
+            $status=route('clothing.photo-tryon.status',[$shop,$result->json('job')]);
+            for($poll=0;$poll<8;$poll++) $this->getJson($status)->assertOk()->assertJsonPath('status','processing');
+        }
+        $this->postJson($url,['photo'=>UploadedFile::fake()->image('photo.jpg',600,800),'consent'=>true])->assertStatus(429);
+        Http::assertSentCount(54); // Six generations plus 48 status requests; blocked request never reaches FASHN.
+    }
 }

@@ -110,8 +110,8 @@ Route::post('/restaurants/{shop:slug}/signup-reward', [\App\Http\Controllers\Sho
 Route::get('/advertising/{shop:slug}', [AdvertisingStoreController::class, 'index'])->name('advertising.store');
 Route::get('/electronics/{shop:slug}', [ElectronicsStoreController::class, 'index'])->name('electronics.store');
 Route::get('/fashion/{shop:slug}', [ClothingStoreController::class, 'index'])->name('clothing.store');
-Route::post('/fashion/{shop:slug}/photo-tryon', [\App\Http\Controllers\ClothingPhotoTryOnController::class, 'create'])->middleware('throttle:6,60')->name('clothing.photo-tryon');
-Route::get('/fashion/{shop:slug}/photo-tryon/{job}', [\App\Http\Controllers\ClothingPhotoTryOnController::class, 'status'])->whereUuid('job')->middleware('throttle:60,1')->name('clothing.photo-tryon.status');
+Route::post('/fashion/{shop:slug}/photo-tryon', [\App\Http\Controllers\ClothingPhotoTryOnController::class, 'create'])->middleware('throttle:6,60,photo-tryon-create:')->name('clothing.photo-tryon');
+Route::get('/fashion/{shop:slug}/photo-tryon/{job}', [\App\Http\Controllers\ClothingPhotoTryOnController::class, 'status'])->whereUuid('job')->middleware('throttle:60,1,photo-tryon-status:')->name('clothing.photo-tryon.status');
 Route::get('/virtual-tryon/photo-demo', fn () => response()->file(base_path('public/images/virtual-tryon/photo-demo-before-after.png')))->name('virtual-tryon.photo-demo');
 Route::get('/virtual-tryon/demo-garment', function () {
     $path = public_path('images/virtual-tryon/demo-ivory-navy-tee.png');
