@@ -2,6 +2,11 @@
 
 return [
 
+    'fashn' => [
+        'key' => env('FASHN_API_KEY'),
+        'shops' => array_filter(explode(',', env('FASHN_ENABLED_SHOPS', ''))),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

@@ -1,0 +1,31 @@
+<div class="overlay try-on-overlay" id="tryOnLayer" role="dialog" aria-modal="true" aria-labelledby="photoTryTitle"
+     data-endpoint="{{ route('clothing.photo-tryon', $shop) }}" data-enabled="{{ \App\Http\Controllers\ClothingPhotoTryOnController::enabled($shop) ? '1' : '0' }}" data-csrf="{{ csrf_token() }}">
+    <section class="photo-try-card">
+        <header><div><small>OZMAN · PHOTO TRY-ON</small><h2 id="photoTryTitle">شوف القطعة عليك بصورة</h2></div><button class="x" type="button" data-close="tryOnLayer" aria-label="إغلاق">×</button></header>
+        <p>قف من الأمام، وأظهر رأسك لحد الورك. ابعد إيديك شوي عن جسمك وخلي الإضاءة قدامك.</p>
+        <details id="photoTryExample" open><summary>شوف نموذج توضيحي للفكرة</summary><img src="{{ route('virtual-tryon.photo-demo') }}" alt="نموذج مولّد: قبل بالرمادي يسارًا وبعد بالتيشيرت العاجي يمينًا"><p>مثال مولّد لتوضيح الفكرة؛ ليس نتيجة صورتك أو اختبارًا لخدمة FASHN.</p></details>
+        <div class="photo-try-stage" id="photoTryStage" hidden>
+            <video id="photoTryVideo" autoplay playsinline muted></video>
+            <img id="photoTryCapture" alt="صورتك الملتقطة" hidden>
+            <output id="photoTryCountdown" aria-live="assertive" hidden></output>
+        </div>
+        <div class="photo-try-garment"><img id="photoTryGarment" alt="القطعة المختارة"><span>القطعة اللي رح تجربها</span></div>
+        <p id="photoTryStatus" role="status">افتح الكاميرا، ثم اضغط التقاط بعد 5 ثوانٍ.</p>
+        <div class="photo-try-actions">
+            <button type="button" id="photoTryCamera">فتح الكاميرا</button>
+            <button type="button" id="photoTryShoot" hidden>التقاط بعد 5 ثوانٍ</button>
+            <button type="button" id="photoTryCancel" hidden>إلغاء العدّ</button>
+            <button type="button" id="photoTryRetake" hidden>إعادة التصوير</button>
+        </div>
+        @if(\App\Http\Controllers\ClothingPhotoTryOnController::enabled($shop))
+            <label class="photo-try-consent"><input type="checkbox" id="photoTryConsent"> أوافق على إرسال صورتي وصورة القطعة إلى FASHN لتوليد المعاينة.</label>
+        @else
+            <p class="photo-try-notice">التقاط الصورة والنموذج جاهزان. تجربة القطعة على صورتك تحتاج تفعيل خدمة الصور لدى المحل.</p>
+        @endif
+        <div class="photo-try-actions"><button type="button" id="photoTryGenerate" disabled>جرّب القطعة على صورتي</button></div>
+        <figure id="photoTryResult" hidden><figcaption>نتيجتك · معاينة مولّدة، لا تحدد المقاس الفعلي</figcaption><img id="photoTryResultImage" alt="نتيجة تجربة القطعة على صورتك"></figure>
+    </section>
+</div>
+<style>
+.photo-try-card{width:min(760px,100%);max-height:92dvh;overflow:auto;border:1px solid #d6ff3880;border-radius:24px;background:#18181b;color:#f5f1ea;padding:20px}.photo-try-card header{display:flex;align-items:center;justify-content:space-between;gap:12px}.photo-try-card h2{font-size:22px;margin:5px 0}.photo-try-card small{color:#d6ff38;font-size:10px}.photo-try-card p,.photo-try-card label,.photo-try-card figcaption{font-size:12px;line-height:1.8;color:#c8c5cc}.photo-try-card details{margin:15px 0;border:1px solid #ffffff25;border-radius:14px;padding:10px}.photo-try-card summary{cursor:pointer;font-size:13px}.photo-try-card details img{display:block;width:100%;border-radius:10px;margin-top:10px}.photo-try-stage{position:relative;background:#080809;border-radius:16px;overflow:hidden;min-height:240px}.photo-try-stage video,.photo-try-stage>img{display:block;width:100%;max-height:52dvh;object-fit:contain}.photo-try-stage video{transform:scaleX(-1)}.photo-try-stage output{position:absolute;inset:0;display:grid;place-items:center;background:#0004;color:#d6ff38;font-size:100px;font-weight:900}.photo-try-card [hidden]{display:none!important}.photo-try-actions{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.photo-try-actions button{padding:12px 18px;min-height:46px;border-radius:12px;border:1px solid #d6ff3880;background:#d6ff38;color:#141415;font-weight:800}.photo-try-actions button:disabled{opacity:.45;cursor:not-allowed}.photo-try-garment{display:flex;align-items:center;gap:12px;font-size:12px;margin-top:12px}.photo-try-garment img{width:64px;height:70px;object-fit:contain;background:#ece9e2;border-radius:10px}.photo-try-consent{display:flex;align-items:start;gap:8px}.photo-try-consent input{margin-top:7px;accent-color:#d6ff38}.photo-try-notice{padding:10px;background:#d6ff3810;border-radius:10px}.photo-try-card figure{margin:15px 0}.photo-try-card figure img{display:block;width:100%;border-radius:14px}.photo-try-card .x{color:#fff;border-color:#ffffff40}.photo-try-card button:focus-visible,.photo-try-card summary:focus-visible{outline:3px solid #c0a7ff;outline-offset:3px}
+</style>

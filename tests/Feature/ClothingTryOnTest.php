@@ -19,8 +19,9 @@ class ClothingTryOnTest extends TestCase
 
         $this->get(route('clothing.store', $shop))->assertOk()
             ->assertSee('id="demoTryOn"', false)
-            ->assertSee('id="tryShowGuides"', false)
-            ->assertSee('export function initClothingTryOn', false)
+            ->assertSee('id="photoTryShoot"', false)
+            ->assertSee('export function initPhotoTryOn', false)
+            ->assertDontSee('@mediapipe/pose', false)
             ->assertDontSee('src="'.asset('clothing-tryon.js'), false)
             ->assertSee('ivory-navy-3', false);
     }

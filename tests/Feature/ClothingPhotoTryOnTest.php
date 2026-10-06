@@ -1,0 +1,43 @@
+<?php
+namespace Tests\Feature;
+
+use App\Models\{Shop, User};
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
+use Tests\TestCase;
+
+class ClothingPhotoTryOnTest extends TestCase
+{
+    use RefreshDatabase;
+    private function shop(): Shop
+    {
+        return Shop::create(['user_id'=>User::factory()->create()->id,'name'=>'Demo','slug'=>'photo-demo','catalog_type'=>'clothing','is_active'=>true]);
+    }
+    public function test_disabled_service_does_not_send_images(): void
+    {
+        Http::fake();$shop=$this->shop();config(['services.fashn.key'=>null]);
+        $this->postJson(route('clothing.photo-tryon',$shop))->assertStatus(503);Http::assertNothingSent();
+        $this->get(route('clothing.store',$shop))->assertOk()->assertSee('data-enabled="0"',false)->assertDontSee('id="photoTryConsent"',false);
+    }
+    public function test_validated_consent_and_photo_are_sent_and_result_is_private_to_session(): void
+    {
+        $shop=$this->shop();config(['services.fashn.key'=>'test-secret','services.fashn.shops'=>[$shop->slug]]);
+        Http::fake(['*/run'=>Http::response(['id'=>'provider-demo']),'*/status/*'=>Http::response(['status'=>'completed','output'=>['data:image/png;base64,YWJj']])]);
+        $url=route('clothing.photo-tryon',$shop);
+        $this->postJson($url,['consent'=>true])->assertUnprocessable();
+        $this->postJson($url,['photo'=>UploadedFile::fake()->image('photo.jpg',600,800)])->assertUnprocessable();Http::assertNothingSent();
+        $result=$this->postJson($url,['photo'=>UploadedFile::fake()->image('photo.jpg',600,800),'consent'=>true])->assertStatus(202);
+        Http::assertSent(fn($r)=>$r['model_name']==='tryon-v1.6' && str_starts_with($r['inputs']['model_image'],'data:image/jpeg;base64,') && $r['inputs']['return_base64']===true);
+        $status=route('clothing.photo-tryon.status',[$shop,$result->json('job')]);
+        $this->getJson($status)->assertOk()->assertJsonPath('image','data:image/png;base64,YWJj')->assertHeader('Cache-Control','no-store, private');
+        $this->app['session']->invalidate();$this->getJson($status)->assertNotFound();
+    }
+    public function test_provider_errors_are_safe_and_shop_must_be_enabled(): void
+    {
+        $shop=$this->shop();config(['services.fashn.key'=>'test-secret','services.fashn.shops'=>[]]);Http::fake();
+        $url=route('clothing.photo-tryon',$shop);$this->postJson($url)->assertStatus(503);Http::assertNothingSent();
+        config(['services.fashn.shops'=>[$shop->slug]]);Http::fake(['*'=>Http::response(['error'=>'private provider details'],500)]);
+        $this->postJson($url,['photo'=>UploadedFile::fake()->image('photo.jpg',600,800),'consent'=>true])->assertStatus(502)->assertDontSee('private provider details');
+    }
+}
