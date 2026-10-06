@@ -193,7 +193,7 @@
                                     <span class="card-icon"><i class="ti ti-photo-up" aria-hidden="true"></i></span>
                                     <span>
                                         <span class="card-title">صورة {{ $categoryName }}</span>
-                                        <span class="card-sub">PNG أو JPG، اختياري</span>
+                                        <span class="card-sub">صورة حتى 20 MB، اختياري</span>
                                     </span>
                                 </label>
                             </div>

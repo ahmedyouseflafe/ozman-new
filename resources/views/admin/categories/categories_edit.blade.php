@@ -160,7 +160,7 @@
                                     <span class="card-icon"><i class="ti ti-photo-up" aria-hidden="true"></i></span>
                                     <span>
                                         <span class="card-title">تغيير صورة {{ $categoryName }}</span>
-                                        <span class="card-sub">اتركها فارغة للاحتفاظ بالصورة الحالية</span>
+                                        <span class="card-sub">صورة حتى 20 MB — اتركها فارغة للاحتفاظ بالصورة الحالية</span>
                                     </span>
                                 </label>
                                 @if($category->image)

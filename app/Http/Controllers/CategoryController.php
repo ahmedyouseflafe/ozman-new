@@ -188,9 +188,12 @@ class CategoryController extends Controller
                 'max:255',
                 Rule::unique('categories', 'slug')->ignore($category?->id),
             ],
-            'image' => ['nullable', 'image', 'max:2048'],
+            'image' => ['nullable', 'image', 'max:20480'],
             'background_video' => ['nullable', 'file', 'mimes:mp4,webm', 'max:20480'],
             'remove_background_video' => ['nullable', 'boolean'],
+        ], [
+            'image.max' => 'حجم صورة القسم يجب ألا يتجاوز 20 MB.',
+            'image.image' => 'يرجى اختيار ملف صورة صالح للقسم.',
         ]);
     }
 
