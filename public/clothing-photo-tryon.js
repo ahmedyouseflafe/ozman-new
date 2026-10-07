@@ -1,6 +1,7 @@
 export function initPhotoTryOn(root = document) {
     const $ = id => root.getElementById(id), layer = $('tryOnLayer');
     if (!layer) return;
+    const watch=layer.dataset.kind==='watch';
     const video=$('photoTryVideo'), capture=$('photoTryCapture'), countdown=$('photoTryCountdown');
     let stream=null, timer=null, generation=0, shot=null, shotUrl=null, productId=null, busy=false, opener=null, aborter=null;
     let garment=null, garmentUrl=null, originalGarment='', fileVersion=0;
@@ -23,12 +24,12 @@ export function initPhotoTryOn(root = document) {
         reset();const run=generation;$('photoTryCamera').disabled=true;status('اسمح باستخدام الكاميرا…');
         try {
             if(!navigator.mediaDevices?.getUserMedia)throw new Error('الكاميرا تحتاج اتصال HTTPS ومتصفحًا يدعمها.');
-            const next=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:960},height:{ideal:1280}},audio:false});
+            const next=await navigator.mediaDevices.getUserMedia({video:{facingMode:watch?'environment':'user',width:{ideal:960},height:{ideal:1280}},audio:false});
             if(run!==generation){next.getTracks().forEach(t=>t.stop());return;}
             stream=next;video.srcObject=next;video.hidden=false;$('photoTryStage').hidden=false;await video.play();
             if(run!==generation)return;
             $('photoTryCamera').hidden=true;$('photoTryShoot').hidden=false;$('photoTryExample').open=false;
-            status('لما تكون جاهز اضغط التقاط. عندك 5 ثوانٍ لتوقف من الأمام وتبعد إيديك شوي.');
+            status(watch?'وجّه الكاميرا لظهر إيدك ومعصمك. بعد الضغط عندك 5 ثوانٍ لتثبت إيدك.':'لما تكون جاهز اضغط التقاط. عندك 5 ثوانٍ لتوقف من الأمام وتبعد إيديك شوي.');
             next.getVideoTracks()[0].addEventListener('ended',()=>{if(run===generation&&stream){cancelTimer();stopStream();$('photoTryShoot').hidden=true;$('photoTryCamera').hidden=false;$('photoTryCamera').disabled=false;status('انقطع اتصال الكاميرا. افتحها مجددًا.');}});
         }catch(error){if(run!==generation)return;stopStream();$('photoTryCamera').disabled=false;status(error.name==='NotAllowedError'?'اسمح للكاميرا من إعدادات المتصفح وحاول مجددًا.':error.name==='NotFoundError'?'لا توجد كاميرا متصلة.':error.message||'تعذّر فتح الكاميرا.');}
     };
@@ -38,7 +39,7 @@ export function initPhotoTryOn(root = document) {
         if(timer||!stream||video.readyState<2)return;
         const run=generation,deadline=performance.now()+5000;
         countdown.hidden=false;countdown.textContent='5';$('photoTryShoot').hidden=true;$('photoTryCancel').hidden=false;
-        status('قف من الأمام، وخلي الرأس والكتفين والورك داخل الصورة.');
+        status(watch?'ثبّت معصمك المكشوف وظهر إيدك داخل الصورة.':'قف من الأمام، وخلي الرأس والكتفين والورك داخل الصورة.');
         timer=setInterval(()=>{
             const remaining=Math.ceil((deadline-performance.now())/1000);
             if(remaining>0){countdown.textContent=String(remaining);return;}
@@ -82,7 +83,7 @@ export function initPhotoTryOn(root = document) {
     $('photoTryPersonFile').onchange=async event=>{
         const file=event.target.files[0];if(!file)return;reset();const run=generation;busy=true;lockInputs(true);sync();
         try {const blob=await readUpload(file);if(run!==generation)return;
-            shot=blob;shotUrl=URL.createObjectURL(blob);capture.src=shotUrl;capture.hidden=false;video.hidden=true;$('photoTryStage').hidden=false;$('photoTryExample').open=false;$('photoTryRetake').hidden=false;$('photoTryCamera').hidden=true;status('تم اختيار صورتك. تأكد إنك ظاهر وحدك من الرأس لمنتصف الفخذ.');
+            shot=blob;shotUrl=URL.createObjectURL(blob);capture.src=shotUrl;capture.hidden=false;video.hidden=true;$('photoTryStage').hidden=false;$('photoTryExample').open=false;$('photoTryRetake').hidden=false;$('photoTryCamera').hidden=true;status(watch?'تم اختيار الصورة. تأكد إن المعصم وظهر الإيد واضحين بدون ساعة.':'تم اختيار صورتك. تأكد إنك ظاهر وحدك من الرأس لمنتصف الفخذ.');
         }catch(error){if(run===generation)status(error.message);}
         finally{event.target.value='';if(run===generation){busy=false;lockInputs(false);sync();}}
     };

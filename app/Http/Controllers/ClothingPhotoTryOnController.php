@@ -16,7 +16,8 @@ class ClothingPhotoTryOnController extends Controller
 
     public function create(Request $request, Shop $shop)
     {
-        abort_unless($shop->is_active && $shop->catalog_type === 'clothing',404);
+        $watch=$request->routeIs('watch.photo-tryon');
+        abort_unless($shop->is_active && $shop->catalog_type === ($watch?'cosmetics':'clothing'),404);
         abort_unless(self::enabled($shop),503,'تجربة الصور غير مفعلة لهذا المحل بعد.');
         $data=$request->validate([
             'photo'=>['required','image','mimes:jpeg,png,webp','max:6144','dimensions:min_width=256,min_height=256,max_width=4096,max_height=4096'],
@@ -25,7 +26,9 @@ class ClothingPhotoTryOnController extends Controller
             'garment'=>['nullable','image','mimes:jpeg,png,webp','max:6144','dimensions:min_width=256,min_height=256,max_width=4096,max_height=4096'],
             'quality'=>['nullable','in:standard,detail'],
         ]);
-        if ($request->hasFile('garment')) {
+        if ($watch) {
+            $garment='data:image/png;base64,'.base64_encode(file_get_contents(base_path('public/images/virtual-tryon/demo-blue-watch.png')));
+        } elseif ($request->hasFile('garment')) {
             $file=$data['garment'];
             $garment='data:'.$file->getMimeType().';base64,'.base64_encode(file_get_contents($file->getRealPath()));
         } elseif (!empty($data['product_id'])) {
@@ -37,13 +40,16 @@ class ClothingPhotoTryOnController extends Controller
             $garment='data:image/png;base64,'.base64_encode(file_get_contents(base_path('public/images/virtual-tryon/demo-ivory-navy-tee.png')));
         }
         $photo=$data['photo'];
-        $detail=($data['quality']??'standard')==='detail';
+        $detail=$watch || ($data['quality']??'standard')==='detail';
         $inputs=['model_image'=>'data:'.$photo->getMimeType().';base64,'.base64_encode(file_get_contents($photo->getRealPath())), 'return_base64'=>true,'output_format'=>'png'];
         $inputs += $detail ? [
             'product_image'=>$garment,'resolution'=>'2k','generation_mode'=>'quality','num_images'=>1,
             'prompt'=>'Replace only the upper-body shirt with the reference garment. Preserve the exact logos, lettering, printed pattern, collar, cuffs, seams and fabric texture. Wear it naturally untucked with its original proportions and hem length; do not crop or tuck it. Preserve the person, face, body proportions, pose, hands, trousers, background and original camera lighting. Match the photo grain and natural shadows. Avoid skin smoothing, studio relighting and glossy or painted fabric.',
         ] : ['garment_image'=>$garment,'category'=>'tops','mode'=>'quality','num_samples'=>1,
             'garment_photo_type'=>empty($data['product_id'])&&!$request->hasFile('garment')?'flat-lay':'auto','segmentation_free'=>false];
+        if ($watch) {
+            $inputs['prompt']='Place exactly one reference wristwatch on the visible bare wrist, dial on the back-of-hand side, bracelet wrapped naturally around the wrist with correct perspective and realistic contact shadows. Preserve the blue dial, silver indices, hands, crown and steel bracelet links. Use plausible wristwatch proportions, not an oversized face. Preserve the exact hand, fingers, arm, skin texture, pose, background and camera lighting. Do not add hands or fingers, beautify skin or change clothing. Only add the watch. This is a visual preview, not a measurement.';
+        }
         try {
             $response=Http::withToken(config('services.fashn.key'))->connectTimeout(10)->timeout(30)->post('https://api.fashn.ai/v1/run',[
                 'model_name'=>$detail?'tryon-max':'tryon-v1.6','inputs'=>$inputs,

@@ -124,6 +124,9 @@ Route::get('/virtual-tryon/demo-garment', function () {
     ]);
 })->name('virtual-tryon.demo-garment');
 Route::get('/cosmetics/{shop:slug}', [CosmeticsStoreController::class, 'index'])->name('cosmetics.store');
+Route::post('/cosmetics/{shop:slug}/watch-tryon', [\App\Http\Controllers\ClothingPhotoTryOnController::class, 'create'])->middleware('throttle:6,60,watch-tryon-create:')->name('watch.photo-tryon');
+Route::get('/cosmetics/{shop:slug}/watch-tryon/{job}', [\App\Http\Controllers\ClothingPhotoTryOnController::class, 'status'])->whereUuid('job')->middleware('throttle:60,1,watch-tryon-status:')->name('watch.photo-tryon.status');
+Route::get('/virtual-tryon/demo-watch', fn () => response()->file(base_path('public/images/virtual-tryon/demo-blue-watch.png')))->name('virtual-tryon.demo-watch');
 Route::get('/sweets/{shop:slug}', [SweetsStoreController::class, 'index'])->name('sweets.store');
 Route::get('/home-furniture/{shop:slug}', [FurnitureStoreController::class, 'index'])->name('furniture.store');
 Route::get('/cosmetics/{shop:slug}/booking', [CosmeticsStoreController::class, 'booking'])->name('cosmetics.booking');

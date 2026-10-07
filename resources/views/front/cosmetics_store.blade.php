@@ -138,6 +138,12 @@
             @if($socialLinks->isNotEmpty())<nav class="beauty-socials" aria-label="{{ __('التواصل الاجتماعي') }}">@foreach($socialLinks as $link)<a class="beauty-social" href="{{ $link['url'] }}" target="_blank" rel="noopener noreferrer" title="{{ $link['label'] }}" aria-label="{{ $link['label'] }}"><i class="ti {{ $link['icon'] }}"></i></a>@endforeach</nav>@endif
         </header>
     </div>
+    @if($shop->slug === 'elegance-perfumes')
+    <section class="watch-demo" dir="rtl">
+        <img src="{{ route('virtual-tryon.demo-watch') }}" alt="ساعة تجريبية فضية بمينا أزرق">
+        <div><small>تجربة الساعات · نموذج تجريبي</small><h2>شوف الساعة على إيدك</h2><p>صوّر معصمك أو ارفع صورة، وشوف معاينة ثابتة للساعة عليه.</p><button type="button" id="demoTryOn" data-image="{{ route('virtual-tryon.demo-watch') }}">جرّب الساعة على إيدك</button></div>
+    </section>
+    @endif
     <section class="catalog-panel" id="beautyCatalog">
         @if($categoriesForPage->isNotEmpty())<div class="beauty-browser"><nav class="beauty-categories" aria-label="{{ __('أقسام الكوزماتيكس') }}">@foreach($categoriesForPage as $category)<button type="button" class="beauty-category {{ $loop->first ? 'active' : '' }}" data-beauty-category="{{ $category['key'] }}"><span class="beauty-category-image">@if($category['image'])<img src="{{ $mediaUrl($category['image']) }}" alt="">@else<i class="ti ti-sparkles"></i>@endif</span><span>{{ $category['name'] }}</span></button>@endforeach</nav>
         <div class="beauty-content">@foreach($categoriesForPage as $category)<section class="beauty-pane" data-beauty-pane="{{ $category['key'] }}" @if(!$loop->first) hidden @endif><header class="beauty-pane-head"><h2>{{ $category['name'] }}</h2><span>{{ $category['products']->count() }} {{ __('منتج') }}</span></header><div class="beauty-products">@forelse($category['products'] as $product)@php $attrs = $product->catalog_attributes ?? []; @endphp<article class="beauty-product"><div class="product-picture {{ $product->main_image ? 'product-image-trigger' : '' }}" @if($product->main_image) data-product-image="{{ $mediaUrl($product->main_image) }}" data-product-title="{{ $product->localized('name') }}" role="button" tabindex="0" aria-label="تكبير صورة {{ $product->localized('name') }}" @endif>@if($product->main_image)<img src="{{ $mediaUrl($product->main_image) }}" alt="{{ $product->localized('name') }}" loading="lazy">@else<i class="ti ti-sparkles" style="font-size:48px;position:absolute;inset:0;display:grid;place-items:center;color:var(--rose)"></i>@endif @if($product->is_featured)<span class="product-badge">{{ __('مميز') }}</span>@endif</div><div class="product-body"><div class="product-brand">{{ data_get($attrs,'brand') ?: __('اختيار الجمال') }}</div><h3 class="product-name">{{ $product->localized('name') }}</h3><div class="product-details">{{ collect([data_get($attrs,'volume'), collect(data_get($attrs,'shades', []))->filter()->implode(' · ')])->filter()->implode(' — ') ?: ($product->localized('description') ?: __('منتج عناية مختار بعناية.')) }}</div><div class="product-bottom"><strong class="product-price">{{ number_format((float)($product->discount_price ?: $product->price), 2) }} ₪</strong><button class="add-beauty-cart" type="button" data-add-product data-id="{{ $product->id }}" data-name="{{ $product->localized('name') }}" data-price="{{ (float)($product->discount_price ?: $product->price) }}" aria-label="{{ __('أضف إلى السلة') }}"><i class="ti ti-bag-plus"></i></button></div></div></article>@empty<div class="empty-products">{{ __('لا توجد منتجات في هذا القسم حاليًا.') }}</div>@endforelse</div></section>@endforeach</div></div>@else<div class="empty-products">{{ __('أضف أقسام ومنتجات المتجر لتظهر هنا.') }}</div>@endif
@@ -603,4 +609,13 @@
     });
 })();
 </script>
+@if($shop->slug === 'elegance-perfumes')
+@include('front.partials.clothing_photo_tryon', ['watchTryOn' => true])
+<style>
+.watch-demo{display:flex;align-items:center;gap:20px;margin-top:16px;padding:20px;border:1px solid var(--line);border-radius:24px;background:#1c111d}.watch-demo>img{width:110px;height:145px;object-fit:contain;border-radius:16px;background:#f6f4ef}.watch-demo h2{margin:5px 0;font-size:23px}.watch-demo p,.watch-demo small{font-size:12px;color:#dac7d5}.watch-demo button{padding:12px;border:0;border-radius:12px;background:#ff86bb;color:#210615;font:inherit;cursor:pointer}#tryOnLayer{position:fixed;inset:0;z-index:150;display:none;align-items:center;justify-content:center;padding:14px;background:#000b;direction:rtl}#tryOnLayer.open{display:flex}#tryOnLayer .photo-try-card{border-color:#ff86bb80}#tryOnLayer .photo-try-actions button{background:#ff86bb;border-color:#ff86bb;color:#210615}#tryOnLayer small,#tryOnLayer output{color:#ff86bb}#tryOnLayer .x{width:40px;height:40px;border-radius:50%;border:1px solid #ffffff40;background:#252529;font-size:24px;cursor:pointer}@media(max-width:480px){.watch-demo{gap:12px;padding:12px}.watch-demo>img{width:80px;height:115px}.watch-demo h2{font-size:18px}}
+</style>
+<script type="module">
+{!! file_get_contents(base_path('public/clothing-photo-tryon.js')) !!}
+</script>
+@endif
 </body></html>
