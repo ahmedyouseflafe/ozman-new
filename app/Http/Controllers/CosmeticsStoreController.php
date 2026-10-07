@@ -62,6 +62,14 @@ class CosmeticsStoreController extends Controller
         $categories = $categoriesQuery
             ->orderBy('name')
             ->get();
+        if ($shop->slug === 'elegance-perfumes' || strtolower(trim($shop->name)) === 'elegance perfumes') {
+            $sorter = app(\App\Services\PerfumeProductSorter::class);
+            foreach ($categories as $category) {
+                if (preg_match('/عطور|عطر|perfume|fragrance|يون.*سكس|unisex/ui', $category->name)) {
+                    $category->setRelation('products', $sorter->sort($category->products));
+                }
+            }
+        }
         $uncategorizedProducts = Product::query()
             ->where('shop_id', $shop->id)
             ->whereNull('category_id')
