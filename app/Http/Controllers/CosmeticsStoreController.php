@@ -26,7 +26,7 @@ class CosmeticsStoreController extends Controller
         $shop->loadMissing('social');
         $categoriesQuery = $shop->categories()
             ->where('is_active', true)
-            ->with(['products' => fn ($query) => $query->where('is_active', true)->latest()]);
+            ->with(['products' => fn ($query) => $query->where('is_active', true)->with('images')->latest()]);
 
         // Curly Waves asked for a deliberate storefront order: curly first,
         // cosmetics second and perfumes last. Other sections keep their
@@ -71,6 +71,7 @@ class CosmeticsStoreController extends Controller
             }
         }
         $uncategorizedProducts = Product::query()
+            ->with('images')
             ->where('shop_id', $shop->id)
             ->whereNull('category_id')
             ->where('is_active', true)

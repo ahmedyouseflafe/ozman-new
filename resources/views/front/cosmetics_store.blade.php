@@ -14,6 +14,9 @@
     if ($uncategorizedProducts->isNotEmpty()) {
         $categoriesForPage->push(['key' => 'other', 'name' => __('منتجات أخرى'), 'image' => $uncategorizedProducts->first()?->main_image, 'products' => $uncategorizedProducts]);
     }
+    $productGalleries = $categoriesForPage->flatMap(fn (array $category) => $category['products'])
+        ->mapWithKeys(fn ($product) => [(string) $product->id => collect([$product->main_image])
+            ->merge($product->images->sortBy('id')->pluck('image'))->filter()->map($mediaUrl)->unique()->values()->all()])->all();
     $social = $shop->social;
     $socialLinks = collect([
         ['label' => 'Facebook', 'icon' => 'ti-brand-facebook', 'value' => $social?->facebook, 'base' => 'https://facebook.com/'],
@@ -174,8 +177,16 @@
     <button type="button" class="beauty-product-image-close" id="beautyProductImageClose" aria-label="إغلاق الصورة">×</button>
     <section class="beauty-product-image-dialog" role="dialog" aria-modal="true" aria-label="صورة المنتج المكبرة">
         <img id="beautyProductImageViewer" src="" alt="">
+        <nav class="beauty-gallery-controls" aria-label="صور المنتج">
+            <button type="button" id="beautyImagePrev" aria-label="الصورة السابقة">السابق →</button>
+            <output id="beautyImageCount" aria-live="polite" dir="ltr"></output>
+            <button type="button" id="beautyImageNext" aria-label="الصورة التالية">← التالي</button>
+        </nav>
     </section>
 </div>
+<style>
+.beauty-gallery-badge{position:absolute;top:10px;left:8px;background:#190e20e8;color:#fff;padding:5px 9px;border:1px solid #ff80b880;border-radius:20px;font-size:11px;pointer-events:none}.beauty-gallery-controls{display:flex;justify-content:center;align-items:center;gap:18px;margin-top:12px}.beauty-gallery-controls button{border:1px solid #ff80b880;border-radius:12px;background:#27152c;color:#fff;padding:10px 16px;min-height:44px;cursor:pointer}.beauty-gallery-controls button[hidden]{display:none}.beauty-gallery-controls output{color:#fff}.beauty-product-image-dialog #beautyProductImageViewer{max-height:calc(100dvh - 160px);touch-action:pan-y pinch-zoom}.beauty-product-image-modal button:focus-visible{outline:3px solid #ff80b8;outline-offset:3px}
+</style>
 @include('front.shop_stories', ['showStoryList' => false])
 <script>
     window.beautyProductVideos = @json($productVideos);
@@ -555,6 +566,35 @@
     const modal = document.getElementById('beautyProductImageModal');
     const viewer = document.getElementById('beautyProductImageViewer');
     const closeButton = document.getElementById('beautyProductImageClose');
+    const galleries = @json($productGalleries);
+    const previous = document.getElementById('beautyImagePrev'), next = document.getElementById('beautyImageNext'), count = document.getElementById('beautyImageCount');
+    let images = [], index = 0, opener = null, startX = null;
+    const show = delta => {
+        if (!images.length) return;
+        index = (index + delta + images.length) % images.length;
+        viewer.src = images[index];
+        count.textContent = `${index + 1} / ${images.length}`;
+        previous.hidden = next.hidden = images.length < 2;
+    };
+    document.querySelectorAll('.beauty-product').forEach(card => {
+        const pictures = galleries[card.querySelector('[data-add-product]')?.dataset.id] || [];
+        const picture = card.querySelector('.product-picture');
+        if (!pictures.length || !picture) return;
+        picture.dataset.productImage = pictures[0];
+        picture.dataset.productTitle = card.querySelector('.product-name')?.textContent || '';
+        picture.setAttribute('role', 'button'); picture.tabIndex = 0;
+        picture.setAttribute('aria-label', 'عرض صور ' + picture.dataset.productTitle);
+        if (pictures.length > 1) {
+            const badge = document.createElement('span'); badge.className = 'beauty-gallery-badge';
+            badge.textContent = `${pictures.length} صور · اضغط للعرض`; picture.append(badge);
+        }
+    });
+    previous.onclick = () => show(-1); next.onclick = () => show(1);
+    viewer.addEventListener('touchstart', event => { startX = event.touches.length === 1 ? event.touches[0].clientX : null; }, {passive:true});
+    viewer.addEventListener('touchend', event => {
+        if (startX !== null && Math.abs(event.changedTouches[0].clientX - startX) > 45) show(event.changedTouches[0].clientX < startX ? 1 : -1);
+        startX = null;
+    }, {passive:true});
     const releaseScroll = () => {
         if (!document.querySelector('.beauty-product-video-modal.open')) document.body.style.overflow = '';
     };
@@ -565,14 +605,18 @@
         viewer?.removeAttribute('src');
         if (viewer) viewer.alt = '';
         releaseScroll();
+        opener?.focus();
     };
     const open = trigger => {
         if (!modal || !viewer || !trigger.dataset.productImage) return;
-        viewer.src = trigger.dataset.productImage;
+        opener = trigger;
+        images = galleries[trigger.closest('.beauty-product')?.querySelector('[data-add-product]')?.dataset.id] || [trigger.dataset.productImage];
+        index = 0; show(0);
         viewer.alt = trigger.dataset.productTitle || 'صورة المنتج';
         modal.classList.add('open');
         modal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
+        closeButton.focus();
     };
     document.addEventListener('click', event => {
         const trigger = event.target.closest('[data-product-image]');
@@ -588,6 +632,15 @@
             return;
         }
         if (event.key === 'Escape' && modal?.classList.contains('open')) close();
+        if (modal?.classList.contains('open')) {
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); show(event.key === 'ArrowLeft' ? 1 : -1); }
+            if (event.key === 'Tab') {
+                const buttons = [closeButton, previous, next].filter(button => !button.hidden);
+                const first = buttons[0], last = buttons.at(-1);
+                if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+                else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+            }
+        }
     });
     closeButton?.addEventListener('click', close);
     modal?.addEventListener('click', event => { if (event.target === modal) close(); });

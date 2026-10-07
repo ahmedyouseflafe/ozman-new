@@ -24,12 +24,15 @@ class CosmeticsStoreTest extends TestCase
         $category = Category::create([
             'shop_id' => $shop->id, 'name' => 'Perfumes', 'slug' => 'perfumes', 'is_active' => true,
         ]);
-        Product::create([
+        $product = Product::create([
             'shop_id' => $shop->id, 'category_id' => $category->id, 'name' => 'Rose Bloom',
             'slug' => 'rose-bloom', 'price' => 125, 'quantity' => 2, 'is_active' => true,
             'video' => 'storage/products/videos/rose-bloom.mp4',
+            'main_image' => 'products/rose-main.jpg',
             'catalog_attributes' => ['brand' => 'Elegance', 'volume' => '50 ml'],
         ]);
+        $product->images()->create(['image'=>'products/rose-side.jpg']);
+        $product->images()->create(['image'=>'products/rose-back.jpg']);
         Advertisement::create([
             'shop_id' => $shop->id, 'title' => 'Beauty video', 'type' => 'video',
             'media' => 'storage/ads/beauty.mp4', 'is_active' => true,
@@ -42,6 +45,8 @@ class CosmeticsStoreTest extends TestCase
             ->assertSee('data-display-sound-toggle', false)
             ->assertSee('beautyProductVideos', false)
             ->assertSee('rose-bloom.mp4')
+            ->assertSee('rose-side.jpg')->assertSee('rose-back.jpg')
+            ->assertSee('beautyImageNext')->assertSee('beautyImagePrev')
             ->assertSee('Perfumes')
             ->assertSee('Rose Bloom')
             ->assertSee('wa.me/972501234567');
