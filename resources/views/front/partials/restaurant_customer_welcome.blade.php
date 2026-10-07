@@ -73,6 +73,18 @@
         }
     }
 @endphp
+@php
+    $welcome['sessionError'] = match(app()->getLocale()) {
+        'en' => 'Your session expired. Reload this page and try again.',
+        'he' => 'פג תוקף ההפעלה. רעננו את העמוד ונסו שוב.',
+        default => 'انتهت جلسة الصفحة. حدّث الصفحة وجرّب مرة ثانية.',
+    };
+    $welcome['rateError'] = match(app()->getLocale()) {
+        'en' => 'Too many attempts. Wait a minute and try again.',
+        'he' => 'יותר מדי ניסיונות. המתינו דקה ונסו שוב.',
+        default => 'محاولات كثيرة. انتظر دقيقة وجرّب مرة ثانية.',
+    };
+@endphp
 <style>
     .bankai-profile-edit{align-self:center;display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;padding:7px 14px;border:1px solid #25454c;border-radius:20px;background:#092027;color:#aeeef4;font:700 12px Cairo,Arial,sans-serif;cursor:pointer}
     #bankaiWelcome{box-sizing:border-box;width:min(890px,calc(100% - 28px));max-width:890px;max-height:calc(100dvh - 28px);margin:auto;padding:0;border:1px solid #1c606c;border-radius:28px;background:#081116;color:#edfaff;overflow:auto;box-shadow:0 30px 110px #000a;font-family:Cairo,Arial,sans-serif}
@@ -113,7 +125,7 @@
     #bankaiWelcome .bankai-welcome-cancel{justify-self:center}
     @media(max-width:650px){#bankaiWelcome{width:calc(100% - 20px);max-height:calc(100dvh - 20px);border-radius:22px}.bankai-welcome-layout{grid-template-columns:1fr;min-height:0}.bankai-welcome-brand{padding:22px 20px 18px}.bankai-welcome-logo{width:70px;height:70px;border-radius:18px;margin-bottom:12px}.bankai-welcome-kicker{font-size:8px;margin-bottom:5px}#bankaiWelcome h2{font-size:23px;margin-bottom:5px}.bankai-welcome-intro{font-size:11px;max-width:310px}.bankai-welcome-form{padding:20px;gap:13px}.bankai-welcome-fields{grid-template-columns:1fr}.bankai-welcome-brand:before{top:-160px}.bankai-welcome-brand:after{top:-205px}}
 </style>
-<dialog id="bankaiWelcome" aria-labelledby="bankaiWelcomeTitle" aria-describedby="bankaiWelcomeIntro" dir="{{ $isRtl ? 'rtl' : 'ltr' }}" data-storage-key="ozman.restaurant.{{ $shop->id }}.customer.v1" data-registration-url="{{ route('restaurant.customer-registration.store', $shop) }}">
+<dialog id="bankaiWelcome" aria-labelledby="bankaiWelcomeTitle" aria-describedby="bankaiWelcomeIntro" dir="{{ $isRtl ? 'rtl' : 'ltr' }}" data-storage-key="ozman.restaurant.{{ $shop->id }}.customer.v1" data-csrf-url="{{ route('csrf.refresh') }}" data-registration-url="{{ route('restaurant.customer-registration.store', $shop) }}">
     <div class="bankai-welcome-layout">
         <section class="bankai-welcome-brand">
             @if($shop->logo)<img class="bankai-welcome-logo" src="{{ asset($shop->logo) }}" alt="{{ $shop->name }}">@endif

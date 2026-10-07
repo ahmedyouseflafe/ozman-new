@@ -173,14 +173,17 @@
         <div class="beauty-product-video-meta"><strong id="beautyProductVideoTitle"></strong><span>الصوت مفعّل</span></div>
     </section>
 </div>
+<style>
+.beauty-picture-frame{position:relative;min-width:0;padding:0 32px;background:#100b14}.beauty-picture-frame .product-picture{height:100%}.beauty-card-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:4;display:grid;place-items:center;width:28px;height:44px;padding:0;border:1px solid #ff80b870;border-radius:12px;background:#160d19ce;color:#fff;font-size:22px;cursor:pointer;box-shadow:0 3px 12px #0006}.beauty-card-arrow.gallery-forward{left:2px}.beauty-card-arrow.gallery-back{right:2px}.beauty-card-arrow:hover{background:#54253e}.beauty-card-arrow:focus-visible{outline:3px solid #ff80b8;outline-offset:-3px}.product-picture{touch-action:pan-y pinch-zoom}.beauty-gallery-controls button{font-size:24px}.beauty-product-image-dialog{padding:0 48px}.beauty-gallery-controls button{position:absolute;top:50%;transform:translateY(-50%);width:40px;padding:6px}.beauty-gallery-controls #beautyImagePrev{right:0}.beauty-gallery-controls #beautyImageNext{left:0}@media(max-width:720px){.beauty-picture-frame{grid-row:1/3}.beauty-product:has(.beauty-picture-frame){grid-template-columns:150px minmax(0,1fr)}.beauty-product-image-dialog{padding:0 36px}.beauty-gallery-controls button{width:32px}}
+</style>
 <div class="beauty-product-image-modal" id="beautyProductImageModal" aria-hidden="true">
     <button type="button" class="beauty-product-image-close" id="beautyProductImageClose" aria-label="إغلاق الصورة">×</button>
     <section class="beauty-product-image-dialog" role="dialog" aria-modal="true" aria-label="صورة المنتج المكبرة">
         <img id="beautyProductImageViewer" src="" alt="">
         <nav class="beauty-gallery-controls" aria-label="صور المنتج">
-            <button type="button" id="beautyImagePrev" aria-label="الصورة السابقة">السابق →</button>
+            <button type="button" id="beautyImagePrev" aria-label="الصورة السابقة">&#10095;</button>
             <output id="beautyImageCount" aria-live="polite" dir="ltr"></output>
-            <button type="button" id="beautyImageNext" aria-label="الصورة التالية">← التالي</button>
+            <button type="button" id="beautyImageNext" aria-label="الصورة التالية">&#10094;</button>
         </nav>
     </section>
 </div>
@@ -586,7 +589,41 @@
         picture.setAttribute('aria-label', 'عرض صور ' + picture.dataset.productTitle);
         if (pictures.length > 1) {
             const badge = document.createElement('span'); badge.className = 'beauty-gallery-badge';
-            badge.textContent = `${pictures.length} صور · اضغط للعرض`; picture.append(badge);
+            let selected = 0;
+            const render = delta => {
+                selected = (selected + delta + pictures.length) % pictures.length;
+                picture.querySelector('img').src = pictures[selected];
+                picture.dataset.productImage = pictures[selected];
+                badge.textContent = `${selected + 1} / ${pictures.length}`;
+            };
+            if (!picture.querySelector('img')) {
+                const image = document.createElement('img'); image.alt = picture.dataset.productTitle;
+                picture.querySelector('i')?.remove(); picture.prepend(image);
+            }
+            badge.dir = 'ltr'; picture.append(badge); render(0);
+            const frame = document.createElement('div'); frame.className = 'beauty-picture-frame';
+            picture.before(frame); frame.append(picture);
+            [-1, 1].forEach(delta => {
+                const arrow = document.createElement('button'); arrow.type = 'button';
+                arrow.className = 'beauty-card-arrow ' + (delta === 1 ? 'gallery-forward' : 'gallery-back');
+                arrow.textContent = delta === 1 ? '❮' : '❯';
+                arrow.setAttribute('aria-label', delta === 1 ? 'الصورة التالية' : 'الصورة السابقة');
+                arrow.onclick = event => { event.preventDefault(); event.stopPropagation(); render(delta); };
+                frame.append(arrow);
+            });
+            let touch = null, suppressClickUntil = 0;
+            picture.addEventListener('touchstart', event => {
+                touch = event.touches.length === 1 && !event.target.closest('button') ? {x:event.touches[0].clientX,y:event.touches[0].clientY} : null;
+            }, {passive:true});
+            picture.addEventListener('touchend', event => {
+                if (touch) {
+                    const dx = event.changedTouches[0].clientX - touch.x, dy = event.changedTouches[0].clientY - touch.y;
+                    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) { render(dx < 0 ? 1 : -1); suppressClickUntil = Date.now() + 500; }
+                }
+                touch = null;
+            }, {passive:true});
+            picture.addEventListener('touchcancel', () => { touch = null; });
+            picture.addEventListener('click', event => { if (Date.now() < suppressClickUntil) { event.preventDefault(); event.stopPropagation(); } }, true);
         }
     });
     previous.onclick = () => show(-1); next.onclick = () => show(1);
@@ -611,7 +648,7 @@
         if (!modal || !viewer || !trigger.dataset.productImage) return;
         opener = trigger;
         images = galleries[trigger.closest('.beauty-product')?.querySelector('[data-add-product]')?.dataset.id] || [trigger.dataset.productImage];
-        index = 0; show(0);
+        index = Math.max(0, images.indexOf(trigger.dataset.productImage)); show(0);
         viewer.alt = trigger.dataset.productTitle || 'صورة المنتج';
         modal.classList.add('open');
         modal.setAttribute('aria-hidden', 'false');
@@ -620,13 +657,13 @@
     };
     document.addEventListener('click', event => {
         const trigger = event.target.closest('[data-product-image]');
-        if (!trigger || event.target.closest('.beauty-video-hint')) return;
+        if (!trigger || event.target.closest('.beauty-video-hint, .beauty-card-arrow')) return;
         event.preventDefault();
         open(trigger);
     });
     document.addEventListener('keydown', event => {
         const trigger = event.target.closest?.('[data-product-image]');
-        if (trigger && (event.key === 'Enter' || event.key === ' ')) {
+        if (trigger && !event.target.closest('button') && (event.key === 'Enter' || event.key === ' ')) {
             event.preventDefault();
             open(trigger);
             return;

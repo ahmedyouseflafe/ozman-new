@@ -46,7 +46,7 @@
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 15000);
                 try {
-                    const response = await fetch(dialog.dataset.registrationUrl, {
+                    const send = () => fetch(dialog.dataset.registrationUrl, {
                         method: 'POST', credentials: 'same-origin', signal: controller.signal,
                         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
@@ -55,8 +55,23 @@
                             location_deferred: candidate.locationDeferred,
                             latitude: candidate.location?.latitude ?? null, longitude: candidate.location?.longitude ?? null }),
                     });
-                    const data = await response.json();
-                    if (!response.ok || data.registered !== true) throw new Error(ui.saveError);
+                    let response = await send();
+                    // A restored/cached page can contain a token from an expired session.
+                    // Retry only a rejected CSRF request, with the same registration secret.
+                    if (response.status === 419) {
+                        const refresh = await fetch(dialog.dataset.csrfUrl, {credentials:'same-origin', cache:'no-store', signal:controller.signal, headers:{Accept:'application/json'}});
+                        const fresh = await refresh.json();
+                        if (refresh.ok && typeof fresh.token === 'string' && fresh.token) {
+                            document.querySelector('meta[name="csrf-token"]').content = fresh.token;
+                            response = await send();
+                        }
+                    }
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok || data.registered !== true) {
+                        const validation = response.status === 422 ? Object.values(data.errors || {}).flat().find(message => typeof message === 'string') : null;
+                        const message = validation || (response.status === 419 ? ui.sessionError : response.status === 429 ? ui.rateError : `${ui.saveError} (${response.status})`);
+                        const error = new Error(message); error.userMessage = message; throw error;
+                    }
                 } finally { clearTimeout(timeout); }
             });
             syncQueue = operation;
@@ -207,8 +222,8 @@
                 await saveRegistration(candidate);
                 profile = { ...candidate, registered: true };
                 applyToOrder();
-            } catch (_) {
-                status('bankaiWelcomeMessage', ui.saveError, 'error');
+            } catch (error) {
+                status('bankaiWelcomeMessage', error.userMessage || ui.saveError, 'error');
                 return;
             } finally {
                 saving = false;
