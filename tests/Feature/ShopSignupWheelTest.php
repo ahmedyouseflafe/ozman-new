@@ -11,6 +11,21 @@ class ShopSignupWheelTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_arabic_customer_can_register_without_location_and_receive_active_wheel(): void
+    {
+        $shop = $this->shop('bankai-sushi');
+        $this->wheel($shop);
+        $payload = ['registration_token'=>str_repeat('d',64), 'name'=>'محمد',
+            'whatsapp'=>'٠٥٩١٢٣٤٥٦٧', 'address'=>'المغار', 'location_deferred'=>true,
+            'latitude'=>null, 'longitude'=>null];
+        $this->postJson(route('restaurant.customer-registration.store',$shop),$payload)
+            ->assertOk()->assertJsonPath('registered',true);
+        $this->postJson(route('restaurant.customer-registration.store',$shop),$payload)->assertOk();
+        $this->assertDatabaseCount('visitor_registrations',1);
+        $this->assertDatabaseCount('shop_signup_rewards',1);
+        $this->assertDatabaseHas('visitor_registrations',['name'=>'محمد','phone'=>'0591234567','latitude'=>null,'longitude'=>null]);
+    }
+
     public function test_owner_can_configure_own_wheel_without_changing_global_or_other_shop_wheels(): void
     {
         $shop = $this->shop('bankai-sushi'); $other = $this->shop('other');
