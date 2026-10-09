@@ -19,7 +19,9 @@ export function initPhotoTryOn(root = document) {
     const resetGarment=()=>{fileVersion++;garment=null;if(garmentUrl)URL.revokeObjectURL(garmentUrl);garmentUrl=null;$('photoTryGarmentFile').value='';$('photoTryGarment').src=originalGarment;$('photoTryOriginalGarment').hidden=true;};
     const close=()=>{reset();resetGarment();$('photoTryPersonFile').value='';layer.classList.remove('open');opener?.focus();};
     const open=(url,id,button)=>{reset();opener=button;productId=id||null;originalGarment=url;resetGarment();
-        $('photoTryExample').open=true;layer.classList.add('open');status('افتح الكاميرا، ثم اضغط التقاط بعد 5 ثوانٍ.');$('photoTryCamera').focus();};
+        $('photoTryExample').open=true;layer.classList.add('open');status('افتح الكاميرا، ثم اضغط التقاط بعد 5 ثوانٍ.');
+        layer.querySelector('.photo-try-card').scrollTop=0;
+        layer.querySelector('[data-close="tryOnLayer"]').focus({preventScroll:true});};
     const startCamera=async()=>{
         reset();const run=generation;$('photoTryCamera').disabled=true;status('اسمح باستخدام الكاميرا…');
         try {

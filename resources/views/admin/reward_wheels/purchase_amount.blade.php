@@ -513,6 +513,13 @@
                 grid-column: span 2
             }
         }
+        /* Size fields to the editor panel, not to the full viewport. */
+        .segment-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+        .segment-row > *{min-width:0}
+        .segment-row .file-picker{grid-column:1 / -1}
+        .segment-row .switch,.segment-row.is-non-gift .switch,.segment-row .btn.icon{grid-column:auto;grid-row:auto}
+        .segment-row input,.segment-row select{width:100%;min-width:0}
+        @media(max-width:420px){.segment-row{grid-template-columns:minmax(0,1fr)}}
     </style>
 </head>
 

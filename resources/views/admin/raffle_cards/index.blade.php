@@ -159,6 +159,10 @@
         @media(max-width:900px){ .main{margin-right:0;} .content{padding:20px 14px 90px;} .page-head,.panel-head{flex-direction:column; align-items:stretch;} .live-actions{width:100%;} .live-actions .btn{flex:1 1 180px;min-width:0;} h1{font-size:28px;} }
         @media(max-width:640px){ .booklet-top{grid-template-columns:1fr;} .booklet-gift-row{grid-template-columns:38px minmax(0,1fr) 82px;}.booklet-gift-row .booklet-image-field{grid-column:2 / -1;}.booklet-gifts-head{align-items:flex-start;flex-direction:column;}.booklet-total{min-width:0;} }
         @media(max-width:420px){ .live-actions{display:grid;grid-template-columns:1fr;} .live-actions .btn{width:100%;white-space:normal;} }
+        @media(max-width:1100px){
+            .form-grid > [style*="grid-column"]{grid-column:1 / -1!important}
+            .form-grid > *{min-width:0}
+        }
     </style>
 </head>
 

@@ -176,6 +176,19 @@
 <style>
 .beauty-picture-frame{position:relative;min-width:0;padding:0 32px;background:#100b14}.beauty-picture-frame .product-picture{height:100%}.beauty-card-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:4;display:grid;place-items:center;width:28px;height:44px;padding:0;border:1px solid #ff80b870;border-radius:12px;background:#160d19ce;color:#fff;font-size:22px;cursor:pointer;box-shadow:0 3px 12px #0006}.beauty-card-arrow.gallery-forward{left:2px}.beauty-card-arrow.gallery-back{right:2px}.beauty-card-arrow:hover{background:#54253e}.beauty-card-arrow:focus-visible{outline:3px solid #ff80b8;outline-offset:-3px}.product-picture{touch-action:pan-y pinch-zoom}.beauty-gallery-controls button{font-size:24px}.beauty-product-image-dialog{padding:0 48px}.beauty-gallery-controls button{position:absolute;top:50%;transform:translateY(-50%);width:40px;padding:6px}.beauty-gallery-controls #beautyImagePrev{right:0}.beauty-gallery-controls #beautyImageNext{left:0}@media(max-width:720px){.beauty-picture-frame{grid-row:1/3}.beauty-product:has(.beauty-picture-frame){grid-template-columns:150px minmax(0,1fr)}.beauty-product-image-dialog{padding:0 36px}.beauty-gallery-controls button{width:32px}}
 </style>
+<style>
+@media(max-width:520px){
+ .beauty-product,.beauty-product:has(.beauty-picture-frame){display:flex;flex-direction:column;min-width:0}
+ .beauty-picture-frame{width:100%;grid-row:auto;padding-inline:32px}
+ .beauty-product .product-picture{width:100%;aspect-ratio:1/1.15;min-height:0}
+ .beauty-picture-frame .product-picture{height:auto}
+ .beauty-product .product-picture img{object-fit:contain}
+ .beauty-product .product-body{width:100%;min-width:0;padding:12px}
+ .beauty-product .product-name{overflow-wrap:anywhere}
+ .beauty-product .product-bottom{flex-wrap:wrap;gap:10px}
+ .beauty-product .add-beauty-cart{flex:1;min-height:40px;min-width:96px}
+}
+</style>
 <div class="beauty-product-image-modal" id="beautyProductImageModal" aria-hidden="true">
     <button type="button" class="beauty-product-image-close" id="beautyProductImageClose" aria-label="إغلاق الصورة">×</button>
     <section class="beauty-product-image-dialog" role="dialog" aria-modal="true" aria-label="صورة المنتج المكبرة">
