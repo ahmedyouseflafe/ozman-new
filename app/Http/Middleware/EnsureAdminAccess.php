@@ -69,6 +69,14 @@ class EnsureAdminAccess
         }
 
         if ($user->isAgent() || $user->isDistributor()) {
+            // Recover old dashboard bookmarks without granting order access.
+            if ((! $user->hasAssignedPermissions() || ! $user->canAccessRouteName('front-orders.index'))
+                && $request->route()?->getName() === 'front-orders.index'
+                && $request->isMethod('GET')
+                && ! $request->expectsJson()) {
+                return redirect()->route('dashboard');
+            }
+
             if ($user->hasAssignedPermissions()) {
                 abort_unless($user->canAccessRouteName($request->route()?->getName()), 403);
             } else {
