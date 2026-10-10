@@ -20,23 +20,22 @@ class DistributorDashboardEntryTest extends TestCase
         return $user;
     }
 
-    public function test_login_without_custom_permissions_lands_on_distributor_orders(): void
+    public function test_empty_permissions_login_lands_on_access_notice_not_orders(): void
     {
         $user = $this->distributor();
         $this->withSession(['url.intended' => route('front-orders.index')])
             ->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])
-            ->assertRedirect(route('front-orders.index'));
-        $this->get(route('front-orders.index'))->assertOk();
-        $this->get(route('dashboard'))->assertRedirect(route('front-orders.index'));
+            ->assertRedirect(route('dashboard'));
+        $this->get(route('front-orders.index'))->assertForbidden();
+        $this->get(route('dashboard'))->assertOk()->assertViewIs('admin.access_pending');
     }
 
-    public function test_orders_link_opens_directly_without_redirect_or_permission_mutation(): void
+    public function test_empty_permissions_deny_orders_and_catalog_without_grant_mutation(): void
     {
         $user = $this->distributor();
-        $this->actingAs($user)->get(route('front-orders.index'))->assertOk();
-        $this->get(route('dashboard'))->assertRedirect(route('front-orders.index'));
-        $this->get(route('products'))->assertOk();
-        $this->getJson(route('front-orders.index'))->assertOk();
+        $this->actingAs($user)->get(route('front-orders.index'))->assertForbidden();
+        $this->get(route('products'))->assertForbidden();
+        $this->getJson(route('front-orders.index'))->assertForbidden();
         $this->assertDatabaseCount('employee_permissions', 0);
     }
 
@@ -58,9 +57,10 @@ class DistributorDashboardEntryTest extends TestCase
         $this->getJson(route('front-orders.index'))->assertForbidden();
     }
 
-    public function test_default_distributor_orders_and_statistics_are_isolated_even_when_searching(): void
+    public function test_read_only_distributor_orders_and_statistics_are_isolated_even_when_searching(): void
     {
         $user = $this->distributor();
+        $user->employeePermissions()->create(['permission' => 'front_orders.own.view']);
         $profile = $user->distributorProfiles()->firstOrFail();
         $other = Distributor::create(['shop_id' => $profile->shop_id, 'name' => 'Other distributor', 'is_active' => true]);
         $marketer = DistributorMarketer::create(['distributor_id' => $profile->id, 'name' => 'Own marketer', 'tracking_code' => 'entry-marketer', 'is_active' => true]);
@@ -76,8 +76,27 @@ class DistributorDashboardEntryTest extends TestCase
         $response = $this->actingAs($user)->get(route('front-orders.index'))->assertOk();
         $this->assertEqualsCanonicalizing([$direct->id, $referred->id], $response->viewData('orders')->pluck('id')->all());
         $response->assertViewHas('totalCount', 2)->assertDontSee('FOREIGN-ORDER')->assertDontSee('UNASSIGNED-ORDER');
+        $this->assertStringNotContainsString('<form class="status-form"', $response->getContent());
+        $response->assertDontSee('href="'.route('products.create').'"', false);
+        $this->get(route('products'))->assertForbidden();
+        $this->patch(route('front-orders.status', $direct), ['status' => 'completed'])->assertForbidden();
         $this->get(route('front-orders.index', ['search' => $foreign->order_number]))
             ->assertOk()->assertViewHas('orders', fn ($orders) => $orders->isEmpty());
         $this->patch(route('front-orders.status', $foreign), ['status' => 'completed'])->assertForbidden();
+    }
+
+    public function test_clearing_saved_permissions_revokes_access_and_editor_has_simple_presets(): void
+    {
+        $user = $this->distributor();
+        $profile = $user->distributorProfiles()->firstOrFail();
+        $admin = User::factory()->create(['role' => 'super_admin', 'is_active' => true]);
+        $this->actingAs($admin)->get(route('distributors.permissions.edit', $profile))
+            ->assertOk()->assertSee('data-permission-preset="orders"', false)->assertSee('front_orders.own.view');
+        $this->put(route('distributors.permissions.update', $profile), ['permissions' => ['front_orders.own.view']])->assertSessionHasNoErrors();
+        $this->actingAs($user->fresh())->get(route('front-orders.index'))->assertOk();
+        $this->actingAs($admin)->put(route('distributors.permissions.update', $profile), ['permissions' => []])->assertSessionHasNoErrors();
+        $this->actingAs($user->fresh())->get(route('front-orders.index'))->assertForbidden();
+        $this->get(route('products'))->assertForbidden();
+        $this->get(route('dashboard'))->assertOk()->assertViewIs('admin.access_pending');
     }
 }

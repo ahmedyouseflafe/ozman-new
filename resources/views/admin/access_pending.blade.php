@@ -1,0 +1,4 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>صلاحيات الحساب</title>
+<style>body{margin:0;background:#100c19;color:#eee;font:18px/1.9 Arial,sans-serif;display:grid;place-items:center;min-height:100vh}main{box-sizing:border-box;width:min(540px,calc(100% - 32px));padding:32px;border:1px solid #514363;border-radius:20px;background:#1b1427}h1{font-size:25px;color:#00d5eb}button{font:inherit;border:1px solid #00d5eb;border-radius:10px;background:#00d5eb;color:#102025;padding:8px 20px;cursor:pointer}</style></head>
+<body><main><h1>تم تسجيل الدخول بنجاح</h1><p>لا توجد صفحة متاحة ضمن صلاحيات حسابك الحالية. اطلب من الإدارة تحديد الصلاحيات المطلوبة، مثل «مشاهدة طلباته فقط».</p><form method="post" action="{{ route('logout') }}">@csrf<button type="submit">تسجيل الخروج</button></form></main></body></html>

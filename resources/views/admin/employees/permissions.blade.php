@@ -41,6 +41,14 @@
                     </div>
                 @endif
 
+                @if($distributorMode ?? false)
+                    <section class="hero" style="flex-wrap:wrap;align-items:center">
+                        <div><strong>إعداد سريع</strong><p>الاختيار يجهّز الصلاحيات؛ اضغط «حفظ الصلاحيات» لتطبيقه.</p></div>
+                        <button type="button" class="btn btn-blue" data-permission-preset="orders">مشاهدة طلباته فقط</button>
+                        <button type="button" class="btn btn-outline" data-permission-preset="catalog">طلباته + مشاهدة المنتجات</button>
+                        <button type="button" class="btn btn-outline" data-permission-preset="none">بدون صلاحيات</button>
+                    </section>
+                @endif
                 <div class="toolbar">
                     <input class="search" id="permissionSearch" type="search" placeholder="ابحث داخل الصلاحيات...">
                     <span class="selected-summary"><span id="selectedCount">0</span> صلاحية محددة</span>
@@ -59,6 +67,9 @@
                         ];
                     @endphp
                     @foreach($permissionGroups as $groupKey => $group)
+                        @if(($distributorMode ?? false) && $groupKey !== 'distributor_basic')
+                            <details data-advanced-permissions><summary style="cursor:pointer;padding:14px;border:1px solid #46555d;border-radius:12px">{{ $group['label'] }} — خيارات إضافية</summary>
+                        @endif
                         <article class="group" data-permission-group>
                             <div class="group-head">
                                 <span class="group-icon"><i class="ti {{ $groupIcons[$groupKey] ?? 'ti-lock' }}"></i></span>
@@ -86,6 +97,7 @@
                                 @endforeach
                             </div>
                         </article>
+                        @if(($distributorMode ?? false) && $groupKey !== 'distributor_basic')</details>@endif
                     @endforeach
                 </section>
                 <div class="empty-search" id="emptySearch"><i class="ti ti-search-off"></i> لا توجد صلاحيات مطابقة للبحث.</div>
@@ -130,8 +142,15 @@
             group.querySelector('[data-group-clear]')?.addEventListener('click', () => setChecks(groupChecks, false));
         });
         checks.forEach((check) => check.addEventListener('change', updateCounts));
+        document.querySelectorAll('[data-permission-preset]').forEach(button => button.addEventListener('click', () => {
+            const keys = button.dataset.permissionPreset === 'orders' ? ['front_orders.own.view']
+                : button.dataset.permissionPreset === 'catalog' ? ['front_orders.own.view', 'products.view', 'products.preview', 'categories.view'] : [];
+            checks.forEach(check => check.checked = keys.includes(check.value));
+            updateCounts();
+        }));
         search?.addEventListener('input', () => {
             const query = search.value.trim().toLowerCase();
+            document.querySelectorAll('[data-advanced-permissions]').forEach(panel => panel.open = query.length > 0);
             let visibleGroups = 0;
             groups.forEach((group) => {
                 const items = [...group.querySelectorAll('[data-permission-item]')];

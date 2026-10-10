@@ -728,7 +728,7 @@
                                             <span class="badge">{{ $order->payment_status }}</span>
                                         </td>
                                         <td>
-                                            @if($isMarketerView)
+                                            @if($isMarketerView || ! auth()->user()->canAccessRouteName('front-orders.status'))
                                                 <span class="badge {{ $order->statusClass() }}" data-status-badge>{{ $order->statusLabel() }}</span>
                                             @else
                                             <form class="status-form" method="POST" action="{{ route('front-orders.status', $order) }}" data-status-form>

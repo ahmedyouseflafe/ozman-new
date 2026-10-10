@@ -105,7 +105,8 @@ class User extends Authenticatable
 
     public function hasAssignedPermissions(): bool
     {
-        if ($this->isEmployee()) {
+        // An empty distributor grant list means no access, not legacy defaults.
+        if ($this->isEmployee() || $this->isDistributor()) {
             return true;
         }
 

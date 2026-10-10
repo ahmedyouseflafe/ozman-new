@@ -120,7 +120,6 @@ class EnsureAdminAccess
                 $routeName === 'dashboard'
                 || $routeName === 'dashboard.main'
                 || $routeName === 'translations.suggest'
-                || ($user?->isDistributor() && $routeName === 'front-orders.index')
                 || str_starts_with($routeName, 'categories')
                 || ($user?->isAgent() && str_starts_with($routeName, 'products'))
                 || in_array($routeName, $readOnlyProductRoutes, true)

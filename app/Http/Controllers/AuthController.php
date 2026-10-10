@@ -271,7 +271,7 @@ class AuthController extends Controller
         if ($user?->isAgent() || $user?->isDistributor()) {
             // Match the default role policy before evaluating custom grants.
             if (! $user->hasAssignedPermissions()) {
-                return redirect()->route($user->isDistributor() ? 'front-orders.index' : 'products');
+                return redirect()->route('products');
             }
 
             foreach (['front-orders.index', 'raffle-cards.index', 'distributors.marketers.index', 'products', 'categories', 'dashboard.main'] as $routeName) {
@@ -280,7 +280,7 @@ class AuthController extends Controller
                 }
             }
 
-            return view('admin.dashboard');
+            return view($user->isDistributor() ? 'admin.access_pending' : 'admin.dashboard');
         }
 
         if ($user?->isMarketer()) {
@@ -360,7 +360,9 @@ class AuthController extends Controller
 
         return $dashboard instanceof RedirectResponse
             ? $dashboard
-            : redirect()->intended(route('dashboard'));
+            : ($request->user()?->isDistributor()
+                ? redirect()->route('dashboard')
+                : redirect()->intended(route('dashboard')));
     }
 
     private function safeMerchantRedirect(?string $redirect): string

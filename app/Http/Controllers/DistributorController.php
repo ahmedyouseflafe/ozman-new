@@ -484,14 +484,30 @@ class DistributorController extends Controller
 
         $user->load('employeePermissions');
 
+        $groups = config('employee_permissions.groups', []);
+        $basicKeys = ['front_orders.own.view', 'front_orders.view', 'products.view', 'products.preview', 'categories.view'];
+        $basic = [];
+        foreach ($groups as &$group) {
+            foreach ($basicKeys as $key) {
+                if (isset($group['permissions'][$key])) {
+                    $basic[$key] = $group['permissions'][$key];
+                    unset($group['permissions'][$key]);
+                }
+            }
+        }
+        unset($group);
+        $groups = ['distributor_basic' => ['label' => 'صلاحيات الموزع الأساسية', 'description' => 'ابدأ بالمشاهدة فقط. صلاحية تعديل الطلبات منفصلة وواضحة.', 'permissions' => collect($basicKeys)->filter(fn ($key) => isset($basic[$key]))->mapWithKeys(fn ($key) => [$key => $basic[$key]])->all()]]
+            + array_filter($groups, fn ($group) => ! empty($group['permissions']));
+
         return view('admin.employees.permissions', [
             'employee' => $user,
-            'permissionGroups' => config('employee_permissions.groups', []),
+            'permissionGroups' => $groups,
+            'distributorMode' => true,
             'selectedPermissions' => $user->employeePermissions->pluck('permission')->all(),
             'pageTitle' => 'صلاحيات الموزع',
             'headerTitle' => 'صلاحيات الموزع',
             'subjectLabel' => 'الموزع',
-            'description' => 'حدد الصفحات والعمليات التي يستطيع الموزع الوصول إليها داخل لوحة التحكم.',
+            'description' => 'اختر ما تسمح به فقط. حفظ بدون تحديد أي صلاحية يمنع الوصول إلى صفحات الإدارة والطلبات. الطلبات تبقى محصورة بالموزع ومسوقيه.',
             'formAction' => route('distributors.permissions.update', $distributor),
             'backUrl' => route('distributors'),
         ]);
@@ -508,10 +524,12 @@ class DistributorController extends Controller
             'permissions.*' => ['string', Rule::in($this->validPermissionKeys())],
         ]);
 
-        $user->employeePermissions()->delete();
-        foreach (array_unique($data['permissions'] ?? []) as $permission) {
-            $user->employeePermissions()->create(['permission' => $permission]);
-        }
+        DB::transaction(function () use ($user, $data) {
+            $user->employeePermissions()->delete();
+            foreach (array_unique($data['permissions'] ?? []) as $permission) {
+                $user->employeePermissions()->create(['permission' => $permission]);
+            }
+        });
 
         return redirect()
             ->route('distributors')
