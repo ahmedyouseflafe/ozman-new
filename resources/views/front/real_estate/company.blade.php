@@ -60,6 +60,12 @@
             ? 'https://www.youtube.com/embed/'.$match[1].'?mute=1&playsinline=1&rel=0' : null;
     };
     $categoryIcons = ['home' => 'ti-home', 'bath' => 'ti-bath', 'shield' => 'ti-shield', 'caravan' => 'ti-caravan', 'tools' => 'ti-tools'];
+    $design = match ($locale) {
+        'en' => ['title'=>'A space that fits your life.', 'intro'=>'Explore mobile homes, caravans and building solutions. Find your starting point, then discuss the details with the company.', 'explore'=>'Explore the collection', 'request'=>'Plan your project', 'collection'=>'Find your next space', 'hint'=>'Choose a category to explore the available models.', 'details'=>'Model details', 'brief'=>'Tell us what you have in mind', 'brief_hint'=>'Share your intended use, approximate dimensions and location to start a conversation about specifications and pricing.', 'use'=>'Building type', 'size'=>'Approximate dimensions / area', 'city'=>'Installation location', 'notes'=>'Your requirements', 'send'=>'Discuss my project on WhatsApp', 'faq'=>'Before you choose', 'q1'=>'What determines the price?', 'a1'=>'Ask the company for a quote based on dimensions, layout and finishes, and clarify whether transport and installation are included.', 'q2'=>'What should I prepare about the site?', 'a2'=>'Share the location, available space and access conditions. Confirm site preparation and permit requirements with the company and the relevant local authority.', 'q3'=>'Can I customize the layout?', 'a3'=>'Discuss your preferred rooms, openings and finishes with the company to confirm the options available for your model.'],
+        'he' => ['title'=>'מרחב שמתאים לחיים שלכם.', 'intro'=>'גלו מבנים ניידים, קרוואנים ופתרונות בנייה. בחרו כיוון והמשיכו לתכנון הפרטים עם החברה.', 'explore'=>'גלו את הדגמים', 'request'=>'תכנון הפרויקט', 'collection'=>'מוצאים את המרחב הבא', 'hint'=>'בחרו קטגוריה לצפייה בדגמים הזמינים.', 'details'=>'פרטי הדגם', 'brief'=>'ספרו לנו על הפרויקט', 'brief_hint'=>'שתפו את השימוש הרצוי, המידות המשוערות והמיקום כדי לברר מפרט ומחיר.', 'use'=>'סוג המבנה', 'size'=>'מידות או שטח משוערים', 'city'=>'מיקום ההתקנה', 'notes'=>'דרישות נוספות', 'send'=>'בירור הפרויקט ב-WhatsApp', 'faq'=>'לפני שבוחרים', 'q1'=>'מה קובע את המחיר?', 'a1'=>'בקשו הצעה לפי מידות, חלוקה וגמר, ובררו האם הובלה והתקנה כלולות.', 'q2'=>'מה צריך לברר לגבי השטח?', 'a2'=>'שתפו מיקום, שטח פנוי ותנאי גישה. בררו הכנת שטח והיתרים מול החברה והרשות המקומית.', 'q3'=>'אפשר לשנות את החלוקה?', 'a3'=>'שתפו את החברה בחדרים, פתחים וגמר רצויים כדי לבדוק אפשרויות לדגם שבחרתם.'],
+        default => ['title'=>'مساحة جديدة. على قياس حياتك.', 'intro'=>'بيوت متنقلة، كرافانات وحلول بناء. اكتشف الخيارات، وحدد فكرتك، واحكي مع الشركة عن التفاصيل اللي بتناسبك.', 'explore'=>'اكتشف النماذج', 'request'=>'خطّط لمشروعك', 'collection'=>'أي مساحة بتناسبك؟', 'hint'=>'اختار القسم وتعرّف على النماذج المتاحة.', 'details'=>'تفاصيل النموذج', 'brief'=>'خلّينا نعرف شو ببالك', 'brief_hint'=>'حدد الاستخدام والمقاس التقريبي والموقع، وابدأ محادثة مع الشركة حول المواصفات والسعر.', 'use'=>'نوع المبنى', 'size'=>'المقاس أو المساحة التقريبية', 'city'=>'موقع التركيب', 'notes'=>'متطلباتك وملاحظاتك', 'send'=>'ناقش مشروعي على واتساب', 'faq'=>'قبل ما تختار', 'q1'=>'شو اللي بحدد السعر؟', 'a1'=>'اطلب عرض سعر حسب المقاس والتقسيم والتشطيبات، وتأكد إذا النقل والتركيب داخلين بالسعر.', 'q2'=>'شو لازم أجهز عن الموقع؟', 'a2'=>'شارك الموقع والمساحة المتاحة وطريقة الوصول. اسأل الشركة والجهة المحلية المختصة عن تجهيز الأرض والتصاريح المطلوبة.', 'q3'=>'بقدر أغيّر التقسيم؟', 'a3'=>'احكي مع الشركة عن الغرف والفتحات والتشطيبات اللي بدك إياها، وتأكد من الخيارات المتاحة للنموذج اللي اخترته.'],
+    };
+    $projectImage = $shop->banner ? $mediaUrl($shop->banner) : $categories->first()?->imageUrl();
 @endphp
 <!doctype html>
 <html lang="{{ $locale }}" dir="{{ $rtl ? 'rtl' : 'ltr' }}">
@@ -71,16 +77,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-    <style>
-        :root{--cyan:#08def4;--green:#27dd86;--bg:#05070a;--card:#10151a;--border:rgba(150,174,190,.18);--muted:#9ca9b4}*{box-sizing:border-box}html{width:100%;max-width:100%;overflow-x:hidden;scroll-behavior:smooth}body{width:100%;max-width:100%;margin:0;overflow-x:hidden;background:radial-gradient(circle at 85% 5%,rgba(8,222,244,.11),transparent 27%),radial-gradient(circle at 8% 30%,rgba(101,42,255,.1),transparent 25%),var(--bg);color:#fff;font-family:Cairo,Arial,sans-serif}button{font:inherit}.shell{width:min(1380px,calc(100% - 32px));max-width:100%;margin:auto;padding:20px 0 55px}
-        .company-hero-layout{display:grid;max-width:100%;grid-template-columns:minmax(0,1fr) minmax(310px,380px);align-items:stretch;gap:16px;direction:ltr}.company-display-screen,.hero{position:relative;min-width:0;min-height:310px;overflow:hidden;border:1px solid var(--border);border-radius:28px;box-shadow:0 20px 60px rgba(0,0,0,.28)}.company-display-screen{background:linear-gradient(145deg,#071318,#020608 70%);isolation:isolate}.company-display-screen:before{content:"";position:absolute;z-index:3;inset:0;border-radius:inherit;border:5px solid rgba(2,8,11,.86);box-shadow:inset 0 0 0 1px rgba(8,222,244,.15);pointer-events:none}.company-display-slider,.company-display-slide{position:absolute;inset:0}.company-display-slide{opacity:0;pointer-events:none;background:#020607;transition:opacity .55s ease}.company-display-slide.active{opacity:1;pointer-events:auto}.company-display-slide img,.company-display-slide video,.company-display-slide iframe{display:block;width:100%;max-width:100%;height:100%;border:0;object-fit:cover}.company-display-slide.is-logo img{object-fit:contain;padding:22px}.company-display-shade{position:absolute;z-index:1;inset:0;background:linear-gradient(180deg,rgba(1,7,9,.04),transparent 58%,rgba(1,7,9,.32));pointer-events:none}
-        .hero{background:linear-gradient(110deg,rgba(15,18,28,.96),rgba(5,25,28,.9));direction:rtl}.hero:after{content:"";position:absolute;width:360px;height:360px;left:-100px;top:-180px;border-radius:50%;background:rgba(8,222,244,.12);filter:blur(70px);pointer-events:none}.hero-tools{position:absolute;z-index:4;top:18px;right:20px;display:flex;align-items:center;gap:10px}.hero .public-language-switcher{padding:4px}.hero .public-language-switcher a{padding:5px 7px;font-size:10px}.ozman-directory-link{min-height:43px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:5px 9px;border:1px solid rgba(8,222,244,.24);border-radius:13px;background:rgba(3,10,14,.9);color:#d8e7ed;font-size:10px;font-weight:800;text-decoration:none;white-space:nowrap}.ozman-directory-link img{width:30px;height:30px;object-fit:contain;border-radius:9px}.ozman-directory-link:hover{color:var(--cyan);border-color:var(--cyan)}
-        .brand{position:absolute;z-index:2;right:30px;bottom:24px;display:flex;align-items:center;gap:25px;direction:rtl}.logo-stack{display:flex;flex-direction:column;align-items:center;gap:9px}.shop-logo{display:block;width:166px;height:166px;border:2px solid var(--cyan);border-radius:34px;background:#020607;object-fit:contain;box-shadow:0 0 28px rgba(8,222,244,.3)}.story-trigger{border:0;background:none;padding:0;color:inherit}.story-trigger.has-story{cursor:pointer}.story-trigger.has-story .shop-logo{border:4px solid var(--green)}.story-trigger:focus-visible{outline:3px solid #fff;outline-offset:5px}.shop-name{max-width:190px;color:#fff;font-size:12px;text-align:center;line-height:1.4}.availability{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border:1px solid var(--green);border-radius:999px;background:rgba(39,221,134,.09);color:var(--green);font-size:11px;font-weight:900}.availability:after{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 12px currentColor}.main-contact-btn{display:inline-flex;min-height:36px;align-items:center;justify-content:center;gap:6px;padding:6px 11px;border-radius:11px;background:#25d366;color:#03150c;font-size:10px;font-weight:900;text-decoration:none}.main-contact-btn i{font-size:16px}.social-links{display:grid;grid-template-columns:repeat(2,38px);gap:8px}.social-link{width:38px;height:38px;display:grid;place-items:center;border:1px solid rgba(8,222,244,.24);border-radius:50%;background:rgba(3,12,17,.9);color:#dceaf0;font-size:18px;text-decoration:none}.social-link:hover,.social-link:focus-visible{border-color:var(--cyan);color:var(--cyan);outline:none}
-        .layout{max-width:100%;margin-top:13px;padding-top:13px;border-top:1px solid var(--border)}.service-panel{min-height:390px;max-width:100%;padding:12px;border:1px solid var(--border);border-radius:28px;background:linear-gradient(145deg,rgba(18,23,27,.96),rgba(11,16,18,.98))}.service-browser{display:grid;max-width:100%;grid-template-columns:minmax(0,1fr) 120px;gap:12px;direction:ltr}.category-rail{grid-column:2;grid-row:1;display:flex;flex-direction:column;align-items:center;gap:12px;position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto;padding:6px 3px;scrollbar-width:thin}.category-tab{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;min-width:0;padding:6px 3px;border:1px solid transparent;border-radius:17px;background:none;color:var(--muted);font-size:11px;font-weight:900;line-height:1.35;cursor:pointer}.category-tab.active{color:#fff;background:rgba(8,222,244,.07);border-color:rgba(8,222,244,.25)}.category-tab img,.category-icon{width:72px;height:72px;display:grid;place-items:center;border:2px solid rgba(140,165,175,.3);border-radius:50%;object-fit:cover;background:#080d10;color:var(--cyan);font-size:28px}.category-tab.active img,.category-tab.active .category-icon{border-color:var(--cyan);box-shadow:0 0 17px rgba(8,222,244,.38)}.category-tab span:last-child{max-width:105px;overflow-wrap:anywhere;text-align:center}
-        .category-content{grid-column:1;grid-row:1;min-width:0;max-width:100%;position:relative;overflow:hidden;border-radius:20px;direction:rtl}.category-content:before{content:"";position:absolute;inset:0;z-index:0;background:radial-gradient(circle at 35% 20%,rgba(8,222,244,.09),transparent 50%);pointer-events:none}.category-background{position:absolute;inset:0;width:100%;height:100%;min-height:420px;object-fit:cover;opacity:.11;pointer-events:none}.category-pane{position:relative;z-index:1;min-width:0;min-height:350px}.category-pane[hidden]{display:none!important}.services{display:grid;max-width:100%;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;padding:8px}.service-card{position:relative;min-width:0;max-width:100%;overflow:hidden;padding:9px;border:1px solid rgba(150,174,190,.18);border-radius:20px;background:rgba(15,20,24,.94);box-shadow:0 10px 30px rgba(0,0,0,.2)}.service-image{display:grid;place-items:center;width:100%;aspect-ratio:1.12;overflow:hidden;border:1px solid rgba(8,222,244,.22);border-radius:14px;background:#05090b;color:var(--cyan);font-size:54px}.service-image img{display:block;width:100%;max-width:100%;height:100%;object-fit:cover}.service-body{padding:10px 5px 3px}.service-body h2{margin:0 0 5px;overflow-wrap:anywhere;font-size:16px;line-height:1.5}.service-body p{min-height:44px;margin:0;overflow-wrap:anywhere;color:var(--muted);font-size:12px;line-height:1.7}.service-bottom{margin-top:12px;padding-top:9px;border-top:1px solid var(--border)}.service-contact{display:inline-flex;width:100%;min-height:36px;align-items:center;justify-content:center;gap:5px;padding:6px 10px;border-radius:10px;background:var(--cyan);color:#001318;font-size:11px;font-weight:900;text-decoration:none;text-align:center}.service-contact:hover{background:#49eaff}.service-contact.is-call{border:1px solid var(--cyan);background:rgba(8,222,244,.13);color:var(--cyan)}.empty{display:flex;align-items:center;justify-content:center;gap:10px;min-height:240px;color:var(--muted);font-weight:700}.empty i{font-size:26px;color:var(--cyan)}
-        @media(max-width:720px){.shell{width:calc(100% - 18px);padding-top:9px}.company-hero-layout{grid-template-columns:minmax(0,1fr) 148px;gap:7px}.company-display-screen,.hero{min-height:390px;border-radius:21px}.hero-tools{top:0;right:0;width:100%;flex-direction:column;align-items:stretch;gap:7px}.hero .public-language-switcher{width:100%;justify-content:center;padding:3px}.hero .public-language-switcher a{padding:4px 5px;font-size:8px}.ozman-directory-link{width:100%;min-height:35px;padding:4px 5px;font-size:8px}.ozman-directory-link img{width:24px;height:24px}.brand{top:86px;right:2px;bottom:2px;width:calc(100% - 4px);flex-direction:column;justify-content:flex-start;gap:6px}.logo-stack{width:100%;align-items:stretch}.story-trigger,.shop-logo{width:100%}.shop-logo{height:auto;aspect-ratio:1;border-radius:25px}.shop-name{max-width:100%;font-size:9px}.availability{align-self:center;padding:6px 8px;font-size:9px}.main-contact-btn{width:100%;min-height:34px;padding:5px;font-size:8px}.social-links{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;width:100%}.social-link{width:28px;height:28px;font-size:14px}.layout{margin-top:7px;padding-top:7px}.service-panel{padding:7px;border-radius:20px}.service-browser{grid-template-columns:minmax(0,1fr) 100px;gap:3px}.category-rail{top:8px;gap:8px}.category-tab img,.category-icon{width:57px;height:57px;font-size:24px}.category-tab span:last-child{max-width:90px;font-size:10px}.services{grid-template-columns:1fr;gap:12px;padding:4px}.service-body h2{font-size:14px}}
-        @media(max-width:390px){.company-hero-layout{grid-template-columns:minmax(0,1fr) 135px}.service-browser{grid-template-columns:minmax(0,1fr) 82px}.category-tab img,.category-icon{width:48px;height:48px}.category-tab span:last-child{font-size:9px}.service-card{padding:6px}.service-body{padding-inline:3px}.hero .public-language-switcher a{padding-inline:4px;font-size:7px}.main-contact-btn{font-size:7.5px}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.company-display-slide{transition:none}}
-    </style>
+    @include('front.real_estate._company_design')
 </head>
 <body>
 <main class="shell">
@@ -97,12 +94,18 @@
                         @else<img src="{{ $mediaUrl($item->media) }}" alt="{{ $item->title ?: $shop->name }}">@endif
                     </article>
                 @empty
-                    <article class="company-display-slide active {{ $shop->banner ? '' : 'is-logo' }}" data-duration="10000"><img src="{{ $shopImage }}" alt="{{ $shop->name }}"></article>
+                    <article class="company-display-slide active {{ $projectImage ? '' : 'is-logo' }}" data-duration="10000"><img src="{{ $projectImage ?: $shopImage }}" alt="{{ $shop->name }}"></article>
                 @endforelse
             </div>
             <div class="company-display-shade" aria-hidden="true"></div>
             @include('front.partials.display_sound_toggle')
         </section>
+        <div class="project-intro">
+            <span class="eyebrow">{{ $copy['services'] }}</span>
+            <h1>{{ $design['title'] }}</h1>
+            <p>{{ $shop->description ?: $design['intro'] }}</p>
+            <div class="intro-actions"><a class="primary-link" href="#collection">{{ $design['explore'] }} <span aria-hidden="true">↙</span></a>@if($generalWhatsappUrl)<a class="secondary-link" href="#project">{{ $design['request'] }}</a>@endif</div>
+        </div>
         <header class="hero">
             <div class="hero-tools">
                 @include('front.partials.public_language_switcher')
@@ -118,7 +121,8 @@
             </div>
         </header>
     </div>
-    <div class="layout"><section class="service-panel" aria-label="{{ $copy['sections'] }}">
+    <div class="layout" id="collection"><section class="service-panel" aria-label="{{ $copy['sections'] }}">
+        <div class="section-heading"><div><span class="eyebrow">{{ $copy['sections'] }}</span><h2>{{ $design['collection'] }}</h2></div><p>{{ $design['hint'] }}</p></div>
         @if($categories->isNotEmpty())
             <div class="service-browser">
                 <nav class="category-rail" aria-label="{{ $copy['sections'] }}">
@@ -144,12 +148,17 @@
                                         };
                                         $serviceWhatsappUrl = $whatsappDigits ? 'https://wa.me/'.$whatsappDigits.'?text='.rawurlencode($serviceMessage) : null;
                                     @endphp
+                                    @php
+                                        $gallery = collect([$service->imageUrl()])->merge($service->images->map(fn ($image) => str_starts_with($image->path, 'images/') ? asset($image->path) : \Illuminate\Support\Facades\Storage::url($image->path)))->filter()->unique()->values();
+                                    @endphp
                                     <article class="service-card" data-service-key="{{ $service->slug }}">
-                                        <div class="service-image">@if($service->imageUrl())<img src="{{ $service->imageUrl() }}" alt="{{ $serviceName }}" loading="lazy">@else<i class="ti {{ $categoryIcons[$category->icon_key] ?? 'ti-building' }}" aria-hidden="true"></i>@endif</div>
+                                        <div class="service-image" data-gallery='@json($gallery)'>@if($service->imageUrl())<img src="{{ $service->imageUrl() }}" alt="{{ $serviceName }}" loading="lazy">@else<i class="ti {{ $categoryIcons[$category->icon_key] ?? 'ti-building' }}" aria-hidden="true"></i>@endif
+                                            @if($gallery->count() > 1)<div class="gallery-controls"><button type="button" data-step="-1" aria-label="{{ $locale === 'ar' ? 'الصورة السابقة' : ($locale === 'he' ? 'התמונה הקודמת' : 'Previous image') }}">‹</button><output aria-live="polite">1 / {{ $gallery->count() }}</output><button type="button" data-step="1" aria-label="{{ $locale === 'ar' ? 'الصورة التالية' : ($locale === 'he' ? 'התמונה הבאה' : 'Next image') }}">›</button></div>@endif
+                                        </div>
                                         <div class="service-body"><h2>{{ $serviceName }}</h2><p>{{ $service->localized('short_description') ?: $copy['service_hint'] }}</p><div class="service-bottom">
                                             @if($serviceWhatsappUrl)<a class="service-contact" href="{{ $serviceWhatsappUrl }}" target="_blank" rel="noopener noreferrer"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i>{{ $copy['contact'] }}</a>
                                             @elseif($callNumber)<a class="service-contact is-call" href="tel:{{ $callNumber }}"><i class="ti ti-phone" aria-hidden="true"></i>{{ $copy['call'] }}</a>@endif
-                                        </div></div>
+                                        </div>@if($service->localized('description'))<details><summary>{{ $design['details'] }}</summary><p>{{ $service->localized('description') }}</p></details>@endif</div>
                                     </article>
                                 @empty<div class="empty"><i class="ti ti-building-off" aria-hidden="true"></i>{{ $copy['empty_section'] }}</div>@endforelse
                             </div>
@@ -159,10 +168,38 @@
             </div>
         @else<div class="empty"><i class="ti ti-building-off" aria-hidden="true"></i>{{ $copy['empty'] }}</div>@endif
     </section></div>
+    @if($generalWhatsappUrl)
+    <section class="project-brief" id="project"><div><span class="eyebrow" style="color:#dec7a1">{{ $design['request'] }}</span><h2>{{ $design['brief'] }}</h2><p>{{ $design['brief_hint'] }}</p></div>
+        <form class="project-form" data-project-form data-contact="{{ $generalWhatsappUrl }}">
+            <label>{{ $design['use'] }}<select name="type">@foreach($categories as $category)<option value="{{ $category->localized('name') }}">{{ $category->localized('name') }}</option>@endforeach</select></label>
+            <label>{{ $design['size'] }}<input name="size" maxlength="120"></label>
+            <label class="wide">{{ $design['city'] }}<input name="city" maxlength="120" autocomplete="address-level2"></label>
+            <label class="wide">{{ $design['notes'] }}<textarea name="notes" maxlength="1500" rows="3"></textarea></label>
+            <button class="wide" type="submit">{{ $design['send'] }} ↗</button>
+        </form>
+    </section>
+    @endif
+    <section class="buyer-faq"><h2>{{ $design['faq'] }}</h2>@foreach([1,2,3] as $number)<details><summary>{{ $design['q'.$number] }}</summary><p>{{ $design['a'.$number] }}</p></details>@endforeach</section>
+    <footer class="company-footer"><strong>{{ $shop->name }}</strong><nav>@if($callNumber)<a href="tel:{{ $callNumber }}">{{ $copy['call'] }}</a>@endif @foreach($socialProfiles as $profile)<a href="{{ $profile['url'] }}" target="_blank" rel="noopener noreferrer">{{ $profile['label'] }}</a>@endforeach</nav>@if($shop->address)<span>{{ $shop->address }}</span>@endif</footer>
 </main>
 @include('front.shop_stories', ['showStoryList' => false])
 <script>
 (() => {
+    document.querySelectorAll('[data-gallery]').forEach(gallery => {
+        const images = JSON.parse(gallery.dataset.gallery); let index = 0;
+        gallery.querySelectorAll('[data-step]').forEach(button => button.addEventListener('click', () => {
+            index = (index + Number(button.dataset.step) + images.length) % images.length;
+            gallery.querySelector('img').src = images[index];
+            gallery.querySelector('output').textContent = `${index + 1} / ${images.length}`;
+        }));
+    });
+    document.querySelector('[data-project-form]')?.addEventListener('submit', event => {
+        event.preventDefault();
+        const form = event.currentTarget, url = new URL(form.dataset.contact);
+        const lines = [...form.querySelectorAll('input,select,textarea')].filter(input => input.value.trim()).map(input => `${input.closest('label').firstChild.textContent.trim()}: ${input.value.trim()}`);
+        url.searchParams.set('text', url.searchParams.get('text') + '\n' + lines.join('\n'));
+        window.location.assign(url.href);
+    });
     const slider = document.querySelector('[data-display-slider]');
     const slides = [...(slider?.querySelectorAll('.company-display-slide') || [])];
     let slideIndex = 0;
