@@ -4,5 +4,32 @@
 @media(max-width:700px){html{scroll-padding-top:85px}.shell{width:calc(100% - 28px);padding-top:12px}.company-hero-layout{grid-template-columns:1fr;padding-top:130px}.hero{align-items:start;flex-wrap:wrap;gap:10px}.hero-tools{width:100%;justify-content:space-between}.shop-logo{width:42px;height:42px}.shop-name{max-width:240px;font-size:13px}.project-intro{grid-column:1;grid-row:2;padding:22px 4px 32px}.project-intro h1{font-size:38px;margin-top:12px}.project-intro p{font-size:14px}.company-display-screen{grid-column:1;grid-row:3;min-height:0;aspect-ratio:4/3;border-radius:4px 4px 45px 4px}.layout{margin-top:40px}.section-heading{display:block}.section-heading h2,.project-brief h2,.buyer-faq h2{font-size:27px}.category-tab{padding:8px 12px;font-size:12px}.category-tab img,.category-icon{width:30px;height:30px}.services{grid-template-columns:1fr;gap:18px}.service-card:only-child{display:block}.service-body{padding:22px}.service-body h2{font-size:22px}.project-brief{grid-template-columns:1fr;padding:24px 20px;margin-top:40px;gap:20px}.project-form{grid-template-columns:1fr}.project-form .wide{grid-column:auto}.buyer-faq{margin-top:40px}.company-footer nav{flex-wrap:wrap}.intro-actions a{flex:1;padding-inline:12px;font-size:12px}.service-contact{width:100%}}
 .company-hero-layout{padding-top:0;row-gap:26px}.hero{position:relative;inset:auto;grid-column:1/-1;grid-row:1;min-height:80px}.project-intro{min-width:0}.hero-tools,.brand,.logo-stack{min-width:0}.shop-name{overflow-wrap:anywhere}.service-image{height:100%}.service-image img{min-height:100%}
 @media(max-width:700px){.company-hero-layout{padding-top:0;row-gap:0}.hero{padding-bottom:12px}.service-image{height:auto}}
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.company-display-slide{transition:none}}
+/* Warm stone surfaces and clearly defined interactive controls. */
+:root{--paper:#dedfd5;--line:#a6b3a6;--muted:#475e54}
+.project-intro{background:#cbd6c8;align-self:stretch;padding:48px 36px;display:flex;flex-direction:column;justify-content:center;border:1px solid #a6b6a6;border-radius:12px}
+.company-hero-layout{column-gap:20px}
+.primary-link,.secondary-link,.service-contact{border-width:2px;border-radius:8px;box-shadow:0 3px 0 rgba(19,49,40,.18);transition:background .15s,box-shadow .15s}
+.secondary-link{background:#e6d2ae;border-color:#75603e;color:#253e32}
+.primary-link:hover,.service-contact:hover{background:#285b4c;border-color:#285b4c;box-shadow:0 4px 0 rgba(19,49,40,.25)}
+.secondary-link:hover{background:#d7bb8d;border-color:#57472e}
+.ozman-directory-link{border:1px solid #718778;border-radius:8px;padding:7px 10px;background:#cbd6c8;min-height:44px}
+.category-rail{padding:12px;background:var(--paper);border:1px solid #9dad9e;border-radius:10px;box-shadow:0 5px 14px #193b3610}
+.category-tab{border:1px solid #819784;background:#d0d9cb;color:#294637;border-radius:8px}
+.category-tab:hover{background:#bacbb7;border-color:#355846}
+.category-tab.active{background:var(--ink);border-color:var(--ink);box-shadow:inset 0 0 0 1px #a4bdab;color:#fff}
+.service-card{background:#e6e8dc;border-color:#97aa98;box-shadow:0 8px 24px #193b360d}
+.service-body summary{padding:12px 16px;border:1px solid #819784;border-radius:7px;background:#ccd8c7}
+.service-body summary:hover{background:#bed0b9}
+.gallery-controls button{background:#e9e1cb;border:2px solid #244c3c;box-shadow:0 2px 8px #0003}
+.gallery-controls button:hover{background:#d8c397}
+.project-brief{border:1px solid #426757;box-shadow:0 8px 24px #193b361a}
+.project-form input,.project-form select,.project-form textarea{border:1px solid #a4b9ac;background:#2e5148}
+.project-form button{border:2px solid #ead5ab;box-shadow:0 3px 0 #0c2620;border-radius:8px}
+.project-form button:hover{background:#dfc394}
+.buyer-faq details{border:1px solid #9dad9e;background:#cfd9cb;border-radius:8px;padding:0;margin-top:12px}
+.buyer-faq summary{padding:18px 20px}.buyer-faq details[open] summary{border-bottom:1px solid #a4b5a2}.buyer-faq p{padding:0 20px}
+.company-footer nav a{border:1px solid #819784;border-radius:7px;padding:8px 12px;background:#cbd6c8;text-decoration:none}
+@media(max-width:1000px){.project-intro{padding:30px 24px}}
+@media(max-width:700px){.company-hero-layout{row-gap:16px}.project-intro{padding:26px 20px}.category-rail{padding:8px}.category-tab{padding:8px 12px}.hero-tools{gap:8px}.ozman-directory-link{font-size:10px;padding:5px 7px}.intro-actions{gap:10px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.company-display-slide,.primary-link,.secondary-link,.service-contact{transition:none}}
 </style>
