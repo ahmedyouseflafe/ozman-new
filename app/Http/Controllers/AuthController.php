@@ -269,11 +269,9 @@ class AuthController extends Controller
         }
 
         if ($user?->isAgent() || $user?->isDistributor()) {
-            // Without assigned permissions the middleware only permits the
-            // default catalog routes. canAccessRouteName() is permissive in
-            // that case, so it cannot be used to select an orders landing page.
+            // Match the default role policy before evaluating custom grants.
             if (! $user->hasAssignedPermissions()) {
-                return redirect()->route('products');
+                return redirect()->route($user->isDistributor() ? 'front-orders.index' : 'products');
             }
 
             foreach (['front-orders.index', 'raffle-cards.index', 'distributors.marketers.index', 'products', 'categories', 'dashboard.main'] as $routeName) {

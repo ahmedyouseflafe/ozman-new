@@ -28,6 +28,10 @@ abstract class Controller
         $user = Auth::user();
         $routeName = request()->route()?->getName();
 
+        if ($user?->isDistributor() && ! $user->hasAssignedPermissions()) {
+            return $routeName === 'front-orders.index';
+        }
+
         if ($user?->isMarketer()) {
             if ($user->hasAssignedPermissions()) {
                 return $user->canAccessRouteName($routeName);

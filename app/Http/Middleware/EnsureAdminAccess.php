@@ -70,7 +70,8 @@ class EnsureAdminAccess
 
         if ($user->isAgent() || $user->isDistributor()) {
             // Recover old dashboard bookmarks without granting order access.
-            if ((! $user->hasAssignedPermissions() || ! $user->canAccessRouteName('front-orders.index'))
+            if ($user->isAgent()
+                && (! $user->hasAssignedPermissions() || ! $user->canAccessRouteName('front-orders.index'))
                 && $request->route()?->getName() === 'front-orders.index'
                 && $request->isMethod('GET')
                 && ! $request->expectsJson()) {
@@ -119,6 +120,7 @@ class EnsureAdminAccess
                 $routeName === 'dashboard'
                 || $routeName === 'dashboard.main'
                 || $routeName === 'translations.suggest'
+                || ($user?->isDistributor() && $routeName === 'front-orders.index')
                 || str_starts_with($routeName, 'categories')
                 || ($user?->isAgent() && str_starts_with($routeName, 'products'))
                 || in_array($routeName, $readOnlyProductRoutes, true)
