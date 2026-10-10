@@ -788,7 +788,7 @@
                     </div>
 
                     <div class="pagination-wrap">
-                        {{ $orders->links() }}
+                        {{ $orders->onEachSide(1)->links('admin.partials.pagination') }}
                     </div>
                 </section>
             </div>
