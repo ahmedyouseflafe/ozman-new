@@ -10,13 +10,31 @@
     const sync=()=>{
         const active=(shop?.selectedOptions?.[0]?.dataset.catalogType||shop?.dataset.catalogType)==='restaurant';editor.hidden=!active;
         groups().forEach((g,i)=>{
-            const fromMenu=g.querySelector('[data-key=source]').value==='menu';
+            const source=g.querySelector('[data-key=source]');
+            if(!source.querySelector('[value=categories]'))source.insertAdjacentHTML('beforeend','<option value="categories">أقسام أحددها من المنيو</option>');
+            if(!g.querySelector('.meal-choice-categories')){
+                const selected=(window.OZMAN_MEAL_CHOICE_GROUPS||[])[i];
+                if(selected?.source==='categories')source.value='categories';
+                const box=document.createElement('div');box.className='meal-choice-categories';
+                box.innerHTML=(window.OZMAN_MEAL_CHOICE_CATEGORIES||[]).map(c=>`<label data-category-shop="${c.shop_id}"><input type="checkbox" data-category-id="${c.id}" value="${c.id}" ${(selected?.category_ids||[]).map(Number).includes(Number(c.id))?'checked':''}>${esc(c.name)}</label>`).join('');
+                source.closest('label').after(box);
+            }
+            const fromMenu=source.value!=='manual';
+            const categoryBox=g.querySelector('.meal-choice-categories');categoryBox.hidden=source.value!=='categories';
+            categoryBox.querySelectorAll('input').forEach((field,j)=>{
+                const visible=String(field.closest('label').dataset.categoryShop)===String(shop?.value);
+                field.closest('label').hidden=!visible;
+                field.disabled=!active||source.value!=='categories'||!visible;
+                field.name=`meal_choice_groups[${i}][category_ids][${j}]`;
+            });
+            const repeat=g.querySelector('[data-key=allow_repeat]');
+            repeat.closest('label').hidden=fromMenu;if(fromMenu)repeat.value='0';
             g.querySelector('.meal-choice-options').hidden=fromMenu;g.querySelector('[data-add-option]').hidden=fromMenu;
             g.querySelectorAll('[data-key]').forEach(field=>{
                 const row=field.closest('.meal-choice-option');
                 const j=row?[...g.querySelectorAll('.meal-choice-option')].indexOf(row):-1;
                 field.name=`meal_choice_groups[${i}]${row?`[options][${j}]`:''}[${field.dataset.key}]`;
-                field.disabled=!active || (!!row && g.querySelector('[data-key=source]').value==='menu');
+                field.disabled=!active || (!!row && fromMenu);
             });
         });
     };
@@ -36,11 +54,14 @@
         if(!Object.hasOwn(fields,'meal_choice_editor_present'))return;
         const restored=[];
         for(const [key,value] of Object.entries(fields)){
+            const category=key.match(/^meal_choice_groups\[(\d+)\]\[category_ids\]\[\d+\]$/);
+            if(category){const g=restored[category[1]]??={options:[]};(g.category_ids??=[]).push(Number(value));continue;}
             const m=key.match(/^meal_choice_groups\[(\d+)\](?:\[options\]\[(\d+)\])?\[(\w+)\]$/);if(!m)continue;
             const g=restored[m[1]]??={options:[]};
             if(m[2]!==undefined)(g.options[m[2]]??={})[m[3]]=value;else g[m[3]]=value;
         }
-        list.innerHTML=restored.filter(Boolean).slice(0,10).map(g=>group({...g,options:g.options.filter(Boolean).slice(0,30)})).join('');sync();
+        window.OZMAN_MEAL_CHOICE_GROUPS=restored.filter(Boolean).slice(0,10);
+        list.innerHTML=window.OZMAN_MEAL_CHOICE_GROUPS.map(g=>group({...g,options:g.options.filter(Boolean).slice(0,30)})).join('');sync();window.OZMAN_MEAL_CHOICE_GROUPS=[];
     };
     editor.insertAdjacentHTML('beforeend','<input type="hidden" name="meal_choice_editor_present" value="1">');
     editor.querySelectorAll('[data-choice-preset]').forEach(button=>button.onclick=()=>{
@@ -48,8 +69,8 @@
         const key=button.dataset.choicePreset;
         const names=key==='sandwich'?['تونا حمرا','سالومون','تونا بيضا']:['سالومون','تونا حمرا','شرمس'];
         const count=Number(key);
-        const preset=count?{name:'اختيار الرولات',source:'menu',min:count,max:count,allow_repeat:1,options:[]}:{name:key==='sandwich'?'نوع الساندويش':'نوع النيجيري',min:1,max:1,options:names.map(name=>({name,price:0}))};
-        list.insertAdjacentHTML('beforeend',group(preset));changed();
+        const preset=count?{name:'اختيار الرولات',source:'categories',min:count,max:count,allow_repeat:0,options:[]}:{name:key==='sandwich'?'نوع الساندويش':'نوع النيجيري',min:1,max:1,options:names.map(name=>({name,price:0}))};
+        list.insertAdjacentHTML('beforeend',group(preset));changed();if(count){groups().at(-1).querySelector('[data-key=source]').value='categories';sync();}
     });
-    shop?.addEventListener('change',sync);sync();
+    shop?.addEventListener('change',sync);sync();window.OZMAN_MEAL_CHOICE_GROUPS=[];
 })();

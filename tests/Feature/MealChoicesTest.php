@@ -77,4 +77,23 @@ class MealChoicesTest extends TestCase
         $this->postJson($url,$payload)->assertUnprocessable();
         $this->get(route('restaurant.menu',$meal->shop))->assertOk()->assertSee('mealChoices',false);
     }
+
+    public function test_selected_categories_filter_options_and_reject_foreign_categories_and_repeats(): void
+    {
+        $meal=$this->meal(); $other=$this->meal(); $service=app(MealChoiceService::class);
+        $category=Category::create(['shop_id'=>$meal->shop_id,'name'=>'Special rolls','slug'=>uniqid(),'is_active'=>true]);
+        $roll=$meal->replicate();$roll->slug=uniqid();$roll->category_id=$category->id;$roll->save();
+        $config=[[...$this->group(1),'source'=>'categories','category_ids'=>[$category->id],'options'=>[]]];
+        $meal->update(['catalog_attributes'=>['meal_choice_groups'=>$service->normalize($config,$meal->shop_id)]]);
+        $groups=$service->forProduct($meal);
+        $this->assertFalse($groups[0]['allow_repeat']);
+        $this->assertSame(['product-'.$roll->id],array_column($groups[0]['options'],'id'));
+        $this->assertSame(0.0,$service->resolve($groups,[['group_id'=>'rolls','options'=>[['option_id'=>'product-'.$roll->id,'qty'=>1]]]])['extra']);
+        foreach ([[],[$other->category_id]] as $ids) {
+            try {$service->normalize([[...$config[0],'category_ids'=>$ids]],$meal->shop_id);$this->fail('Accepted unavailable categories');}
+            catch(ValidationException $e){$this->assertNotEmpty($e->errors());}
+        }
+        $this->expectException(ValidationException::class);
+        $service->resolve($groups,[['group_id'=>'rolls','options'=>[['option_id'=>'product-'.$roll->id,'qty'=>2]]]]);
+    }
 }

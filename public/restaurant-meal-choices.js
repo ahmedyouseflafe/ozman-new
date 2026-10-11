@@ -29,8 +29,8 @@
                     const label=document.createElement('label');label.className='choice';
                     const caption=document.createElement('span');caption.textContent=o.name+(Number(o.price)>0?' +'+Number(o.price).toFixed(2)+' ₪':'');
                     const input=document.createElement('input');input.dataset.option=o.id;input.setAttribute('aria-label',o.name);
-                    if(g.allow_repeat){input.type='number';input.min=0;input.max=g.max;input.step=1;input.value=0;input.className='field meal-choice-qty';}
-                    else {input.type=g.max===1&&g.min>0?'radio':'checkbox';input.name='meal-choice-'+g.id;}
+                    if(g.allow_repeat && !['menu','categories'].includes(g.source)){input.type='number';input.min=0;input.max=g.max;input.step=1;input.value=0;input.className='field meal-choice-qty';}
+                    else {input.type='checkbox';input.name='meal-choice-'+g.id;}
                     input.addEventListener('input',update);input.addEventListener('change',update);
                     label.append(caption,input);section.append(label);
                 });root.append(section);
