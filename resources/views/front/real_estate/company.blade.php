@@ -121,6 +121,7 @@
             </div>
         </header>
     </div>
+    @include('front.real_estate._caravan_demo')
     <div class="layout" id="collection"><section class="service-panel" aria-label="{{ $copy['sections'] }}">
         <div class="section-heading"><div><span class="eyebrow">{{ $copy['sections'] }}</span><h2>{{ $design['collection'] }}</h2></div><p>{{ $design['hint'] }}</p></div>
         @if($categories->isNotEmpty())

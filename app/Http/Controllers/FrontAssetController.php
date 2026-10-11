@@ -26,6 +26,10 @@ class FrontAssetController extends Controller
             'merchant-pwa-sw.js' => 'application/javascript',
             'shop-pwa.js' => 'application/javascript',
             'offer-notifications.js' => 'application/javascript',
+            'caravan-demo.js' => 'application/javascript',
+            'caravan-model.js' => 'application/javascript',
+            'caravan-demo.css' => 'text/css',
+            'caravan-demo-poster.png' => 'image/png',
         ];
         abort_unless(isset($types[$file]), 404);
 
@@ -34,7 +38,7 @@ class FrontAssetController extends Controller
         abort_unless(is_file($path), 404);
 
         $headers = [
-            'Content-Type' => $types[$file].'; charset=UTF-8',
+            'Content-Type' => $types[$file].(str_starts_with($types[$file], 'image/') ? '' : '; charset=UTF-8'),
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'public, max-age=0, must-revalidate',
         ];

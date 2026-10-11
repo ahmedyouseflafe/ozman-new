@@ -43,6 +43,27 @@ class ModularServiceCatalogTest extends TestCase
             ->assertSee('https://wa.me/972599001122?text=', false);
     }
 
+    public function test_caravan_demo_is_available_without_uploaded_models_or_photos(): void
+    {
+        [, $shop] = $this->company('caravan-demo');
+        foreach (['en' => 'Try a caravan on your land', 'ar' => 'جرّب الكرفان على أرضك', 'he' => 'נסו קרוואן בשטח שלכם'] as $locale => $heading) {
+            $this->withSession(['locale' => $locale])->get(route('real-estate.company', $shop))
+                ->assertOk()->assertSee($heading)
+                ->assertSee('data-caravan-open', false)
+                ->assertSee('data-part="bathroom" aria-pressed="true"', false)
+                ->assertSee('data-part="kitchen" aria-pressed="false"', false)
+                ->assertSee(route('front.assets', 'caravan-demo.js'), false);
+        }
+    }
+
+    public function test_caravan_assets_are_served_from_git_public_directory_with_correct_types(): void
+    {
+        foreach (['caravan-demo.js' => 'application/javascript; charset=UTF-8', 'caravan-model.js' => 'application/javascript; charset=UTF-8', 'caravan-demo.css' => 'text/css; charset=UTF-8', 'caravan-demo-poster.png' => 'image/png'] as $file => $type) {
+            $this->get(route('front.assets', $file))->assertOk()->assertHeader('Content-Type', $type);
+        }
+        $this->get('/front-assets/caravan-private.js')->assertNotFound();
+    }
+
     public function test_default_catalog_images_are_served_when_public_html_is_separate(): void
     {
         foreach (['mobile-home.webp', 'bathroom-unit.webp', 'guard-room.webp', 'caravan.webp', 'custom-build.webp'] as $file) {

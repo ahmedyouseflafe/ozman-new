@@ -57,7 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/shop-stories/manage/{story}', [ShopStoryController::class, 'destroy'])->name('shop-stories.destroy');
 });
 Route::get('/front-assets/{file}', [FrontAssetController::class, 'show'])
-    ->where('file', 'script\\.js|style\\.css|shop-stories\\.(js|css)')
+    ->where('file', 'script\\.js|style\\.css|shop-stories\\.(js|css)|caravan-(?:demo\\.(?:js|css)|model\\.js|demo-poster\\.png)')
     ->name('front.assets');
 Route::get('/images/real-estate-services/{file}', [FrontAssetController::class, 'realEstateServiceImage'])
     ->where('file', '[A-Za-z0-9_-]+\\.webp')
