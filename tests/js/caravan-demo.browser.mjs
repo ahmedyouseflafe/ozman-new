@@ -97,6 +97,11 @@ try {
     await frame(true); await click('[data-caravan-place]');
     await evaluate(`window.__placedRoot=__ar.scene.scene.getObjectByName('ozman-caravan-demo');true`);
     await check('placed at measured ground point in metres', `__placedRoot.visible&&__placedRoot.position.x===2&&__placedRoot.position.z===-8&&__ar.config.scale==='absolute'`);
+    await check('AR starts with a clearly labelled miniature', `__placedRoot.scale.x===.15&&!document.querySelector('[data-caravan-scale-controls]').hidden&&document.querySelector('[data-caravan-scale-label]').textContent.includes('15%')`);
+    await evaluate(`const slider=document.querySelector('[data-caravan-scale]');slider.value='30';slider.dispatchEvent(new Event('input'));`);
+    await check('resizing preserves ground position and attached parts', `__placedRoot.scale.x===.3&&__placedRoot.scale.y===.3&&__placedRoot.position.x===2&&__placedRoot.position.z===-8&&__placedRoot.getObjectByName('bathroom').parent===__placedRoot`);
+    await click('[data-caravan-full-size]');
+    await check('actual-size button restores one metre per model unit', `__placedRoot.scale.x===1&&document.querySelector('[data-caravan-scale]').value==='100'&&document.querySelector('[data-caravan-scale-label]').textContent.includes('100%')`);
     await click('[data-part=bathroom]'); await click('[data-part=kitchen]'); await click('[data-rotate="1"]');
     await check('live controls change placed model without moving it', `!__placedRoot.getObjectByName('bathroom').visible&&!__placedRoot.getObjectByName('kitchen').visible&&__placedRoot.position.x===2&&__placedRoot.position.z===-8&&__placedRoot.rotation.y>0`);
     await frame(false); await check('tracking loss disables repositioning', `document.querySelector('[data-caravan-place]').disabled`);

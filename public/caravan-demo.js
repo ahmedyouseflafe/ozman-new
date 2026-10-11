@@ -37,6 +37,10 @@ export class CaravanDemo {
         this.retryButton = element.querySelector('[data-caravan-retry]');
         this.options = { bathroom: true, kitchen: false };
         this.mode = 'closed'; this.token = 0; this.rotation = 0;
+        this.arScale = .15;
+        this.scaleControls = element.querySelector('[data-caravan-scale-controls]');
+        element.querySelector('[data-caravan-scale]').addEventListener('input', event => this.setArScale(Number(event.target.value) / 100));
+        element.querySelector('[data-caravan-full-size]').addEventListener('click', () => this.setArScale(1));
         this.view = { theta: .65, phi: 1.14, radius: 16 };
         element.querySelector('[data-caravan-open]').addEventListener('click', () => this.open());
         element.querySelector('[data-caravan-close]').addEventListener('click', () => this.close());
@@ -90,7 +94,19 @@ export class CaravanDemo {
         this.cameraButton.hidden = ar; this.cameraButton.disabled = mode !== 'preview';
         this.previewButton.hidden = !ar; this.placeButton.hidden = mode !== 'ar';
         this.retryButton.hidden = mode !== 'error';
+        this.scaleControls.hidden = mode !== 'ar';
+        this.updateScaleLabel();
         this.element.querySelectorAll('[data-rotate],[data-zoom]').forEach(button => button.disabled = !['preview', 'ar'].includes(mode));
+    }
+    setArScale(value) {
+        this.arScale = Math.max(.05, Math.min(1, value));
+        if (this.mode === 'ar' && this.model) this.model.root.scale.setScalar(this.arScale);
+        this.updateScaleLabel();
+    }
+    updateScaleLabel() {
+        this.element.querySelector('[data-caravan-scale]').value = Math.round(this.arScale * 100);
+        this.element.querySelector('[data-caravan-scale-label]').textContent =
+            `${this.copy[this.arScale === 1 ? 'fullScale' : 'miniScale']} · ${Math.round(this.arScale * 100)}%`;
     }
     syncOptions() {
         this.model?.setOptions(this.options);
@@ -227,6 +243,7 @@ export class CaravanDemo {
                         this.scene = scene; this.camera = camera; this.renderer = renderer;
                         this.addLights(scene);
                         this.model = buildCaravan(T, this.options); this.model.root.rotation.y = this.rotation;
+                        this.model.root.scale.setScalar(this.arScale);
                         this.model.root.visible = false; scene.add(this.model.root);
                         this.ring = new T.Mesh(new T.RingGeometry(.22, .3, 40), new T.MeshBasicMaterial({ color: 0xbff59b, side: T.DoubleSide }));
                         this.ring.rotation.x = -Math.PI / 2; this.ring.visible = false; scene.add(this.ring);

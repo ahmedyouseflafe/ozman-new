@@ -1,6 +1,7 @@
 @php
     $demo = match ($locale) {
         'en' => [
+            'miniScale'=>'Miniature preview', 'fullScale'=>'Approximate actual size', 'scaleHint'=>'Starts at 15% so you can see the whole model. Restore 100% to estimate its footprint; choose a spot further away.', 'restoreScale'=>'Actual size (100%)', 'scale'=>'Size on the ground',
             'badge'=>'Interactive demo', 'title'=>'Try a caravan on your land', 'intro'=>'Explore a sample 6 × 3 m home. Add a side bathroom and an outdoor kitchen, then try placing it with your phone camera.',
             'open'=>'Design & try it', 'close'=>'Close', 'camera'=>'Place on my land', 'preview'=>'Back to 3D', 'bathroom'=>'Side bathroom', 'kitchen'=>'Outdoor kitchen', 'included'=>'Included', 'add'=>'Add',
             'note'=>'Illustrative model, not an available product or a construction plan. Dimensions and AR placement are approximate.',
@@ -13,6 +14,7 @@
             'selected'=>'Current selection', 'yes'=>'with', 'no'=>'without', 'send'=>'Ask about this configuration', 'message'=>'Hello, I tried the illustrative caravan demo. I would like to discuss a 6 × 3 m home',
         ],
         'he' => [
+            'miniScale'=>'תצוגה מוקטנת', 'fullScale'=>'גודל אמיתי משוער', 'scaleHint'=>'מתחיל ב־15% כדי לראות את כל הדגם. חזרו ל־100% להערכת השטח ובחרו נקודה רחוקה יותר.', 'restoreScale'=>'גודל אמיתי (100%)', 'scale'=>'גודל על הקרקע',
             'badge'=>'דגם להדגמה', 'title'=>'נסו קרוואן בשטח שלכם', 'intro'=>'גלו דגם של מבנה בגודל 6 × 3 מ׳. הוסיפו יחידת רחצה צדדית ומטבח חיצוני ונסו להציב אותו באמצעות מצלמת הטלפון.',
             'open'=>'עיצוב והתנסות', 'close'=>'סגירה', 'camera'=>'הצבה בשטח שלי', 'preview'=>'חזרה לתלת־ממד', 'bathroom'=>'יחידת רחצה צדדית', 'kitchen'=>'מטבח חיצוני', 'included'=>'כלול', 'add'=>'הוספה',
             'note'=>'דגם להמחשה בלבד, לא מוצר זמין או תוכנית בנייה. המידות וההצבה במציאות רבודה הן משוערות.',
@@ -25,6 +27,7 @@
             'selected'=>'הבחירה שלכם', 'yes'=>'עם', 'no'=>'בלי', 'send'=>'בירור לגבי הדגם שבחרתי', 'message'=>'שלום, ניסיתי את דגם הקרוואן להמחשה. אשמח לברר לגבי מבנה בגודל 6 × 3 מ׳',
         ],
         default => [
+            'miniScale'=>'معاينة مصغّرة', 'fullScale'=>'الحجم الحقيقي التقريبي', 'scaleHint'=>'بنبدأ بحجم 15% لتشوفه كامل. لتقدير المساحة رجّعه إلى 100% واختار نقطة أبعد عنك.', 'restoreScale'=>'الحجم الحقيقي (100%)', 'scale'=>'الحجم على الأرض',
             'badge'=>'نسخة تجريبية تفاعلية', 'title'=>'جرّب الكرفان على أرضك', 'intro'=>'لفّ حول نموذج بيت 6 × 3 متر، اختار الحمّام والمطبخ الخارجي، وبعدين جرّب تحطّه على أرضك بكاميرا التلفون.',
             'open'=>'صمّم وجرّب الكرفان', 'close'=>'إغلاق', 'camera'=>'شوفه على أرضك', 'preview'=>'رجوع للعرض الثلاثي', 'bathroom'=>'حمّام جانبي', 'kitchen'=>'مطبخ خارجي', 'included'=>'مضاف', 'add'=>'إضافة',
             'note'=>'نموذج توضيحي للتجربة، مش منتج معروض للبيع أو مخطط بناء. المقاسات والتثبيت على الأرض تقريبية.',
@@ -38,7 +41,7 @@
         ],
     };
 @endphp
-<link rel="stylesheet" href="{{ route('front.assets', 'caravan-demo.css') }}?v=1">
+<link rel="stylesheet" href="{{ route('front.assets', 'caravan-demo.css') }}?v=2">
 <section class="caravan-demo" id="caravan-demo" data-caravan-demo data-contact="{{ $generalWhatsappUrl }}" aria-labelledby="caravan-demo-title">
     <div class="caravan-demo-copy">
         <span class="eyebrow">{{ $demo['badge'] }}</span>
@@ -66,6 +69,12 @@
                 <button class="caravan-place" type="button" data-caravan-place hidden disabled>{{ $demo['place'] }}</button>
             </div>
             <aside class="caravan-options">
+                <div class="caravan-scale-controls" data-caravan-scale-controls hidden>
+                    <label for="caravan-scale">{{ $demo['scale'] }} <output data-caravan-scale-label aria-live="polite"></output></label>
+                    <input id="caravan-scale" data-caravan-scale type="range" min="5" max="100" step="1" value="15" dir="ltr">
+                    <button type="button" class="secondary-link" data-caravan-full-size>{{ $demo['restoreScale'] }}</button>
+                    <small>{{ $demo['scaleHint'] }}</small>
+                </div>
                 <h3>{{ $demo['configure'] }}</h3>
                 <div class="caravan-option-list">
                     <button type="button" class="caravan-option" data-part="bathroom" aria-pressed="true">
@@ -91,4 +100,4 @@
     </dialog>
     <script type="application/json" data-caravan-copy>@json($demo)</script>
 </section>
-<script type="module" src="{{ route('front.assets', 'caravan-demo.js') }}?v=1"></script>
+<script type="module" src="{{ route('front.assets', 'caravan-demo.js') }}?v=2"></script>
