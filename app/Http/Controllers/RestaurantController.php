@@ -371,6 +371,10 @@ class RestaurantController extends Controller
             'ok' => true,
             'order_id' => $order->id,
             'order_number' => $order->order_number,
+            'purchase_wheel' => \App\Http\Controllers\RestaurantPurchaseWheelController::eligible($order) ? [
+                'url' => URL::signedRoute('restaurant.purchase-wheel.show', $order),
+                'spin_url' => URL::signedRoute('restaurant.purchase-wheel.spin', $order),
+            ] : null,
             'estimated_preparation_minutes' => $order->estimated_preparation_minutes,
             'tracking_url' => URL::signedRoute('restaurant.orders.track', $order),
             'tracking' => $this->trackingPayload($order),

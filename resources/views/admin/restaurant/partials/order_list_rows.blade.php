@@ -6,6 +6,7 @@
             <small><i class="ti ti-calendar-event"></i> {{ $order->created_at?->copy()->locale('ar')->translatedFormat('l، d/m/Y · h:i A') }}</small>
         </td>
         <td data-label="الوجبات" class="order-meals">
+            @include('admin.restaurant.partials.purchase_reward')
             @forelse($items->take(2) as $item)
                 <div><b>{{ $item['qty'] ?? 1 }}× {{ $item['name'] ?? 'وجبة' }}</b>@if(!empty($item['choices']))<small>{{ \App\Services\MealChoiceService::summary($item['choices']) }}</small>@endif</div>
             @empty

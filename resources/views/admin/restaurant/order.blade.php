@@ -63,6 +63,7 @@
                 </form>
                 <section class="panel glass">
                 <h2>بيانات الطلب</h2>
+                @include('admin.restaurant.partials.purchase_reward')
                 @if($order->reward_discount_type === 'gift')
                     <div class="info-row" style="margin-bottom:12px">
                         <span>هدية التسجيل — تُرفق مع الطلب</span><b>{{ $order->reward_label }}</b>

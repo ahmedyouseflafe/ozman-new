@@ -44,6 +44,8 @@ use App\Models\AdminNotification;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
+Route::get('/restaurant-purchase-wheel/{order}', [\App\Http\Controllers\RestaurantPurchaseWheelController::class, 'show'])->middleware('signed')->name('restaurant.purchase-wheel.show');
+Route::post('/restaurant-purchase-wheel/{order}/spin', [\App\Http\Controllers\RestaurantPurchaseWheelController::class, 'spin'])->middleware(['signed','throttle:20,1'])->name('restaurant.purchase-wheel.spin');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 Route::get('/', [FrontController::class, 'index'])->name('home');
 Route::get('/shop-stories/feed', [ShopStoryController::class, 'feed'])->name('shop-stories.feed');

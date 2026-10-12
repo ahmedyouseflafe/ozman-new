@@ -2233,8 +2233,11 @@
         </div>
     </div>
 
+    <div class="restaurant-bottom-actions">
     <button class="mobile-cart" id="mobileCart"><i class="ti ti-shopping-bag"></i> {{ $copy['view_order'] }} (<span
             id="mobileCount">0</span>) — <span id="mobileTotal">0.00</span> ₪</button>
+    @include('front.partials.restaurant_purchase_wheel')
+    </div>
     <dialog id="mealModal">
         <div class="modal-head">
             <h3 id="modalName"></h3><button class="close" id="modalClose"><i class="ti ti-x"></i></button>
@@ -2736,7 +2739,9 @@
                     message.classList.add('success');
                     message.textContent = `${ui.sent_success} ${data.order_number}`;
                     activateTracking(data);
-                    if (data.whatsapp_url) {
+                    if (window.RestaurantPurchaseWheel?.ordered(data)) {
+                        // The wheel keeps the WhatsApp handoff available after spinning or skipping.
+                    } else if (data.whatsapp_url) {
                         // Move to the restaurant chat after the order has safely been recorded.
                         // WhatsApp opens the fully prepared message for the customer to review and send.
                         setTimeout(() => window.location.assign(data.whatsapp_url), 700);

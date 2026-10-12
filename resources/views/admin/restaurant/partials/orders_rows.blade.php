@@ -17,6 +17,7 @@
             @if($order->order_type === 'delivery' && $order->map_link)<br><a href="{{ $order->map_link }}" target="_blank" rel="noopener"><i class="ti ti-map-pin"></i> موقع التوصيل</a>@endif
         </td>
         <td data-label="تفاصيل الوجبات">
+            @include('admin.restaurant.partials.purchase_reward')
             @foreach($order->items ?? [] as $item)
                 <div>
                     <b>{{ $item['qty'] }}× {{ $item['name'] }}</b> {{ $item['size'] ?? '' }}<br>
