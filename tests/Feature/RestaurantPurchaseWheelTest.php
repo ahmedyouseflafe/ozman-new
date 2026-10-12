@@ -57,7 +57,7 @@ class RestaurantPurchaseWheelTest extends TestCase
     {
         [$shop]=$this->fixture();
         $html=view('front.partials.restaurant_purchase_wheel',['shop'=>$shop,'locale'=>'ar'])->render();
-        $this->assertStringContainsString("\u{1F512}",$html);
+        $this->assertStringContainsString('class="purchase-wheel-lock"',$html);
         $this->assertStringContainsString('50',$html);
         $this->assertStringContainsString('purchaseWheelTrigger',$html);
     }

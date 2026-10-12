@@ -1,6 +1,12 @@
 @php
     $purchaseWheels = \App\Models\RewardWheel::where('shop_id', $shop->id)->where('wheel_type', 'purchase_amount')->where('is_active', true)
-        ->whereHas('segments', fn($q) => $q->where('is_active', true), '>=', 2)->orderBy('min_order_total')->get();
+        ->whereHas('segments', fn($q) => $q->where('is_active', true), '>=', 2)
+        ->with(['segments' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')])->orderBy('min_order_total')->get();
+    $previewSegments = $purchaseWheels->first()?->segments ?? collect();
+    $previewGradient = $previewSegments->map(function($segment, $index) use ($previewSegments) {
+        $color = preg_match('/^#[0-9a-f]{6}$/i', $segment->color ?? '') ? $segment->color : '#087f93';
+        return $color.' '.($index * 360 / $previewSegments->count()).'deg '.(($index + 1) * 360 / $previewSegments->count()).'deg';
+    })->implode(',');
     $pwText = match($locale) {
         'en' => ['Purchase wheel','Send an eligible order to unlock the wheel.','Spin','Continue to WhatsApp','Close','Try again','Your prize: ','Order amount'],
         'he' => ['גלגל קנייה','שלחו הזמנה בסכום מתאים לפתיחת הגלגל.','סובבו','המשך לוואטסאפ','סגירה','נסו שוב','הפרס שלך: ','סכום ההזמנה'],
@@ -10,8 +16,15 @@
 <style>
 .restaurant-bottom-actions{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(640px,calc(100% - 24px));display:flex;gap:8px;z-index:15;align-items:stretch}
 .restaurant-bottom-actions .mobile-cart{position:static;transform:none;width:auto;flex:1;min-width:0;padding:10px;font-size:clamp(12px,3vw,16px)}
-.purchase-wheel-trigger{border:2px solid #07d8ec;border-radius:17px;background:#122d36;color:#fff;padding:8px 12px;font-weight:800;cursor:pointer;font-size:12px;max-width:42%}
-.purchase-wheel-trigger.is-ready{background:#07533e;border-color:#50e9a7}
+.purchase-wheel-trigger{position:relative;flex:0 0 72px;width:72px;height:72px;align-self:center;border:0;border-radius:50%;background:transparent;padding:0;cursor:pointer;filter:drop-shadow(0 0 9px #00d7ea66)}
+.purchase-wheel-trigger:before{content:'';position:absolute;top:-4px;left:calc(50% - 7px);border-left:7px solid transparent;border-right:7px solid transparent;border-top:14px solid #fff;z-index:3}
+.purchase-wheel-mini{position:absolute;inset:2px;border:3px solid #07d8ec;border-radius:50%;box-sizing:border-box;box-shadow:inset 0 0 0 2px #071b25}
+.purchase-wheel-mini:after{content:'';position:absolute;inset:0;border:3px dotted #ffffffb3;border-radius:50%}
+.purchase-wheel-lock{position:absolute;inset:0;display:grid;place-items:center;border-radius:50%;background:#06111c55;transition:opacity .2s}
+.purchase-wheel-lock svg{width:32px;height:36px;padding:7px;box-sizing:content-box;border-radius:50%;background:#071922e8;filter:drop-shadow(0 2px 3px #0008)}
+.purchase-wheel-trigger.is-ready .purchase-wheel-lock{opacity:0;pointer-events:none}
+.purchase-wheel-trigger.is-ready .purchase-wheel-mini{border-color:#50e9a7}
+.purchase-wheel-trigger:focus-visible{outline:3px solid #fff;outline-offset:4px}
 #purchaseWheelDialog{position:fixed;inset:0;margin:auto;width:min(420px,calc(100vw - 24px));max-height:85dvh;overflow:auto;box-sizing:border-box;padding:20px;border:1px solid #06cde0;border-radius:20px;background:#0b1a22;color:#fff;text-align:center}
 #purchaseWheelDialog::backdrop{background:#000b}
 #purchaseWheelDialog button{padding:12px 16px;border:1px solid #09dcec;border-radius:12px;background:#123842;color:white;cursor:pointer;margin:5px}
@@ -23,7 +36,12 @@
 body{padding-bottom:90px}
 </style>
 @if($purchaseWheels->isNotEmpty())
-<button type="button" id="purchaseWheelTrigger" class="purchase-wheel-trigger" aria-label="{{ $pwText[0] }}">🔒 {{ $pwText[0] }}</button>
+<button type="button" id="purchaseWheelTrigger" class="purchase-wheel-trigger" aria-label="{{ $pwText[0] }} — {{ $pwText[1] }}" title="{{ $pwText[0] }}" aria-haspopup="dialog">
+    <span class="purchase-wheel-mini" aria-hidden="true" style="background:conic-gradient({{ $previewGradient }})"></span>
+    <span class="purchase-wheel-lock" aria-hidden="true">
+        <svg viewBox="0 0 32 36" fill="none"><path d="M8 15V10a8 8 0 0 1 16 0v5" stroke="#fff" stroke-width="3.5"/><rect x="3" y="14" width="26" height="20" rx="5" fill="#ffd274" stroke="#fff" stroke-width="1.5"/><circle cx="16" cy="23" r="3" fill="#17252e"/><path d="M16 25v4" stroke="#17252e" stroke-width="3" stroke-linecap="round"/></svg>
+    </span>
+</button>
 <dialog id="purchaseWheelDialog" aria-labelledby="purchaseWheelTitle">
     <h3 id="purchaseWheelTitle">{{ $pwText[0] }}</h3>
     <p id="purchaseWheelMessage" role="status"></p>
@@ -42,7 +60,7 @@ body{padding-bottom:90px}
  let pending=null, busy=false, wheel=null, reward=null;
  try { pending=JSON.parse(sessionStorage.getItem(key)||'null'); } catch (_) {}
  const save=()=>{try{sessionStorage.setItem(key,JSON.stringify(pending));}catch(_){}};
- const ready=()=>{trigger.classList.toggle('is-ready',!!pending);trigger.textContent=(pending?'🎡 ':'🔒 ')+t[0];};
+ const ready=()=>{trigger.classList.toggle('is-ready',!!pending);trigger.setAttribute('aria-label',t[0]+(pending?'':' — '+t[1]));};
  const result=r=>{reward=r;msg.textContent=t[6]+r.label;spin.hidden=true;};
  const request=async(url,method='GET')=>{
    const res=await fetch(url,{method,headers:{Accept:'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]')?.content||@json(csrf_token())}});
