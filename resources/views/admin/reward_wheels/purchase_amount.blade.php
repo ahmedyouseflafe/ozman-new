@@ -474,6 +474,10 @@
             flex-shrink: 0
         }
 
+        .wheel-preview{container-type:inline-size}
+        .wheel-preview .wheel-label{width:34%;height:var(--label-height);min-height:0;padding:0 3px;gap:3px;border:0;border-radius:4px;background:transparent;font-size:clamp(10px,3.8cqw,18px);line-height:1;transform:translate(-50%,-50%) rotate(var(--text-angle));overflow:hidden}
+        .wheel-label .wheel-caption{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .wheel-preview .wheel-label img{width:auto;height:100%;max-width:28%;aspect-ratio:1;object-fit:contain;background:#fff;padding:1px;border:0;border-radius:3px}
         @media(max-width:1180px) {
             .layout-grid {
                 grid-template-columns: 1fr
@@ -609,11 +613,11 @@
                                             style="--wheel-gradient: {{ $gradientParts ?: '#00e5ff 0deg 360deg' }};">
                                             @foreach ($previewSegments as $index => $segment)
                                                 @php $angle=($index*$segmentStep)+($segmentStep/2); @endphp
-                                                <span class="wheel-label" style="--angle: {{ $angle }}deg;">
+                                                <span class="wheel-label" title="{{ $segment->label }}" style="left:{{ 50+32*sin(deg2rad($angle)) }}%;top:{{ 50-32*cos(deg2rad($angle)) }}%;--text-angle:{{ $angle-90+($angle>180?180:0) }}deg;--label-height:{{ min(10,90/$segmentCount) }}cqw;">
                                                     @if ($segment->discount_type === 'gift' && $segment->gift_image)
                                                         <img src="{{ asset($segment->gift_image) }}"
                                                             alt="{{ $segment->label }}">
-                                                    @endif{{ $segment->label }}
+                                                    @endif<span class="wheel-caption">{{ $segment->label }}</span>
                                                 </span>
                                             @endforeach
                                         </div>
