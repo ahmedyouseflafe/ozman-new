@@ -64,8 +64,9 @@
         if (reward.selected_index !== null) {
             disc.style.transform = `rotate(${1800 - step*(reward.selected_index+.5)}deg)`;
             const selected = segments[reward.selected_index];
-            const value = selected.discount_type === 'gift' ? '' : ` — ${selected.discount_value}${selected.discount_type === 'percent' ? '%' : ' ₪'}`;
+            const value = ['gift','none'].includes(selected.discount_type) ? '' : ` — ${selected.discount_value}${selected.discount_type === 'percent' ? '%' : ' ₪'}`;
             $('signupWheelResult').textContent = `${ui.result} ${selected.label}${value}. ${ui.saved}`;
+            if (selected.discount_type === 'none') $('signupWheelResult').textContent = ui.noPrize;
             if (selected.discount_type === 'gift' && selected.gift_image) {
                 $('signupWheelGiftImage').src = selected.gift_image;
                 $('signupWheelGiftImage').alt = selected.label;
@@ -122,7 +123,7 @@
         },
         discount: subtotal => {
             const segment = reward?.selected_index !== null ? reward?.segments[reward?.selected_index] : null;
-            if (!segment || segment.discount_type === 'gift') return 0;
+            if (!segment || ['gift','none'].includes(segment.discount_type)) return 0;
             return Math.round(Math.min(subtotal, segment.discount_type === 'percent' ? subtotal*segment.discount_value/100 : segment.discount_value)*100)/100;
         },
         beforeOrder: async () => {

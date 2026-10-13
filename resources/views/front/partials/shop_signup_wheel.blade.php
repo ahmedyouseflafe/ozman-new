@@ -15,6 +15,11 @@
         'he' => 'סיבוב אחד. ההנחה או המתנה תתווסף אוטומטית להזמנה הראשונה שלך.',
         default => 'لفّة واحدة، وخصمك أو هديتك بتنضاف تلقائيًا لأول طلب إلك.',
     };
+    $signupWheelCopy['noPrize'] = match ($locale) {
+        'en' => 'Better luck next time — no prize this time.',
+        'he' => 'בהצלחה בפעם הבאה — הפעם אין פרס.',
+        default => 'حظ أوفر — ما طلعت جائزة هالمرة.',
+    };
 @endphp
 <style>
     #shopSignupWheel{margin:auto}

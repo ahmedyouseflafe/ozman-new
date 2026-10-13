@@ -37,7 +37,7 @@ class RewardWheelController extends Controller
         $data = $request->validate(array_replace($this->wheelValidationRules(), [
             'segments' => ['required', 'array', 'min:2', 'max:20'],
             'segments.*.label' => ['required', 'string', 'max:60'],
-            'segments.*.discount_type' => ['required', Rule::in(['percent', 'amount', 'gift'])],
+            'segments.*.discount_type' => ['required', Rule::in(['percent', 'amount', 'gift', 'none'])],
             'segments.*.win_quota' => ['required', 'integer', 'min:0', 'max:10000'],
             'win_quota_total' => ['required', 'integer', 'min:1', 'max:10000'],
             'segments.*.gift_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
@@ -69,7 +69,7 @@ class RewardWheelController extends Controller
                 'win_quota_total' => $data['win_quota_total'], 'spin_cycle' => null]);
             $this->replaceSegments($wheel, collect($data['segments'])->map(fn ($segment) =>
                 [...\Illuminate\Support\Arr::only($segment, ['label', 'discount_type', 'discount_value', 'color', 'is_active', 'win_quota', 'existing_gift_image']),
-                    'discount_value' => $segment['discount_type'] === 'gift' ? null : $segment['discount_value']]
+                    'discount_value' => in_array($segment['discount_type'], ['gift', 'none'], true) ? null : $segment['discount_value']]
             )->all(), $request);
         });
         return to_route('reward-wheels.shop-signup.edit', $shop)->with('status', 'تم حفظ عجلة التسجيل الخاصة بالمحل.');

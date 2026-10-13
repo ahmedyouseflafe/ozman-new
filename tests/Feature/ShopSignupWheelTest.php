@@ -124,6 +124,28 @@ class ShopSignupWheelTest extends TestCase
         $order->update(['status'=>'cancelled']);$this->assertNull($service->state($shop,str_repeat('a',64),true));
     }
 
+    public function test_no_prize_counts_as_a_spin_without_discount_or_gift(): void
+    {
+        $shop=$this->shop('bankai-sushi');$settings=$this->settings();
+        foreach ($settings['segments'] as &$segment) {
+            $segment['discount_type']='none';$segment['label']='حظ أوفر';
+            unset($segment['discount_value']);
+        }
+        unset($segment);
+        $this->actingAs($shop->user)->put(route('reward-wheels.shop-signup.update',$shop),$settings)->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertNull(RewardWheel::where('shop_id',$shop->id)->first()->segments()->first()->discount_value);
+        $this->register($shop);$service=app(ShopSignupRewardService::class);$token=str_repeat('a',64);
+        $first=$service->state($shop,$token,true);
+        $this->assertNotNull($first['selected_index']);
+        $this->assertSame($first,$service->state($shop,$token,true));
+        $order=$service->placeOrder($shop,$token,['shop_id'=>$shop->id,'order_number'=>'NONE-1','customer_name'=>'Test','customer_phone'=>'0591234567','subtotal'=>100,'discount'=>0,'total'=>100]);
+        $this->assertSame('100.00',$order->total);
+        $this->assertSame('0.00',$order->discount);
+        $this->assertNull($order->reward_label);
+        $this->assertNull($order->reward_gift_image);
+        $this->assertNull($service->state($shop,$token,true));
+    }
+
     private function shop(string $slug): Shop
     {
         return Shop::create(['user_id'=>User::factory()->create(['role'=>'shop_owner','is_active'=>true])->id,'name'=>$slug,'slug'=>$slug,'catalog_type'=>'restaurant','is_active'=>true,'is_accepting_orders'=>true]);

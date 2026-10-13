@@ -114,7 +114,7 @@ class ShopSignupRewardService
                 };
                 $attributes['discount'] = round(min($subtotal, max(0, $discount)), 2);
                 $attributes['total'] = round($subtotal - $attributes['discount'], 2);
-                $attributes['reward_label'] = $segment['label'];
+                $attributes['reward_label'] = $segment['discount_type'] === 'none' ? null : $segment['label'];
                 $attributes['reward_discount_type'] = $segment['discount_type'];
                 $attributes['reward_discount_value'] = $segment['discount_value'];
                 $attributes['reward_gift_image'] = $segment['gift_image'] ?? null;

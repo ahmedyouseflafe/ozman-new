@@ -561,6 +561,7 @@
                                                     <option value="free_shipping" @selected(($segment['discount_type'] ?? '') === 'free_shipping')>توصيل مجاني</option>
                                                 @endunless
                                                 <option value="gift" @selected(($segment['discount_type'] ?? '') === 'gift')>هدية</option>
+                                                @isset($shop)<option value="none" @selected(($segment['discount_type'] ?? '') === 'none')>حظ أوفر — بدون جائزة</option>@endisset
                                             </select>
                                         </label>
 
@@ -635,6 +636,7 @@
                         <option value="free_shipping">توصيل مجاني</option>
                     @endunless
                     <option value="gift">هدية</option>
+                    @isset($shop)<option value="none">حظ أوفر — بدون جائزة</option>@endisset
                 </select>
             </label>
 
@@ -719,7 +721,10 @@
                     if (row.querySelector('[data-name="is_active"]').checked) sum += Number(row.querySelector('[data-name="win_quota"]').value || 0);
                     const gift = row.querySelector('[data-name="discount_type"]').value === 'gift';
                     const value = row.querySelector('[data-name="discount_value"]');
-                    value.disabled = gift;value.closest('label').hidden = gift;
+                    const noPrize = row.querySelector('[data-name="discount_type"]').value === 'none';
+                    value.disabled = gift || noPrize;value.closest('label').hidden = gift || noPrize;
+                    if (noPrize && row._previousType !== 'none') row.querySelector('[data-name="label"]').value = 'حظ أوفر';
+                    row._previousType = row.querySelector('[data-name="discount_type"]').value;
                     row.querySelector('.signup-gift-field').hidden = !gift;
                     const fileInput = row.querySelector('[data-name="gift_image"]');
                     if (fileInput.files[0] !== row._giftFile) {
