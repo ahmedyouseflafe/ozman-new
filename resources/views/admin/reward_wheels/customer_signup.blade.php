@@ -381,6 +381,10 @@
         .wheel-preview-label.has-gift-image span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:100%}
         .wheel-preview-label.has-gift-image.dense{width:48px;font-size:8px}
         .wheel-preview-label.has-gift-image.dense img{width:28px;height:28px}
+        .wheel-preview{container-type:inline-size}
+        .wheel-preview .wheel-preview-label{width:34%;height:var(--label-height);min-height:0;padding:0 3px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:3px;border:0;border-radius:4px;background:transparent;box-shadow:none;font-size:clamp(7px,2.4cqw,12px);line-height:1;transform:translate(-50%,-50%) rotate(var(--text-angle));overflow:hidden}
+        .wheel-preview .wheel-preview-label span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+        .wheel-preview .wheel-preview-label.has-gift-image img{width:auto;height:100%;max-width:28%;aspect-ratio:1;object-fit:contain;padding:1px;border-radius:3px}
 
         .wheel-pointer {
             width: 0;
@@ -750,7 +754,9 @@
             wheelPreview.style.setProperty('--wheel-gradient', gradient);
             wheelPreviewLabels.innerHTML = segments.map((segment, index) => {
                 const angle = (index * step) + (step / 2);
-                return `<div class="wheel-preview-label ${segment.giftImage ? 'has-gift-image' : ''} ${segments.length > 8 ? 'dense' : ''}" style="--angle:${angle}deg">${segment.giftImage ? `<img src="${escapeHtml(segment.giftImage)}" alt="" onerror="this.hidden=true">` : ''}<span>${escapeHtml(segment.label)}</span></div>`;
+                const radians = angle * Math.PI / 180;
+                const rotation = angle - 90 + (angle > 180 ? 180 : 0);
+                return `<div class="wheel-preview-label ${segment.giftImage ? 'has-gift-image' : ''}" title="${escapeHtml(segment.label)}" style="left:${50+32*Math.sin(radians)}%;top:${50-32*Math.cos(radians)}%;--text-angle:${rotation}deg;--label-height:${Math.min(10,90/segments.length)}cqw">${segment.giftImage ? `<img src="${escapeHtml(segment.giftImage)}" alt="" onerror="this.hidden=true">` : ''}<span>${escapeHtml(segment.label)}</span></div>`;
             }).join('');
             previewSegments.innerHTML = segments.map((segment) => `
                 <div class="preview-segment">

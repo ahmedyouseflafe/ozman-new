@@ -33,6 +33,10 @@
     #signupWheelResult{padding:14px;border:1px solid #29d6b37a;background:#0c342e;color:#81f4cf;border-radius:14px;margin:12px 0;font-size:17px;font-weight:900;line-height:1.8}#signupWheelError{color:#ffb0b0;font-size:12px;line-height:1.8}
     #signupWheelReopen{display:block;margin:12px auto;padding:9px 15px;border:1px solid #19b6c5;border-radius:18px;background:#0b2931;color:#60ebef;font:800 12px Cairo,Arial,sans-serif;cursor:pointer}#signupWheelReopen[hidden]{display:none}
     @media(prefers-reduced-motion:reduce){#signupWheelDisc{transition:none}}
+    #signupWheelDisc{container-type:inline-size}
+    #signupWheelDisc .signup-wheel-label{width:34%;height:var(--label-height);display:flex;flex-direction:row;align-items:center;justify-content:center;gap:3px;padding:0 2px;border-radius:3px;background:transparent;font-size:clamp(7px,2.4cqw,12px);line-height:1;transform-origin:center;overflow:hidden}
+    #signupWheelDisc .signup-wheel-label span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+    #signupWheelDisc .signup-wheel-label img{height:100%;width:auto;max-width:28%;aspect-ratio:1;object-fit:contain;padding:1px;border-radius:3px;flex-shrink:0}
 </style>
 <button type="button" id="signupWheelReopen" hidden>{{ $signupWheelCopy['open'] }}</button>
 <dialog id="shopSignupWheel" aria-labelledby="signupWheelTitle" data-preview="{{ !empty($signupPreview) ? '1' : '0' }}" data-url="{{ empty($signupPreview) ? route('restaurant.signup-reward', $shop) : '' }}">
