@@ -584,7 +584,7 @@ class RestaurantController extends Controller
 
         $lines = array_merge($lines, ['', '🍽 الأصناف:', ...$items]);
         $purchaseReward = json_decode($order->purchase_reward ?? 'null', true);
-        if ($purchaseReward) {
+        if ($purchaseReward && ($purchaseReward['discount_type'] ?? '') !== 'none') {
             $lines[] = '🎁 جائزة عجلة الشراء مع الطلب: '.$purchaseReward['label'];
             if (!empty($purchaseReward['gift_image'])) $lines[] = 'صورة الجائزة: '.$purchaseReward['gift_image'];
         }

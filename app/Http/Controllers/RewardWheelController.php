@@ -759,7 +759,7 @@ class RewardWheelController extends Controller
             'segments.*.label' => ['required', 'string', 'max:255'],
             'segments.*.id' => ['nullable', 'integer'],
             'segments.*.discount_value' => ['nullable', 'integer', 'min:0', 'max:100000'],
-            'segments.*.discount_type' => ['required', Rule::in(['percent', 'amount', 'free_shipping', 'gift'])],
+            'segments.*.discount_type' => ['required', Rule::in(['percent', 'amount', 'free_shipping', 'gift', 'none'])],
             'segments.*.gift_image' => ['nullable', 'image', 'max:2048'],
             'segments.*.existing_gift_image' => ['nullable', 'string', 'max:255'],
             'segments.*.win_quota' => ['nullable', 'integer', 'min:0', 'max:10000'],

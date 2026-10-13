@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
 <head>
@@ -672,7 +672,7 @@
                                                     <option value="amount" @selected(old("segments.$index.discount_type", $segment['discount_type']) === 'amount')>مبلغ ثابت</option>
                                                     <option value="free_shipping" @selected(old("segments.$index.discount_type", $segment['discount_type']) === 'free_shipping')>توصيل مجاني
                                                     </option>
-                                                    <option value="gift" @selected(old("segments.$index.discount_type", $segment['discount_type']) === 'gift')>هدية</option>
+                                                    <option value="none" @selected(old("segments.$index.discount_type", $segment['discount_type']) === 'none')>حظ أوفر — بدون جائزة</option><option value="gift" @selected(old("segments.$index.discount_type", $segment['discount_type']) === 'gift')>هدية</option>
                                                 </select></label><label class="field"><span data-quota-label>ظهور من {{ $quotaTotal }}</span><input
                                                     type="number" data-name="win_quota"
                                                     name="segments[{{ $index }}][win_quota]" min="0" max="{{ $quotaTotal }}"
@@ -714,7 +714,7 @@
                         <option value="percent">نسبة %</option>
                         <option value="amount">مبلغ ثابت</option>
                         <option value="free_shipping">توصيل مجاني</option>
-                        <option value="gift">هدية</option>
+                        <option value="none">حظ أوفر — بدون جائزة</option><option value="gift">هدية</option>
                     </select></label>
                 <label class="field"><span data-quota-label>ظهور من {{ $quotaTotal }}</span><input type="number" data-name="win_quota" min="0"
                         max="{{ $quotaTotal }}" value="1"></label>
@@ -731,6 +731,11 @@
             </div>
         </template>
         <script>
+            @php
+                $signupSource = \App\Models\RewardWheel::where('shop_id', $selectedShopId)->where('key', 'shop_signup_'.$selectedShopId)->with(['segments' => fn($q) => $q->orderBy('sort_order')])->first();
+                $signupCopy = $signupSource ? ['title'=>$signupSource->title,'quota'=>$signupSource->win_quota_total,'segments'=>$signupSource->segments->map(fn($s)=>['label'=>$s->label,'discount_type'=>$s->discount_type,'discount_value'=>$s->discount_value,'win_quota'=>$s->win_quota,'color'=>$s->color,'is_active'=>$s->is_active,'existing_gift_image'=>$s->gift_image])->all()] : null;
+            @endphp
+            const signupCopy = @json($signupCopy);
             const segmentsList = document.getElementById('segmentsList');
             const segmentTemplate = document.getElementById('segmentTemplate');
             const addSegmentBtn = document.getElementById('addSegmentBtn');
@@ -1005,6 +1010,27 @@
             }
 
             restoreAutosave();
+            const copySignupButton = document.createElement('button');
+            copySignupButton.type='button';copySignupButton.className='btn small';copySignupButton.textContent='نسخ عجلة التسجيل';
+            addSegmentBtn?.before(copySignupButton);
+            copySignupButton.disabled=!signupCopy;
+            copySignupButton.title=signupCopy?'نسخ الجوائز إلى النموذج فقط؛ عدّل ثم احفظ':'لا توجد عجلة تسجيل محفوظة لهذا المحل';
+            copySignupButton.addEventListener('click',()=>{
+                if(!signupCopy || !confirm('استبدال خانات النموذج بنسخة من عجلة التسجيل؟ لن يتم الحفظ حتى تضغط حفظ.'))return;
+                segmentsList.replaceChildren();
+                wheelForm.querySelector('[name="title"]').value=signupCopy.title;
+                quotaTotalInput.value=signupCopy.quota;
+                signupCopy.segments.forEach(segment=>{
+                    const row=segmentTemplate.content.firstElementChild.cloneNode(true);
+                    row.querySelectorAll('[data-name]').forEach(field=>{
+                        if(field.type==='file')return;
+                        if(field.type==='checkbox')field.checked=!!segment[field.dataset.name];
+                        else field.value=segment[field.dataset.name]??'';
+                    });
+                    segmentsList.append(row);bindSegmentRow(row);
+                });
+                reindexSegments();syncQuotaLabels();updateQuotaStatus();saveAutosave();
+            });
             rows().forEach(bindSegmentRow);
             addSegmentBtn?.addEventListener('click', () => {
                 const clone = segmentTemplate.content.firstElementChild.cloneNode(true);

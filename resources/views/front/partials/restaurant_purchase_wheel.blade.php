@@ -61,7 +61,7 @@ body{padding-bottom:90px}
  try { pending=JSON.parse(sessionStorage.getItem(key)||'null'); } catch (_) {}
  const save=()=>{try{sessionStorage.setItem(key,JSON.stringify(pending));}catch(_){}};
  const ready=()=>{trigger.classList.toggle('is-ready',!!pending);trigger.setAttribute('aria-label',t[0]+(pending?'':' — '+t[1]));};
- const result=r=>{reward=r;msg.textContent=t[6]+r.label;spin.hidden=true;};
+ const result=r=>{reward=r;msg.textContent=r.discount_type==='none'?r.label:t[6]+r.label;spin.hidden=true;};
  const request=async(url,method='GET')=>{
    const res=await fetch(url,{method,headers:{Accept:'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]')?.content||@json(csrf_token())}});
    if(!res.ok)throw new Error(t[5]); return res.json();
