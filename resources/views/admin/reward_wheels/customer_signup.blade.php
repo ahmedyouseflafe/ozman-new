@@ -462,7 +462,7 @@
                     <div>
                         <div class="page-kicker">عجلات الربح</div>
                         <h1>{{ isset($shop) ? 'عجلة التسجيل · '.$shop->name : 'عجلة خصومات العملاء' }}</h1>
-                        <p>{{ isset($shop) ? 'تظهر بعد أول تسجيل جديد، وتُضاف الجائزة تلقائيًا إلى أول طلب: خصم أو هدية. اختر 2–12 خانة وحدد عدد مرات فوز كل جائزة ضمن الدورة.' : 'هذه العجلة مخصصة لأول تسجيل كعميل على الموقع. أضف العنوان والخصومات التي ستظهر داخل العجلة.' }}</p>
+                        <p>{{ isset($shop) ? 'تظهر بعد أول تسجيل جديد، وتُضاف الجائزة تلقائيًا إلى أول طلب: خصم أو هدية. اختر 2–20 خانة وحدد عدد مرات فوز كل جائزة ضمن الدورة.' : 'هذه العجلة مخصصة لأول تسجيل كعميل على الموقع. أضف العنوان والخصومات التي ستظهر داخل العجلة.' }}</p>
                         @isset($shop)<p>بعد اكتمال لفات الدورة يتكرر نفس التوزيع. العدد صفر يمنع الفوز بالخانة. حفظ الإعدادات يبدأ توزيعًا جديدًا للتسجيلات القادمة؛ الجوائز السابقة تبقى محفوظة. إلغاء الطلب لا يعيد الجائزة.</p>@endisset
                     </div>
                     <button class="save-btn" type="submit" form="wheelForm">
@@ -779,7 +779,7 @@
         }
 
         addSegmentBtn.addEventListener('click', () => {
-            if (document.getElementById('signupQuotaTotal') && rows().length >= 12) {alert('الحد الأقصى 12 خانة.');return;}
+            if (document.getElementById('signupQuotaTotal') && rows().length >= 20) {alert('الحد الأقصى 20 خانة.');return;}
             const clone = segmentTemplate.content.firstElementChild.cloneNode(true);
             const colors = ['#00e5ff', '#7000ff', '#25d366', '#ffd60a', '#ff3b30'];
             clone.querySelector('[data-name="color"]').value = colors[rows().length % colors.length];

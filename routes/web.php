@@ -7,7 +7,9 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ClothingStoreController;
 use App\Http\Controllers\CosmeticsStoreController;
+
 Route::post('/cosmetics/{shop:slug}/orders', [\App\Http\Controllers\CosmeticsCheckoutController::class, 'store'])->middleware('throttle:20,1')->name('cosmetics.orders.store');
+
 use App\Http\Controllers\DistributorController;
 use App\Http\Controllers\ElectronicsStoreController;
 use App\Http\Controllers\EmployeeController;
@@ -46,7 +48,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/restaurant-purchase-wheel/{order}', [\App\Http\Controllers\RestaurantPurchaseWheelController::class, 'show'])->middleware('signed')->name('restaurant.purchase-wheel.show');
-Route::post('/restaurant-purchase-wheel/{order}/spin', [\App\Http\Controllers\RestaurantPurchaseWheelController::class, 'spin'])->middleware(['signed','throttle:20,1'])->name('restaurant.purchase-wheel.spin');
+Route::post('/restaurant-purchase-wheel/{order}/spin', [\App\Http\Controllers\RestaurantPurchaseWheelController::class, 'spin'])->middleware(['signed', 'throttle:20,1'])->name('restaurant.purchase-wheel.spin');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 Route::get('/', [FrontController::class, 'index'])->name('home');
 Route::get('/shop-stories/feed', [ShopStoryController::class, 'feed'])->name('shop-stories.feed');
@@ -115,7 +117,7 @@ Route::get('/electronics/{shop:slug}', [ElectronicsStoreController::class, 'inde
 Route::get('/fashion/{shop:slug}', [ClothingStoreController::class, 'index'])->name('clothing.store');
 Route::post('/fashion/{shop:slug}/photo-tryon', [\App\Http\Controllers\ClothingPhotoTryOnController::class, 'create'])->middleware('throttle:6,60,photo-tryon-create:')->name('clothing.photo-tryon');
 Route::get('/fashion/{shop:slug}/photo-tryon/{job}', [\App\Http\Controllers\ClothingPhotoTryOnController::class, 'status'])->whereUuid('job')->middleware('throttle:60,1,photo-tryon-status:')->name('clothing.photo-tryon.status');
-Route::get('/virtual-tryon/photo-demo', fn () => response()->file(base_path('public/images/virtual-tryon/photo-demo-before-after.png')))->name('virtual-tryon.photo-demo');
+Route::get('/virtual-tryon/photo-demo', fn() => response()->file(base_path('public/images/virtual-tryon/photo-demo-before-after.png')))->name('virtual-tryon.photo-demo');
 Route::get('/virtual-tryon/demo-garment', function () {
     $path = public_path('images/virtual-tryon/demo-ivory-navy-tee.png');
 
@@ -129,7 +131,7 @@ Route::get('/virtual-tryon/demo-garment', function () {
 Route::get('/cosmetics/{shop:slug}', [CosmeticsStoreController::class, 'index'])->name('cosmetics.store');
 Route::post('/cosmetics/{shop:slug}/watch-tryon', [\App\Http\Controllers\ClothingPhotoTryOnController::class, 'create'])->middleware('throttle:6,60,watch-tryon-create:')->name('watch.photo-tryon');
 Route::get('/cosmetics/{shop:slug}/watch-tryon/{job}', [\App\Http\Controllers\ClothingPhotoTryOnController::class, 'status'])->whereUuid('job')->middleware('throttle:60,1,watch-tryon-status:')->name('watch.photo-tryon.status');
-Route::get('/virtual-tryon/demo-watch', fn () => response()->file(base_path('public/images/virtual-tryon/demo-blue-watch.png')))->name('virtual-tryon.demo-watch');
+Route::get('/virtual-tryon/demo-watch', fn() => response()->file(base_path('public/images/virtual-tryon/demo-blue-watch.png')))->name('virtual-tryon.demo-watch');
 Route::get('/sweets/{shop:slug}', [SweetsStoreController::class, 'index'])->name('sweets.store');
 Route::get('/home-furniture/{shop:slug}', [FurnitureStoreController::class, 'index'])->name('furniture.store');
 Route::get('/cosmetics/{shop:slug}/booking', [CosmeticsStoreController::class, 'booking'])->name('cosmetics.booking');

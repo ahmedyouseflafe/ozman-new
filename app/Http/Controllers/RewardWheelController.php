@@ -35,7 +35,7 @@ class RewardWheelController extends Controller
     {
         $this->authorizeShopSignup($request, $shop);
         $data = $request->validate(array_replace($this->wheelValidationRules(), [
-            'segments' => ['required', 'array', 'min:2', 'max:12'],
+            'segments' => ['required', 'array', 'min:2', 'max:20'],
             'segments.*.label' => ['required', 'string', 'max:60'],
             'segments.*.discount_type' => ['required', Rule::in(['percent', 'amount', 'gift'])],
             'segments.*.win_quota' => ['required', 'integer', 'min:0', 'max:10000'],
