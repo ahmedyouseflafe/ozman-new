@@ -19,7 +19,7 @@ class RestaurantPurchaseWheelController extends Controller
 
     public function show(FrontOrder $order): JsonResponse
     {
-        abort_unless($order->order_channel === 'restaurant' && $order->status !== 'cancelled', 404);
+        abort_unless(($order->order_channel === 'restaurant' || ($order->order_channel === 'whatsapp' && $order->shop?->catalog_type === 'cosmetics' && $order->shop?->slug === 'elegance-perfumes')) && $order->status !== 'cancelled', 404);
         $wheel = self::eligible($order);
         return response()->json(['wheel' => $wheel ? ['title' => $wheel->title, 'segments' => $wheel->segments->map(fn($s) => ['label'=>$s->label,'color'=>$s->color])] : null,
             'reward' => $order->purchase_reward ? json_decode($order->purchase_reward, true) : null])->header('Cache-Control', 'private, no-store');
@@ -29,7 +29,7 @@ class RestaurantPurchaseWheelController extends Controller
     {
         return DB::transaction(function () use ($order) {
             $order = FrontOrder::whereKey($order->id)->lockForUpdate()->firstOrFail();
-            abort_unless($order->order_channel === 'restaurant' && $order->status !== 'cancelled', 422);
+            abort_unless(($order->order_channel === 'restaurant' || ($order->order_channel === 'whatsapp' && $order->shop?->catalog_type === 'cosmetics' && $order->shop?->slug === 'elegance-perfumes')) && $order->status !== 'cancelled', 422);
             if ($order->purchase_reward) return response()->json(['reward'=>json_decode($order->purchase_reward,true)]);
             $eligible = self::eligible($order);
             abort_unless($eligible, 422, 'لا توجد عجلة مناسبة لمبلغ الطلب.');

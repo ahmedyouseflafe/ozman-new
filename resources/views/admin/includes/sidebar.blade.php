@@ -441,8 +441,11 @@
         @endif
 
         <div class="admin-sidebar-section">{{ $catalogTerms['place_singular'] ?? 'المتجر' }}</div>
-        @if($restaurantNavShop && $canSee(['reward-wheels.shop-signup.edit']))
-        <a href="{{ route('reward-wheels.shop-signup.edit', $restaurantNavShop) }}" class="admin-sidebar-item nav-item {{ request()->routeIs('reward-wheels.shop-signup.*') ? 'active' : '' }}">
+        @php
+            $signupNavShop = $restaurantNavShop ?: ($cosmeticsNavShop?->slug === 'elegance-perfumes' ? $cosmeticsNavShop : null);
+        @endphp
+        @if($signupNavShop && $canSee(['reward-wheels.shop-signup.edit']))
+        <a href="{{ route('reward-wheels.shop-signup.edit', $signupNavShop) }}" class="admin-sidebar-item nav-item {{ request()->routeIs('reward-wheels.shop-signup.*') ? 'active' : '' }}">
              <i class="ti ti-discount" aria-hidden="true"></i> عجلة التسجيل
         </a>
         @endif

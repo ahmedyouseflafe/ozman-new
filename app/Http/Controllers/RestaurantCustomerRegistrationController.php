@@ -16,8 +16,8 @@ class RestaurantCustomerRegistrationController extends Controller
 {
     public function store(Request $request, Shop $shop): JsonResponse
     {
-        abort_unless($shop->is_active && $shop->catalog_type === 'restaurant'
-            && ($shop->slug === 'bankai-sushi' || RewardWheel::where('key', 'shop_signup_'.$shop->id)->exists()), 404);
+        abort_unless($shop->is_active && ($shop->catalog_type === 'restaurant' || ($shop->catalog_type === 'cosmetics' && $shop->slug === 'elegance-perfumes'))
+            && (in_array($shop->slug, ['bankai-sushi', 'elegance-perfumes'], true) || RewardWheel::where('key', 'shop_signup_'.$shop->id)->exists()), 404);
 
         $request->validate(['whatsapp' => ['required', 'string', 'max:30']]);
         $phone = strtr((string) $request->input('whatsapp', ''), array_combine(

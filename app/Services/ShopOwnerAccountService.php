@@ -47,6 +47,7 @@ class ShopOwnerAccountService
 
             $requiredPermissions = $permissionShops
                 ->flatMap(fn (Shop $ownedShop) => config("shop_owner_permissions.catalog_type_required.{$ownedShop->catalog_type}", []))
+                ->merge($permissionShops->contains(fn (Shop $ownedShop) => $ownedShop->catalog_type === 'cosmetics' && $ownedShop->slug === 'elegance-perfumes') ? ['reward_wheels.shop_signup'] : [])
                 ->merge(config('shop_owner_permissions.required', []))
                 ->unique();
 
@@ -63,6 +64,7 @@ class ShopOwnerAccountService
         $excluded = config("shop_owner_permissions.catalog_type_excluded.{$shop->catalog_type}", []);
 
         return collect(config('shop_owner_permissions.allowed', []))
+            ->merge($shop->catalog_type === 'cosmetics' && $shop->slug === 'elegance-perfumes' ? ['reward_wheels.shop_signup'] : [])
             ->merge(config("shop_owner_permissions.catalog_type_permissions.{$shop->catalog_type}", []))
             ->reject(fn (string $permission) => in_array($permission, $excluded, true))
             ->unique()

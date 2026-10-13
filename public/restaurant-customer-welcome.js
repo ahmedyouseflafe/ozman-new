@@ -2,7 +2,8 @@
     'use strict';
 
     const init = () => {
-        const $ = id => document.getElementById(id);
+        const storefront = document.getElementById('beautyWelcomeFields');
+        const $ = id => document.getElementById(storefront ? ({name:'beautyCustomerName',phone:'beautyCustomerWhatsapp',address:'beautyProfileAddress',latitude:'beautyProfileLatitude',longitude:'beautyProfileLongitude'}[id] || id) : id);
         const dialog = $('bankaiWelcome');
         if (!dialog) return;
         const ui = window.BANKAI_WELCOME_COPY;

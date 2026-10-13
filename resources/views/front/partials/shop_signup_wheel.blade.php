@@ -6,6 +6,10 @@
     };
 @endphp
 @php
+    if ($shop->catalog_type === 'cosmetics') {
+        $signupWheelCopy['close'] = match($locale) {'en'=>'Continue shopping', 'he'=>'המשך לקניות', default=>'كمّل تسوّق'};
+        $signupWheelCopy['saved'] = match($locale) {'en'=>'Saved for your first order at this store.', 'he'=>'נשמר להזמנה הראשונה בחנות הזאת.', default=>'حفظناها لأول طلب إلك من هالمحل.'};
+    }
     $signupWheelCopy['hint'] = match ($locale) {
         'en' => 'Spin once. Your discount or gift is added automatically to your first order.',
         'he' => 'סיבוב אחד. ההנחה או המתנה תתווסף אוטומטית להזמנה הראשונה שלך.',

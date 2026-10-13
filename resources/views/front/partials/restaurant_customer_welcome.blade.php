@@ -72,6 +72,12 @@
             $welcome[$label] = str_replace(['Bankai', 'בנקאי', 'بانكاي'], $shop->name, $welcome[$label]);
         }
     }
+    if ($shop->catalog_type === 'cosmetics') {
+        $welcome['eyebrow'] = $shop->name;
+        $welcome['intro'] = match($locale) {'en'=>'Save your details once for easier shopping and your welcome gift.', 'he'=>'שמרו פרטים לקנייה נוחה ומתנת הצטרפות.', default=>'سجّل بياناتك مرة واحدة لتسهيل طلباتك والحصول على هدية التسجيل.'};
+        $welcome['submit'] = $welcome['continue'] = match($locale) {'en'=>'Continue to store', 'he'=>'המשך לחנות', default=>'كمّل للمحل'};
+        $welcome['cancel'] = match($locale) {'en'=>'Back to store', 'he'=>'חזרה לחנות', default=>'رجوع للمحل'};
+    }
 @endphp
 @php
     $welcome['sessionError'] = match(app()->getLocale()) {

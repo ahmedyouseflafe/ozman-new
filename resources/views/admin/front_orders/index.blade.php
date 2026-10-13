@@ -746,6 +746,7 @@
                                         </td>
                                         @unless($isMarketerView)
                                         <td>
+                                            @include('admin.restaurant.partials.purchase_reward')
                                             @if($order->reward_label)
                                                 <div class="gift-cell">
                                                     @if($order->reward_gift_image)

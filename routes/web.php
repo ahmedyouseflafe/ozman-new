@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ClothingStoreController;
 use App\Http\Controllers\CosmeticsStoreController;
+Route::post('/cosmetics/{shop:slug}/orders', [\App\Http\Controllers\CosmeticsCheckoutController::class, 'store'])->middleware('throttle:20,1')->name('cosmetics.orders.store');
 use App\Http\Controllers\DistributorController;
 use App\Http\Controllers\ElectronicsStoreController;
 use App\Http\Controllers\EmployeeController;

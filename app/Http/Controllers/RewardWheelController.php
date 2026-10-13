@@ -79,7 +79,7 @@ class RewardWheelController extends Controller
     {
         abort_unless($request->user()?->canAccessRouteName($request->route()->getName()), 403);
         abort_unless($request->user()->isSuperAdmin() || in_array($shop->id, $request->user()->accessibleShopIds(), true), 403);
-        abort_unless($shop->is_active && $shop->catalog_type === 'restaurant', 404);
+        abort_unless($shop->is_active && ($shop->catalog_type === 'restaurant' || ($shop->catalog_type === 'cosmetics' && $shop->slug === 'elegance-perfumes')), 404);
     }
 
     public function edit(): View
