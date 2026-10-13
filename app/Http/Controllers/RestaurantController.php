@@ -521,7 +521,7 @@ class RestaurantController extends Controller
         })->all();
     }
 
-    private function restaurantWhatsappUrl(Shop $shop, FrontOrder $order): ?string
+    public function restaurantWhatsappUrl(Shop $shop, FrontOrder $order): ?string
     {
         $number = preg_replace('/\D+/', '', (string) ($shop->whatsapp ?: $shop->social?->whatsapp ?: $shop->phone));
         $number = str_starts_with($number, '00') ? substr($number, 2) : $number;
@@ -558,7 +558,7 @@ class RestaurantController extends Controller
 
             return '• '.((int) ($item['qty'] ?? 1)).'× '.($item['name'] ?? 'صنف')
                 .($details ? ' ('.implode(' | ', $details).')' : '')
-                .' — '.number_format((float) ($item['line_total'] ?? 0), 2).' ₪';
+                .' — '.number_format((float) ($item['line_total'] ?? (($item['price'] ?? 0) * ($item['qty'] ?? 1))), 2).' ₪';
         })->all();
 
         $lines = [
@@ -583,6 +583,11 @@ class RestaurantController extends Controller
         }
 
         $lines = array_merge($lines, ['', '🍽 الأصناف:', ...$items]);
+        $purchaseReward = json_decode($order->purchase_reward ?? 'null', true);
+        if ($purchaseReward) {
+            $lines[] = '🎁 جائزة عجلة الشراء مع الطلب: '.$purchaseReward['label'];
+            if (!empty($purchaseReward['gift_image'])) $lines[] = 'صورة الجائزة: '.$purchaseReward['gift_image'];
+        }
         if ($order->reward_discount_type === 'gift') {
             $lines[] = '🎁 هدية التسجيل مع الطلب: '.$order->reward_label;
             if ($order->reward_gift_image) $lines[] = 'صورة الهدية: '.asset($order->reward_gift_image);

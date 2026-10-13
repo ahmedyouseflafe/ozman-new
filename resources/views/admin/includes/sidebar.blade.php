@@ -659,7 +659,7 @@
         @endif
 
         @if($canSee(['reward-wheels.purchase.index', 'reward-wheels.purchase.edit', 'reward-wheels.purchase.store']))
-        <a href="{{ route('reward-wheels.purchase.index') }}"
+        <a href="{{ route('reward-wheels.purchase.index', $catalogNavShop ? ['shop_id' => $catalogNavShop->id] : []) }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('reward-wheels.purchase.*') ? 'active' : '' }}">
              <i class="ti ti-shopping-cart-star" aria-hidden="true"></i>
              عجلات الشراء

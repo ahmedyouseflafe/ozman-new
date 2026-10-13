@@ -21,7 +21,9 @@ class RestaurantPurchaseWheelController extends Controller
     {
         abort_unless(($order->order_channel === 'restaurant' || ($order->order_channel === 'whatsapp' && $order->shop?->catalog_type === 'cosmetics' && $order->shop?->slug === 'elegance-perfumes')) && $order->status !== 'cancelled', 404);
         $wheel = self::eligible($order);
-        return response()->json(['wheel' => $wheel ? ['title' => $wheel->title, 'segments' => $wheel->segments->map(fn($s) => ['label'=>$s->label,'color'=>$s->color])] : null,
+        return response()->json(['shop_id' => $order->shop_id, 'shop_name' => $order->shop->name,
+            'whatsapp_url' => app(RestaurantController::class)->restaurantWhatsappUrl($order->shop, $order),
+            'wheel' => $wheel ? ['title' => $wheel->title, 'segments' => $wheel->segments->map(fn($s) => ['label'=>$s->label,'color'=>$s->color])] : null,
             'reward' => $order->purchase_reward ? json_decode($order->purchase_reward, true) : null])->header('Cache-Control', 'private, no-store');
     }
 
@@ -30,7 +32,7 @@ class RestaurantPurchaseWheelController extends Controller
         return DB::transaction(function () use ($order) {
             $order = FrontOrder::whereKey($order->id)->lockForUpdate()->firstOrFail();
             abort_unless(($order->order_channel === 'restaurant' || ($order->order_channel === 'whatsapp' && $order->shop?->catalog_type === 'cosmetics' && $order->shop?->slug === 'elegance-perfumes')) && $order->status !== 'cancelled', 422);
-            if ($order->purchase_reward) return response()->json(['reward'=>json_decode($order->purchase_reward,true)]);
+            if ($order->purchase_reward) return $this->spinResponse($order);
             $eligible = self::eligible($order);
             abort_unless($eligible, 422, 'لا توجد عجلة مناسبة لمبلغ الطلب.');
             $wheel = RewardWheel::whereKey($eligible->id)->lockForUpdate()->firstOrFail();
@@ -49,7 +51,16 @@ class RestaurantPurchaseWheelController extends Controller
             $reward=['label'=>$segment->label,'discount_type'=>$segment->discount_type,'discount_value'=>$segment->discount_value,
                 'gift_image'=>$segment->gift_image ? asset($segment->gift_image) : null,'segment_index'=>$segments->search(fn($s)=>$s->id===$segment->id),'wheel_id'=>$wheel->id];
             $order->forceFill(['purchase_reward'=>json_encode($reward,JSON_UNESCAPED_UNICODE)])->save();
-            return response()->json(['reward'=>$reward]);
+            return $this->spinResponse($order);
         });
+    }
+
+    private function spinResponse(FrontOrder $order): JsonResponse
+    {
+        return response()->json([
+            'shop_id' => $order->shop_id,
+            'reward' => json_decode($order->purchase_reward, true),
+            'whatsapp_url' => app(RestaurantController::class)->restaurantWhatsappUrl($order->shop, $order),
+        ])->header('Cache-Control', 'private, no-store');
     }
 }

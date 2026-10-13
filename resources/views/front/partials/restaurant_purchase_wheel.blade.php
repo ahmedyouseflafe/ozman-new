@@ -43,7 +43,7 @@ body{padding-bottom:90px}
     </span>
 </button>
 <dialog id="purchaseWheelDialog" aria-labelledby="purchaseWheelTitle">
-    <h3 id="purchaseWheelTitle">{{ $pwText[0] }}</h3>
+    <h3 id="purchaseWheelTitle">{{ $pwText[0] }} — {{ $shop->name }}</h3>
     <p id="purchaseWheelMessage" role="status"></p>
     <div id="purchaseWheelRanges">{{ $pwText[1] }}
         @foreach($purchaseWheels as $pw)<p>{{ $pwText[7] }}: {{ $pw->min_order_total }}–{{ $pw->max_order_total ?? '∞' }} ₪</p>@endforeach
@@ -73,7 +73,10 @@ body{padding-bottom:90px}
    el('purchaseWheelWhatsapp').hidden=!pending?.whatsapp_url;
    if(!pending)return;
    try{
-     const data=await request(pending.url);wheel=data.wheel;
+     const data=await request(pending.url);
+     if(Number(data.shop_id)!==@json($shop->id)){pending=null;save();ready();throw new Error(t[5]);}
+     pending.whatsapp_url=data.whatsapp_url;save();el('purchaseWheelWhatsapp').hidden=!data.whatsapp_url;
+     wheel=data.wheel;
      if(data.reward){result(data.reward);return;}
      if(!wheel)throw new Error(t[5]);
      const disc=el('purchaseWheelDisc'), n=wheel.segments.length;disc.replaceChildren();disc.style.transform='rotate(0deg)';
@@ -86,11 +89,12 @@ body{padding-bottom:90px}
  el('purchaseWheelClose').onclick=()=>dialog.close();
  el('purchaseWheelWhatsapp').onclick=()=>{if(pending?.whatsapp_url)window.location.assign(pending.whatsapp_url);};
  spin.onclick=async()=>{
-   if(busy||!pending)return;busy=true;spin.disabled=true;
+   if(busy||!pending)return;busy=true;spin.disabled=true;el('purchaseWheelWhatsapp').disabled=true;
    try{const data=await request(pending.spin_url,'POST');
+     pending.whatsapp_url=data.whatsapp_url;save();el('purchaseWheelWhatsapp').hidden=!data.whatsapp_url;
      el('purchaseWheelDisc').style.transform=`rotate(${1800-(data.reward.segment_index+.5)*360/wheel.segments.length}deg)`;
      await new Promise(resolve=>setTimeout(resolve,3100));result(data.reward);
-   }catch(e){msg.textContent=e.message;}finally{busy=false;spin.disabled=false;}
+   }catch(e){msg.textContent=e.message;}finally{busy=false;spin.disabled=false;el('purchaseWheelWhatsapp').disabled=false;}
  };
  window.RestaurantPurchaseWheel={ordered(data){
    if(!data.purchase_wheel)return false;

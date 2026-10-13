@@ -74,5 +74,28 @@ class RestaurantPurchaseWheelTest extends TestCase
         $product->update(['price'=>10]);
         $this->postJson(route('restaurant.orders.store',$shop),$payload)->assertOk()->assertJsonPath('purchase_wheel',null);
     }
+
+    public function test_each_shop_draws_its_own_prizes_and_whatsapp_retains_prize_on_reload(): void
+    {
+        [$shopA,$orderA,$wheelA]=$this->fixture();
+        [$shopB,$orderB,$wheelB]=$this->fixture();
+        $shopA->update(['name'=>'Sushi','whatsapp'=>'972501111111']);
+        $shopB->update(['name'=>'Elegance','whatsapp'=>'972502222222','slug'=>'elegance-perfumes','catalog_type'=>'cosmetics']);
+        $orderB->update(['order_channel'=>'whatsapp']);
+        $wheelA->segments()->update(['label'=>'Sushi-only gift']);
+        $wheelB->segments()->update(['label'=>'Perfume-only gift']);
+        foreach ([[$orderA,'Sushi-only gift','Perfume-only gift','972501111111'],[$orderB,'Perfume-only gift','Sushi-only gift','972502222222']] as [$order,$own,$other,$phone]) {
+            $url=URL::signedRoute('restaurant.purchase-wheel.spin',$order);
+            $result=$this->postJson($url)->assertOk()->assertJsonPath('reward.label',$own);
+            $whatsapp=$result->json('whatsapp_url');
+            $this->assertStringStartsWith('https://wa.me/'.$phone.'?text=',$whatsapp);
+            $message=rawurldecode($whatsapp);
+            $this->assertStringContainsString($own,$message);
+            $this->assertStringContainsString($order->order_number,$message);
+            $this->assertStringNotContainsString($other,$message);
+            $this->postJson($url)->assertJsonPath('whatsapp_url',$whatsapp);
+            $this->getJson(URL::signedRoute('restaurant.purchase-wheel.show',$order))->assertOk()->assertJsonPath('whatsapp_url',$whatsapp);
+        }
+    }
 }
 
