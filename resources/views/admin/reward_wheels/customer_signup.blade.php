@@ -382,7 +382,7 @@
         .wheel-preview-label.has-gift-image.dense{width:48px;font-size:8px}
         .wheel-preview-label.has-gift-image.dense img{width:28px;height:28px}
         .wheel-preview{container-type:inline-size}
-        .wheel-preview .wheel-preview-label{width:34%;height:var(--label-height);min-height:0;padding:0 3px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:3px;border:0;border-radius:4px;background:transparent;box-shadow:none;font-size:clamp(7px,2.4cqw,12px);line-height:1;transform:translate(-50%,-50%) rotate(var(--text-angle));overflow:hidden}
+        .wheel-preview .wheel-preview-label{width:34%;height:var(--label-height);min-height:0;padding:0 3px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:3px;border:0;border-radius:4px;background:transparent;box-shadow:none;font-size:clamp(10px,3.8cqw,18px);line-height:1;transform:translate(-50%,-50%) rotate(var(--text-angle));overflow:hidden}
         .wheel-preview .wheel-preview-label span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
         .wheel-preview .wheel-preview-label.has-gift-image img{width:auto;height:100%;max-width:28%;aspect-ratio:1;object-fit:contain;padding:1px;border-radius:3px}
 
