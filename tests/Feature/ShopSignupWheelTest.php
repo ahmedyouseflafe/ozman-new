@@ -146,6 +146,28 @@ class ShopSignupWheelTest extends TestCase
         $this->assertNull($service->state($shop,$token,true));
     }
 
+    public function test_reset_is_scoped_backed_up_and_allows_new_registration(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $shop=$this->shop('bankai-sushi');$other=$this->shop('other');
+        $this->wheel($shop);$this->wheel($other);$this->register($shop);$this->register($other);
+        $service=app(ShopSignupRewardService::class);$token=str_repeat('a',64);
+        $service->state($shop,$token,true);
+        $order=$service->placeOrder($shop,$token,['shop_id'=>$shop->id,'order_number'=>'KEEP-1','customer_name'=>'Test','customer_phone'=>'0591234567','subtotal'=>100,'discount'=>0,'total'=>100]);
+        $this->artisan('shop:reset-customer-registrations',['slug'=>$shop->slug])->assertExitCode(0);
+        $this->assertDatabaseCount('visitor_registrations',2);
+        $this->artisan('shop:reset-customer-registrations',['slug'=>$shop->slug,'--execute'=>true])->assertExitCode(0);
+        $this->assertDatabaseCount('visitor_registrations',1);
+        $this->assertDatabaseHas('visitor_registrations',['shop_id'=>$other->id]);
+        $this->assertDatabaseHas('front_orders',['id'=>$order->id]);
+        $this->assertSame(2,(int)$shop->fresh()->customer_registration_version);
+        $this->assertSame(1,(int)$other->fresh()->customer_registration_version);
+        $this->assertCount(1,\Illuminate\Support\Facades\Storage::disk('local')->files('registration-resets'));
+        $this->register($shop,str_repeat('b',64));
+        $this->assertNotNull($service->state($shop,str_repeat('b',64)));
+        $this->get($shop->fresh()->publicUrl())->assertOk()->assertSee('customer.v2',false);
+    }
+
     private function shop(string $slug): Shop
     {
         return Shop::create(['user_id'=>User::factory()->create(['role'=>'shop_owner','is_active'=>true])->id,'name'=>$slug,'slug'=>$slug,'catalog_type'=>'restaurant','is_active'=>true,'is_accepting_orders'=>true]);

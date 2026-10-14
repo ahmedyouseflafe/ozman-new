@@ -131,7 +131,7 @@
     #bankaiWelcome .bankai-welcome-cancel{justify-self:center}
     @media(max-width:650px){#bankaiWelcome{width:calc(100% - 20px);max-height:calc(100dvh - 20px);border-radius:22px}.bankai-welcome-layout{grid-template-columns:1fr;min-height:0}.bankai-welcome-brand{padding:22px 20px 18px}.bankai-welcome-logo{width:70px;height:70px;border-radius:18px;margin-bottom:12px}.bankai-welcome-kicker{font-size:8px;margin-bottom:5px}#bankaiWelcome h2{font-size:23px;margin-bottom:5px}.bankai-welcome-intro{font-size:11px;max-width:310px}.bankai-welcome-form{padding:20px;gap:13px}.bankai-welcome-fields{grid-template-columns:1fr}.bankai-welcome-brand:before{top:-160px}.bankai-welcome-brand:after{top:-205px}}
 </style>
-<dialog id="bankaiWelcome" aria-labelledby="bankaiWelcomeTitle" aria-describedby="bankaiWelcomeIntro" dir="{{ $isRtl ? 'rtl' : 'ltr' }}" data-storage-key="ozman.restaurant.{{ $shop->id }}.customer.v1" data-csrf-url="{{ route('csrf.refresh') }}" data-registration-url="{{ route('restaurant.customer-registration.store', $shop) }}">
+<dialog id="bankaiWelcome" aria-labelledby="bankaiWelcomeTitle" aria-describedby="bankaiWelcomeIntro" dir="{{ $isRtl ? 'rtl' : 'ltr' }}" data-storage-key="ozman.restaurant.{{ $shop->id }}.customer.v{{ $shop->customer_registration_version ?? 1 }}" data-csrf-url="{{ route('csrf.refresh') }}" data-registration-url="{{ route('restaurant.customer-registration.store', $shop) }}">
     <div class="bankai-welcome-layout">
         <section class="bankai-welcome-brand">
             @if($shop->logo)<img class="bankai-welcome-logo" src="{{ asset($shop->logo) }}" alt="{{ $shop->name }}">@endif
