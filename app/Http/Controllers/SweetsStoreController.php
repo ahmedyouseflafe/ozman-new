@@ -20,6 +20,17 @@ class SweetsStoreController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Keep each row's original order, regardless of the current display language.
+        [$cupCategories, $plateCategories] = $categories->partition(function ($category) {
+            $names = implode(' ', array_merge(
+                [$category->name, $category->slug],
+                array_values($category->name_translations ?? [])
+            ));
+
+            return (bool) preg_match('/مشروبات|عصائر|عصير|قهوة|قهوه|كوفي|كابتشينو|لاتيه|ميلك\s*شيك|سموثي|كاسات|كؤوس|كوب|ايس\s*كريم|آيس\s*كريم|بوظة|بوظه|(?:^|[\s-])(?:drinks?|beverages?|coffee|iced?[-\s]*coffee|juices?|milkshakes?|smoothies?|cups?|tea|ice[-\s]*cream)(?:$|[\s-])|שתייה|משקאות|קפה|מיצים|גלידה/iu', $names);
+        });
+        $categories = $cupCategories->concat($plateCategories)->values();
+
         $uncategorizedProducts = Product::query()
             ->where('shop_id', $shop->id)
             ->whereNull('category_id')
@@ -36,7 +47,7 @@ class SweetsStoreController extends Controller
             ->get();
 
         return view('front.sweets_store', compact(
-            'shop', 'categories', 'uncategorizedProducts', 'displayItems'
+            'shop', 'categories', 'cupCategories', 'plateCategories', 'uncategorizedProducts', 'displayItems'
         ));
     }
 }

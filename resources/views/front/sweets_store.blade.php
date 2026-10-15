@@ -50,6 +50,8 @@
         @media(max-width:720px){.hero{min-height:475px;border-radius:25px}.brand{right:18px;bottom:23px;width:calc(100% - 36px);min-height:295px;padding:58px 18px 20px}.brand h1{font-size:25px}.brand p{font-size:9px}.logo{width:82px;height:82px}.tools{left:11px;top:12px}.bakery-moments{grid-template-columns:1fr;gap:8px;margin:10px 0}.bakery-moment{min-height:88px;padding:13px 15px}.bakery-moment strong{font-size:15px}.bakery-moment i{font-size:46px}.catalog-header{align-items:end}.catalog h2{font-size:24px}.categories{padding-bottom:9px}.category{flex-basis:94px;padding:6px 4px}.category figure{width:43px;height:43px}.content{padding:10px;border-radius:22px}.pane-head h3{font-size:20px}.grid{grid-template-columns:1fr;gap:10px}.card{grid-template-columns:116px minmax(0,1fr);border-radius:18px}.picture{min-height:142px}.description{display:none}}
     </style>
     <style>
+        .category-groups{display:grid;gap:9px;min-width:0;margin-bottom:9px}
+        .category-groups .categories{min-width:0;margin:0}
         .cart-button.cart-flight-pop{animation:sweet-cart-pop .9s cubic-bezier(.16,.9,.2,1);box-shadow:0 14px 36px #0008,0 0 38px rgba(242,194,108,.82)}
         @keyframes sweet-cart-pop{0%,100%{transform:scale(1)}38%{transform:scale(1.27) rotate(-3deg)}70%{transform:scale(.96) rotate(1deg)}}
         .shopping-cart-flight{position:fixed;z-index:90;display:grid;place-items:center;overflow:visible;width:62px;height:62px;pointer-events:none;will-change:transform,opacity}
@@ -92,16 +94,23 @@
     <section class="catalog" id="catalog">
         <header class="catalog-header"><div><span class="eyebrow">SWEET SELECTION</span><h2>اختار الحلو اللي نفسك فيه</h2><p>تشكيلة طازجة من {{ $shop->name }}</p></div><span class="count">{{ $categories->sum(fn($category) => $category->products->count()) + $uncategorizedProducts->count() }} صنف</span></header>
         <div class="layout">
-            <nav class="categories" aria-label="أقسام الحلويات">
-                @forelse($categories as $category)
+            <nav class="category-groups" aria-label="أقسام الحلويات">
+                @foreach(['cups' => $cupCategories, 'plates' => $plateCategories] as $group => $groupCategories)
+                    @if($groupCategories->isNotEmpty() || ($group === 'plates' && ($categories->isEmpty() || $uncategorizedProducts->isNotEmpty())))
+                    <div class="categories" data-category-group="{{ $group }}" role="group" aria-label="{{ $group === 'cups' ? 'المشروبات وأصناف الكاسات' : 'الحلويات وأصناف الصحون' }}">
+                @foreach($groupCategories as $category)
                     @php($categoryImage = $category->image ?: $category->products->first()?->main_image)
-                    <button class="category {{ $loop->first ? 'active' : '' }}" type="button" data-tab="{{ $category->id }}"><figure>@if($categoryImage)<img src="{{ $mediaUrl($categoryImage) }}" alt="">@else<i class="ti ti-cookie"></i>@endif</figure><span>{{ $category->localized('name') }}</span></button>
-                @empty
+                    <button class="category {{ $category->id === $categories->first()?->id ? 'active' : '' }}" type="button" data-tab="{{ $category->id }}"><figure>@if($categoryImage)<img src="{{ $mediaUrl($categoryImage) }}" alt="">@else<i class="ti ti-cookie"></i>@endif</figure><span>{{ $category->localized('name') }}</span></button>
+                @endforeach
+                @if($group === 'plates' && $categories->isEmpty())
                     <button class="category active" type="button" data-tab="items"><figure><i class="ti ti-cookie"></i></figure><span>الأصناف</span></button>
-                @endforelse
-                @if($categories->isNotEmpty() && $uncategorizedProducts->isNotEmpty())
+                @endif
+                @if($group === 'plates' && $categories->isNotEmpty() && $uncategorizedProducts->isNotEmpty())
                     <button class="category" type="button" data-tab="uncategorized"><figure><i class="ti ti-cookie"></i></figure><span>أصناف أخرى</span></button>
                 @endif
+                    </div>
+                    @endif
+                @endforeach
             </nav>
             <div class="content">
                 @forelse($categories as $category)
