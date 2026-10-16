@@ -7,29 +7,6 @@
     const isStandalone = ['standalone', 'fullscreen', 'minimal-ui', 'window-controls-overlay']
         .some(mode => window.matchMedia(`(display-mode: ${mode})`).matches) || window.navigator.standalone === true;
 
-    // Every storefront gets an install entry, including shops opened inside Ozman.
-    // The dedicated installer already supplies these controls.
-    if (!document.querySelector('[data-shop-pwa-install]')) {
-        const style = document.createElement('style');
-        style.textContent = '.shop-pwa-bar{box-sizing:border-box;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;padding:12px 16px;background:#071820;color:#fff;border-bottom:1px solid #28505c;font:13px Cairo,Arial,sans-serif;direction:rtl}.shop-pwa-bar button{max-width:100%;min-height:44px;padding:8px 14px;border:1px solid #28505c;border-radius:12px;background:#102b36;color:#fff;font:inherit;cursor:pointer}.shop-pwa-bar [data-shop-pwa-install]{background:#0bdcf3;color:#001319;font-weight:800}.shop-pwa-bar p{flex-basis:100%;margin:0;text-align:center;overflow-wrap:anywhere}.shop-pwa-bar p:empty{display:none}';
-        document.head.appendChild(style);
-        const bar = document.createElement('aside');
-        bar.className = 'shop-pwa-bar';
-        const installButton = document.createElement('button');
-        installButton.type = 'button';
-        installButton.dataset.shopPwaInstall = '';
-        installButton.textContent = config.labels.install;
-        const copyButton = document.createElement('button');
-        copyButton.type = 'button';
-        copyButton.dataset.shopPwaCopy = '';
-        copyButton.textContent = config.labels.copyLink;
-        const status = document.createElement('p');
-        status.dataset.shopPwaStatus = '';
-        status.setAttribute('role', 'status');
-        bar.append(installButton, copyButton, status);
-        document.body.prepend(bar);
-    }
-
     const installButtons = [...document.querySelectorAll('[data-shop-pwa-install]')];
     const shareButtons = [...document.querySelectorAll('[data-shop-pwa-share]')];
     const statusElements = [...document.querySelectorAll('[data-shop-pwa-status]')];

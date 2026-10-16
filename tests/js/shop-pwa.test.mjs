@@ -67,11 +67,11 @@ test('a store opened inside the installed Ozman app remains installable in Chrom
     assert.ok(app.window.location.href.includes(encodeURIComponent(app.config.installUrl)));
 });
 
-test('storefronts without installation controls get a visible install and copy entry', () => {
+test('storefronts do not get an injected installation bar', () => {
     const app = runtime({ installer: false });
-    assert.equal(app.button().textContent, 'install');
-    assert.equal(app.document.body.children[0].className, 'shop-pwa-bar');
-    assert.equal(app.document.querySelectorAll('[data-shop-pwa-install]').length, 1);
+    assert.equal(app.document.body.children.length, 0);
+    assert.equal(app.document.head.children.length, 0);
+    assert.equal(app.document.querySelectorAll('[data-shop-pwa-install]').length, 0);
 });
 
 test('fullscreen and minimal-ui installed apps also open the installer in Chrome', async () => {

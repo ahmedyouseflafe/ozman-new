@@ -49,7 +49,7 @@ try {
     assert.ok(installerLink?.endsWith(`/shop-app/${slug}/install`));
     await evaluate(`document.querySelector('#bankaiWelcome')?.close()`);
     const storefront = await evaluate(`({title:document.title, buttons:document.querySelectorAll('[data-shop-pwa-install]').length, width:document.documentElement.scrollWidth, viewport:innerWidth})`);
-    assert.equal(storefront.buttons, 1);
+    assert.equal(storefront.buttons, 0);
     assert.ok(storefront.width <= storefront.viewport + 1, JSON.stringify(storefront));
     const shot = await send('Page.captureScreenshot', { format: 'png' });
     await writeFile('storage/app/shop-pwa-mobile-audit.png', Buffer.from(shot.data, 'base64'));
@@ -73,6 +73,8 @@ try {
 
     const standalone = await send('Page.addScriptToEvaluateOnNewDocument', { source: `const nativeMatchMedia=window.matchMedia.bind(window); window.matchMedia=query=>query==='(display-mode: standalone)'?{matches:true,media:query}:nativeMatchMedia(query);` });
     await navigate(`/cosmetics/${slug}`);
+    assert.equal(await evaluate(`document.querySelectorAll('[data-shop-pwa-install]').length`), 0);
+    await navigate(`/shop-app/${slug}/install`);
     const inOzman = await evaluate(`({hidden:document.querySelector('[data-shop-pwa-install]').hidden,label:document.querySelector('[data-shop-pwa-install]').textContent,status:document.querySelector('[data-shop-pwa-status]').textContent})`);
     assert.equal(inOzman.hidden, false);
     assert.ok(inOzman.label.includes('Chrome'));
