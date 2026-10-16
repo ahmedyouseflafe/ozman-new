@@ -66,7 +66,7 @@
         $merchantPwaConfig = [
             'shopId' => $merchantPwaShop->id,
             'shopName' => $merchantPwaShop->name,
-            'installUrl' => route('merchant-app.index'),
+            'installUrl' => route('merchant-app.install', $merchantPwaShop),
             'serviceWorkerUrl' => asset('merchant-pwa-sw.js'),
             'subscribeUrl' => route('merchant-app.push.store'),
             'unsubscribeUrl' => route('merchant-app.push.destroy'),

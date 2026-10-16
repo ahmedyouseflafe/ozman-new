@@ -61,7 +61,7 @@ class ShopAppTest extends TestCase
         $shop = $this->shop();
 
         $this->actingAs($shop->user)
-            ->get(route('merchant-app.index'))
+            ->get(route('merchant-app.install', $shop))
             ->assertOk()
             ->assertSee(route('merchant-app.manifest', $shop), false)
             ->assertSee(route('shop-app.index', $shop), false)

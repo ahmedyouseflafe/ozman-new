@@ -87,7 +87,9 @@ Route::get('/shop-app/{shop:slug}/install', [ShopAppController::class, 'install'
 Route::get('/shop-app/{shop:slug}/launch', [ShopAppController::class, 'launch'])->name('shop-app.launch');
 Route::get('/shop-app/{shop:slug}/manifest.webmanifest', [ShopAppController::class, 'manifest'])->name('shop-app.manifest');
 Route::get('/merchant-app', [MerchantPwaController::class, 'index'])->name('merchant-app.index');
-Route::get('/merchant-app/launch/{shop:slug}', [MerchantPwaController::class, 'launch'])->name('merchant-app.launch');
+Route::get('/merchant-app/launch/{shop:slug}', [MerchantPwaController::class, 'launch'])->name('merchant-app.legacy-launch');
+Route::get('/merchant-app/{shop:slug}/install', [MerchantPwaController::class, 'install'])->name('merchant-app.install');
+Route::get('/merchant-app/{shop:slug}/launch', [MerchantPwaController::class, 'launch'])->name('merchant-app.launch');
 Route::get('/merchant-app/manifest/{shop:slug}.webmanifest', [MerchantPwaController::class, 'manifest'])->name('merchant-app.manifest');
 Route::get('/merchant-app/icon/{shop:slug}/{size}.png', [MerchantPwaController::class, 'icon'])
     ->whereIn('size', [192, 512])

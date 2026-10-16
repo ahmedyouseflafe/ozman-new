@@ -13,7 +13,7 @@ use Illuminate\View\View;
 
 class MerchantPwaController extends Controller
 {
-    public function index(Request $request, WebPushService $webPush): View|RedirectResponse
+    public function index(Request $request): RedirectResponse
     {
         if (! $request->user()) {
             return redirect()->route('merchant.login', [
@@ -30,6 +30,28 @@ class MerchantPwaController extends Controller
             'merchant_shop_id' => $shop->id,
             'current_shop_id' => $shop->id,
         ]);
+
+        return redirect()->route('merchant-app.install', $shop);
+    }
+
+    public function install(Request $request, Shop $shop, WebPushService $webPush): View|RedirectResponse
+    {
+        if (! $request->user()) {
+            return redirect()->route('merchant.login', [
+                'redirect' => route('merchant-app.install', $shop, false),
+            ]);
+        }
+
+        abort_unless(
+            $request->user()->isShopOwner()
+            && $request->user()->is_active
+            && $shop->is_active
+            && $request->user()->shops()->whereKey($shop->id)->exists(),
+            403,
+        );
+
+        $this->persistOwnerLogin($request);
+        $request->session()->put(['merchant_shop_id' => $shop->id, 'current_shop_id' => $shop->id]);
 
         return view('front.merchant_app', [
             'shop' => $shop,
@@ -84,7 +106,7 @@ class MerchantPwaController extends Controller
             'lang' => app()->getLocale(),
             'dir' => in_array(app()->getLocale(), ['ar', 'he'], true) ? 'rtl' : 'ltr',
             'start_url' => route('merchant-app.launch', $shop, false),
-            'scope' => '/',
+            'scope' => '/merchant-app/'.$shop->slug.'/',
             'display' => 'standalone',
             'orientation' => 'any',
             'background_color' => '#05090d',
@@ -107,7 +129,7 @@ class MerchantPwaController extends Controller
                 ],
                 [
                     'name' => 'إدارة المحل',
-                    'url' => route($shop->dashboardRouteName(), $shop, false),
+                    'url' => route('merchant-app.launch', $shop, false),
                 ],
             ],
         ];

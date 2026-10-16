@@ -42,6 +42,9 @@ class MerchantPwaTest extends TestCase
 
         $this->actingAs($owner)
             ->get(route('merchant-app.index'))
+            ->assertRedirect(route('merchant-app.install', $shop));
+
+        $this->get(route('merchant-app.install', $shop))
             ->assertOk()
             ->assertSee('تطبيق Bankai sushi')
             ->assertSee(route('merchant-app.manifest', $shop), false)
@@ -79,6 +82,8 @@ class MerchantPwaTest extends TestCase
             ->get(route('merchant-app.launch', $otherShop))
             ->assertForbidden();
 
+        $this->get(route('merchant-app.install', $otherShop))->assertForbidden();
+
         $this->postJson(route('merchant-app.push.store'), $this->subscriptionPayload($otherShop))
             ->assertForbidden();
 
@@ -97,6 +102,12 @@ class MerchantPwaTest extends TestCase
         $this->assertSame('Bankai sushi', $manifest['name']);
         $this->assertSame('/merchant-app/shops/'.$shop->id, $manifest['id']);
         $this->assertSame(route('merchant-app.launch', $shop, false), $manifest['start_url']);
+        $this->assertSame('/merchant-app/'.$shop->slug.'/', $manifest['scope']);
+        $this->assertStringStartsWith($manifest['scope'], $manifest['start_url']);
+        $this->assertStringStartsWith($manifest['scope'], route('merchant-app.install', $shop, false));
+        foreach ($manifest['shortcuts'] as $shortcut) {
+            $this->assertStringStartsWith($manifest['scope'], $shortcut['url']);
+        }
         $this->assertCount(2, $manifest['icons']);
 
         $this->get(route('merchant-app.icon', ['shop' => $shop, 'size' => 192]))
@@ -121,6 +132,27 @@ class MerchantPwaTest extends TestCase
 
         $this->post(route('logout'))->assertRedirect(route('login'));
         $this->assertDatabaseCount('web_push_subscriptions', 0);
+    }
+
+    public function test_merchant_apps_do_not_claim_customer_apps_or_other_merchants(): void
+    {
+        [$owner, $shop] = $this->ownerAndShop('Bankai', 'bankai');
+        [, $other] = $this->ownerAndShop('Elegance', 'elegance');
+        $merchant = $this->get(route('merchant-app.manifest', $shop))->assertOk()->json();
+        $otherMerchant = $this->get(route('merchant-app.manifest', $other))->assertOk()->json();
+        $customer = $this->get(route('shop-app.manifest', $other))->assertOk()->json();
+        $this->assertFalse(str_starts_with($customer['start_url'], $merchant['scope']));
+        $this->assertFalse(str_starts_with($otherMerchant['scope'], $merchant['scope']));
+        $this->actingAs($owner)->get(route('merchant-app.legacy-launch', $shop))
+            ->assertRedirect(route($shop->dashboardRouteName(), $shop));
+    }
+
+    public function test_direct_merchant_installer_requires_login_for_the_selected_shop(): void
+    {
+        [, $shop] = $this->ownerAndShop('Installer', 'installer');
+        $this->get(route('merchant-app.install', $shop))->assertRedirect(route('merchant.login', [
+            'redirect' => route('merchant-app.install', $shop, false),
+        ]));
     }
 
     private function ownerAndShop(string $name, string $slug): array
