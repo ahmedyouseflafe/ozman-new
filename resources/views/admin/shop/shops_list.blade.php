@@ -5,6 +5,7 @@
 <html lang="ar" dir="rtl">
 
 <head>
+    @include('admin.partials.merchant_app_manifest', ['shop' => $shop])
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $shop->name }} - Ozman</title>

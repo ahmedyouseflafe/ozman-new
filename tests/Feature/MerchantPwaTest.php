@@ -155,6 +155,20 @@ class MerchantPwaTest extends TestCase
         ]));
     }
 
+    public function test_each_merchant_launch_destination_exposes_the_manifest_for_installed_app_updates(): void
+    {
+        [$owner, $shop] = $this->ownerAndShop('Update shop', 'update-shop');
+        $this->actingAs($owner);
+
+        foreach (['restaurant', 'general', 'real_estate'] as $type) {
+            $shop->update(['catalog_type' => $type]);
+            $this->followingRedirects()->get(route('merchant-app.launch', $shop))
+                ->assertOk()
+                ->assertSee('rel="manifest" href="'.route('merchant-app.manifest', $shop).'"', false)
+                ->assertDontSee('rel="manifest" href="'.route('shop-app.manifest', $shop).'"', false);
+        }
+    }
+
     private function ownerAndShop(string $name, string $slug): array
     {
         $owner = User::create([
