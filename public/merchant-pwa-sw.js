@@ -6,6 +6,23 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(self.clients.claim());
 });
 
+// Keep pages live (including authenticated dashboards) while providing a real
+// navigation handler for browsers that require one for the install prompt.
+// Never cache account data, orders, or failed network responses.
+self.addEventListener('fetch', (event) => {
+    const request = event.request;
+    if (request.method !== 'GET' || request.mode !== 'navigate'
+        || new URL(request.url).origin !== self.location.origin) return;
+
+    event.respondWith(fetch(request).catch(() => new Response(`<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تحقق من الاتصال</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#071820;color:#fff;font:18px Arial,sans-serif;text-align:center}main{max-width:440px;padding:24px}p{line-height:1.8;color:#b9d0da}button{padding:14px 24px;border:0;border-radius:12px;background:#0bdcf3;font:inherit;cursor:pointer}</style></head>
+<body><main><h1>تعذّر الاتصال بالمحل</h1><p>تحقق من اتصال الإنترنت ثم أعد المحاولة لعرض أحدث البيانات.</p><button onclick="location.reload()">إعادة المحاولة</button></main></body></html>`, {
+        status: 503,
+        headers: { 'Content-Type': 'text/html; charset=UTF-8', 'Cache-Control': 'no-store' },
+    })));
+});
+
 self.addEventListener('push', (event) => {
     let payload = {};
 

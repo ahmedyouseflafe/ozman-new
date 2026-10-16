@@ -14,7 +14,8 @@
     const isEmbeddedBrowser = /(?:;\s*wv\)|\bwv\b|FBAN|FBAV|Instagram|Line\/|OzmanApp)/i.test(userAgent)
         || isSamsungInternet
         || (isIos && !/Safari/i.test(userAgent));
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    const isStandalone = ['standalone', 'fullscreen', 'minimal-ui', 'window-controls-overlay']
+        .some(mode => window.matchMedia(`(display-mode: ${mode})`).matches) || window.navigator.standalone === true;
     let deferredInstallPrompt = null;
 
     const mountStandaloneNotificationPrompt = () => {

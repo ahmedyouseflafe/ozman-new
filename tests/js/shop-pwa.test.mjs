@@ -5,7 +5,7 @@ import test from 'node:test';
 
 const source = readFileSync(new URL('../../public/shop-pwa.js', import.meta.url), 'utf8');
 
-function runtime({ standalone = false, installer = true, userAgent = 'Android Chrome/130', serviceWorker = true, clipboard = true } = {}) {
+function runtime({ standalone = false, displayMode = 'browser', installer = true, userAgent = 'Android Chrome/130', serviceWorker = true, clipboard = true } = {}) {
     const elements = [];
     const events = new Map();
     const timers = [];
@@ -42,7 +42,7 @@ function runtime({ standalone = false, installer = true, userAgent = 'Android Ch
     const window = {
         OZMAN_SHOP_PWA: config, navigator,
         location: { href: 'https://ozman.test/cosmetics/elegance-perfumes', origin: 'https://ozman.test', pathname: '/cosmetics/elegance-perfumes' },
-        matchMedia: () => ({ matches: standalone }),
+        matchMedia: query => ({ matches: query === `(display-mode: ${standalone ? 'standalone' : displayMode})` }),
         addEventListener: (name, listener) => events.set(name, listener),
         setTimeout: listener => timers.push(listener),
     };
@@ -72,6 +72,16 @@ test('storefronts without installation controls get a visible install and copy e
     assert.equal(app.button().textContent, 'install');
     assert.equal(app.document.body.children[0].className, 'shop-pwa-bar');
     assert.equal(app.document.querySelectorAll('[data-shop-pwa-install]').length, 1);
+});
+
+test('fullscreen and minimal-ui installed apps also open the installer in Chrome', async () => {
+    for (const displayMode of ['fullscreen', 'minimal-ui', 'window-controls-overlay']) {
+        const app = runtime({ displayMode });
+        await app.settle();
+        assert.equal(app.button().textContent, 'openChrome');
+        await app.button().listeners.click();
+        assert.match(app.window.location.href, /^intent:\/\/ozman\.test\/shop-app\/elegance-perfumes\/install#/);
+    }
 });
 
 test('the dedicated installer does not get a duplicate install bar', () => {

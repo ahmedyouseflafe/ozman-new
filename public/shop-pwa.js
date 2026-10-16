@@ -4,7 +4,8 @@
     const config = window.OZMAN_SHOP_PWA;
     if (!config) return;
 
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    const isStandalone = ['standalone', 'fullscreen', 'minimal-ui', 'window-controls-overlay']
+        .some(mode => window.matchMedia(`(display-mode: ${mode})`).matches) || window.navigator.standalone === true;
 
     // Every storefront gets an install entry, including shops opened inside Ozman.
     // The dedicated installer already supplies these controls.
@@ -57,7 +58,7 @@
             return;
         }
 
-        setStatus(config.labels.iosInstructions, 'ready');
+        setStatus(isIos ? config.labels.iosInstructions : config.labels.browserInstructions, 'ready');
     };
 
     const install = async () => {

@@ -38,6 +38,7 @@ async function navigate(path) {
 }
 try {
     await send('Page.enable'); await send('Runtime.enable'); await send('Network.enable');
+    await send('Page.addScriptToEvaluateOnNewDocument', { source: `window.__pwaInstallPromptSeen=false; window.addEventListener('beforeinstallprompt',()=>{window.__pwaInstallPromptSeen=true;});` });
     await send('Emulation.setDeviceMetricsOverride', { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
     await send('Emulation.setUserAgentOverride', { userAgent: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36', acceptLanguage: 'ar' });
     await send('Network.setBlockedURLs', { urls: ['*fonts.googleapis.com*', '*fonts.gstatic.com*', '*cdn.jsdelivr.net*'] });
@@ -63,6 +64,10 @@ try {
     assert.deepEqual(icons.map(icon => [icon.status, icon.width, icon.height]), [[200, 192, 192], [200, 512, 512]]);
     const installability = await send('Page.getInstallabilityErrors');
     assert.deepEqual(installability.installabilityErrors, []);
+    // DevTools manifest checks alone do not prove that the browser offers the
+    // install prompt (installed apps and browser heuristics can suppress it).
+    for (let attempt = 0; attempt < 30 && !await evaluate('window.__pwaInstallPromptSeen'); attempt++) await delay(100);
+    const installPromptSeen = await evaluate('window.__pwaInstallPromptSeen');
     await navigate(`/shop-app/${slug}/launch`);
     assert.equal(await evaluate('!!document.querySelector(".cosmetics-shell")'), true);
 
@@ -74,7 +79,7 @@ try {
     assert.ok(!inOzman.status.includes('تم تثبيت'));
     await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: standalone.identifier });
     assert.deepEqual(exceptions, []);
-    console.log(JSON.stringify({ storefront, scope: manifest.scope, icons, installability, inOzman, exceptions }, null, 2));
+    console.log(JSON.stringify({ storefront, scope: manifest.scope, icons, installability, installPromptSeen, inOzman, exceptions }, null, 2));
 } finally {
     socket.close();
 }
