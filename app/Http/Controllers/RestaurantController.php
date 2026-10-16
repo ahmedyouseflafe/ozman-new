@@ -570,6 +570,10 @@ class RestaurantController extends Controller
             '📞 الجوال: '.($order->customer_phone ?: '-'),
         ];
 
+        if ($shop->catalog_type === 'cosmetics' && filled($order->customer_whatsapp)) {
+            $lines[] = 'واتساب: '.$order->customer_whatsapp;
+        }
+
         if (filled($order->customer_address)) {
             $lines[] = '📍 العنوان: '.$order->customer_address;
         }

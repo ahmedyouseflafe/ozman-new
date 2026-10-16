@@ -449,6 +449,7 @@
         }
     });
 
+    @if($shop->slug !== 'elegance-perfumes')
     const cartCard = document.querySelector('.cart-card');
     const cartActions = document.querySelector('.cart-actions');
     if (cartCard && cartActions) {
@@ -503,6 +504,7 @@
         finally { orderLink.style.pointerEvents = ''; }
     });
 
+    @endif
     const raffleButton = $('beautyRaffleOpen');
     raffleButton?.addEventListener('click', () => {
         const saved = JSON.parse(localStorage.getItem('beautyCustomer') || '{}');

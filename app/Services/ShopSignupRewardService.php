@@ -21,25 +21,32 @@ class ShopSignupRewardService
     public function issue(Shop $shop, VisitorRegistration $registration): void
     {
         // Called in the registration transaction, only for a newly created profile.
+        $snapshot = $this->wheelSnapshot($shop);
+        if (! $snapshot) return;
+        ShopSignupReward::firstOrCreate(['shop_id' => $shop->id, 'phone_hash' => self::phoneHash($registration->phone)], [
+            'visitor_registration_id' => $registration->id, ...$snapshot,
+        ]);
+    }
+
+    protected function wheelSnapshot(Shop $shop): ?array
+    {
         $wheel = RewardWheel::where('key', 'shop_signup_'.$shop->id)->where('shop_id', $shop->id)
             ->where('is_active', true)->lockForUpdate()->first();
-        if (! $wheel) return;
+        if (! $wheel) return null;
         $segments = $wheel->segments()->where('is_active', true)->get()->map(fn ($segment) => [
             'label' => $segment->label, 'color' => $segment->color,
             'discount_type' => $segment->discount_type, 'discount_value' => $segment->discount_value,
             'gift_image' => $segment->gift_image, 'win_quota' => (int) ($segment->win_quota ?? 1),
         ])->values()->all();
-        if (count($segments) < 2) return;
+        if (count($segments) < 2) return null;
         $quotas = array_column($segments, 'win_quota');
-        if (array_sum($quotas) < 1) return;
+        if (array_sum($quotas) < 1) return null;
         $cycleId = $wheel->spin_cycle['signup_cycle_id'] ?? null;
         if (! $cycleId) {
             $cycleId = ShopSignupWheelCycle::create(['shop_id' => $shop->id, 'quotas' => $quotas, 'remaining' => $quotas])->id;
             $wheel->update(['spin_cycle' => ['signup_cycle_id' => $cycleId]]);
         }
-        ShopSignupReward::firstOrCreate(['shop_id' => $shop->id, 'phone_hash' => self::phoneHash($registration->phone)], [
-            'visitor_registration_id' => $registration->id, 'title' => $wheel->title, 'segments' => $segments, 'cycle_id' => $cycleId,
-        ]);
+        return ['title' => $wheel->title, 'segments' => $segments, 'cycle_id' => $cycleId];
     }
 
     public function registration(Shop $shop, string $token): VisitorRegistration
@@ -72,7 +79,7 @@ class ShopSignupRewardService
         });
     }
 
-    private function drawIndex(ShopSignupReward $reward): int
+    protected function drawIndex(ShopSignupReward $reward): int
     {
         // Old entitlements retain their original equal-chance rules. New ones
         // share a locked counter per settings version, including after edits.

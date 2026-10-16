@@ -108,7 +108,8 @@ class ShopAppTest extends TestCase
 
         $this->actingAs($shop->user)->get(route('shop-app.launch', $shop))
             ->assertOk()->assertViewIs('front.cosmetics_store')
-            ->assertSee('data-shop-app-installer', false)
+            ->assertSee('id="shopSignupWheel"', false)
+            ->assertDontSee('id="bankaiWelcome"', false)
             ->assertSee(route('shop-app.manifest', $shop), false)
             ->assertDontSee(route('merchant-app.manifest', $shop), false);
     }

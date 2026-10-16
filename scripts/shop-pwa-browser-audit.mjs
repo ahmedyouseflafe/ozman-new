@@ -43,11 +43,8 @@ try {
     await send('Emulation.setUserAgentOverride', { userAgent: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36', acceptLanguage: 'ar' });
     await send('Network.setBlockedURLs', { urls: ['*fonts.googleapis.com*', '*fonts.gstatic.com*', '*cdn.jsdelivr.net*'] });
     await navigate(`/cosmetics/${slug}`);
-    // This store requires customer registration; installation must also be
-    // reachable from that initial dialog without registering a test customer.
-    const installerLink = await evaluate(`document.querySelector('#bankaiWelcome [data-shop-app-installer]')?.getAttribute('href')`);
-    assert.ok(installerLink?.endsWith(`/shop-app/${slug}/install`));
-    await evaluate(`document.querySelector('#bankaiWelcome')?.close()`);
+    assert.equal(await evaluate(`!!document.querySelector('#bankaiWelcome')`), false);
+    await evaluate(`document.querySelector('#shopSignupWheel')?.close()`);
     const storefront = await evaluate(`({title:document.title, buttons:document.querySelectorAll('[data-shop-pwa-install]').length, width:document.documentElement.scrollWidth, viewport:innerWidth})`);
     assert.equal(storefront.buttons, 0);
     assert.ok(storefront.width <= storefront.viewport + 1, JSON.stringify(storefront));
