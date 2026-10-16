@@ -125,8 +125,15 @@ class MerchantPwaController extends Controller
     public function icon(Shop $shop, int $size): Response
     {
         abort_unless($shop->is_active && in_array($size, [192, 512], true), 404);
-        $sourcePath = $this->shopLogoPath($shop);
-        $source = @imagecreatefromstring((string) file_get_contents($sourcePath));
+        $source = false;
+        foreach ($this->shopLogoPaths($shop) as $sourcePath) {
+            if (is_file($sourcePath) && is_readable($sourcePath)) {
+                $source = @imagecreatefromstring((string) file_get_contents($sourcePath));
+                if ($source !== false) {
+                    break;
+                }
+            }
+        }
 
         if (! $source) {
             abort(404);
@@ -188,20 +195,21 @@ class MerchantPwaController extends Controller
             ?: $shops->first();
     }
 
-    private function shopLogoPath(Shop $shop): string
+    private function shopLogoPaths(Shop $shop): array
     {
         $logo = str_replace('\\', '/', ltrim((string) $shop->logo, '/'));
         $candidates = [];
 
         if ($logo !== '' && ! str_contains($logo, '..') && ! Str::startsWith($logo, ['http://', 'https://'])) {
             $candidates[] = public_path($logo);
+            $candidates[] = base_path('public/'.$logo);
             $candidates[] = public_path('storage/'.Str::after($logo, 'storage/'));
             $candidates[] = storage_path('app/public/'.Str::after($logo, 'storage/'));
         }
 
         $candidates[] = public_path('ozman-favicon.png');
+        $candidates[] = base_path('public/ozman-favicon.png');
 
-        return collect($candidates)->first(fn (string $path) => is_file($path))
-            ?? public_path('ozman-favicon.png');
+        return array_unique($candidates);
     }
 }

@@ -138,6 +138,7 @@
             <p class="bankai-welcome-kicker">{{ $welcome['eyebrow'] }}</p>
             <h2 id="bankaiWelcomeTitle">{{ $welcome['title'] }}</h2>
             <p class="bankai-welcome-intro" id="bankaiWelcomeIntro">{{ $welcome['intro'] }}</p>
+            <a class="bankai-profile-edit" data-shop-app-installer href="{{ route('shop-app.install', $shop) }}">{{ __('تثبيت التطبيق') }}</a>
         </section>
         <form class="bankai-welcome-form" id="bankaiWelcomeForm">
             <div class="bankai-welcome-fields">

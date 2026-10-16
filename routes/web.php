@@ -83,6 +83,7 @@ Route::post('/app/device-token', [PushDeviceController::class, 'store'])
     ->middleware('throttle:20,1')
     ->name('app.device-token.store');
 Route::get('/shop-app/{shop:slug}', [ShopAppController::class, 'index'])->name('shop-app.index');
+Route::get('/shop-app/{shop:slug}/install', [ShopAppController::class, 'install'])->name('shop-app.install');
 Route::get('/shop-app/{shop:slug}/launch', [ShopAppController::class, 'launch'])->name('shop-app.launch');
 Route::get('/shop-app/{shop:slug}/manifest.webmanifest', [ShopAppController::class, 'manifest'])->name('shop-app.manifest');
 Route::get('/merchant-app', [MerchantPwaController::class, 'index'])->name('merchant-app.index');
@@ -465,26 +466,4 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
         ->name('reward-wheels.marketer.direct.spin');
 });
 
-Route::get('/lang/{locale}', function ($locale) {
-    if (in_array($locale, ['ar', 'he', 'en'], true)) {
-        session(['locale' => $locale]);
-
-        if (request()->query('source') === 'device') {
-            return redirect()->back();
-        }
-
-        return redirect()->back()->withCookie(cookie(
-            'ozman_public_locale',
-            $locale,
-            60 * 24 * 365 * 5,
-            '/',
-            null,
-            request()->isSecure(),
-            false,
-            false,
-            'lax'
-        ));
-    }
-
-    return redirect()->back();
-})->name('lang.switch');
+Route::get('/lang/{locale}', [\App\Http\Controllers\LanguageController::class, 'switch'])->name('lang.switch');

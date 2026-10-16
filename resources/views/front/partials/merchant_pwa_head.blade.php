@@ -34,10 +34,14 @@
             'shareText' => 'حمّل تطبيق '.$merchantPwaShop->name.' وافتح المحل مباشرة من جوالك.',
             'copied' => 'تم نسخ رابط التطبيق.',
             'copyFailed' => 'تعذر نسخ الرابط. انسخه من شريط العنوان.',
+            'install' => 'تثبيت تطبيق '.$merchantPwaShop->name,
+            'copyLink' => 'نسخ رابط التثبيت',
+            'cancelled' => 'لم يكتمل التثبيت. يمكنك المحاولة مجددًا من زر التثبيت أو قائمة المتصفح.',
         ];
         $customerPwaConfig = [
             'shopName' => $merchantPwaShop->name,
-            'shareUrl' => route('shop-app.index', $merchantPwaShop),
+            'shareUrl' => route('shop-app.install', $merchantPwaShop),
+            'installUrl' => route('shop-app.install', $merchantPwaShop),
             'serviceWorkerUrl' => asset('merchant-pwa-sw.js'),
             'labels' => $customerPwaLabels,
         ];
@@ -62,6 +66,7 @@
         $merchantPwaConfig = [
             'shopId' => $merchantPwaShop->id,
             'shopName' => $merchantPwaShop->name,
+            'installUrl' => route('merchant-app.index'),
             'serviceWorkerUrl' => asset('merchant-pwa-sw.js'),
             'subscribeUrl' => route('merchant-app.push.store'),
             'unsubscribeUrl' => route('merchant-app.push.destroy'),

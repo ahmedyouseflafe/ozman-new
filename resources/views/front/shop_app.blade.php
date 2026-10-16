@@ -33,6 +33,7 @@
                 <button class="btn btn-primary" type="button" data-shop-pwa-install>تثبيت تطبيق {{ $shop->name }}</button>
                 <a class="btn" href="{{ $shop->publicUrl() }}">{{ $shop->catalog_type === 'restaurant' ? 'فتح قائمة الطعام' : 'فتح المحل' }}</a>
                 <button class="btn" type="button" data-shop-pwa-share>مشاركة رابط التطبيق</button>
+                <button class="btn" type="button" data-shop-pwa-copy>نسخ رابط التثبيت</button>
             </div>
             <p class="status" data-shop-pwa-status>اضغط زر تثبيت التطبيق للمتابعة.</p>
         </div>

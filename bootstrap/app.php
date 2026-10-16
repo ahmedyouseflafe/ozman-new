@@ -18,7 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Without this Laravel returns an authentication error instead of a redirect.
         $middleware->redirectGuestsTo('/login');
 
-        $middleware->web(append: [
+        $middleware->web(replace: [
+            \Illuminate\Session\Middleware\StartSession::class => \App\Http\Middleware\StartPageSession::class,
+        ], append: [
             \App\Http\Middleware\CanonicalDomain::class,
             \App\Http\Middleware\LanguageMiddleware::class,
             \App\Http\Middleware\AddSiteIcon::class,

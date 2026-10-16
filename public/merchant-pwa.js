@@ -49,10 +49,16 @@
             return;
         }
 
-        const url = new URL(window.location.href);
+        const url = new URL(config.installUrl || '/merchant-app', window.location.origin);
         const scheme = url.protocol.replace(':', '');
-        window.location.href = `intent://${url.host}${url.pathname}${url.search}#Intent;scheme=${scheme};package=com.android.chrome;end`;
+        window.location.href = `intent://${url.host}${url.pathname}${url.search}#Intent;scheme=${scheme};package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(url.href)};end`;
     };
+
+    if (isStandalone && installButtons.length > 0) {
+        installButtons.forEach((button) => {
+            button.textContent = isAndroid ? 'فتح في Chrome للتثبيت' : 'طريقة التثبيت على iPhone';
+        });
+    }
 
     if (isEmbeddedBrowser) {
         installButtons.forEach((button) => {
@@ -63,11 +69,9 @@
             button.addEventListener('click', () => setStatus('ثبّت التطبيق من Chrome أو Safari أولاً، ثم فعّل الإشعارات من النسخة المثبّتة.', 'ready'));
         });
         setStatus(
-            isSamsungInternet
-                ? 'متصفح Samsung حاول إنشاء نسخة قديمة. اضغط «فتح في Chrome للتثبيت» لتثبيت آمن ومتوافق.'
-                : isAndroid
-                ? 'أنت داخل تطبيق Ozman. اضغط «فتح في Chrome للتثبيت» لإكمال التثبيت.'
-                : 'أنت داخل تطبيق Ozman. افتح الصفحة في Safari ثم أضفها إلى الشاشة الرئيسية.',
+            isAndroid
+                ? 'افتح صفحة التثبيت في Chrome لتثبيت تطبيق هذا المحل.'
+                : 'افتح صفحة التثبيت في Safari ثم أضفها إلى الشاشة الرئيسية.',
             'ready',
         );
         return;
@@ -160,7 +164,7 @@
 
     installButtons.forEach((button) => button.addEventListener('click', async () => {
         if (isStandalone) {
-            setStatus('تطبيق المحل مثبت ومفتوح الآن.', 'success');
+            openInChrome();
             return;
         }
 
@@ -189,11 +193,6 @@
     }));
 
     registrationPromise.then(() => {
-        if (isStandalone) {
-            installButtons.forEach((button) => button.hidden = true);
-            setStatus('تطبيق المحل مثبت على هذا الجهاز.', 'success');
-        }
-
         if ('Notification' in window && Notification.permission === 'granted') {
             subscribeToNotifications(false).catch((error) => {
                 console.error('Unable to refresh merchant PWA subscription.', error);

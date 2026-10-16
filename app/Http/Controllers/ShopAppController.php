@@ -5,12 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\Shop;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ShopAppController extends Controller
 {
-    public function index(Shop $shop): View
+    public function index(Shop $shop): RedirectResponse
+    {
+        abort_unless($shop->is_active, 404);
+
+        return redirect()->route('shop-app.install', $shop);
+    }
+
+    public function install(Shop $shop): View
     {
         abort_unless($shop->is_active, 404);
 
@@ -19,11 +27,17 @@ class ShopAppController extends Controller
         ]);
     }
 
-    public function launch(Shop $shop): RedirectResponse
+    public function launch(Shop $shop): View|RedirectResponse
     {
         abort_unless($shop->is_active, 404);
 
-        return redirect()->to($shop->publicUrl());
+        // Render the existing storefront within this app's own URL scope.
+        // Redirecting to a shared root scope makes different shops compete for
+        // installation and lets the Ozman app capture their links.
+        $route = Route::getRoutes()->getByName($shop->publicRouteName());
+        $response = app()->call($route->getAction('controller'), ['shop' => $shop]);
+
+        return $response instanceof View ? $response->with('forceCustomerPwa', true) : $response;
     }
 
     public function manifest(Shop $shop): Response
@@ -40,7 +54,7 @@ class ShopAppController extends Controller
             'lang' => app()->getLocale(),
             'dir' => in_array(app()->getLocale(), ['ar', 'he'], true) ? 'rtl' : 'ltr',
             'start_url' => route('shop-app.launch', $shop, false),
-            'scope' => '/',
+            'scope' => route('shop-app.index', $shop, false).'/',
             'display' => 'standalone',
             'orientation' => 'any',
             'background_color' => '#05090d',

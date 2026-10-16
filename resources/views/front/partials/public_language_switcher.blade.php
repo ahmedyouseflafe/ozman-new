@@ -7,7 +7,7 @@
 <div class="languages public-language-switcher" aria-label="{{ ['ar' => 'اختيار اللغة', 'he' => 'בחירת שפה', 'en' => 'Choose language'][$currentPublicLocale] ?? 'Choose language' }}">
     <span class="public-language-icon" aria-hidden="true">🌐</span>
     @foreach($publicLanguageNames as $languageCode => $languageName)
-        <a href="{{ route('lang.switch', $languageCode) }}"
+        <a href="{{ route('lang.switch', ['locale' => $languageCode, 'return_to' => request()->getRequestUri()]) }}"
            data-public-locale="{{ $languageCode }}"
            @class(['active' => $currentPublicLocale === $languageCode])
            lang="{{ $languageCode }}"
@@ -53,7 +53,10 @@
                 const redirectKey = `ozman.locale-redirect.${wantedLocale}`;
                 if (!sessionStorage.getItem(redirectKey)) {
                     sessionStorage.setItem(redirectKey, '1');
-                    window.location.replace(@json(url('/lang')).replace(/\/$/, '') + '/' + wantedLocale + '?source=device');
+                    const destination = new URL(@json(url('/lang')).replace(/\/$/, '') + '/' + wantedLocale);
+                    destination.searchParams.set('source', 'device');
+                    destination.searchParams.set('return_to', location.pathname + location.search + location.hash);
+                    window.location.replace(destination.href);
                 }
             }
         })();

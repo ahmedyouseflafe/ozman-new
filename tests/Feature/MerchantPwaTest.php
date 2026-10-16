@@ -80,7 +80,7 @@ class MerchantPwaTest extends TestCase
             ->assertForbidden();
 
         $this->postJson(route('merchant-app.push.store'), $this->subscriptionPayload($otherShop))
-            ->assertNotFound();
+            ->assertForbidden();
 
         $this->assertDatabaseCount('web_push_subscriptions', 0);
     }

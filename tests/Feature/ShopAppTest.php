@@ -15,7 +15,8 @@ class ShopAppTest extends TestCase
     {
         $shop = $this->shop();
 
-        $this->get(route('shop-app.index', $shop))
+        $this->get(route('shop-app.index', $shop))->assertRedirect(route('shop-app.install', $shop));
+        $this->get(route('shop-app.install', $shop))
             ->assertOk()
             ->assertSee('تطبيق Bankai sushi')
             ->assertSee(route('shop-app.manifest', $shop), false)
@@ -36,11 +37,12 @@ class ShopAppTest extends TestCase
         $this->assertSame('Bankai sushi', $manifest['name']);
         $this->assertSame('/shop-app/customers/'.$shop->id, $manifest['id']);
         $this->assertSame(route('shop-app.launch', $shop, false), $manifest['start_url']);
+        $this->assertSame('/shop-app/'.$shop->slug.'/', $manifest['scope']);
         $this->assertCount(2, $manifest['icons']);
         $this->assertCount(1, $manifest['shortcuts']);
 
         $this->get(route('shop-app.launch', $shop))
-            ->assertRedirect($shop->publicUrl());
+            ->assertOk()->assertViewIs('front.restaurant_menu');
     }
 
     public function test_public_shop_page_is_installable_as_the_customer_app(): void
@@ -71,7 +73,7 @@ class ShopAppTest extends TestCase
         $shop = $this->shop();
 
         $this->actingAs($shop->user)
-            ->get(route('shop-app.index', $shop))
+            ->get(route('shop-app.install', $shop))
             ->assertOk()
             ->assertSee(route('shop-app.manifest', $shop), false)
             ->assertSee(asset('shop-pwa.js'), false)
@@ -85,6 +87,7 @@ class ShopAppTest extends TestCase
         $shop->update(['is_active' => false]);
 
         $this->get(route('shop-app.index', $shop))->assertNotFound();
+        $this->get(route('shop-app.install', $shop))->assertNotFound();
         $this->get(route('shop-app.manifest', $shop))->assertNotFound();
         $this->get(route('shop-app.launch', $shop))->assertNotFound();
     }
@@ -96,6 +99,56 @@ class ShopAppTest extends TestCase
         $this->get('/shop-pwa.js')
             ->assertOk()
             ->assertHeader('Content-Type', 'application/javascript; charset=UTF-8');
+    }
+
+    public function test_cosmetics_app_renders_its_store_inside_its_own_scope_even_for_owner(): void
+    {
+        $shop = $this->shop();
+        $shop->update(['slug' => 'elegance-perfumes', 'catalog_type' => 'cosmetics']);
+
+        $this->actingAs($shop->user)->get(route('shop-app.launch', $shop))
+            ->assertOk()->assertViewIs('front.cosmetics_store')
+            ->assertSee('data-shop-app-installer', false)
+            ->assertSee(route('shop-app.manifest', $shop), false)
+            ->assertDontSee(route('merchant-app.manifest', $shop), false);
+    }
+
+    public function test_customer_app_scopes_do_not_overlap_between_shops(): void
+    {
+        $shop = $this->shop();
+        $other = $shop->replicate();
+        $other->slug .= '-second';
+        $other->save();
+
+        $first = $this->get(route('shop-app.manifest', $shop))->assertOk()->json();
+        $second = $this->get(route('shop-app.manifest', $other))->assertOk()->json();
+        $this->assertNotSame($first['id'], $second['id']);
+        $this->assertFalse(str_starts_with($second['scope'], $first['scope']));
+        $this->assertStringStartsWith($first['scope'], $first['start_url']);
+        $this->assertStringStartsWith($first['scope'], route('shop-app.install', $shop, false));
+    }
+
+    public function test_each_catalog_type_can_launch_inside_the_customer_app(): void
+    {
+        $shop = $this->shop();
+        foreach (['restaurant', 'advertising_services', 'electronics', 'clothing', 'cosmetics', 'sweets', 'furniture_appliances', 'real_estate', 'general'] as $type) {
+            $shop->update(['catalog_type' => $type]);
+            $this->get(route('shop-app.launch', $shop))->assertOk()
+                ->assertSee(route('shop-app.manifest', $shop), false);
+        }
+    }
+
+    public function test_unreadable_shop_logo_does_not_break_installation_icons(): void
+    {
+        $shop = $this->shop();
+        $shop->update(['logo' => 'images/logo.svg']);
+
+        foreach ([192, 512] as $size) {
+            $image = $this->get(route('merchant-app.icon', ['shop' => $shop, 'size' => $size]))
+                ->assertOk()->assertHeader('Content-Type', 'image/png')->getContent();
+            $dimensions = getimagesizefromstring($image);
+            $this->assertSame([$size, $size], array_slice($dimensions, 0, 2));
+        }
     }
 
     private function shop(): Shop

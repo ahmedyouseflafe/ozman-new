@@ -52,7 +52,7 @@ class AdvertisingStoreTest extends TestCase
 
         $this->assertSame(route('advertising.store', $shop), $shop->publicUrl());
         $this->get(route('front.shop.slug', $shop))->assertRedirect($shop->publicUrl());
-        $this->get(route('shop-app.launch', $shop))->assertRedirect($shop->publicUrl());
+        $this->get(route('shop-app.launch', $shop))->assertOk()->assertViewIs('front.advertising_store');
 
         $this->withSession(['locale' => 'ar'])->get($shop->publicUrl())
             ->assertOk()
