@@ -80,6 +80,32 @@ class CosmeticsCustomerRewardsTest extends TestCase
         $this->postJson(route('cosmetics.orders.store',$shop),['registration_token'=>$token,...$this->details($product)])->assertOk()->assertJsonPath('total',100);
     }
 
+    public function test_wheel_only_reset_backs_up_rewards_preserves_orders_and_issues_new_welcome_to_old_browser(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        [$shop,$product]=$this->fixture();$token=str_repeat('a',64);
+        $url=route('restaurant.signup-reward',$shop);
+        $this->postJson(route('restaurant.customer-registration.store',$shop),['registration_token'=>$token,'name'=>'Customer','whatsapp'=>'0591234567','address'=>'City','location_deferred'=>true])->assertOk();
+        $first=$this->postJson($url,['registration_token'=>$token,'spin'=>true])->assertOk()->json('reward.welcome_id');
+        $this->postJson(route('cosmetics.orders.store',$shop),$this->details($product))->assertOk();
+        $registrations=\App\Models\VisitorRegistration::count();
+        $other=Shop::create(['user_id'=>User::factory()->create()->id,'name'=>'Other','slug'=>'other-reset','is_active'=>true]);
+        $otherReward=\App\Models\ShopSignupReward::create(['shop_id'=>$other->id,'phone_hash'=>hash('sha256','other'),'title'=>'Other reward','segments'=>[]]);
+        $this->artisan('shop:reset-customer-registrations',['slug'=>$shop->slug,'--wheel-only'=>true])->assertExitCode(0);
+        $this->assertDatabaseHas('shop_signup_rewards',['id'=>$first]);
+        $this->artisan('shop:reset-customer-registrations',['slug'=>$shop->slug,'--wheel-only'=>true,'--execute'=>true])->assertExitCode(0);
+        $this->assertDatabaseCount('visitor_registrations',$registrations);
+        $this->assertDatabaseCount('front_orders',1);
+        $this->assertDatabaseHas('shop_signup_rewards',['id'=>$otherReward->id]);
+        $this->assertDatabaseMissing('shop_signup_rewards',['id'=>$first]);
+        $backups=\Illuminate\Support\Facades\Storage::disk('local')->files('registration-resets');
+        $this->assertCount(1,$backups);
+        $backup=json_decode(\Illuminate\Support\Facades\Storage::disk('local')->get($backups[0]),true);
+        $this->assertSame((int)$first,$backup['rewards'][0]['id']);
+        $next=$this->postJson($url,['registration_token'=>$token])->assertOk()->assertJsonPath('reward.selected_index',null)->json('reward.welcome_id');
+        $this->assertNotSame($first,$next);
+    }
+
     public function test_checkout_accepts_optional_location_and_uses_server_coordinates_for_map_link(): void
     {
         [$shop,$product]=$this->fixture();

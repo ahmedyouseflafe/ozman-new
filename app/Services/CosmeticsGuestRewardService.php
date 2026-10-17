@@ -46,7 +46,10 @@ class CosmeticsGuestRewardService extends ShopSignupRewardService
             if ($spin && ! $reward->redeemed_at && $reward->selected_index === null) {
                 $reward->update(['selected_index' => $this->drawIndex($reward), 'spun_at' => now()]);
             }
-            return $this->payload($reward);
+            $payload = $this->payload($reward);
+            // A deliberate reset issues a new entitlement, including for browsers
+            // that already dismissed the previous welcome.
+            return $payload ? [...$payload, 'welcome_id' => (string) $reward->id] : null;
         });
     }
 

@@ -28,7 +28,25 @@
             return data.reward || null;
         } finally { clearTimeout(timeout); }
     };
-    const open = () => { if (!dialog.open) dialog.showModal(); };
+    // Elegance has no login form: remember the automatic welcome presentation
+    // for this shop and visitor, including when they close without spinning.
+    const welcomeKey = () => !preview && window.OZMAN_ELEGANCE_CHECKOUT?.shopId
+        ? `ozman.cosmetics.${window.OZMAN_ELEGANCE_CHECKOUT.shopId}.welcome-shown.${window.OzmanRestaurantCustomer?.token()}.${reward?.welcome_id || 'legacy'}` : null;
+    const shownThisPage = new Set();
+    const alreadyShown = () => {
+        const key = welcomeKey();
+        if (!key) return false;
+        try { return shownThisPage.has(key) || localStorage.getItem(key) === '1'; }
+        catch (_) { return shownThisPage.has(key); }
+    };
+    const open = () => {
+        if (!dialog.open) dialog.showModal();
+        const key = welcomeKey();
+        if (key && reward) {
+            shownThisPage.add(key);
+            try { localStorage.setItem(key, '1'); } catch (_) {}
+        }
+    };
     const draw = () => {
         $('signupWheelTitle').textContent = reward?.title || ui.open;
         $('signupWheelWrap').hidden = !reward;
@@ -77,8 +95,8 @@
     const refresh = (autoOpen = false) => {
         if (loading) return loading;
         loading = (async () => {
-            try { reward = await request(false);failed = false;error('');draw();notify();if(autoOpen && reward?.selected_index === null)open();return true; }
-            catch (_) { failed = true;error(ui.error);draw();if(autoOpen)open();return false; }
+            try { reward = await request(false);failed = false;error('');draw();notify();if(autoOpen && reward?.selected_index === null && !alreadyShown())open();return true; }
+            catch (_) { failed = true;error(ui.error);draw();if(autoOpen && !alreadyShown())open();return false; }
             finally { loading = null; }
         })();
         return loading;
