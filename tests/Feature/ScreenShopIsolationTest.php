@@ -152,6 +152,23 @@ class ScreenShopIsolationTest extends TestCase
         $this->get(route('front.shop', $shop))->assertOk()->assertSee('Shop content');
     }
 
+    public function test_ozman_lower_videos_survive_isolation_in_html_and_browser_payload(): void
+    {
+        $ozman = $this->shop('ozman', 'general');
+        $other = $this->shop('other', 'general');
+        $this->screen(null, 'Platform lower video', ['type' => 'video', 'placement' => 'bottom', 'media' => 'storage/screens/videos/platform-lower.mp4']);
+        $this->screen($ozman, 'Ozman lower video', ['type' => 'video', 'placement' => 'bottom', 'media' => 'storage/screens/videos/ozman-lower.mp4']);
+        $this->screen($other, 'Other lower video', ['type' => 'video', 'placement' => 'bottom', 'media' => 'storage/screens/videos/other-lower.mp4']);
+        $response = $this->get(route('front.home'))->assertOk();
+        $centers = collect($response->viewData('frontData')['centersData']);
+        $this->assertSame(['Platform lower video', 'Ozman lower video'], array_column($centers->firstWhere('id', $ozman->id)['display_items'], 'title'));
+        $this->assertSame(['Other lower video'], array_column($centers->firstWhere('id', $other->id)['display_items'], 'title'));
+        $html = explode('<!-- Radial Category Selection Section -->', explode('id="activeShopDisplay"', $response->getContent(), 2)[1], 2)[0];
+        $this->assertStringContainsString('platform-lower.mp4', $html);
+        $this->assertStringContainsString('ozman-lower.mp4', $html);
+        $this->assertStringNotContainsString('other-lower.mp4', $html);
+    }
+
     public function test_migration_assigns_unambiguous_legacy_screens_and_quarantines_ambiguous_ones(): void
     {
         $one = $this->shop('one'); $many = $this->shop('many'); $this->shop('many-two', 'general', $many->user);
