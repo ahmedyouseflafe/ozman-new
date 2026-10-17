@@ -223,5 +223,6 @@
     if (requestedService) window.setTimeout(() => document.querySelector(`[data-service-key="${CSS.escape(requestedService)}"]`)?.scrollIntoView({ block: 'center' }), 100);
 })();
 </script>
+@include('front.partials.shop_bottom_screens')
 </body>
 </html>

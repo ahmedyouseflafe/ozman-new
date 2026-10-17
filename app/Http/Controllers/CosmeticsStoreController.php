@@ -84,6 +84,7 @@ class CosmeticsStoreController extends Controller
             ->orderBy('sort_order')
             ->latest()
             ->get();
+        $displayItems = $shop->activeScreens->where('placement', '!=', 'bottom')->toBase()->concat($displayItems);
         $purchaseRewardWheels = $shop->rewardWheels()
             ->where('wheel_type', RewardWheel::TYPE_PURCHASE_AMOUNT)
             ->where('is_active', true)

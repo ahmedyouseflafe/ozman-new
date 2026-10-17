@@ -102,6 +102,7 @@ class FrontController extends Controller
 
         $ozmanCategories = $ozmanShop?->categories ?? collect();
         $ozmanScreens = MainScreen::query()
+            ->forPlatform()
             ->where('is_active', true)
             ->latest()
             ->get();
@@ -221,6 +222,7 @@ class FrontController extends Controller
         $ozmanCategories = $ozmanShop?->categories ?? collect();
 
         $ozmanScreens = MainScreen::query()
+            ->forPlatform()
             ->where('is_active', true)
             ->latest()
             ->get();
@@ -274,6 +276,7 @@ class FrontController extends Controller
 
         $shop = $selectedShop->load([
             'social',
+            'activeScreens',
             'distributorMarketer.distributor',
             'advertisements' => fn($query) => $query
                 ->where('is_active', true)
@@ -354,6 +357,7 @@ class FrontController extends Controller
     {
         $relations = [
             'social',
+            'activeScreens',
             'distributorMarketer.distributor',
             'rewardWheels' => fn($query) => $query
                 ->where('wheel_type', RewardWheel::TYPE_PURCHASE_AMOUNT)
@@ -464,9 +468,9 @@ class FrontController extends Controller
                 }
             }
 
-            $displayItems = $shop->advertisements ?? collect();
+            $displayItems = $shop->activeScreens->toBase()->concat($shop->advertisements ?? collect());
             if ($ozmanShop?->exists && $shop->id === $ozmanShop->id) {
-                $displayItems = $ozmanBottomScreens->merge($displayItems);
+                $displayItems = $ozmanBottomScreens->toBase()->concat($displayItems);
             }
 
             $shopOrderContext = $this->shopOrderContext($shop);
@@ -525,7 +529,7 @@ class FrontController extends Controller
                 'social_links' => $this->socialLinksPayload($ozmanShop),
                 'agents' => $this->contactPeoplePayload($ozmanShop->agents ?? collect(), $ozmanShop, 'agent', $ozmanProductsDb, $ozmanDepartments, $shops),
                 'distributors' => $this->contactPeoplePayload($ozmanShop->distributors ?? collect(), $ozmanShop, 'distributor', $ozmanProductsDb, $ozmanDepartments, $shops),
-                'display_items' => $this->displayItemsPayload($ozmanBottomScreens->merge($ozmanShop->advertisements ?? collect())),
+                'display_items' => $this->displayItemsPayload($ozmanBottomScreens->toBase()->concat($ozmanShop->activeScreens)->concat($ozmanShop->advertisements ?? collect())),
                 'departments' => $ozmanDepartments,
                 'products_db' => $ozmanProductsDb,
                 'address' => $ozmanShop->address,

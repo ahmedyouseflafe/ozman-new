@@ -39,6 +39,7 @@
     </style>
 </head>
 <body>
+@include('front.partials.shop_bottom_screens', ['screenPlacement' => 'top'])
 <main class="furniture-shell">
     <section class="hero">
         <div class="hero-media">@forelse($displayItems as $item)<div class="slide {{ $loop->first ? 'active' : '' }}" data-slide>@if($isVideo($item->media))<video src="{{ $mediaUrl($item->media) }}" muted playsinline autoplay loop></video>@else<img src="{{ $mediaUrl($item->media) }}" alt="{{ $item->title ?: $shop->name }}">@endif</div>@empty<div class="hero-fallback"></div>@endforelse</div>
@@ -81,5 +82,6 @@ const cart=[],money=v=>Number(v||0).toFixed(2)+' ₪',tabs=[...document.querySel
     document.addEventListener('keydown',event=>{if(event.key==='Escape')close();});
 })();
 </script>
+@include('front.partials.shop_bottom_screens', ['screenPlacement' => 'bottom'])
 </body>
 </html>

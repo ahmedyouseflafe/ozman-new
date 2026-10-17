@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ScreenController extends Controller
@@ -18,9 +19,11 @@ class ScreenController extends Controller
 
     public function index(): View
     {
-        abort_unless($this->canAccessCurrentRoute(), 403);
+        abort_unless($this->canAccessScreenRoute(), 403);
 
         $screens = $this->visibleScreensQuery()
+            ->with('shop')
+            ->when($this->selectedShopId(), fn ($query, $shopId) => $query->where('shop_id', $shopId))
             ->latest()
             ->get()
             ->map(function (MainScreen $screen) {
@@ -34,6 +37,8 @@ class ScreenController extends Controller
 
         return view('admin.screens.screens', [
             'screens' => $screens,
+            'shops' => $this->screenShops(),
+            'selectedShopId' => $this->selectedShopId(),
             'screensCount' => $screens->count(),
             'activeScreensCount' => $screens->where('is_active', true)->count(),
             'inactiveScreensCount' => $screens->where('is_active', false)->count(),
@@ -43,20 +48,23 @@ class ScreenController extends Controller
 
     public function create(): View
     {
-        abort_unless($this->canAccessCurrentRoute(), 403);
+        abort_unless($this->canAccessScreenRoute(), 403);
 
         abort_if($this->allowedPlacements() === [], 403);
 
         return view('admin.screens.screens_create', [
             'allowedPlacements' => $this->allowedPlacements(),
+            ...$this->screenFormContext(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless($this->canAccessCurrentRoute(), 403);
+        abort_unless($this->canAccessScreenRoute(), 403);
 
         $data = $this->validatedData($request);
+        $data['shop_id'] = $this->screenShopId($request);
+        $data['needs_shop_assignment'] = false;
         $data['duration'] = $data['duration'] ?? 10;
         $data['placement'] = $data['placement'] ?? 'top';
         $this->authorizePlacement($data['placement']);
@@ -67,13 +75,13 @@ class ScreenController extends Controller
         MainScreen::create($data);
 
         return redirect()
-            ->route('screens')
+            ->route('screens', ['shop_id' => $data['shop_id'] ?? ''])
             ->with('status', 'تمت إضافة شاشة رئيسية بنجاح.');
     }
 
     public function show(MainScreen $screen): View
     {
-        abort_unless($this->canAccessCurrentRoute(), 403);
+        abort_unless($this->canAccessScreenRoute(), 403);
         $this->authorizeScreenVisibility($screen);
 
         return view('admin.screens.screens_show', compact('screen'));
@@ -81,7 +89,7 @@ class ScreenController extends Controller
 
     public function edit(MainScreen $screen): View
     {
-        abort_unless($this->canAccessCurrentRoute(), 403);
+        abort_unless($this->canAccessScreenRoute(), 403);
         $this->authorizeScreenVisibility($screen);
 
         abort_if($this->allowedPlacements() === [], 403);
@@ -89,15 +97,18 @@ class ScreenController extends Controller
         return view('admin.screens.screens_edit', [
             'screen' => $screen,
             'allowedPlacements' => $this->allowedPlacements(),
+            ...$this->screenFormContext($screen),
         ]);
     }
 
     public function update(Request $request, MainScreen $screen): RedirectResponse
     {
-        abort_unless($this->canAccessCurrentRoute(), 403);
+        abort_unless($this->canAccessScreenRoute(), 403);
         $this->authorizeScreenVisibility($screen);
 
         $data = $this->validatedData($request, $screen);
+        $data['shop_id'] = $this->screenShopId($request, $screen);
+        $data['needs_shop_assignment'] = false;
         $data['duration'] = $data['duration'] ?? 10;
         $data['placement'] = $data['placement'] ?? 'top';
         $this->authorizePlacement($data['placement']);
@@ -113,26 +124,27 @@ class ScreenController extends Controller
         $screen->update($data);
 
         return redirect()
-            ->route('screens')
+            ->route('screens', ['shop_id' => $data['shop_id'] ?? ''])
             ->with('status', 'تم تحديث الشاشة بنجاح.');
     }
 
     public function destroy(MainScreen $screen): RedirectResponse
     {
-        abort_unless($this->canAccessCurrentRoute(), 403);
+        abort_unless($this->canAccessScreenRoute(), 403);
         $this->authorizeScreenVisibility($screen);
 
         $this->deleteUpload($screen->media);
         $screen->delete();
 
         return redirect()
-            ->route('screens')
+            ->route('screens', ['shop_id' => $screen->shop_id ?? ''])
             ->with('status', 'تم حذف الشاشة بنجاح.');
     }
 
     public function mainDisplay(): View
     {
         $items = MainScreen::query()
+            ->forPlatform()
             ->where('is_active', true)
             ->latest()
             ->get();
@@ -146,12 +158,15 @@ class ScreenController extends Controller
 
     public function shopDisplay(Shop $shop): View
     {
+        abort_unless($shop->is_active, 404);
         $items = Advertisement::query()
             ->where('shop_id', $shop->id)
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->latest()
             ->get();
+
+        $items = $shop->activeScreens()->get()->toBase()->concat($items);
 
         return view('screens.main', [
             'title' => $shop->name,
@@ -268,7 +283,14 @@ class ScreenController extends Controller
             return $query;
         }
 
-        return $query->where('user_id', Auth::id());
+        $shopIds = Auth::user()->accessibleShopIds();
+        return $query->where(function ($query) use ($shopIds) {
+            $query->whereIn('shop_id', $shopIds)
+                ->orWhere(fn ($legacy) => $legacy->where('needs_shop_assignment', true)->where('user_id', Auth::id()));
+            if ($this->canManagePlatformScreens()) {
+                $query->orWhere(fn ($platform) => $platform->forPlatform()->where('user_id', Auth::id()));
+            }
+        });
     }
 
     private function canViewAllScreens(): bool
@@ -280,12 +302,60 @@ class ScreenController extends Controller
         }
 
         return $user->isSuperAdmin()
-            || ! $user->hasAssignedPermissions()
-            || $user->hasEmployeePermission('screens.view_all');
+            || ($user->isEmployee() && $user->hasEmployeePermission('screens.view_all'));
     }
 
     private function authorizeScreenVisibility(MainScreen $screen): void
     {
-        abort_unless($this->canViewAllScreens() || (int) $screen->user_id === (int) Auth::id(), 403);
+        abort_unless($this->visibleScreensQuery()->whereKey($screen->id)->exists(), 403);
+    }
+
+    private function canAccessScreenRoute(): bool
+    {
+        $user = Auth::user();
+        return $user && in_array($user->role, ['super_admin', 'employee', 'shop_owner', 'agent', 'distributor'], true)
+            && $user->canAccessRouteName(request()->route()->getName());
+    }
+
+    private function canManagePlatformScreens(): bool
+    {
+        return Auth::user()->isSuperAdmin() || Auth::user()->isEmployee();
+    }
+
+    private function screenShops()
+    {
+        return Shop::query()->when(! $this->canViewAllScreens(), fn ($query) =>
+            $query->whereIn('id', Auth::user()->accessibleShopIds()))->orderBy('name')->get();
+    }
+
+    private function selectedShopId(): ?int
+    {
+        if (request()->exists('shop_id') && ! request()->filled('shop_id')) return null;
+        $id = request()->integer('shop_id') ?: (int) session('current_shop_id');
+        if (! $id) {
+            $ids = Auth::user()->accessibleShopIds();
+            return count($ids) === 1 ? $ids[0] : null;
+        }
+        abort_unless($this->screenShops()->contains('id', $id), 403);
+        return $id;
+    }
+
+    private function screenFormContext(?MainScreen $screen = null): array
+    {
+        return ['shops' => $this->screenShops(), 'canManagePlatformScreens' => $this->canManagePlatformScreens(),
+            'selectedShopId' => $screen ? $screen->shop_id : $this->selectedShopId()];
+    }
+
+    private function screenShopId(Request $request, ?MainScreen $screen = null): ?int
+    {
+        $request->validate(['shop_id' => ['nullable', 'integer', Rule::exists('shops', 'id')]]);
+        $id = $request->exists('shop_id') ? ($request->filled('shop_id') ? (int) $request->input('shop_id') : null)
+            : ($screen ? $screen->shop_id : $this->selectedShopId());
+        if ($id !== null) {
+            abort_unless($this->screenShops()->contains('id', $id), 403);
+        } elseif (! $this->canManagePlatformScreens()) {
+            throw ValidationException::withMessages(['shop_id' => 'اختر المحل الذي ستظهر فيه الشاشة.']);
+        }
+        return $id;
     }
 }

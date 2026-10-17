@@ -602,11 +602,22 @@
                         <h1>الشاشات الرئيسية</h1>
                         <p>إدارة محتوى شاشات العرض ونوع الوسائط ومدة الظهور.</p>
                     </div>
-                    <a href="{{ route('screens.create') }}" class="btn-primary">
+                    <a href="{{ route('screens.create', ['shop_id' => $selectedShopId ?? '']) }}" class="btn-primary">
                         <i class="ti ti-plus" aria-hidden="true"></i>
                         شاشة جديدة
                     </a>
                 </header>
+
+                <form method="GET" action="{{ route('screens') }}" style="margin-bottom:20px">
+                    <label for="screenShopFilter">شاشات المحل</label>
+                    <select name="shop_id" id="screenShopFilter">
+                        <option value="" @selected(! $selectedShopId)>كل الشاشات المتاحة لحسابي</option>
+                        @foreach($shops as $screenShop)
+                            <option value="{{ $screenShop->id }}" @selected($selectedShopId === $screenShop->id)>{{ $screenShop->name }}</option>
+                        @endforeach
+                    </select>
+                    <button type="submit" class="btn-primary">عرض</button>
+                </form>
 
                 @if (session('status'))
                     <div class="status-alert">{{ session('status') }}</div>
@@ -707,6 +718,7 @@
                                                 </span>
                                                 <span>
                                                     {{ data_get($screen, 'title', '-') }}
+                                                    <span class="screen-sub">{{ $screen->shop?->name ?? ($screen->needs_shop_assignment ? 'بانتظار تحديد المحل' : 'واجهة أوزمان العامة') }}</span>
                                                     <span class="screen-sub">{{ $media }}</span>
                                                 </span>
                                             </div>

@@ -17,9 +17,9 @@
                 <header class="page-head">
                     <div>
                         <h1>إضافة شاشة رئيسية</h1>
-                        <p>أضف صورة أو فيديو أو رابط يوتيوب للشاشة الرئيسية العامة.</p>
+                        <p>أضف صورة أو فيديو أو رابط يوتيوب إلى شاشة المحل المحدد.</p>
                     </div>
-                    <a href="{{ route('screens') }}" class="btn"><i class="ti ti-arrow-right"></i>رجوع للشاشات</a>
+                    <a href="{{ route('screens', ['shop_id' => $selectedShopId ?? '']) }}" class="btn"><i class="ti ti-arrow-right"></i>رجوع للشاشات</a>
                 </header>
                 @include('admin.screens.validation')
                 <form class="form-shell" action="{{ route('screens.store') }}" method="POST" enctype="multipart/form-data">
@@ -27,7 +27,7 @@
                     @include('admin.screens._form')
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit"><i class="ti ti-device-floppy"></i>حفظ الشاشة</button>
-                        <a href="{{ route('screens') }}" class="btn">رجوع</a>
+                        <a href="{{ route('screens', ['shop_id' => $selectedShopId ?? '']) }}" class="btn">رجوع</a>
                     </div>
                 </form>
             </div>

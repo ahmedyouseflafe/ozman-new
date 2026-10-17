@@ -730,4 +730,5 @@
 </script>
 @endif
 @include('front.partials.cosmetics_customer_rewards')
+@include('front.partials.shop_bottom_screens')
 </body></html>

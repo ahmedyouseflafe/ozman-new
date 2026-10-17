@@ -233,6 +233,7 @@ class RestaurantController extends Controller
             ->orderBy('sort_order')
             ->latest()
             ->get();
+        $displayItems = $shop->activeScreens->where('placement', '!=', 'bottom')->toBase()->concat($displayItems);
         $ozmanLogo = Shop::query()
             ->where('slug', 'ozman')
             ->where('is_active', true)

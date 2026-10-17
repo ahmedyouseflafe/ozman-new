@@ -19,7 +19,7 @@
                         <h1>تعديل الشاشة</h1>
                         <p>حدّث محتوى الشاشة الرئيسية ومدة ظهورها.</p>
                     </div>
-                    <a href="{{ route('screens') }}" class="btn"><i class="ti ti-arrow-right"></i>رجوع للشاشات</a>
+                    <a href="{{ route('screens', ['shop_id' => $selectedShopId ?? '']) }}" class="btn"><i class="ti ti-arrow-right"></i>رجوع للشاشات</a>
                 </header>
                 @include('admin.screens.validation')
                 <form class="form-shell" action="{{ route('screens.update', $screen) }}" method="POST" enctype="multipart/form-data">
@@ -28,7 +28,7 @@
                     @include('admin.screens._form', ['screen' => $screen])
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit"><i class="ti ti-device-floppy"></i>حفظ التعديلات</button>
-                        <a href="{{ route('screens') }}" class="btn">رجوع</a>
+                        <a href="{{ route('screens', ['shop_id' => $selectedShopId ?? '']) }}" class="btn">رجوع</a>
                     </div>
                 </form>
             </div>

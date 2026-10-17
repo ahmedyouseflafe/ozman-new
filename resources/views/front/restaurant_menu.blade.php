@@ -2759,6 +2759,7 @@
             render();
         })();
     </script>
+@include('front.partials.shop_bottom_screens')
 </body>
 
 </html>

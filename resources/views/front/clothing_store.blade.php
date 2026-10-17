@@ -29,6 +29,7 @@
     </style>
 </head>
 <body>
+@include('front.partials.shop_bottom_screens', ['screenPlacement' => 'top'])
 <main class="fashion-page">
     <section class="fashion-hero">
         <div class="fashion-hero-media"><img src="{{ $heroImage }}" alt="{{ $shop->name }}"></div>
@@ -65,5 +66,6 @@
 <script type="module">
 {!! file_get_contents(base_path('public/clothing-photo-tryon.js')) !!}
 </script>
+@include('front.partials.shop_bottom_screens', ['screenPlacement' => 'bottom'])
 </body>
 </html>

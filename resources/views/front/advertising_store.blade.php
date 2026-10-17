@@ -309,5 +309,6 @@
             if (tabs[0]) selectCategory(tabs[0].dataset.categoryKey);
         })();
     </script>
+@include('front.partials.shop_bottom_screens')
 </body>
 </html>

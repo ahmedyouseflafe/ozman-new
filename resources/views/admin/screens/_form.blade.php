@@ -6,11 +6,27 @@
         <div class="section-icon"><i class="ti ti-device-tv" aria-hidden="true"></i></div>
         <div>
             <h2>بيانات الشاشة</h2>
-            <p>هذا المحتوى يظهر في الشاشة الرئيسية العامة.</p>
+            <p>تظهر الشاشة داخل المحل المحدد فقط.</p>
         </div>
     </div>
 
     <div class="form-grid">
+        <div class="form-group full">
+            <label class="form-label" for="screenShopId">المحل الذي ستظهر فيه الشاشة</label>
+            @if($screen->needs_shop_assignment ?? false)
+                <p>هذه الشاشة القديمة تحتاج تحديد محلها قبل عرضها.</p>
+            @endif
+            <select id="screenShopId" name="shop_id" @required(! $canManagePlatformScreens)>
+                @if($canManagePlatformScreens)
+                    <option value="">واجهة أوزمان العامة</option>
+                @else
+                    <option value="" disabled @selected(! old('shop_id', $selectedShopId))>اختر المحل</option>
+                @endif
+                @foreach($shops as $screenShop)
+                    <option value="{{ $screenShop->id }}" @selected((string) old('shop_id', $selectedShopId) === (string) $screenShop->id)>{{ $screenShop->name }}</option>
+                @endforeach
+            </select>
+        </div>
         <div class="form-group">
             <label class="form-label" for="type">نوع المحتوى</label>
             <select id="type" name="type" required>

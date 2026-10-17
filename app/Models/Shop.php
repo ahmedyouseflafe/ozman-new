@@ -159,6 +159,16 @@ class Shop extends Model
         return $this->belongsTo(DistributorMarketer::class);
     }
 
+    public function screens(): HasMany
+    {
+        return $this->hasMany(MainScreen::class);
+    }
+
+    public function activeScreens(): HasMany
+    {
+        return $this->screens()->where('is_active', true)->where('needs_shop_assignment', false)->latest();
+    }
+
     public function advertisements()
     {
         return $this->hasMany(Advertisement::class);

@@ -65,6 +65,7 @@
     </style>
 </head>
 <body>
+@include('front.partials.shop_bottom_screens', ['screenPlacement' => 'top'])
 <main class="shell">
     <section class="hero">
         <div class="hero-media">
@@ -183,5 +184,6 @@
     renderCart();
 })();
 </script>
+@include('front.partials.shop_bottom_screens', ['screenPlacement' => 'bottom'])
 </body>
 </html>

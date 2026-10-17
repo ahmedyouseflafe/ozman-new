@@ -220,7 +220,7 @@
             ->merge($ozmanAdvertisements ?? [])
             ->filter(fn($item) => filled($item->media))
             ->values();
-        $shopDisplaySource = collect($shop?->advertisements ?? []);
+        $shopDisplaySource = collect($shop?->activeScreens ?? [])->concat($shop?->advertisements ?? []);
         if ($shop?->id && $ozmanShop?->id && (int) $shop->id === (int) $ozmanShop->id) {
             $shopDisplaySource = $bottomOzmanScreens->merge($shopDisplaySource);
         }
