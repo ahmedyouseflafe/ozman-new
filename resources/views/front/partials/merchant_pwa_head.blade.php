@@ -14,6 +14,10 @@
         : null;
 @endphp
 
+@if($merchantPwaShop instanceof \App\Models\Shop && $merchantPwaShop->is_active)
+    <link rel="icon" type="image/png" href="{{ route('merchant-app.icon', ['shop' => $merchantPwaShop, 'size' => 192, 'v' => $merchantPwaShop->updated_at?->timestamp ?? 1]) }}">
+@endif
+
 @if($merchantPwaEnabled || $offerNotificationsEnabled)
     <meta name="csrf-token" content="{{ csrf_token() }}">
 @endif
