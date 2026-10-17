@@ -15,6 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root{--cyan:#0bdcf3;--green:#2bdd8a;--panel:#0d1a22;--border:#203b49;--muted:#93aab7}*{box-sizing:border-box}body{min-height:100vh;margin:0;background:radial-gradient(circle at 82% 5%,rgba(11,220,243,.17),transparent 34%),radial-gradient(circle at 5% 84%,rgba(101,66,255,.14),transparent 30%),#05090d;color:#f8fbfd;font-family:Cairo,Arial,sans-serif}.page{display:grid;place-items:center;width:min(960px,calc(100% - 28px));min-height:100vh;margin:auto;padding:28px 0}.card{display:grid;grid-template-columns:minmax(0,1fr) 330px;width:100%;overflow:hidden;border:1px solid var(--border);border-radius:30px;background:linear-gradient(135deg,#101d26,#08131a);box-shadow:0 25px 80px rgba(0,0,0,.34)}.content{padding:clamp(27px,5vw,54px)}.eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--cyan);font-size:12px;font-weight:900}.eyebrow::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 13px var(--green)}h1{margin:11px 0 13px;font-size:clamp(30px,5vw,53px);line-height:1.2}.lead{margin:0 0 27px;color:var(--muted);line-height:1.9;font-size:15px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{min-height:53px;display:flex;align-items:center;justify-content:center;padding:11px 16px;border:1px solid var(--border);border-radius:15px;background:#0b1720;color:#fff;font:800 14px Cairo,Arial,sans-serif;text-decoration:none;cursor:pointer}.btn-primary{grid-column:1/-1;border:0;background:linear-gradient(135deg,var(--cyan),#3eb8ff);color:#001319;font-size:16px}.status{min-height:25px;margin:15px 0 0;color:var(--muted);font-size:12px;font-weight:700}.status[data-state=success]{color:var(--green)}.status[data-state=error]{color:#ff7f8d}.preview{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:38px 27px;background:radial-gradient(circle,rgba(11,220,243,.12),transparent 58%),#071118;border-inline-start:1px solid var(--border)}.logo-frame{width:205px;height:205px;padding:9px;border-radius:47px;background:linear-gradient(145deg,var(--cyan),var(--green),#7c60ff);box-shadow:0 0 45px rgba(11,220,243,.28)}.logo-frame img{display:block;width:100%;height:100%;object-fit:cover;border-radius:39px;background:#03080b}.preview strong{margin-top:18px;font-size:23px;text-align:center}.preview span{margin-top:5px;color:var(--muted);font-size:12px;text-align:center;line-height:1.7}@media(max-width:720px){.page{padding:12px 0}.card{grid-template-columns:1fr;border-radius:25px}.preview{grid-row:1;padding:27px 20px;border:0;border-bottom:1px solid var(--border)}.logo-frame{width:148px;height:148px;border-radius:35px}.logo-frame img{border-radius:28px}.preview strong{font-size:20px}.content{padding:25px 18px}.actions{grid-template-columns:1fr}.btn,.btn-primary{grid-column:1}}
+        .ios-help{grid-column:1/-1;border:1px solid var(--cyan);border-radius:16px;background:#102832;padding:18px;font-size:14px;line-height:1.9;scroll-margin:24px}.ios-help[hidden]{display:none}.ios-help h2{margin:0 0 10px;font-size:18px;color:var(--cyan)}.ios-help ol{margin:0;padding-inline-start:24px}.ios-help p{margin:10px 0 0}.ios-help:focus{outline:2px solid var(--cyan);outline-offset:3px}.content{padding-bottom:max(28px,env(safe-area-inset-bottom))}
     </style>
 </head>
 <body>
@@ -31,6 +32,17 @@
 
             <div class="actions">
                 <button class="btn btn-primary" type="button" data-shop-pwa-install>تثبيت تطبيق {{ $shop->name }}</button>
+                <section class="ios-help" id="shop-pwa-ios-help" data-shop-pwa-ios hidden tabindex="-1" aria-labelledby="shop-pwa-ios-title">
+                    <h2 id="shop-pwa-ios-title">إضافة {{ $shop->name }} على iPhone أو iPad</h2>
+                    <p data-shop-pwa-ios-browser hidden>افتح رابط التثبيت في Safari أولًا. إذا أنت داخل تطبيق، انسخ الرابط من الزر أدناه والصقه في Safari.</p>
+                    <ol>
+                        <li>من شريط Safari اضغط <strong>مشاركة</strong> (مربع وسهم للأعلى). إذا مش ظاهرة، افتح قائمة <strong>…</strong> ثم «مشاركة».</li>
+                        <li>مرّر قائمة المشاركة واختر <strong>إضافة إلى الشاشة الرئيسية</strong> (Add to Home Screen).</li>
+                        <li>إذا ظهر خيار <strong>فتح كتطبيق ويب</strong> (Open as Web App)، اتركه مفعّلًا، ثم اضغط <strong>إضافة</strong>.</li>
+                    </ol>
+                    <p>بعد الإضافة افتح التطبيق من أيقونة {{ $shop->name }} على الشاشة الرئيسية.</p>
+                    <p>إذا خيار الإضافة مش ظاهر، انزل لآخر قائمة المشاركة واضغط «تعديل الإجراءات» وأضف «إضافة إلى الشاشة الرئيسية».</p>
+                </section>
                 <a class="btn" href="{{ $shop->publicUrl() }}">{{ $shop->catalog_type === 'restaurant' ? 'فتح قائمة الطعام' : 'فتح المحل' }}</a>
                 <button class="btn" type="button" data-shop-pwa-share>مشاركة رابط التطبيق</button>
                 <button class="btn" type="button" data-shop-pwa-copy>نسخ رابط التثبيت</button>

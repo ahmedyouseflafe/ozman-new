@@ -5,7 +5,7 @@ import test from 'node:test';
 
 const source = readFileSync(new URL('../../public/shop-pwa.js', import.meta.url), 'utf8');
 
-function runtime({ standalone = false, displayMode = 'browser', installer = true, userAgent = 'Android Chrome/130', serviceWorker = true, clipboard = true } = {}) {
+function runtime({ standalone = false, displayMode = 'browser', installer = true, userAgent = 'Android Chrome/130', maxTouchPoints = 0, serviceWorker = true, workerFailure = false, clipboard = true } = {}) {
     const elements = [];
     const events = new Map();
     const timers = [];
@@ -16,6 +16,7 @@ function runtime({ standalone = false, displayMode = 'browser', installer = true
             setAttribute() {}, append(...children) { this.children.push(...children); },
             appendChild(child) { this.append(child); }, prepend(child) { this.children.unshift(child); },
             addEventListener(name, listener) { this.listeners[name] = listener; },
+            focus() { this.focused = true; }, scrollIntoView() { this.scrolled = true; },
         };
         elements.push(item);
         return item;
@@ -30,14 +31,16 @@ function runtime({ standalone = false, displayMode = 'browser', installer = true
         element('button').dataset.shopPwaInstall = '';
         element('button').dataset.shopPwaCopy = '';
         element('p').dataset.shopPwaStatus = '';
+        const help = element('section'); help.dataset.shopPwaIos = ''; help.hidden = true;
+        const browserHelp = element('p'); browserHelp.dataset.shopPwaIosBrowser = ''; browserHelp.hidden = true;
     }
     const labels = Object.fromEntries(['install', 'copyLink', 'installed', 'openChrome', 'openChromeHelp', 'iosInstall', 'iosInstructions', 'ready', 'cancelled', 'browserInstructions', 'copied', 'copyFailed', 'error', 'unsupported'].map(label => [label, label]));
     const config = {
         shopName: 'Elegance Perfumes', installUrl: 'https://ozman.test/shop-app/elegance-perfumes/install',
         shareUrl: 'https://ozman.test/shop-app/elegance-perfumes/install', serviceWorkerUrl: '/merchant-pwa-sw.js', labels,
     };
-    const navigator = { userAgent };
-    if (serviceWorker) navigator.serviceWorker = { register: async () => ({}) };
+    const navigator = { userAgent, maxTouchPoints };
+    if (serviceWorker) navigator.serviceWorker = { register: async () => { if (workerFailure) throw new Error('unavailable'); return {}; } };
     if (clipboard) navigator.clipboard = { writeText: async value => copied.push(value) };
     const window = {
         OZMAN_SHOP_PWA: config, navigator,
@@ -136,4 +139,39 @@ test('copying uses the installer URL and exposes it if clipboard access is unava
     const unsupported = runtime({ clipboard: false });
     await unsupported.document.querySelector('[data-shop-pwa-copy]').listeners.click();
     assert.ok(unsupported.status().textContent.includes(unsupported.config.installUrl));
+});
+
+test('iPhone Safari shows instructions immediately and brings them into view on click', async () => {
+    const app = runtime({ userAgent: 'iPhone Version/26.0 Mobile Safari/605.1' });
+    const help = app.document.querySelector('[data-shop-pwa-ios]');
+    assert.equal(help.hidden, false);
+    assert.equal(app.button().textContent, 'iosInstall');
+    assert.equal(app.document.querySelector('[data-shop-pwa-ios-browser]').hidden, true);
+    await app.button().listeners.click();
+    assert.equal(help.focused, true);
+    assert.equal(help.scrolled, true);
+    assert.equal(app.status().textContent, 'iosInstructions');
+});
+
+test('iPad desktop user agent gets iOS instructions while desktop Mac keeps normal installation', async () => {
+    const ipad = runtime({ userAgent: 'Macintosh Version/26 Safari/605.1', maxTouchPoints: 5 });
+    assert.equal(ipad.button().textContent, 'iosInstall');
+    const mac = runtime({ userAgent: 'Macintosh Version/26 Safari/605.1' });
+    assert.equal(mac.document.querySelector('[data-shop-pwa-ios]').hidden, true);
+});
+
+test('iOS installation guidance survives missing or failing service worker support', async () => {
+    for (const options of [{ serviceWorker: false }, { workerFailure: true }]) {
+        const app = runtime({ userAgent: 'iPhone Safari', ...options });
+        await app.settle();
+        assert.equal(app.status().textContent, 'iosInstructions');
+        assert.equal(app.document.querySelector('[data-shop-pwa-ios]').hidden, false);
+    }
+});
+
+test('embedded iPhone and installed apps explain opening the installer in Safari', () => {
+    for (const options of [{ userAgent: 'iPhone Instagram' }, { userAgent: 'iPhone Safari', standalone: true }]) {
+        const app = runtime(options);
+        assert.equal(app.document.querySelector('[data-shop-pwa-ios-browser]').hidden, false);
+    }
 });

@@ -25,7 +25,7 @@
             'ready' => 'التطبيق جاهز للتثبيت على جهازك.',
             'installed' => 'تم تثبيت تطبيق '.$merchantPwaShop->name.' بنجاح.',
             'browserInstructions' => 'افتح قائمة Chrome واختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».',
-            'iosInstructions' => 'على iPhone: افتح الصفحة في Safari، اضغط مشاركة ثم «إضافة إلى الشاشة الرئيسية».',
+            'iosInstructions' => 'على iPhone أو iPad: من Safari افتح «مشاركة» (أو … ثم مشاركة)، ثم «إضافة إلى الشاشة الرئيسية» واضغط «إضافة».',
             'openChrome' => 'فتح في Chrome للتثبيت',
             'iosInstall' => 'طريقة التثبيت على iPhone',
             'openChromeHelp' => 'اضغط الزر لفتح الرابط في Chrome وإكمال تثبيت التطبيق.',

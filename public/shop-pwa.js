@@ -12,7 +12,8 @@
     const statusElements = [...document.querySelectorAll('[data-shop-pwa-status]')];
     const userAgent = navigator.userAgent || '';
     const isAndroid = /android/i.test(userAgent);
-    const isIos = /iphone|ipad|ipod/i.test(userAgent);
+    const isIos = /iphone|ipad|ipod/i.test(userAgent)
+        || (/Macintosh/i.test(userAgent) && navigator.maxTouchPoints > 1);
     const isSamsungInternet = /SamsungBrowser/i.test(userAgent);
     const isEmbeddedBrowser = /(?:;\s*wv\)|\bwv\b|FBAN|FBAV|Instagram|Line\/|OzmanApp)/i.test(userAgent)
         || isSamsungInternet
@@ -23,6 +24,20 @@
         statusElements.forEach((element) => {
             element.textContent = message;
             element.dataset.state = state;
+        });
+    };
+
+    const showIosInstructions = (focus = false) => {
+        setStatus(config.labels.iosInstructions, 'ready');
+        document.querySelectorAll('[data-shop-pwa-ios]').forEach((element) => {
+            element.hidden = false;
+            if (focus) {
+                element.focus({ preventScroll: true });
+                element.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }
+        });
+        document.querySelectorAll('[data-shop-pwa-ios-browser]').forEach((element) => {
+            element.hidden = !isEmbeddedBrowser && !isStandalone;
         });
     };
 
@@ -39,6 +54,10 @@
     };
 
     const install = async () => {
+        if (isIos) {
+            showIosInstructions(true);
+            return;
+        }
         if (isEmbeddedBrowser || isStandalone) {
             openInSupportedBrowser();
             return;
@@ -93,7 +112,13 @@
         }
     }));
 
-    if (isEmbeddedBrowser || isStandalone) {
+    if (isIos) {
+        installButtons.forEach((button) => {
+            button.textContent = config.labels.iosInstall;
+            button.setAttribute('aria-controls', 'shop-pwa-ios-help');
+        });
+        showIosInstructions();
+    } else if (isEmbeddedBrowser || isStandalone) {
         installButtons.forEach((button) => {
             button.textContent = isAndroid ? config.labels.openChrome : config.labels.iosInstall;
         });
@@ -102,7 +127,7 @@
 
     window.addEventListener('beforeinstallprompt', (event) => {
         event.preventDefault();
-        if (isStandalone || isEmbeddedBrowser) return;
+        if (isIos || isStandalone || isEmbeddedBrowser) return;
         deferredInstallPrompt = event;
         setStatus(config.labels.ready, 'ready');
     });
@@ -126,10 +151,10 @@
             })
             .catch((error) => {
                 console.error('Shop app service worker registration failed.', error);
-                if (!isEmbeddedBrowser && !isStandalone) setStatus(config.labels.error, 'error');
+                if (!isIos && !isEmbeddedBrowser && !isStandalone) setStatus(config.labels.error, 'error');
             });
     } else {
-        if (!isEmbeddedBrowser && !isStandalone) setStatus(config.labels.unsupported, 'error');
+        if (!isIos && !isEmbeddedBrowser && !isStandalone) setStatus(config.labels.unsupported, 'error');
     }
 
     window.OzmanShopPwa = { install, share };
