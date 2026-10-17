@@ -4,23 +4,29 @@ import { runInNewContext } from 'node:vm';
 import test from 'node:test';
 
 const source = readFileSync(new URL('../../public/shop-signup-wheel.js', import.meta.url), 'utf8');
-function page(storage, {shopId = 164, token = 'guest-a', welcomeId = '1', selected = null, available = true, offline = false, elegance = true} = {}) {
+function page(storage, {shopId = 164, token = 'guest-a', welcomeId = '1', selected = null, available = true, offline = false, elegance = true, statuses = []} = {}) {
     const elements = new Map(), listeners = new Map();
     const element = () => ({dataset: {}, style: {setProperty() {}}, classList: {add() {}},
         addEventListener(name, callback) {this[name] = callback;}, replaceChildren() {}, append() {},
         showModal() {this.open = true;}, close() {this.open = false;}});
     const get = id => {if (!elements.has(id)) elements.set(id, element());return elements.get(id);};
-    const window = {OZMAN_SIGNUP_WHEEL_COPY: {}, OzmanRestaurantCustomer: {token: () => token},
+    const window = {OZMAN_SIGNUP_WHEEL_COPY: {error: 'load error', session: 'session expired', server: 'server error'}, OzmanRestaurantCustomer: {token: () => token},
         ...(elegance ? {OZMAN_ELEGANCE_CHECKOUT: {shopId}} : {})};
-    const document = {getElementById: get, createElement: element, querySelector: () => null,
+    const meta = {content: 'old-token'}, requests = [];
+    get('shopSignupWheel').dataset = {url: '/reward', csrfUrl: '/csrf-token'};
+    const document = {getElementById: get, createElement: element, querySelector: selector => selector.includes('csrf-token') ? meta : null,
         addEventListener: (name, callback) => listeners.set(name, callback), dispatchEvent() {}};
     runInNewContext(source, {window, document, localStorage: {getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value)},
-        Event, AbortController, setTimeout, clearTimeout, fetch: async () => {
+        Event, AbortController, setTimeout, clearTimeout, fetch: async (url, options) => {
+            requests.push({url, options});
             if (offline) throw new Error('offline');
+            if (url === '/csrf-token') return {ok: true, json: async () => ({token: 'fresh-token'})};
+            const status = statuses.shift() || 200;
+            if (status !== 200) return {ok: false, status};
             return {ok: true, json: async () => ({reward: available ? {title: 'Welcome', welcome_id: welcomeId, selected_index: selected,
                 segments: [{label: 'Gift', color: '#ffffff', discount_type: 'gift'}, {label: 'Discount', color: '#000000', discount_type: 'percent', discount_value: 10}]} : null})};
         }});
-    return {get, window, visit: () => listeners.get('restaurant:registered')()};
+    return {get, window, requests, visit: () => listeners.get('restaurant:registered')()};
 }
 
 test('closing an unspun welcome suppresses automatic reopening on return, while manual access remains', async () => {
@@ -70,4 +76,21 @@ test('checkout still prompts for an outstanding spin and restaurant flow is unch
     assert.equal(returning.get('shopSignupWheel').open, true);
     const restaurant = page(storage, {elegance: false}); await restaurant.visit();
     assert.equal(restaurant.get('shopSignupWheel').open, true);
+});
+
+test('expired session refreshes CSRF and retries exactly once using the same visitor', async () => {
+    const app = page(new Map(), {statuses: [419, 200]}); await app.visit();
+    assert.equal(app.get('shopSignupWheel').open, true);
+    assert.deepEqual(app.requests.map(r => r.url), ['/reward', '/csrf-token', '/reward']);
+    assert.equal(app.requests[2].options.headers['X-CSRF-TOKEN'], 'fresh-token');
+    assert.equal(app.requests[0].options.body, app.requests[2].options.body);
+});
+
+test('persistent session rejection and server failures show accurate errors without looping', async () => {
+    for (const [statuses, message, calls] of [[[419, 419], 'session expired', 3], [[500], 'server error', 1]]) {
+        const storage = new Map(), app = page(storage, {statuses}); await app.visit();
+        assert.equal(app.get('signupWheelError').textContent, message);
+        assert.equal(app.requests.length, calls);
+        assert.equal(storage.size, 0);
+    }
 });

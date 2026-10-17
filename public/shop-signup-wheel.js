@@ -7,6 +7,12 @@
     let reward = null, busy = false, failed = false, loading = null;
     const notify = () => document.dispatchEvent(new Event('restaurant:reward-changed'));
     const error = message => { $('signupWheelError').textContent = message; $('signupWheelError').hidden = !message; };
+    const requestError = status => Object.assign(new Error('reward request failed'), {status});
+    const errorMessage = failure => failure?.name === 'AbortError' ? (ui.timeout || ui.error)
+        : failure?.status === 419 ? (ui.session || ui.error)
+        : failure?.status === 429 ? (ui.rateLimit || ui.error)
+        : failure?.status >= 500 ? (ui.server || ui.error)
+        : failure?.status ? `${ui.error} (${failure.status})` : ui.error;
     const request = async spin => {
         if (preview) {
             if (!reward || !spin) return reward;
@@ -20,10 +26,23 @@
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 15000);
         try {
-            const response = await fetch(dialog.dataset.url, {method: 'POST', credentials: 'same-origin', signal: controller.signal,
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            const send = () => fetch(dialog.dataset.url, {method: 'POST', credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
                 headers: {'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''},
                 body: JSON.stringify({registration_token: token, spin})});
-            if (!response.ok) throw new Error('reward');
+            let response = await send();
+            // A 419 rejects the request before the draw runs. Refresh the session
+            // and retry once; do not retry uncertain network failures during a spin.
+            if (response.status === 419 && dialog.dataset.csrfUrl) {
+                const refreshed = await fetch(dialog.dataset.csrfUrl, {credentials: 'same-origin', cache: 'no-store',
+                    signal: controller.signal, headers: {Accept: 'application/json'}});
+                if (!refreshed.ok) throw requestError(refreshed.status);
+                const fresh = await refreshed.json();
+                if (typeof fresh.token !== 'string' || !fresh.token || !meta) throw requestError(419);
+                meta.content = fresh.token;
+                response = await send();
+            }
+            if (!response.ok) throw requestError(response.status);
             const data = await response.json();
             return data.reward || null;
         } finally { clearTimeout(timeout); }
@@ -96,7 +115,7 @@
         if (loading) return loading;
         loading = (async () => {
             try { reward = await request(false);failed = false;error('');draw();notify();if(autoOpen && reward?.selected_index === null && !alreadyShown())open();return true; }
-            catch (_) { failed = true;error(ui.error);draw();if(autoOpen && !alreadyShown())open();return false; }
+            catch (failure) { failed = true;error(errorMessage(failure));draw();if(autoOpen && !alreadyShown())open();return false; }
             finally { loading = null; }
         })();
         return loading;
@@ -114,7 +133,7 @@
             const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             await new Promise(resolve => setTimeout(resolve, reduce ? 0 : 3700));
             reward = result;failed = false;draw();notify();
-        } catch (_) {failed = true;error(ui.error);draw();}
+        } catch (failure) {failed = true;error(errorMessage(failure));draw();}
         finally {busy = false;$('signupWheelSpin').disabled = false;$('signupWheelClose').disabled = false;}
     });
     $('signupWheelClose').addEventListener('click', () => { if(!busy)dialog.close(); });

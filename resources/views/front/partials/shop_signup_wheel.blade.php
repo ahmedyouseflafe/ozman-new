@@ -20,6 +20,11 @@
         'he' => 'בהצלחה בפעם הבאה — הפעם אין פרס.',
         default => 'حظ أوفر — ما طلعت جائزة هالمرة.',
     };
+    $signupWheelCopy = array_replace($signupWheelCopy, match ($locale) {
+        'en' => ['error' => 'Could not load your gift. Please try again.', 'server' => 'The store server could not load the wheel. Please try again shortly.', 'session' => 'Your session expired. Reload the page and try again.', 'timeout' => 'Loading the wheel took too long. Please try again.', 'rateLimit' => 'Too many attempts. Wait a little and try again.'],
+        'he' => ['error' => 'לא ניתן לטעון את המתנה. נסו שוב.', 'server' => 'שרת החנות לא הצליח לטעון את הגלגל. נסו שוב בקרוב.', 'session' => 'פג תוקף החיבור. רעננו את הדף ונסו שוב.', 'timeout' => 'טעינת הגלגל ארכה זמן רב מדי. נסו שוב.', 'rateLimit' => 'יותר מדי ניסיונות. המתינו מעט ונסו שוב.'],
+        default => ['error' => 'تعذّر تحميل هديتك. جرّب مرة ثانية.', 'server' => 'صار خطأ بسيرفر المحل أثناء تحميل العجلة. جرّب بعد شوي.', 'session' => 'انتهت صلاحية الجلسة. حدّث الصفحة وجرّب مرة ثانية.', 'timeout' => 'تحميل العجلة أخذ وقت طويل. جرّب مرة ثانية.', 'rateLimit' => 'المحاولات كثيرة. استنى شوي وجرّب مرة ثانية.'],
+    });
 @endphp
 <style>
     #shopSignupWheel{margin:auto}
@@ -44,7 +49,7 @@
     #signupWheelDisc .signup-wheel-label img{height:100%;width:auto;max-width:28%;aspect-ratio:1;object-fit:contain;padding:1px;border-radius:3px;flex-shrink:0}
 </style>
 <button type="button" id="signupWheelReopen" hidden>{{ $signupWheelCopy['open'] }}</button>
-<dialog id="shopSignupWheel" aria-labelledby="signupWheelTitle" data-preview="{{ !empty($signupPreview) ? '1' : '0' }}" data-url="{{ empty($signupPreview) ? route('restaurant.signup-reward', $shop) : '' }}">
+<dialog id="shopSignupWheel" aria-labelledby="signupWheelTitle" data-preview="{{ !empty($signupPreview) ? '1' : '0' }}" data-url="{{ empty($signupPreview) ? route('restaurant.signup-reward', $shop) : '' }}" data-csrf-url="{{ route('csrf.refresh') }}">
     @if(!empty($signupPreview))<p style="color:#ffe29a;font-size:12px;margin-bottom:10px">معاينة تجريبية — لا تُحفظ جائزة ولا تُستهلك مرات ظهور.</p>@endif
     <p class="signup-wheel-kicker">{{ $shop->name }} · {{ $signupWheelCopy['intro'] }}</p>
     <h2 class="signup-wheel-title" id="signupWheelTitle"></h2>
