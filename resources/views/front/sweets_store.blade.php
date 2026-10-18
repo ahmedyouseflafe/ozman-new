@@ -12,6 +12,7 @@
         $shopLogo = $mediaUrl($shop->logo ?: $shop->banner);
         $shopBanner = $mediaUrl($shop->banner ?: $shop->logo);
         $whatsappNumber = preg_replace('/\D+/', '', (string) ($shop->whatsapp ?: $shop->phone));
+        $dailyJoyOnly = $shop->slug === 'notyla-shob';
     @endphp
     @include('front.partials.merchant_pwa_head', ['pwaShop' => $shop])
     @include('front.partials.seo', [
@@ -63,6 +64,10 @@
         @keyframes cart-flight-sparkle{from{opacity:.28;transform:scale(.55) rotate(0)}to{opacity:1;transform:scale(1.3) rotate(45deg)}}
         @media(prefers-reduced-motion:reduce){.cart-button.cart-flight-pop{animation:none}.shopping-cart-flight{display:none}}
     </style>
+    <style>
+        .bakery-moments--daily{grid-template-columns:minmax(0,1fr)}
+        .bakery-moments--daily .bakery-moment{background:linear-gradient(135deg,#56411d,#2a1b0e)}
+    </style>
 </head>
 <body>
 @include('front.partials.shop_bottom_screens', ['screenPlacement' => 'top'])
@@ -87,9 +92,11 @@
             <a class="cta" href="#catalog"><i class="ti ti-cookie"></i> اكتشف أشهى الأصناف</a>
         </aside>
     </section>
-    <section class="bakery-moments" aria-label="تجربة المخبز">
+    <section class="bakery-moments {{ $dailyJoyOnly ? 'bakery-moments--daily' : '' }}" aria-label="تجربة المخبز">
+        @unless($dailyJoyOnly)
         <article class="bakery-moment"><i class="ti ti-cake"></i><small>CELEBRATE SWEETLY</small><strong>كيكات للمناسبات</strong><p>تفاصيل حلوة تجعل كل احتفال أجمل.</p></article>
         <article class="bakery-moment"><i class="ti ti-bread"></i><small>FROM THE OVEN</small><strong>طازج من الفرن</strong><p>مخبوزات دافئة بطعم البيت الحقيقي.</p></article>
+        @endunless
         <article class="bakery-moment"><i class="ti ti-ice-cream-2"></i><small>DAILY LITTLE JOY</small><strong>حلاوة اليوم</strong><p>اختار قطعة صغيرة تغيّر مزاجك.</p></article>
     </section>
     <section class="catalog" id="catalog">
