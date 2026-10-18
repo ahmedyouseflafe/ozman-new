@@ -22,12 +22,16 @@ class ClothingPhotoTryOnController extends Controller
         $data=$request->validate([
             'photo'=>['required','image','mimes:jpeg,png,webp','max:6144','dimensions:min_width=256,min_height=256,max_width=4096,max_height=4096'],
             'consent'=>['required','accepted'],
-            'product_id'=>['nullable','integer'],
-            'garment'=>['nullable','image','mimes:jpeg,png,webp','max:6144','dimensions:min_width=256,min_height=256,max_width=4096,max_height=4096'],
+            'product_id'=>[$watch?'required':'nullable','integer'],
+            'garment'=>$watch ? ['prohibited'] : ['nullable','image','mimes:jpeg,png,webp','max:6144','dimensions:min_width=256,min_height=256,max_width=4096,max_height=4096'],
             'quality'=>['nullable','in:standard,detail'],
         ]);
         if ($watch) {
-            $garment='data:image/png;base64,'.base64_encode(file_get_contents(base_path('public/images/virtual-tryon/demo-blue-watch.png')));
+            $product=Product::with('category')->where('shop_id',$shop->id)->where('is_active',true)->findOrFail($data['product_id']);
+            abort_unless((int) $product->category?->shop_id === (int) $shop->id && \App\Services\WatchTryOnCatalog::isWatchCategory($product->category),422,'اختر ساعة من قسم الساعات في هذا المحل.');
+            abort_unless(filled($product->main_image),422,'أضف صورة الساعة من لوحة المحل أولًا.');
+            $path=$product->main_image;
+            $garment=Str::startsWith($path,['http://','https://'])?$path:asset(Str::startsWith($path,'storage/')?$path:'storage/'.$path);
         } elseif ($request->hasFile('garment')) {
             $file=$data['garment'];
             $garment='data:'.$file->getMimeType().';base64,'.base64_encode(file_get_contents($file->getRealPath()));
@@ -48,7 +52,7 @@ class ClothingPhotoTryOnController extends Controller
         ] : ['garment_image'=>$garment,'category'=>'tops','mode'=>'quality','num_samples'=>1,
             'garment_photo_type'=>empty($data['product_id'])&&!$request->hasFile('garment')?'flat-lay':'auto','segmentation_free'=>false];
         if ($watch) {
-            $inputs['prompt']='Place exactly one reference wristwatch on the visible bare wrist, dial on the back-of-hand side, bracelet wrapped naturally around the wrist with correct perspective and realistic contact shadows. Preserve the blue dial, silver indices, hands, crown and steel bracelet links. Use plausible wristwatch proportions, not an oversized face. Preserve the exact hand, fingers, arm, skin texture, pose, background and camera lighting. Do not add hands or fingers, beautify skin or change clothing. Only add the watch. This is a visual preview, not a measurement.';
+            $inputs['prompt']='Identify the single wristwatch in the product reference photo. Ignore its display cushion, stand, packaging, table, scenery and background; do not transfer those objects. Place only that exact watch on the visible bare wrist, dial on the back-of-hand side, strap or bracelet wrapped naturally around the wrist with correct perspective and realistic contact shadows. Preserve the reference watch model, dial color, case shape, metal colors, indices, hands, crown, date window, visible lettering and strap or bracelet design. Do not invent a different watch or change its colors. Use plausible wristwatch proportions, not an oversized face. Preserve the exact hand, fingers, arm, skin texture, pose, background and camera lighting. Do not add hands or fingers, beautify skin or change clothing. Only add the watch. This is a visual preview, not a measurement.';
         }
         try {
             $response=Http::withToken(config('services.fashn.key'))->connectTimeout(10)->timeout(30)->post('https://api.fashn.ai/v1/run',[

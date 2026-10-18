@@ -5,12 +5,12 @@ export function initPhotoTryOn(root = document) {
     const video=$('photoTryVideo'), capture=$('photoTryCapture'), countdown=$('photoTryCountdown');
     let stream=null, timer=null, generation=0, shot=null, shotUrl=null, productId=null, busy=false, opener=null, aborter=null;
     let garment=null, garmentUrl=null, originalGarment='', fileVersion=0;
-    const lockInputs=locked=>{['photoTryGarmentFile','photoTryPersonFile','photoTryQuality','photoTryOriginalGarment','photoTryCamera','photoTryRetake','photoTryShoot'].forEach(id=>{if($(id))$(id).disabled=locked;});};
+    const lockInputs=locked=>{['photoTryGarmentFile','photoTryPersonFile','photoTryQuality','photoTryOriginalGarment','photoTryCamera','photoTryRetake','photoTryShoot','photoTryWatchSelect'].forEach(id=>{if($(id))$(id).disabled=locked;});};
     const status=text=>$('photoTryStatus').textContent=text;
     const stopStream=()=>{stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;};
     const cancelTimer=()=>{clearInterval(timer);timer=null;countdown.hidden=true;$('photoTryCancel').hidden=true;$('photoTryShoot').hidden=!stream;};
     const clearShot=()=>{shot=null;if(shotUrl)URL.revokeObjectURL(shotUrl);shotUrl=null;capture.removeAttribute('src');capture.hidden=true;};
-    const sync=()=>{$('photoTryGenerate').disabled=busy||!shot||layer.dataset.enabled!=='1'||!$('photoTryConsent')?.checked;};
+    const sync=()=>{$('photoTryGenerate').disabled=busy||!shot||(watch&&!productId)||layer.dataset.enabled!=='1'||!$('photoTryConsent')?.checked;};
     const reset=()=>{generation++;aborter?.abort();aborter=null;cancelTimer();stopStream();clearShot();busy=false;lockInputs(false);
         $('photoTryShoot').hidden=true;$('photoTryRetake').hidden=true;$('photoTryCamera').hidden=false;
         $('photoTryResult').hidden=true;$('photoTryResultImage').removeAttribute('src');$('photoTryStage').hidden=true;
@@ -18,8 +18,19 @@ export function initPhotoTryOn(root = document) {
         if($('photoTryConsent'))$('photoTryConsent').checked=false;sync();};
     const resetGarment=()=>{fileVersion++;garment=null;if(garmentUrl)URL.revokeObjectURL(garmentUrl);garmentUrl=null;$('photoTryGarmentFile').value='';$('photoTryGarment').src=originalGarment;$('photoTryOriginalGarment').hidden=true;};
     const close=()=>{reset();resetGarment();$('photoTryPersonFile').value='';layer.classList.remove('open');opener?.focus();};
-    const open=(url,id,button)=>{reset();opener=button;productId=id||null;originalGarment=url;resetGarment();
-        $('photoTryExample').open=true;layer.classList.add('open');status('افتح الكاميرا، ثم اضغط التقاط بعد 5 ثوانٍ.');
+    const selectWatch=id=>{
+        const select=$('photoTryWatchSelect');
+        const option=[...(select?.options||[])].find(option=>option.value===String(id));
+        if(!option){productId=null;sync();return false;}
+        productId=option.value;select.value=productId;originalGarment=option.dataset.image;resetGarment();
+        $('photoTryGarment').alt=option.textContent;
+        $('photoTryProductName').textContent=option.textContent;
+        sync();return true;
+    };
+    const open=(url,id,button)=>{reset();opener=button;
+        if(watch){if(!selectWatch(id))return;}else{productId=id||null;originalGarment=url;resetGarment();}
+        $('photoTryPersonFile').value='';
+        $('photoTryExample').open=!watch;layer.classList.add('open');status('افتح الكاميرا أو ارفع صورة من جهازك.');
         layer.querySelector('.photo-try-card').scrollTop=0;
         layer.querySelector('[data-close="tryOnLayer"]').focus({preventScroll:true});};
     const startCamera=async()=>{
@@ -115,6 +126,23 @@ export function initPhotoTryOn(root = document) {
     };
     $('demoTryOn')?.addEventListener('click',event=>open(event.currentTarget.dataset.image,null,event.currentTarget));
     $('tryOn')?.addEventListener('click',event=>open($('quickImage').src,$('quickImage').dataset.productId,event.currentTarget));
+    if(watch){
+        $('photoTryWatchSelect')?.addEventListener('change',event=>{
+            if(busy)return;
+            if(selectWatch(event.currentTarget.value)){
+                clearResult();status('تم اختيار الساعة. راجع صورتك واضغط التجربة لتوليد معاينة جديدة.');
+            }
+        });
+        $('watchCatalogSelect')?.addEventListener('change',event=>{
+            const option=event.currentTarget.selectedOptions[0];
+            if(option){$('watchCatalogImage').src=option.dataset.image;$('watchCatalogImage').alt=option.textContent;}
+        });
+        $('watchTryOnOpen')?.addEventListener('click',event=>{
+            const option=$('watchCatalogSelect')?.selectedOptions[0];
+            if(option)open(option.dataset.image,option.value,event.currentTarget);
+        });
+        root.querySelectorAll('[data-watch-tryon]').forEach(button=>button.addEventListener('click',()=>open(button.dataset.image,button.dataset.productId,button)));
+    }
     root.querySelectorAll('[data-close="tryOnLayer"]').forEach(button=>button.addEventListener('click',close));
     layer.addEventListener('click',event=>{if(event.target===layer)close();});
     root.addEventListener('keydown',event=>{if(!layer.classList.contains('open'))return;if(event.key==='Escape')close();

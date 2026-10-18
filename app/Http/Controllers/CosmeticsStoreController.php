@@ -77,6 +77,11 @@ class CosmeticsStoreController extends Controller
             ->where('is_active', true)
             ->latest()
             ->get();
+        $watchProducts = $shop->slug === 'elegance-perfumes'
+            ? $categories->filter(fn ($category) => \App\Services\WatchTryOnCatalog::isWatchCategory($category))
+                ->flatMap(fn ($category) => $category->products)
+                ->filter(fn ($product) => filled($product->main_image))->values()
+            : collect();
         $displayItems = $shop->advertisements()
             ->where('is_active', true)
             ->whereNotNull('media')
@@ -116,7 +121,7 @@ class CosmeticsStoreController extends Controller
 
         return view('front.cosmetics_store', compact(
             'shop', 'categories', 'uncategorizedProducts', 'displayItems', 'ozmanLogo',
-            'purchaseRewardWheels', 'raffleCardsAvailable'
+            'purchaseRewardWheels', 'raffleCardsAvailable', 'watchProducts'
         ));
     }
 }

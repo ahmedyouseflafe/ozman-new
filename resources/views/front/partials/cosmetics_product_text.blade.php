@@ -8,3 +8,6 @@
     <h3 class="product-name">{{ $product->localized('name') }}</h3>
     <div class="product-details">{{ collect([data_get($attrs, 'volume'), collect(data_get($attrs, 'shades', []))->filter()->implode(' · ')])->filter()->implode(' — ') ?: ($product->localized('description') ?: __('منتج عناية مختار بعناية.')) }}</div>
 @endif
+@if(isset($watchProducts) && $watchProducts->contains('id', $product->id))
+    <button type="button" class="watch-product-try" data-watch-tryon data-product-id="{{ $product->id }}" data-image="{{ $mediaUrl($product->main_image) }}">جرّب الساعة على إيدك</button>
+@endif

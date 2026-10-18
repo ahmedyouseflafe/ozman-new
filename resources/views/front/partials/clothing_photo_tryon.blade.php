@@ -2,10 +2,17 @@
 <div class="overlay try-on-overlay" id="tryOnLayer" role="dialog" aria-modal="true" aria-labelledby="photoTryTitle" data-kind="{{ $watchTryOn ? 'watch' : 'clothing' }}"
      data-endpoint="{{ route($watchTryOn ? 'watch.photo-tryon' : 'clothing.photo-tryon', $shop) }}" data-enabled="{{ \App\Http\Controllers\ClothingPhotoTryOnController::enabled($shop) ? '1' : '0' }}" data-csrf="{{ csrf_token() }}">
     <section class="photo-try-card">
-        <header><div><small>OZMAN · PHOTO TRY-ON</small><h2 id="photoTryTitle">شوف القطعة عليك بصورة</h2></div><button class="x" type="button" data-close="tryOnLayer" aria-label="إغلاق">×</button></header>
+        <header><div><small>OZMAN · PHOTO TRY-ON</small><h2 id="photoTryTitle">{{ $watchTryOn ? 'شوف الساعة على إيدك' : 'شوف القطعة عليك بصورة' }}</h2></div><button class="x" type="button" data-close="tryOnLayer" aria-label="إغلاق">×</button></header>
         @if($watchTryOn)
         <p>صوّر إيد واحدة بدون ساعة، وخلّي ظهر الإيد والمعصم وجزء من الساعد واضحين بإضاءة متساوية. ثبّت إيدك وخلي مكان الساعة مكشوف. الصورة بتظل بنفس اتجاهها.</p>
-        <details id="photoTryExample"><summary>الساعة التجريبية</summary><img src="{{ route('virtual-tryon.demo-watch') }}" alt="ساعة تجريبية فضية بمينا أزرق" style="max-height:260px;object-fit:contain"><p>تصميم تجريبي مولّد للتجربة، وليس منتجًا معروضًا للبيع. النتيجة صورة ثابتة ولا تحدد قياس الساعة أو السوار.</p></details>
+        <details id="photoTryExample"><summary>نصائح لصورة واضحة</summary><p>خلي المعصم قريب وواضح، وصوّر بإضاءة متساوية بدون فلاتر. المعاينة مولّدة وقد تختلف التفاصيل، ولا تحدد قياس الساعة أو السوار.</p></details>
+        <label class="photo-upload" for="photoTryWatchSelect">اختار الساعة
+            <select id="photoTryWatchSelect">
+                @foreach($watchProducts as $watchProduct)
+                    <option value="{{ $watchProduct->id }}" data-image="{{ $mediaUrl($watchProduct->main_image) }}">{{ $watchProduct->localized('name') }}</option>
+                @endforeach
+            </select>
+        </label>
         @else
         <p>خليك وحدك داخل الصورة، مقابل الكاميرا بمستوى الصدر، وأظهر رأسك كاملًا لحد الورك. ابعد إيديك شوي عن جسمك وخلي الإضاءة قدامك. المعاينة بنفس اتجاه الصورة المحفوظة.</p>
         <details id="photoTryExample" open><summary>شوف نموذج توضيحي للفكرة</summary><img src="{{ route('virtual-tryon.photo-demo') }}" alt="نموذج مولّد: قبل بالرمادي يسارًا وبعد بالتيشيرت العاجي يمينًا"><p>مثال مولّد لتوضيح الفكرة؛ ليس نتيجة صورتك أو اختبارًا لخدمة FASHN.</p></details>
@@ -15,7 +22,7 @@
             <img id="photoTryCapture" alt="صورتك الملتقطة" hidden>
             <output id="photoTryCountdown" aria-live="assertive" hidden></output>
         </div>
-        <div class="photo-try-garment"><img id="photoTryGarment" alt="القطعة المختارة"><span>القطعة اللي رح تجربها</span></div>
+        <div class="photo-try-garment"><img id="photoTryGarment" alt="القطعة المختارة"><span id="photoTryProductName">القطعة اللي رح تجربها</span></div>
         <div @if($watchTryOn) hidden @endif>
         <label class="photo-upload">صورة بلوزة حقيقية من جهازك <input type="file" id="photoTryGarmentFile" accept="image/jpeg,image/png,image/webp"></label>
         <p>ارفع صورة البلوزة كاملة من الأمام، بدون قص الأكمام أو الحافة. للتفاصيل الأفضل استخدم إضاءة متساوية وخفف الثنيات قبل التصوير.</p>
@@ -24,7 +31,7 @@
         <label class="photo-upload">{{ $watchTryOn ? 'أو ارفع صورة معصمك بدل الكاميرا' : 'أو ارفع صورتك بدل الكاميرا' }} <input type="file" id="photoTryPersonFile" accept="image/jpeg,image/png,image/webp"></label>
         @if($watchTryOn)
         <input type="hidden" id="photoTryQuality" value="detail">
-        <p>التوليد بدقة 2K · كل نتيجة تستهلك 4 أرصدة من حساب المحل في FASHN. التصوير وحده لا يستهلك رصيدًا.</p>
+        <p>رح نستخدم صورة الساعة المختارة لتوليد معاينة على صورة معصمك.</p>
         @else
         <label class="photo-upload">جودة التجربة <select id="photoTryQuality"><option value="standard">عادية · رصيد واحد للصورة</option><option value="detail">تفاصيل أعلى · Try-On Max 2K · 4 أرصدة للصورة</option></select></label>
         @endif
