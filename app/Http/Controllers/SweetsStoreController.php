@@ -46,6 +46,12 @@ class SweetsStoreController extends Controller
             ->latest()
             ->get();
 
+        if ($shop->slug === 'notyla-shob') {
+            $displayItems = $shop->activeScreens
+                ->filter(fn ($screen) => ($screen->placement ?: 'top') === 'top' && filled($screen->media))
+                ->toBase()->concat($displayItems);
+        }
+
         return view('front.sweets_store', compact(
             'shop', 'categories', 'cupCategories', 'plateCategories', 'uncategorizedProducts', 'displayItems'
         ));

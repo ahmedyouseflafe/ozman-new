@@ -70,9 +70,14 @@
     </style>
 </head>
 <body>
+@unless($dailyJoyOnly)
 @include('front.partials.shop_bottom_screens', ['screenPlacement' => 'top'])
+@endunless
 <main class="shell">
-    <section class="hero">
+    <section class="hero {{ $dailyJoyOnly ? 'hero--split' : '' }}">
+        @if($dailyJoyOnly)
+            @include('front.partials.nutella_display')
+        @else
         <div class="hero-media">
             @forelse($displayItems as $item)
                 <div class="slide {{ $loop->first ? 'active' : '' }}" data-slide>
@@ -83,6 +88,7 @@
                 <div class="fallback"></div>
             @endforelse
         </div>
+        @endif
         <aside class="brand">
             <div class="tools"><a class="back" href="{{ route('home') }}"><i class="ti ti-arrow-right"></i> كل المحلات</a>@include('front.partials.public_language_switcher')</div>
             <img class="logo" src="{{ $shopLogo }}" alt="{{ $shop->name }}">

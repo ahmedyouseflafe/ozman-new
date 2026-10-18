@@ -136,6 +136,22 @@ class ScreenShopIsolationTest extends TestCase
         }
     }
 
+    public function test_nutella_side_display_combines_own_upper_screens_and_ads_without_repeating_lower_screens(): void
+    {
+        $shop = $this->shop('notyla-shob', 'sweets');
+        $this->screen($shop, 'Nutella upper', ['duration' => 12]);
+        $this->screen($shop, 'Nutella lower', ['placement' => 'bottom']);
+        $this->screen($shop, 'Nutella inactive', ['is_active' => false]);
+        $this->screen($this->shop('foreign-sweets', 'sweets'), 'Foreign sweets display');
+        Advertisement::create([...$this->data('Nutella video'), 'shop_id' => $shop->id, 'type' => 'video', 'media' => 'storage/nutella-ad.mp4', 'duration' => 30]);
+        $response = $this->get(route('sweets.store', $shop))->assertOk();
+        $this->assertSame(['Nutella upper', 'Nutella video'], $response->viewData('displayItems')->pluck('title')->all());
+        $response->assertSee('hero--split')->assertSee('data-duration="12000"', false)->assertSee('data-duration="30000"', false)
+            ->assertSee('Nutella lower')->assertDontSee('Foreign sweets display')->assertDontSee('Nutella inactive');
+        $this->assertSame(1, substr_count($response->getContent(), 'alt="Nutella upper"'));
+        $this->assertSame(1, substr_count($response->getContent(), 'alt="Nutella lower"'));
+    }
+
     public function test_home_payload_keeps_each_screen_under_its_shop_not_ozman(): void
     {
         $ozman = $this->shop('ozman', 'general'); $shop = $this->shop('other', 'general');
