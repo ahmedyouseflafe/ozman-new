@@ -737,10 +737,7 @@
 </script>
 @if($shop->slug === 'elegance-perfumes' && $watchProducts->isNotEmpty())
 @include('front.partials.clothing_photo_tryon', ['watchTryOn' => true])
-<style>
-.watch-catalog{display:flex;align-items:center;gap:20px;margin-top:16px;padding:20px;border:1px solid var(--line);border-radius:24px;background:#1c111d}.watch-catalog>img{width:110px;height:145px;object-fit:contain;border-radius:16px;background:#f6f4ef}.watch-catalog h2{margin:5px 0;font-size:23px}.watch-catalog p,.watch-catalog small{font-size:12px;color:#dac7d5}.watch-catalog button{padding:12px;border:0;border-radius:12px;background:#ff86bb;color:#210615;font:inherit;cursor:pointer}#tryOnLayer{position:fixed;inset:0;z-index:150;display:none;align-items:center;justify-content:center;padding:14px;background:#000b;direction:rtl}#tryOnLayer.open{display:flex}#tryOnLayer .photo-try-card{border-color:#ff86bb80}#tryOnLayer .photo-try-actions button{background:#ff86bb;border-color:#ff86bb;color:#210615}#tryOnLayer small,#tryOnLayer output{color:#ff86bb}#tryOnLayer .x{width:40px;height:40px;border-radius:50%;border:1px solid #ffffff40;background:#252529;font-size:24px;cursor:pointer}@media(max-width:480px){.watch-catalog{gap:12px;padding:12px}.watch-catalog>img{width:80px;height:115px}.watch-catalog h2{font-size:18px}}
-.watch-catalog>div{flex:1;min-width:0}.watch-catalog label,.watch-catalog small{display:block;margin-block:10px}.watch-catalog select{display:block;width:100%;max-width:440px;margin-block:10px;padding:10px;background:#27152c;color:#fff;border:1px solid var(--line);border-radius:12px;font:inherit}.watch-product-try{width:100%;margin-top:10px;padding:8px;border:1px solid #ff86bb80;border-radius:10px;background:#27152c;color:#ffb8d7;font:inherit;font-size:11px;cursor:pointer}@media(max-width:480px){.watch-catalog{align-items:flex-start}.watch-catalog>img{width:70px;height:90px}}
-</style>
+@include('front.partials.watch_tryon_styles')
 <script type="module">
 {!! file_get_contents(base_path('public/clothing-photo-tryon.js')) !!}
 </script>

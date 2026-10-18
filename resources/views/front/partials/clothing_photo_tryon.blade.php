@@ -4,7 +4,7 @@
     <section class="photo-try-card">
         <header><div><small>OZMAN · PHOTO TRY-ON</small><h2 id="photoTryTitle">{{ $watchTryOn ? 'شوف الساعة على إيدك' : 'شوف القطعة عليك بصورة' }}</h2></div><button class="x" type="button" data-close="tryOnLayer" aria-label="إغلاق">×</button></header>
         @if($watchTryOn)
-        <p>صوّر إيد واحدة بدون ساعة، وخلّي ظهر الإيد والمعصم وجزء من الساعد واضحين بإضاءة متساوية. ثبّت إيدك وخلي مكان الساعة مكشوف. الصورة بتظل بنفس اتجاهها.</p>
+        <p>صوّر معصمك بدون ساعة بإضاءة واضحة، أو ارفع صورته من جهازك.</p>
         <details id="photoTryExample"><summary>نصائح لصورة واضحة</summary><p>خلي المعصم قريب وواضح، وصوّر بإضاءة متساوية بدون فلاتر. المعاينة مولّدة وقد تختلف التفاصيل، ولا تحدد قياس الساعة أو السوار.</p></details>
         <label class="photo-upload" for="photoTryWatchSelect">اختار الساعة
             <select id="photoTryWatchSelect">
@@ -22,7 +22,7 @@
             <img id="photoTryCapture" alt="صورتك الملتقطة" hidden>
             <output id="photoTryCountdown" aria-live="assertive" hidden></output>
         </div>
-        <div class="photo-try-garment"><img id="photoTryGarment" alt="القطعة المختارة"><span id="photoTryProductName">القطعة اللي رح تجربها</span></div>
+        <div class="photo-try-garment"><img id="photoTryGarment" alt="القطعة المختارة"><span id="photoTryProductName" dir="auto">القطعة اللي رح تجربها</span></div>
         <div @if($watchTryOn) hidden @endif>
         <label class="photo-upload">صورة بلوزة حقيقية من جهازك <input type="file" id="photoTryGarmentFile" accept="image/jpeg,image/png,image/webp"></label>
         <p>ارفع صورة البلوزة كاملة من الأمام، بدون قص الأكمام أو الحافة. للتفاصيل الأفضل استخدم إضاءة متساوية وخفف الثنيات قبل التصوير.</p>
@@ -47,8 +47,8 @@
         @else
             <p class="photo-try-notice">التقاط الصورة والنموذج جاهزان. تجربة القطعة على صورتك تحتاج تفعيل خدمة الصور لدى المحل.</p>
         @endif
-        <div class="photo-try-actions"><button type="button" id="photoTryGenerate" disabled>جرّب القطعة على صورتي</button></div>
         <figure id="photoTryResult" hidden><figcaption>نتيجتك · معاينة مولّدة، لا تحدد المقاس الفعلي</figcaption><img id="photoTryResultImage" alt="نتيجة تجربة القطعة على صورتك"></figure>
+        <div class="photo-try-actions photo-try-submit"><button type="button" id="photoTryGenerate" disabled>{{ $watchTryOn ? 'جرّب الساعة على صورتي' : 'جرّب القطعة على صورتي' }}</button></div>
     </section>
 </div>
 <style>

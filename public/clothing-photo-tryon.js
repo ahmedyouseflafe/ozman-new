@@ -5,6 +5,19 @@ export function initPhotoTryOn(root = document) {
     const video=$('photoTryVideo'), capture=$('photoTryCapture'), countdown=$('photoTryCountdown');
     let stream=null, timer=null, generation=0, shot=null, shotUrl=null, productId=null, busy=false, opener=null, aborter=null;
     let garment=null, garmentUrl=null, originalGarment='', fileVersion=0;
+    let pageLock=null;
+    const lockPage=()=>{
+        if(!watch||pageLock)return;
+        pageLock={x:window.scrollX,y:window.scrollY,top:root.body.style.top};
+        root.body.style.top=`-${pageLock.y}px`;
+        root.documentElement.classList.add('watch-tryon-open');
+    };
+    const unlockPage=()=>{
+        if(!pageLock)return;
+        const saved=pageLock;pageLock=null;
+        root.documentElement.classList.remove('watch-tryon-open');root.body.style.top=saved.top;
+        window.scrollTo({left:saved.x,top:saved.y,behavior:'instant'});
+    };
     const lockInputs=locked=>{['photoTryGarmentFile','photoTryPersonFile','photoTryQuality','photoTryOriginalGarment','photoTryCamera','photoTryRetake','photoTryShoot','photoTryWatchSelect'].forEach(id=>{if($(id))$(id).disabled=locked;});};
     const status=text=>$('photoTryStatus').textContent=text;
     const stopStream=()=>{stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;};
@@ -17,7 +30,7 @@ export function initPhotoTryOn(root = document) {
         $('photoTryCamera').disabled=false;$('photoTryRetake').disabled=false;
         if($('photoTryConsent'))$('photoTryConsent').checked=false;sync();};
     const resetGarment=()=>{fileVersion++;garment=null;if(garmentUrl)URL.revokeObjectURL(garmentUrl);garmentUrl=null;$('photoTryGarmentFile').value='';$('photoTryGarment').src=originalGarment;$('photoTryOriginalGarment').hidden=true;};
-    const close=()=>{reset();resetGarment();$('photoTryPersonFile').value='';layer.classList.remove('open');opener?.focus();};
+    const close=()=>{reset();resetGarment();$('photoTryPersonFile').value='';layer.classList.remove('open');unlockPage();opener?.focus({preventScroll:true});};
     const selectWatch=id=>{
         const select=$('photoTryWatchSelect');
         const option=[...(select?.options||[])].find(option=>option.value===String(id));
@@ -30,7 +43,7 @@ export function initPhotoTryOn(root = document) {
     const open=(url,id,button)=>{reset();opener=button;
         if(watch){if(!selectWatch(id))return;}else{productId=id||null;originalGarment=url;resetGarment();}
         $('photoTryPersonFile').value='';
-        $('photoTryExample').open=!watch;layer.classList.add('open');status('افتح الكاميرا أو ارفع صورة من جهازك.');
+        $('photoTryExample').open=!watch;lockPage();layer.classList.add('open');status('افتح الكاميرا أو ارفع صورة من جهازك.');
         layer.querySelector('.photo-try-card').scrollTop=0;
         layer.querySelector('[data-close="tryOnLayer"]').focus({preventScroll:true});};
     const startCamera=async()=>{
@@ -135,7 +148,7 @@ export function initPhotoTryOn(root = document) {
         });
         $('watchCatalogSelect')?.addEventListener('change',event=>{
             const option=event.currentTarget.selectedOptions[0];
-            if(option){$('watchCatalogImage').src=option.dataset.image;$('watchCatalogImage').alt=option.textContent;}
+            if(option){$('watchCatalogImage').src=option.dataset.image;$('watchCatalogImage').alt=option.textContent;if($('watchCatalogName'))$('watchCatalogName').textContent=option.textContent;}
         });
         $('watchTryOnOpen')?.addEventListener('click',event=>{
             const option=$('watchCatalogSelect')?.selectedOptions[0];
