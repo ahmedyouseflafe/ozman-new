@@ -444,6 +444,7 @@
 
         .meal-grid {
             display: grid;
+            align-items: start;
             grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             gap: 18px;
         }
@@ -680,6 +681,14 @@
             .meal-price-input, .meal-save { height: 38px; }
             .meal-save { width: 38px; }
         }
+        .product-card-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+        .meal-card-head{flex-wrap:wrap}.meal-card-head>div:first-child{min-width:0;flex:1}.meal-name{overflow-wrap:anywhere}
+        .product-category-editor{display:grid;gap:10px;padding:12px 0;border-top:1px solid var(--border);margin-bottom:12px}
+        .product-category-editor[hidden]{display:none}.product-category-editor .filter-select{width:100%;min-width:0}
+        .product-category-editor .btn{padding:8px 12px;font:inherit;font-size:12px;color:var(--text);border:1px solid var(--border);border-radius:10px;background:#17242d;cursor:pointer}.product-category-editor .btn-primary{background:var(--primary);color:#04151a}.product-category-editor label{font-size:12px}
+        .product-card-footer{padding:0 16px 14px;display:grid;gap:12px}.product-card-footer summary{cursor:pointer;font-size:12px;color:var(--muted)}
+        .product-card-details{display:grid;grid-template-columns:1fr auto;gap:6px;font-size:12px;margin-top:10px}
+        @media(max-width:700px){.meal-card-head>div:first-child{flex-basis:100%}.product-category-editor .product-card-actions{display:grid;grid-template-columns:1fr}.product-card-footer{padding-inline:11px}}
     </style>
 </head>
 
@@ -744,7 +753,8 @@
         $featuredTotal = $featuredProductsCount ?? $productItems->filter(fn($product) => (bool) data_get($product, 'is_featured'))->count();
         $outOfStockTotal = $outOfStockProductsCount ?? $productItems->filter(fn($product) => (int) data_get($product, 'quantity', 0) <= 0)->count();
         $averagePrice = $averageProductPrice ?? round($productItems->avg(fn($product) => (float) data_get($product, 'price', 0)) ?: 0);
-        $categoryOptions = collect($categories ?? $productItems->pluck('category_name')->filter()->unique()->values());
+        $categoryOptions = collect($categories ?? []);
+        $categoriesByShop = $categoryOptions->groupBy('shop_id');
         $currentUser = auth()->user();
         $currentUserAgentIds = $currentUser?->isAgent()
             ? \App\Models\Agent::query()
@@ -846,7 +856,7 @@
                             <select class="filter-select" id="catFilter" aria-label="فلترة الفئة">
                                 <option value="">كل الفئات</option>
                                 @foreach($categoryOptions as $category)
-                                    <option value="{{ data_get($category, 'name', $category) }}">{{ data_get($category, 'name', $category) }}</option>
+                                    <option value="{{ data_get($category, 'id', $category) }}">{{ data_get($category, 'name', $category) }}</option>
                                 @endforeach
                             </select>
 
@@ -857,8 +867,8 @@
                         </div>
                     </div>
 
-                    @if($isRestaurantContext)
-                        <div class="meal-grid" id="restaurantMeals">
+                        <p data-product-feedback class="meal-quick-feedback" role="status"></p>
+                        <div class="meal-grid" id="productCards">
                             @forelse($productItems as $product)
                                 @php
                                     $categoryName = data_get($product, 'category.name', data_get($product, 'category_name', '-'));
@@ -866,7 +876,7 @@
                                     $isActive = (bool) data_get($product, 'is_active', true);
                                     $canQuickManageMeal = $canManageProduct($product) && $canEditProducts;
                                 @endphp
-                                <article class="meal-card {{ $isActive ? '' : 'is-inactive' }}" data-cat="{{ $categoryName }}">
+                                <article class="meal-card {{ $isActive ? '' : 'is-inactive' }}" data-cat="{{ $product->category_id }}" data-name="{{ $product->name }}" data-shop="{{ $product->shop?->name }}" data-category-name="{{ $categoryName }}">
                                     @if($canQuickManageMeal)
                                         <form class="meal-card-form js-meal-quick-form" action="{{ route('products.quick-settings', $product) }}" method="post">
                                             @csrf
@@ -876,9 +886,9 @@
                                                 @if($image)
                                                     <img src="{{ asset($image) }}" alt="{{ data_get($product, 'name', '') }}">
                                                 @else
-                                                    <span class="meal-placeholder"><i class="ti ti-tools-kitchen-2"></i></span>
+                                                    <span class="meal-placeholder"><i class="ti ti-package"></i></span>
                                                 @endif
-                                                <button type="button" class="meal-power {{ $isActive ? 'is-active' : '' }}" data-meal-toggle aria-label="{{ $isActive ? 'إيقاف الوجبة' : 'تشغيل الوجبة' }}">
+                                                <button type="button" class="meal-power {{ $isActive ? 'is-active' : '' }}" data-meal-toggle aria-label="{{ $isActive ? 'إيقاف المنتج' : 'تشغيل المنتج' }}">
                                                     <i class="ti {{ $isActive ? 'ti-power' : 'ti-power' }}"></i>
                                                     <span data-meal-power-copy>{{ $isActive ? 'متاحة' : 'موقوفة' }}</span>
                                                 </button>
@@ -888,13 +898,30 @@
                                                     <div>
                                                         <div class="meal-name">{{ data_get($product, 'name', '-') }}</div>
                                                         <span class="meal-category">{{ $categoryName }}</span>
+                                                        @unless($currentShop)<span class="meal-category">{{ $product->shop?->name }}</span>@endunless
                                                     </div>
+                                                    <div class="product-card-actions">
                                                     <a href="{{ route('products.edit', $product) }}" class="icon-btn meal-detail-link" aria-label="تعديل كامل">
                                                         <i class="ti ti-edit"></i>
                                                     </a>
+                                                    <button type="button" class="icon-btn" data-move-category aria-label="نقل القسم" title="نقل القسم" aria-expanded="false" aria-controls="move-category-{{ $product->id }}"><i class="ti ti-folder-symlink"></i></button>
+                                                    </div>
+                                                </div>
+                                                <div class="product-category-editor" id="move-category-{{ $product->id }}" data-category-editor data-url="{{ route('products.move-category', $product) }}" hidden>
+                                                    <label for="category-select-{{ $product->id }}">نقل إلى قسم</label>
+                                                    <select id="category-select-{{ $product->id }}" class="filter-select" data-category-select>
+                                                        @foreach($categoriesByShop->get($product->shop_id, collect()) as $destination)
+                                                            <option value="{{ $destination->id }}" @selected($destination->id == $product->category_id)>{{ $destination->name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    <div class="product-card-actions">
+                                                        <button type="button" class="btn btn-primary" data-category-save>نقل القسم</button>
+                                                        <button type="button" class="btn" data-category-cancel>إلغاء</button>
+                                                    </div>
+                                                    <span data-category-feedback role="status" class="meal-quick-feedback"></span>
                                                 </div>
                                                 <div class="meal-price-row">
-                                                    <input class="meal-price-input" type="number" name="price" min="0" max="99999999.99" step="0.01" value="{{ data_get($product, 'price', 0) }}" aria-label="سعر الوجبة">
+                                                    <input class="meal-price-input" type="number" name="price" min="0" max="99999999.99" step="0.01" value="{{ data_get($product, 'price', 0) }}" aria-label="سعر المنتج">
                                                     <button class="meal-save" type="submit" aria-label="حفظ السعر"><i class="ti ti-check"></i></button>
                                                 </div>
                                                 <span class="meal-quick-feedback" aria-live="polite"></span>
@@ -905,156 +932,48 @@
                                             @if($image)
                                                 <img src="{{ asset($image) }}" alt="{{ data_get($product, 'name', '') }}">
                                             @else
-                                                <span class="meal-placeholder"><i class="ti ti-tools-kitchen-2"></i></span>
+                                                <span class="meal-placeholder"><i class="ti ti-package"></i></span>
                                             @endif
                                             <span class="meal-power {{ $isActive ? 'is-active' : '' }}"><i class="ti ti-power"></i>{{ $isActive ? 'متاحة' : 'موقوفة' }}</span>
                                         </div>
                                         <div class="meal-card-body">
                                             <div class="meal-name">{{ data_get($product, 'name', '-') }}</div>
                                             <span class="meal-category">{{ $categoryName }}</span>
+                                            @unless($currentShop)<span class="meal-category">{{ $product->shop?->name }}</span>@endunless
                                             <div class="price" style="margin-top:12px">{{ data_get($product, 'price', 0) }}₪</div>
                                         </div>
                                     @endif
+                                    <div class="product-card-footer">
+                                        @unless($product->shop?->catalog_type === 'restaurant')
+                                            <details><summary>تفاصيل الأسعار والمخزون</summary>
+                                                <dl class="product-card-details">
+                                                    <dt>الكمية</dt><dd>{{ $product->quantity }}</dd>
+                                                    @foreach(['discount_price' => 'سعر الخصم', 'merchant_price' => 'سعر التاجر', 'package_price' => 'سعر العبوة', 'pallet_price' => 'سعر المشطاح', 'carton_price' => 'سعر الكرتونة'] as $field => $label)
+                                                        @if($product->$field !== null)<dt>{{ $label }}</dt><dd>{{ $product->$field }} ₪</dd>@endif
+                                                    @endforeach
+                                                    <dt>التقييم</dt><dd>{{ $product->rating ?? '-' }}</dd>
+                                                    <dt>مميز</dt><dd>{{ $product->is_featured ? 'نعم' : 'لا' }}</dd>
+                                                </dl>
+                                            </details>
+                                        @endunless
+                                        <div class="product-card-actions">
+                                            <a href="{{ route('products.show', $product) }}" class="icon-btn" aria-label="عرض المنتج" title="عرض المنتج"><i class="ti ti-eye"></i></a>
+                                            @if($canManageProduct($product) && $canDeleteProducts)
+                                                <form action="{{ route('products.destroy', $product) }}" method="POST" onsubmit="return confirm('هل تريد حذف هذا المنتج؟')">
+                                                    @csrf @method('DELETE')
+                                                    <button type="submit" class="icon-btn" aria-label="حذف المنتج" title="حذف المنتج"><i class="ti ti-trash"></i></button>
+                                                </form>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </article>
                             @empty
                                 <div class="empty-state">
                                     <i class="ti ti-tools-kitchen-2" aria-hidden="true"></i>
-                                    لا توجد وجبات لعرضها حاليًا
+                                    لا توجد {{ $itemsLabel }} لعرضها حاليًا
                                 </div>
                             @endforelse
                         </div>
-                    @else
-                    <div class="table-wrap">
-                        <table id="prodTable">
-                            <thead>
-                                <tr>
-                                    <th>{{ $itemLabel }}</th>
-                                    <th>الفئة</th>
-                                    <th>المتجر</th>
-                                    <th>السعر</th>
-                                    <th>سعر الخصم</th>
-                                    <th>سعر التاجر</th>
-                                    <th>سعر العبوة</th>
-                                    <th>سعر المشطاح</th>
-                                    <th>سعر الكرتونة</th>
-                                    @unless($isRestaurantContext)<th>الكمية</th>@endunless
-                                    <th>التقييم</th>
-                                    <th>مميز</th>
-                                    <th>الحالة</th>
-                                    <th>إجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($productItems as $product)
-                                    @php
-                                        $categoryName = data_get($product, 'category.name', data_get($product, 'category_name', '-'));
-                                        $shopName = data_get($product, 'shop.name', data_get($product, 'shop_name', '-'));
-                                        $image = data_get($product, 'main_image');
-                                        $isActive = (bool) data_get($product, 'is_active', true);
-                                        $isFeatured = (bool) data_get($product, 'is_featured', false);
-                                        $quantity = (int) data_get($product, 'quantity', 0);
-                                    @endphp
-                                    <tr data-cat="{{ $categoryName }}">
-                                        <td>
-                                            <div class="product-cell">
-                                                <span class="product-thumb">
-                                                    @if($image)
-                                                        <img src="{{ asset($image) }}" alt="">
-                                                    @else
-                                                        <i class="ti {{ data_get($product, 'icon', 'ti-package') }}" aria-hidden="true"></i>
-                                                    @endif
-                                                </span>
-                                                <span>
-                                                    {{ data_get($product, 'name', '-') }}
-                                                    <span class="product-sub">{{ data_get($product, 'sku', data_get($product, 'slug', '-')) }}</span>
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td>{{ $categoryName }}</td>
-                                        <td>{{ $shopName }}</td>
-                                        <td class="price">{{ data_get($product, 'price', 0) }}₪</td>
-                                        <td>
-                                            @if(data_get($product, 'discount_price'))
-                                                <span class="discount">{{ data_get($product, 'discount_price') }}₪</span>
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if(data_get($product, 'merchant_price'))
-                                                <span class="discount">{{ data_get($product, 'merchant_price') }}₪</span>
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if(data_get($product, 'package_price'))
-                                                <span class="discount">{{ data_get($product, 'package_price') }}₪</span>
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if(data_get($product, 'pallet_price'))
-                                                <span class="discount">{{ data_get($product, 'pallet_price') }}₪</span>
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if(data_get($product, 'carton_price'))
-                                                <span class="discount">{{ data_get($product, 'carton_price') }}₪</span>
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
-                                        @unless($isRestaurantContext)
-                                            <td><span class="tag {{ $quantity > 0 ? 'tag-c' : 'tag-r' }}">{{ $quantity }}</span></td>
-                                        @endunless
-                                        <td>
-                                            <span class="rating">
-                                                <i class="ti ti-star-filled" aria-hidden="true"></i>
-                                                {{ data_get($product, 'rating', '-') }}
-                                            </span>
-                                        </td>
-                                        <td><span class="tag {{ $isFeatured ? 'tag-y' : 'tag-r' }}">{{ $isFeatured ? 'نعم' : 'لا' }}</span></td>
-                                        <td><span class="tag {{ $isActive && ($isRestaurantContext || $quantity > 0) ? 'tag-g' : 'tag-r' }}">{{ $isActive && ($isRestaurantContext || $quantity > 0) ? 'نشط' : 'متوقف' }}</span></td>
-                                        <td>
-                                            <div class="actions">
-                                                <a href="{{ route('products.show', $product) }}" class="icon-btn" aria-label="عرض">
-                                                    <i class="ti ti-eye" aria-hidden="true"></i>
-                                                </a>
-                                                @if($canManageProduct($product) && $canEditProducts)
-                                                    <a href="{{ route('products.edit', $product) }}" class="icon-btn" aria-label="تعديل">
-                                                        <i class="ti ti-edit" aria-hidden="true"></i>
-                                                    </a>
-                                                @endif
-                                                @if($canManageProduct($product) && $canDeleteProducts)
-                                                    <form action="{{ route('products.destroy', $product) }}" method="POST" onsubmit="return confirm('هل تريد حذف: {{ $product->name }}؟')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="icon-btn" aria-label="حذف">
-                                                            <i class="ti ti-trash" aria-hidden="true"></i>
-                                                        </button>
-                                                    </form>
-                                                @endif
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="14">
-                                            <div class="empty-state">
-                                                <i class="ti ti-package-off" aria-hidden="true"></i>
-                                                لا توجد {{ $itemsLabel }} لعرضها حاليًا
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                    @endif
                 </section>
             </div>
         </main>
@@ -1063,14 +982,14 @@
     <script>
         const prodSearch = document.getElementById('prodSearch');
         const catFilter = document.getElementById('catFilter');
-        const prodRows = document.querySelectorAll('#prodTable tbody tr, #restaurantMeals .meal-card');
+        const prodRows = document.querySelectorAll('#productCards .meal-card');
 
         function filterProducts() {
             const query = (prodSearch?.value || '').trim().toLowerCase();
             const category = catFilter?.value || '';
 
             prodRows.forEach((row) => {
-                const matchesQuery = row.textContent.toLowerCase().includes(query);
+                const matchesQuery = [row.dataset.name, row.dataset.shop, row.dataset.categoryName].join(' ').toLowerCase().includes(query);
                 const matchesCategory = !category || row.dataset.cat === category;
                 row.style.display = matchesQuery && matchesCategory ? '' : 'none';
             });
@@ -1079,7 +998,7 @@
         prodSearch?.addEventListener('input', filterProducts);
         catFilter?.addEventListener('change', filterProducts);
 
-        async function saveQuickMeal(form) {
+        async function saveQuickMeal(form, previousActive = form.querySelector('input[name="is_active"]')?.value) {
             if (form.dataset.saving === 'true') return;
 
             const card = form.closest('.meal-card');
@@ -1088,7 +1007,6 @@
             const priceInput = form.querySelector('input[name="price"]');
             const powerButton = form.querySelector('[data-meal-toggle]');
             const saveButton = form.querySelector('.meal-save');
-            const previousActive = activeInput?.value;
             const controls = [powerButton, saveButton].filter(Boolean);
 
             form.dataset.saving = 'true';
@@ -1111,7 +1029,7 @@
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) {
                     const validationError = Object.values(data.errors || {}).flat()[0];
-                    throw new Error(validationError || data.message || 'تعذر حفظ الوجبة.');
+                    throw new Error(validationError || data.message || 'تعذر حفظ المنتج.');
                 }
 
                 const isActive = Boolean(data.is_active);
@@ -1119,7 +1037,7 @@
                 if (priceInput && data.price !== undefined) priceInput.value = data.price;
                 card?.classList.toggle('is-inactive', !isActive);
                 powerButton?.classList.toggle('is-active', isActive);
-                powerButton?.setAttribute('aria-label', isActive ? 'إيقاف الوجبة' : 'تشغيل الوجبة');
+                powerButton?.setAttribute('aria-label', isActive ? 'إيقاف المنتج' : 'تشغيل المنتج');
                 const powerCopy = powerButton?.querySelector('[data-meal-power-copy]');
                 if (powerCopy) powerCopy.textContent = isActive ? 'متاحة' : 'موقوفة';
                 if (feedback) {
@@ -1129,7 +1047,7 @@
             } catch (error) {
                 if (activeInput && previousActive !== undefined) activeInput.value = previousActive;
                 if (feedback) {
-                    feedback.textContent = error.message || 'تعذر حفظ الوجبة.';
+                    feedback.textContent = error.message || 'تعذر حفظ المنتج.';
                     feedback.classList.add('is-error');
                 }
             } finally {
@@ -1146,9 +1064,77 @@
 
             form.querySelector('[data-meal-toggle]')?.addEventListener('click', () => {
                 const activeInput = form.querySelector('input[name="is_active"]');
-                if (!activeInput) return;
+                if (!activeInput || form.dataset.saving === 'true') return;
+                const previousActive = activeInput.value;
                 activeInput.value = activeInput.value === '1' ? '0' : '1';
-                saveQuickMeal(form);
+                saveQuickMeal(form, previousActive);
+            });
+        });
+
+        document.querySelectorAll('[data-category-editor]').forEach(editor => {
+            const card = editor.closest('.meal-card');
+            const toggle = card.querySelector('[data-move-category]');
+            const select = editor.querySelector('[data-category-select]');
+            const save = editor.querySelector('[data-category-save]');
+            const cancel = editor.querySelector('[data-category-cancel]');
+            const feedback = editor.querySelector('[data-category-feedback]');
+            const close = () => {
+                editor.hidden = true;
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.focus();
+            };
+            toggle.addEventListener('click', () => {
+                if (!editor.hidden) { close(); return; }
+                select.value = card.dataset.cat;
+                feedback.textContent = '';
+                editor.hidden = false;
+                toggle.setAttribute('aria-expanded', 'true');
+                select.focus();
+            });
+            cancel.addEventListener('click', close);
+            editor.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && !save.disabled) { event.preventDefault(); close(); }
+                if (event.key === 'Enter') { event.preventDefault(); save.click(); }
+            });
+            save.addEventListener('click', async () => {
+                if (save.disabled) return;
+                if (!select.value) { feedback.textContent = 'اختر القسم أولًا.'; return; }
+                if (select.value === card.dataset.cat) { close(); return; }
+                [save, cancel, select, toggle].forEach(control => control.disabled = true);
+                feedback.textContent = 'جارٍ نقل المنتج...';
+                feedback.className = 'meal-quick-feedback';
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 15000);
+                try {
+                    const response = await fetch(editor.dataset.url, {
+                        method: 'PATCH', credentials: 'same-origin', signal: controller.signal,
+                        headers: { Accept: 'application/json', 'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': card.querySelector('input[name="_token"]').value,
+                            'X-Requested-With': 'XMLHttpRequest' },
+                        body: JSON.stringify({ category_id: Number(select.value) }),
+                    });
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        throw new Error(response.status === 419 ? 'انتهت الجلسة. حدّث الصفحة وحاول مجددًا.'
+                            : Object.values(data.errors || {}).flat()[0] || data.message || 'تعذر نقل المنتج.');
+                    }
+                    if (!data.category_id || typeof data.category_name !== 'string') throw new Error('تعذر تأكيد النقل. حدّث الصفحة للتحقق.');
+                    card.dataset.cat = String(data.category_id);
+                    card.dataset.categoryName = data.category_name;
+                    card.querySelector('.meal-category').textContent = data.category_name;
+                    const notice = document.querySelector('[data-product-feedback]');
+                    notice.textContent = `تم نقل ${card.dataset.name} إلى ${data.category_name}.`;
+                    notice.className = 'meal-quick-feedback is-success';
+                    close();
+                    filterProducts();
+                } catch (error) {
+                    feedback.textContent = error.name === 'AbortError' ? 'تأخر الرد. حدّث الصفحة للتحقق من القسم قبل المحاولة مجددًا.' : error.message || 'تعذر نقل المنتج. حاول مجددًا.';
+                    feedback.classList.add('is-error');
+                } finally {
+                    clearTimeout(timer);
+                    [save, cancel, select, toggle].forEach(control => control.disabled = false);
+                    if (editor.hidden && card.style.display !== 'none') toggle.focus();
+                }
             });
         });
     </script>

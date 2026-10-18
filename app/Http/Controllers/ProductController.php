@@ -24,7 +24,7 @@ class ProductController extends Controller
         $shops = $this->accessibleShops();
         $currentShop = null;
 
-        if ($request->user()?->isShopOwner()) {
+        if ($request->user()?->isShopOwner() || $request->filled('shop_id')) {
             $preferredShopId = $request->integer('shop_id')
                 ?: (int) $request->session()->get('current_shop_id')
                 ?: $this->firstAccessibleShopId();
@@ -41,6 +41,7 @@ class ProductController extends Controller
 
         $categories = $this->scopeToAccessibleShops(Category::query())
             ->when($currentShop, fn($query) => $query->where('shop_id', $currentShop->id))
+            ->when($request->user()?->isAgent(), fn($query) => $query->whereIn('agent_id', $this->currentUserAgentIds()))
             ->orderBy('name')
             ->get();
 
@@ -263,7 +264,6 @@ class ProductController extends Controller
     {
         $this->authorizeProductManagement($product);
         $this->authorizeShopAccess($product);
-        abort_unless($product->shop?->catalog_type === 'restaurant', 404);
 
         $data = $request->validate([
             'price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
@@ -276,9 +276,27 @@ class ProductController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'تم حفظ إعدادات الوجبة.',
+            'message' => 'تم حفظ إعدادات المنتج.',
             'price' => (float) $product->price,
             'is_active' => (bool) $product->is_active,
+        ]);
+    }
+
+    public function moveCategory(Request $request, Product $product): JsonResponse
+    {
+        $this->authorizeProductManagement($product);
+        $this->authorizeShopAccess($product);
+        $data = $request->validate([
+            'category_id' => ['required', 'integer', Rule::exists('categories', 'id')->where('shop_id', $product->shop_id)],
+        ]);
+        $this->authorizeCategoryForShop((int) $data['category_id'], (int) $product->shop_id);
+        // A category move must never overwrite unsaved prices, stock or other fields.
+        $product->update(['category_id' => $data['category_id']]);
+
+        return response()->json([
+            'message' => 'تم نقل المنتج إلى القسم الجديد.',
+            'category_id' => $product->category_id,
+            'category_name' => $product->category()->value('name'),
         ]);
     }
 
