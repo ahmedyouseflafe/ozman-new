@@ -5,6 +5,14 @@
     $shopLogo = $mediaUrl($shop->logo ?: $shop->banner) ?: asset('images/logo.svg');
     $shopImage = $mediaUrl($shop->banner ?: $shop->logo) ?: asset('images/logo.svg');
     $whatsapp = preg_replace('/\D+/', '', (string) ($shop->whatsapp ?: $shop->phone));
+    $isElegance = $shop->slug === 'elegance-perfumes';
+    $otherStoresLabel = match ($locale) { 'en' => 'Other stores', 'he' => 'חנויות נוספות', default => 'متاجر أخرى' };
+    $shopLocationLabel = match ($locale) { 'en' => 'Store location', 'he' => 'מיקום החנות', default => 'لوكيشن المحل' };
+    $shopLocationUnavailable = match ($locale) { 'en' => 'Store location has not been added yet.', 'he' => 'מיקום החנות טרם נוסף.', default => 'لم تتم إضافة موقع المحل بعد.' };
+    $shopMapQuery = is_numeric($shop->latitude) && is_numeric($shop->longitude)
+        ? $shop->latitude.','.$shop->longitude
+        : (filled($shop->address) ? implode(', ', array_filter([$shop->name, $shop->address, $shop->city, $shop->country])) : null);
+    $shopMapUrl = $shopMapQuery ? 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($shopMapQuery) : null;
     $categoriesForPage = $categories->map(fn ($category) => [
         'key' => (string) $category->id,
         'name' => $category->localized('name'),
@@ -135,9 +143,19 @@
             @include('front.partials.display_sound_toggle')
         </section>
         <header class="beauty-brand">
-            <div class="brand-tools">@include('front.partials.public_language_switcher')<a class="directory-link" href="{{ route('front.home') }}"><img src="{{ $ozmanLogo ? $mediaUrl($ozmanLogo) : asset('ozman-favicon.png') }}" alt="">{{ __('كل المحلات') }}</a></div>
+            <div class="brand-tools">@include('front.partials.public_language_switcher')<a class="directory-link" href="{{ route('front.home') }}"><img src="{{ $ozmanLogo ? $mediaUrl($ozmanLogo) : asset('ozman-favicon.png') }}" alt="">{{ $isElegance ? $otherStoresLabel : __('كل المحلات') }}</a></div>
             <img class="brand-logo" src="{{ $shopLogo }}" alt="{{ $shop->name }}"><h1 class="brand-name">{{ $shop->name }}</h1>
-            <p class="brand-description">{{ $shop->description ?: __('عطور مختارة ومنتجات عناية وجمال لكل تفاصيلك.') }}</p><span class="brand-status">{{ __('متاح للطلبات') }}</span><a class="beauty-booking-link" href="{{ route('cosmetics.booking', $shop) }}"><i class="ti ti-calendar-heart"></i> احجزي موعد في الصالون</a>
+            <p class="brand-description">{{ $shop->description ?: __('عطور مختارة ومنتجات عناية وجمال لكل تفاصيلك.') }}</p><span class="brand-status">{{ __('متاح للطلبات') }}</span>
+            @if($isElegance)
+                @if($shopMapUrl)
+                    <a class="beauty-booking-link" href="{{ $shopMapUrl }}" target="_blank" rel="noopener noreferrer"><i class="ti ti-map-pin"></i> {{ $shopLocationLabel }}</a>
+                @else
+                    <span class="beauty-booking-link" aria-disabled="true"><i class="ti ti-map-pin"></i> {{ $shopLocationLabel }}</span>
+                    <small class="brand-description">{{ $shopLocationUnavailable }}</small>
+                @endif
+            @else
+                <a class="beauty-booking-link" href="{{ route('cosmetics.booking', $shop) }}"><i class="ti ti-calendar-heart"></i> احجزي موعد في الصالون</a>
+            @endif
             @if($socialLinks->isNotEmpty())<nav class="beauty-socials" aria-label="{{ __('التواصل الاجتماعي') }}">@foreach($socialLinks as $link)<a class="beauty-social" href="{{ $link['url'] }}" target="_blank" rel="noopener noreferrer" title="{{ $link['label'] }}" aria-label="{{ $link['label'] }}"><i class="ti {{ $link['icon'] }}"></i></a>@endforeach</nav>@endif
         </header>
     </div>
