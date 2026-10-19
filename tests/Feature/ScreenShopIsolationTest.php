@@ -148,8 +148,8 @@ class ScreenShopIsolationTest extends TestCase
         $this->assertSame(['Nutella upper', 'Nutella video'], $response->viewData('displayItems')->pluck('title')->all());
         $response->assertSee('hero--split')->assertSee('data-duration="12000"', false)->assertSee('data-duration="30000"', false)
             ->assertSee('Nutella lower')->assertDontSee('Foreign sweets display')->assertDontSee('Nutella inactive');
-        $this->assertSame(1, substr_count($response->getContent(), 'alt="Nutella upper"'));
-        $this->assertSame(1, substr_count($response->getContent(), 'alt="Nutella lower"'));
+        $this->assertSame(1, substr_count($response->getContent(), 'title="Nutella upper"'));
+        $this->assertSame(1, substr_count($response->getContent(), 'title="Nutella lower"'));
     }
 
     public function test_home_payload_keeps_each_screen_under_its_shop_not_ozman(): void

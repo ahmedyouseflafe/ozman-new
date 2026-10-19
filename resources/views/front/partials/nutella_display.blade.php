@@ -42,6 +42,7 @@
  .hero--split .tools .back{padding:4px 8px;font-size:9px}
  .hero--split .tools .public-language-switcher{max-width:100%;padding:3px}
  .hero--split .tools .public-language-switcher a{padding:4px;font-size:9px}
+ .hero--split .tools .public-language-icon{display:none}
  .hero--split .logo{width:82px;height:82px;flex-shrink:0}
  .hero--split .brand h1{font-size:19px;line-height:1.5}
  .hero--split .brand p{font-size:10px}
