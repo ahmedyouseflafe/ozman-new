@@ -2,7 +2,7 @@
 
 `/cars` is the visual prototype requested before implementing seller registration and real listings.
 It uses six explicitly labelled examples in `CarMarketPreviewController`, never production listings or market pricing.
-The page is marked `noindex, nofollow`; it is not linked from the live marketplace navigation yet.
+The page is marked `noindex, nofollow`. A “سوق السيارات” entry in the homepage shop-section carousel links directly to `/cars`; it is navigation only and does not add a fictional shop to the store data.
 
 Implemented preview interactions:
 - Search by name, brand, city, or year; new/used, body, city, brand and maximum-price filters.

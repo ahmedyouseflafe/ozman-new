@@ -3912,6 +3912,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     onSelect: () => renderSectionShopsCarousel(details.title, shops)
                 };
             });
+            sections.unshift({
+                kind: 'market-link',
+                title: 'سوق السيارات',
+                icon: 'fa-car',
+                href: window.OZMAN_FRONT_CONFIG?.carMarketUrl || '/cars'
+            });
 
             setupInfiniteVertical(
                 document.getElementById('sideVCarousel'),
@@ -3952,7 +3958,9 @@ document.addEventListener('DOMContentLoaded', () => {
             track.innerHTML = '';
 
             Array.from({ length: repeatCount }, () => data).flat().forEach((itemData, index) => {
-                const item = document.createElement('div');
+                const isLink = !isMain && Boolean(itemData.href);
+                const item = document.createElement(isLink ? 'a' : 'div');
+                if (isLink) item.href = itemData.href;
                 item.className = isMain ? 'v-item' : 'side-circle v-item';
                 if (isMain) {
                     item.innerHTML = `<div class="v-card"><img src="${itemData.img}" alt="${itemData.title}"></div>`;
@@ -3960,7 +3968,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.dataset.desc = itemData.desc;
                 } else {
                     item.tabIndex = 0;
-                    item.setAttribute('role', 'button');
+                    if (!isLink) item.setAttribute('role', 'button');
                     item.setAttribute('aria-label', itemData.title || '');
                     item.onkeydown = (event) => {
                         if (event.key === 'Enter' || event.key === ' ') {
@@ -3975,7 +3983,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.classList.toggle('side-section-item', Boolean(itemData.icon));
                     if (itemData.kind === 'shop' && itemData.id) item.dataset.storyShopId = itemData.id;
                     item.innerHTML = `${visual}<span class="side-shop-name">${escapeCartHtml(itemData.title || '')}</span>`;
-                    item.onclick = () => {
+                    if (!isLink) item.onclick = () => {
                         if (typeof itemData.onSelect === 'function') {
                             itemData.onSelect();
                         } else {
