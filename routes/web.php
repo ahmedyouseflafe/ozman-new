@@ -51,6 +51,8 @@ Route::get('/restaurant-purchase-wheel/{order}', [\App\Http\Controllers\Restaura
 Route::post('/restaurant-purchase-wheel/{order}/spin', [\App\Http\Controllers\RestaurantPurchaseWheelController::class, 'spin'])->middleware(['signed', 'throttle:20,1'])->name('restaurant.purchase-wheel.spin');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 Route::get('/', [FrontController::class, 'index'])->name('home');
+Route::get('/cars', [\App\Http\Controllers\CarMarketPreviewController::class, 'index'])->name('cars.preview');
+Route::get('/cars/media/{file}', [\App\Http\Controllers\CarMarketPreviewController::class, 'media'])->name('cars.media');
 Route::get('/shop-stories/feed', [ShopStoryController::class, 'feed'])->name('shop-stories.feed');
 Route::get('/shop-stories/media/{story}', [ShopStoryController::class, 'media'])->name('shop-stories.media');
 Route::post('/shop-stories/{story}/view', [ShopStoryController::class, 'recordView'])
