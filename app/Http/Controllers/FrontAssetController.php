@@ -29,18 +29,20 @@ class FrontAssetController extends Controller
             'caravan-demo.js' => 'application/javascript',
             'caravan-model.js' => 'application/javascript',
             'car-explorer.js' => 'application/javascript',
-            'car-explorer-model.js' => 'application/javascript',
+            'car-real-model.js' => 'application/javascript',
+            'bmw-m4.glb' => 'model/gltf-binary',
+            'bmw-m4-preview.webp' => 'image/webp',
             'caravan-demo.css' => 'text/css',
             'caravan-demo-poster.png' => 'image/png',
         ];
         abort_unless(isset($types[$file]), 404);
 
         // Read the Git-managed assets even when hosting uses a separate public_html.
-        $path = base_path('public/'.$file);
+        $path = base_path(in_array($file, ['bmw-m4.glb', 'bmw-m4-preview.webp'], true) ? 'public/models/car-explorer/'.$file : 'public/'.$file);
         abort_unless(is_file($path), 404);
 
         $headers = [
-            'Content-Type' => $types[$file].(str_starts_with($types[$file], 'image/') ? '' : '; charset=UTF-8'),
+            'Content-Type' => $types[$file].(str_starts_with($types[$file], 'image/') || str_starts_with($types[$file], 'model/') ? '' : '; charset=UTF-8'),
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'public, max-age=0, must-revalidate',
         ];

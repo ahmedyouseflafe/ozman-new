@@ -29,21 +29,31 @@ Verification: local browser rendering at 320, 390, 600, 768, 1024 and 1440 pixel
 
 Next phase agreed with the user: real accounts and owner-managed new/used car listings, published immediately without moderation. This is not implemented by this design-only change.
 
-## Interactive car demonstration
+## Real-car reference viewer
 
-The separate “استكشف السيارة التوضيحية” section on `/cars` now opens an original,
-unbranded procedural coupe. It is intentionally not attached to any sample listing:
-its geometry, engine, dimensions and interior do not describe those cars.
+The `/cars` showroom now uses the detailed **BMW M4 Competition M Package** model
+by SRT Performance, replacing the procedural demonstration car. The binary retains
+its original textures and cabin geometry and is hosted through the allowlisted
+front-assets route (including on installations with separate `public_html`).
 
-- Two outward-opening doors, bonnet, luggage lid and glove compartment, animated at their hinge pivots.
-- Exterior orbit/zoom, driver's seat, dashboard, engine and luggage inspection views.
-- Interior instruments and navigation illustration are drawn locally on canvas.
-- Mobile camera placement reuses the caravan's XR engine lifecycle with an injected model factory.
-  It starts at 30% scale; the visitor can select the model's approximate full scale.
-- Loading/camera failure recovery, focus/scroll restoration, camera shutdown on close/background,
-  and disposal of generated geometry, materials and instrument textures.
-- The Three.js and XR engine versions remain pinned to those already used by the caravan.
-  The engine's attribution/license link appears inside the viewer.
+Attribution, source, license and binary SHA-256 are recorded in
+`public/models/car-explorer/ATTRIBUTION.md`. Credit and CC BY 4.0 links are also visible
+in the viewer. The preview WebP is rendered from the same model.
+
+Supported: exterior orbit/zoom, rear view, driver's seat and dashboard views,
+and camera placement using the existing caravan XR lifecycle. It starts at 30%
+of the nominal display scale; 100% is an approximate 4.8 m reference length,
+not a measurement or verification of a seller's vehicle.
+
+**Asset limitation:** this model is not articulated. Opening the doors, bonnet,
+boot and glove compartment is not available; the interface states this and omits
+those controls. Interior components are the real model's own meshes/textures,
+not invented overlays. A correctly articulated licensed asset is required to
+restore opening-part interactions on a realistic car.
+
+The GLB is approximately 5.8 MB and loads on demand. The viewer clones GPU resources
+from its cached source so disposal on close does not invalidate subsequent openings.
+Closing/backgrounding stops the XR camera; unsupported devices fall back to 3D.
 
 Run browser checks against a local server and a Chrome debugging session:
 
@@ -53,9 +63,8 @@ $env:CAR_EXPLORER_TEST_URL='http://127.0.0.1:8031/cars'
 node tests/js/car-explorer.browser.mjs
 ```
 
-Validation: 32 browser checks, including six viewport sizes, actual rendered door changes,
-hinge directions, inspection controls, and simulated AR failure/placement/tracking loss/cleanup.
-`CarExplorerTest` and the existing caravan page/asset tests passed (4 tests, 58 assertions).
-AR sensor frames are simulated: actual camera tracking and placement still require a physical-phone test.
-The preview is a simplified demonstration, not a photorealistic reconstruction or vehicle condition inspection.
+Validation: 25 browser checks covering actual geometry/textures, camera viewpoints,
+six viewport sizes, reopening, and simulated AR placement/failure/tracking loss/cleanup.
+`CarExplorerTest` checks the public page, attribution/limitations and binary/module MIME types.
+AR sensor frames are simulated; physical-phone tracking remains to be verified.
 No database changes are required.
