@@ -25,8 +25,9 @@ function loadXr() {
 }
 
 export class CaravanDemo {
-    constructor(element) {
+    constructor(element, { buildModel = buildCaravan } = {}) {
         this.element = element;
+        this.buildModel = buildModel;
         this.copy = JSON.parse(element.querySelector('[data-caravan-copy]').textContent);
         this.dialog = element.querySelector('dialog');
         this.host = element.querySelector('[data-caravan-canvas]');
@@ -176,7 +177,7 @@ export class CaravanDemo {
             this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = T.PCFSoftShadowMap;
             this.renderer.toneMapping = T.ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1;
             this.host.append(this.renderer.domElement); this.addLights(this.scene);
-            this.model = buildCaravan(T, this.options); this.model.root.rotation.y = this.rotation;
+            this.model = this.buildModel(T, this.options); this.model.root.rotation.y = this.rotation;
             this.scene.add(this.model.root);
             const floor = new T.Mesh(new T.PlaneGeometry(200, 200), new T.MeshStandardMaterial({ color: 0xdde1d2, roughness: 1 }));
             floor.rotation.x = -Math.PI / 2; floor.position.y = -.01; floor.receiveShadow = true; this.scene.add(floor);
@@ -242,7 +243,7 @@ export class CaravanDemo {
                         const { scene, camera, renderer } = XR8.Threejs.xrScene();
                         this.scene = scene; this.camera = camera; this.renderer = renderer;
                         this.addLights(scene);
-                        this.model = buildCaravan(T, this.options); this.model.root.rotation.y = this.rotation;
+                        this.model = this.buildModel(T, this.options); this.model.root.rotation.y = this.rotation;
                         this.model.root.scale.setScalar(this.arScale);
                         this.model.root.visible = false; scene.add(this.model.root);
                         this.ring = new T.Mesh(new T.RingGeometry(.22, .3, 40), new T.MeshBasicMaterial({ color: 0xbff59b, side: T.DoubleSide }));

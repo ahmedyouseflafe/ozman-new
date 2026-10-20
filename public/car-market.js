@@ -59,7 +59,7 @@
         dialog.showModal();dialog.scrollTop=0;dialog.querySelector('[data-close]').focus({preventScroll:true});
     }
     document.querySelectorAll('[data-dialog]').forEach(button=>button.addEventListener('click',()=>openDialog(button.dataset.dialog)));
-    document.querySelectorAll('dialog').forEach(dialog=>{
+    document.querySelectorAll('dialog.market-dialog').forEach(dialog=>{
         dialog.querySelector('[data-close]').addEventListener('click',()=>dialog.close());
         dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)dialog.close();});
         dialog.addEventListener('close',()=>{

@@ -125,5 +125,10 @@ export function disposeTree(root) {
         for (const material of Array.isArray(node.material) ? node.material : [node.material]) if (material) materials.add(material);
     });
     geometries.forEach(geometry => geometry.dispose());
-    materials.forEach(material => material.dispose());
+    const textures = new Set();
+    materials.forEach(material => {
+        for (const value of Object.values(material)) if (value?.isTexture) textures.add(value);
+        material.dispose();
+    });
+    textures.forEach(texture => texture.dispose());
 }

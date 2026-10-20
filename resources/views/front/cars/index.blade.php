@@ -49,6 +49,7 @@
             <small class="image-note">صورة توضيحية</small>
         </div>
     </section>
+    @include('front.cars._explorer')
     <section class="search-section wrap" aria-label="ابحث عن سيارة">
         <div class="condition-tabs" role="group" aria-label="حالة السيارة">
             <button class="selected" data-condition="" aria-pressed="true">كل السيارات</button><button data-condition="new" aria-pressed="false">جديدة <span class="tiny-dot"></span></button><button data-condition="used" aria-pressed="false">مستعملة</button>

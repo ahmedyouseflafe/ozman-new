@@ -28,6 +28,8 @@ class FrontAssetController extends Controller
             'offer-notifications.js' => 'application/javascript',
             'caravan-demo.js' => 'application/javascript',
             'caravan-model.js' => 'application/javascript',
+            'car-explorer.js' => 'application/javascript',
+            'car-explorer-model.js' => 'application/javascript',
             'caravan-demo.css' => 'text/css',
             'caravan-demo-poster.png' => 'image/png',
         ];

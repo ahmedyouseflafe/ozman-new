@@ -28,3 +28,34 @@ These photos do not verify the example year, condition, price, mileage, city, se
 Verification: local browser rendering at 320, 390, 600, 768, 1024 and 1440 pixels; all images loaded, no horizontal page/dialog overflow or JavaScript exceptions. Checked new/used filters, combined empty state, Arabic search, ascending price, favorites, details, and no network submission from the prototype listing form.
 
 Next phase agreed with the user: real accounts and owner-managed new/used car listings, published immediately without moderation. This is not implemented by this design-only change.
+
+## Interactive car demonstration
+
+The separate “استكشف السيارة التوضيحية” section on `/cars` now opens an original,
+unbranded procedural coupe. It is intentionally not attached to any sample listing:
+its geometry, engine, dimensions and interior do not describe those cars.
+
+- Two outward-opening doors, bonnet, luggage lid and glove compartment, animated at their hinge pivots.
+- Exterior orbit/zoom, driver's seat, dashboard, engine and luggage inspection views.
+- Interior instruments and navigation illustration are drawn locally on canvas.
+- Mobile camera placement reuses the caravan's XR engine lifecycle with an injected model factory.
+  It starts at 30% scale; the visitor can select the model's approximate full scale.
+- Loading/camera failure recovery, focus/scroll restoration, camera shutdown on close/background,
+  and disposal of generated geometry, materials and instrument textures.
+- The Three.js and XR engine versions remain pinned to those already used by the caravan.
+  The engine's attribution/license link appears inside the viewer.
+
+Run browser checks against a local server and a Chrome debugging session:
+
+```powershell
+$env:CDP_URL='http://127.0.0.1:9227'
+$env:CAR_EXPLORER_TEST_URL='http://127.0.0.1:8031/cars'
+node tests/js/car-explorer.browser.mjs
+```
+
+Validation: 32 browser checks, including six viewport sizes, actual rendered door changes,
+hinge directions, inspection controls, and simulated AR failure/placement/tracking loss/cleanup.
+`CarExplorerTest` and the existing caravan page/asset tests passed (4 tests, 58 assertions).
+AR sensor frames are simulated: actual camera tracking and placement still require a physical-phone test.
+The preview is a simplified demonstration, not a photorealistic reconstruction or vehicle condition inspection.
+No database changes are required.
