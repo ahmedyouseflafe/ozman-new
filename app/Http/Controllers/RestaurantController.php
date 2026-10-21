@@ -539,7 +539,7 @@ class RestaurantController extends Controller
         return 'https://wa.me/'.$number.'?text='.rawurlencode($this->restaurantWhatsappMessage($shop, $order));
     }
 
-    private function restaurantWhatsappMessage(Shop $shop, FrontOrder $order): string
+    public function restaurantWhatsappMessage(Shop $shop, FrontOrder $order): string
     {
         $type = match ($order->order_type) {
             'delivery' => 'توصيل إلى العنوان',
@@ -605,6 +605,12 @@ class RestaurantController extends Controller
 
         if ($order->estimated_preparation_minutes) {
             $lines[] = '⏱ وقت التجهيز المتوقع: '.$order->estimated_preparation_minutes.' دقيقة';
+        }
+
+        if ($shop->catalog_type === 'cosmetics' && $shop->slug === 'elegance-perfumes') {
+            $lines[] = '';
+            $lines[] = 'للرجوع والتسوّق من '.$shop->name.':';
+            $lines[] = $shop->publicUrl();
         }
 
         return implode("\n", $lines);

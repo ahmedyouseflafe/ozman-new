@@ -12,6 +12,9 @@
         'he' => ['גלגל קנייה','שלחו הזמנה בסכום מתאים לפתיחת הגלגל.','סובבו','המשך לוואטסאפ','סגירה','נסו שוב','הפרס שלך: ','סכום ההזמנה'],
         default => ['عجلة الشراء','أرسل طلباً بالمبلغ المطلوب لفتح العجلة.','لف العجلة','متابعة إلى واتساب','إغلاق','تعذّر التحميل، حاول مجدداً','جائزتك: ','مبلغ الطلب'],
     };
+    if ($shop->slug === 'elegance-perfumes' && $shop->catalog_type === 'cosmetics') {
+        $pwText[3] = match($locale) {'en'=>'Share order photos', 'he'=>'שיתוף תמונות ההזמנה', default=>'مشاركة الطلب بالصور'};
+    }
 @endphp
 <style>
 .restaurant-bottom-actions{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(640px,calc(100% - 24px));display:flex;gap:8px;z-index:15;align-items:stretch}
@@ -70,12 +73,12 @@ body{padding-bottom:90px}
    if(!dialog.open)dialog.showModal();
    if(busy)return;
    msg.textContent=''; spin.hidden=true;el('purchaseWheelFrame').hidden=true;el('purchaseWheelRanges').hidden=!!pending;
-   el('purchaseWheelWhatsapp').hidden=!pending?.whatsapp_url;
+   el('purchaseWheelWhatsapp').hidden=!pending?.whatsapp_url && !pending?.order_share_url;
    if(!pending)return;
    try{
      const data=await request(pending.url);
      if(Number(data.shop_id)!==@json($shop->id)){pending=null;save();ready();throw new Error(t[5]);}
-     pending.whatsapp_url=data.whatsapp_url;save();el('purchaseWheelWhatsapp').hidden=!data.whatsapp_url;
+     pending.whatsapp_url=data.whatsapp_url;pending.order_share_url=data.order_share_url;save();el('purchaseWheelWhatsapp').hidden=!data.whatsapp_url && !data.order_share_url;
      wheel=data.wheel;
      if(data.reward){result(data.reward);return;}
      if(!wheel)throw new Error(t[5]);
@@ -87,18 +90,21 @@ body{padding-bottom:90px}
  }
  trigger.onclick=open;
  el('purchaseWheelClose').onclick=()=>dialog.close();
- el('purchaseWheelWhatsapp').onclick=()=>{if(pending?.whatsapp_url)window.location.assign(pending.whatsapp_url);};
+ el('purchaseWheelWhatsapp').onclick=()=>{
+   if(pending?.order_share_url && window.OzmanOrderPhotoShare){dialog.close();window.OzmanOrderPhotoShare.openFromUrl(pending.order_share_url);}
+   else if(pending?.whatsapp_url)window.location.assign(pending.whatsapp_url);
+ };
  spin.onclick=async()=>{
    if(busy||!pending)return;busy=true;spin.disabled=true;el('purchaseWheelWhatsapp').disabled=true;
    try{const data=await request(pending.spin_url,'POST');
-     pending.whatsapp_url=data.whatsapp_url;save();el('purchaseWheelWhatsapp').hidden=!data.whatsapp_url;
+     pending.whatsapp_url=data.whatsapp_url;pending.order_share_url=data.order_share_url;save();el('purchaseWheelWhatsapp').hidden=!data.whatsapp_url && !data.order_share_url;
      el('purchaseWheelDisc').style.transform=`rotate(${1800-(data.reward.segment_index+.5)*360/wheel.segments.length}deg)`;
      await new Promise(resolve=>setTimeout(resolve,3100));result(data.reward);
    }catch(e){msg.textContent=e.message;}finally{busy=false;spin.disabled=false;el('purchaseWheelWhatsapp').disabled=false;}
  };
  window.RestaurantPurchaseWheel={ordered(data){
    if(!data.purchase_wheel)return false;
-   pending={...data.purchase_wheel,whatsapp_url:data.whatsapp_url};reward=null;save();ready();
+   pending={...data.purchase_wheel,whatsapp_url:data.whatsapp_url,order_share_url:data.order_share_url};reward=null;save();ready();
    // Close the cart dialog before presenting the reward dialog.
    document.querySelectorAll('dialog[open]').forEach(d=>d.close());open();return true;
  }};

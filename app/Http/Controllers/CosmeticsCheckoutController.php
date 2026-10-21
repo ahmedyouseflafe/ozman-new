@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Shop, Product};
+use App\Models\{Shop, Product, FrontOrder};
 use App\Services\CosmeticsGuestRewardService;
 use App\Rules\ValidPhoneNumber;
 use Illuminate\Http\{Request, JsonResponse};
@@ -35,13 +35,16 @@ class CosmeticsCheckoutController extends Controller
             'items.*.qty' => ['required','integer','min:1','max:100'],
         ]);
         $products = Product::where('shop_id',$shop->id)->where('is_active',true)
-            ->whereIn('id',array_column($data['items'],'product_id'))->get()->keyBy('id');
+            ->whereIn('id',array_column($data['items'],'product_id'))->with('images')->get()->keyBy('id');
         $items = []; $subtotal = 0;
         foreach ($data['items'] as $item) {
             $product = $products->get($item['product_id']);
             abort_unless($product,422,'أحد المنتجات غير متاح. حدّث السلة.');
             $price = (float) ($product->discount_price ?? $product->price);
-            $items[] = ['product_id'=>$product->id,'name'=>$product->name,'price'=>$price,'qty'=>$item['qty']];
+            $image = $product->main_image ?: $product->images->sortBy('id')->first()?->image;
+            $imageUrl = $image ? asset(preg_match('/^https?:\/\//i', $image) || str_starts_with($image, 'storage/') ? $image : 'storage/'.$image) : null;
+            // Snapshot the shop's own product image; never accept an attachment URL from checkout input.
+            $items[] = ['product_id'=>$product->id,'name'=>$product->name,'price'=>$price,'qty'=>$item['qty'],'image_url'=>$imageUrl];
             $subtotal += $price * $item['qty'];
         }
         $latitude = $data['latitude'] ?? null;
@@ -54,27 +57,43 @@ class CosmeticsCheckoutController extends Controller
             'items'=>$items,'subtotal'=>round($subtotal,2),'discount'=>0,'total'=>round($subtotal,2),
             'order_channel'=>'whatsapp','status'=>'new','payment_status'=>'whatsapp_order',
         ], (bool) ($data['skip_signup_reward'] ?? false));
-        $message = 'طلب '.$order->order_number.' — '.$shop->name."\n";
-        $message .= 'الاسم: '.$order->customer_name."\n".'رقم التواصل: '.$order->customer_phone."\n"
-            .'واتساب: '.$order->customer_whatsapp."\n".'العنوان: '.$order->customer_address."\n";
-        if ($order->map_link) $message .= 'الموقع: '.$order->map_link."\n";
         \App\Models\AdminNotification::create([
             'shop_id'=>$shop->id,'type'=>'front_order_created','title'=>'طلب جديد من الواجهة',
             'message'=>$order->customer_name.' — '.$order->total.' ₪',
             'subject_type'=>\App\Models\FrontOrder::class,'subject_id'=>$order->id,
             'url'=>route('front-orders.index'),'data'=>['order_number'=>$order->order_number],
         ]);
-        foreach ($items as $item) $message .= $item['name'].' × '.$item['qty']."\n";
-        $message .= 'المجموع: '.$order->total.' ₪';
-        if ($order->reward_label) $message .= "\n".'هدية التسجيل: '.$order->reward_label;
-        $phone = preg_replace('/\D+/','',$shop->whatsapp ?: $shop->phone);
         return response()->json([
             'ok'=>true,'order_id'=>$order->id,'order_number'=>$order->order_number,'total'=>(float)$order->total,
-            'whatsapp_url'=>$phone ? 'https://wa.me/'.$phone.'?text='.rawurlencode($message) : null,
+            'whatsapp_url'=>app(RestaurantController::class)->restaurantWhatsappUrl($shop, $order),
+            'order_share_url'=>self::shareUrl($order),
             'purchase_wheel'=>RestaurantPurchaseWheelController::eligible($order) ? [
                 'url'=>URL::signedRoute('restaurant.purchase-wheel.show',$order),
                 'spin_url'=>URL::signedRoute('restaurant.purchase-wheel.spin',$order),
             ] : null,
         ]);
+    }
+
+    public static function shareUrl(FrontOrder $order): ?string
+    {
+        if ($order->shop?->slug !== 'elegance-perfumes' || $order->shop?->catalog_type !== 'cosmetics') return null;
+        return URL::temporarySignedRoute('cosmetics.orders.share', now()->addDays(3), ['order'=>$order->id]);
+    }
+
+    public function share(FrontOrder $order): JsonResponse
+    {
+        $shop = $order->shop;
+        abort_unless($shop?->is_active && $shop->slug === 'elegance-perfumes' && $shop->catalog_type === 'cosmetics'
+            && $order->order_channel === 'whatsapp' && $order->status !== 'cancelled', 404);
+        return response()->json([
+            'shop_id'=>$shop->id, 'shop_name'=>$shop->name, 'shop_url'=>$shop->publicUrl(),
+            'order_number'=>$order->order_number,
+            'text'=>app(RestaurantController::class)->restaurantWhatsappMessage($shop, $order),
+            'whatsapp_url'=>app(RestaurantController::class)->restaurantWhatsappUrl($shop, $order),
+            'items'=>collect($order->items ?? [])->map(fn(array $item)=>[
+                'product_id'=>$item['product_id'] ?? null, 'name'=>$item['name'], 'qty'=>$item['qty'],
+                'image_url'=>$item['image_url'] ?? null,
+            ])->values(),
+        ])->header('Cache-Control', 'private, no-store');
     }
 }

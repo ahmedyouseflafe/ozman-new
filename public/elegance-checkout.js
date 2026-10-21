@@ -4,6 +4,7 @@
     if (!config) return;
     const $ = id => document.getElementById(id), form = $('eleganceCheckoutForm');
     const orderButton = $('beautyWhatsappOrder'), status = $('eleganceCheckoutStatus');
+    orderButton.textContent = 'تأكيد الطلب وتجهيز الصور';
     const key = `ozman.cosmetics.${config.shopId}`;
     const read = name => { try { return localStorage.getItem(name); } catch (_) { return null; } };
     const write = (name, value) => { try { localStorage.setItem(name, value); } catch (_) {} };
@@ -109,7 +110,8 @@
             window.OzmanBeautyCart.splice(0); window.OzmanBeautyCartSync();
             status.textContent = `تم حفظ طلبك ${data.order_number} — ${Number(data.total).toFixed(2)} ₪`;
             $('closeBeautyCart').click();
-            if (!window.RestaurantPurchaseWheel?.ordered(data) && data.whatsapp_url) window.location.assign(data.whatsapp_url);
+            window.OzmanOrderPhotoShare.remember(data.order_share_url);
+            if (!window.RestaurantPurchaseWheel?.ordered(data)) window.OzmanOrderPhotoShare.openFromUrl(data.order_share_url);
         } catch (error) {
             status.textContent = error.name === 'AbortError' ? 'تأخر تأكيد الطلب. تحقق من المحل قبل إعادة الإرسال.' : error.message;
         } finally { sending = false; orderButton.removeAttribute('aria-disabled'); }

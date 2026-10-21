@@ -155,4 +155,48 @@ class CosmeticsCustomerRewardsTest extends TestCase
         $this->get($other->publicUrl())->assertOk()->assertDontSee('id="eleganceCheckoutForm"',false);
         $this->postJson(route('restaurant.signup-reward',$other),['registration_token'=>$token])->assertNotFound();
     }
+
+    public function test_order_photo_share_uses_shop_product_snapshots_and_includes_return_link_after_wheel(): void
+    {
+        [$shop,$product]=$this->fixture();
+        $product->update(['main_image'=>'products/perfume.jpg']);
+        $second=$product->replicate();$second->name='Second perfume';$second->slug='second';$second->main_image=null;$second->save();
+        $second->images()->create(['image'=>'storage/products/second.png']);
+        $third=$product->replicate();$third->name='No photo';$third->slug='no-photo';$third->main_image=null;$third->save();
+        $response=$this->postJson(route('cosmetics.orders.store',$shop),[
+            ...$this->details($product),'items'=>[
+                ['product_id'=>$product->id,'qty'=>2,'image_url'=>'https://untrusted.invalid/fake.jpg'],
+                ['product_id'=>$second->id,'qty'=>1],['product_id'=>$third->id,'qty'=>1],
+            ],
+        ])->assertOk();
+        $url=$response->json('order_share_url');
+        $this->assertNotEmpty($url);
+        $product->update(['main_image'=>'products/replacement.jpg','name'=>'Changed after order']);
+        $share=$this->getJson($url)->assertOk()->assertHeader('Cache-Control','no-store, private')
+            ->assertJsonPath('shop_id',$shop->id)->assertJsonPath('shop_url',$shop->publicUrl())
+            ->assertJsonPath('items.0.image_url',asset('storage/products/perfume.jpg'))
+            ->assertJsonPath('items.0.name','Perfume')->assertJsonPath('items.0.qty',2)
+            ->assertJsonPath('items.1.image_url',asset('storage/products/second.png'))
+            ->assertJsonPath('items.2.image_url',null);
+        $this->assertStringContainsString($shop->publicUrl(),$share->json('text'));
+        $this->assertStringContainsString('0597654321',$share->json('text'));
+        $this->assertStringNotContainsString('untrusted.invalid',json_encode($share->json()));
+        $spin=$this->postJson($response->json('purchase_wheel.spin_url'))->assertOk();
+        $this->getJson($spin->json('order_share_url'))->assertOk();
+        $this->assertStringContainsString('purchase prize',$this->getJson($url)->json('text'));
+        $this->assertDatabaseCount('front_orders',1);
+    }
+
+    public function test_order_photo_details_require_valid_signature_and_reject_cancelled_orders(): void
+    {
+        [$shop,$product]=$this->fixture();
+        $response=$this->postJson(route('cosmetics.orders.store',$shop),$this->details($product))->assertOk();
+        $order=FrontOrder::findOrFail($response->json('order_id'));
+        $this->getJson(route('cosmetics.orders.share',$order))->assertForbidden();
+        $this->getJson($response->json('order_share_url').'x')->assertForbidden();
+        $expired=\Illuminate\Support\Facades\URL::temporarySignedRoute('cosmetics.orders.share',now()->subMinute(),['order'=>$order->id]);
+        $this->getJson($expired)->assertForbidden();
+        $order->update(['status'=>'cancelled']);
+        $this->getJson($response->json('order_share_url'))->assertNotFound();
+    }
 }

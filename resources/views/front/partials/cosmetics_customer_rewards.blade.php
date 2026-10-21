@@ -47,5 +47,6 @@ $eleganceCheckoutConfig = [
 <script>
 window.OZMAN_ELEGANCE_CHECKOUT = @json($eleganceCheckoutConfig);
 </script>
+@include('front.partials.elegance_order_share')
 <script>{!! file_get_contents(base_path('public/elegance-checkout.js')) !!}</script>
 @endif
