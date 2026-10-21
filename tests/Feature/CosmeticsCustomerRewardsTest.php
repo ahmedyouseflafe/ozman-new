@@ -173,8 +173,15 @@ class CosmeticsCustomerRewardsTest extends TestCase
         $this->assertNotEmpty($url);
         $response->assertJsonPath('order_share.items.0.image_url',asset('storage/products/perfume.jpg'));
         $this->assertStringContainsString($shop->publicUrl(),$response->json('order_share.text'));
+        $initialMessage = rawurldecode($response->json('whatsapp_url'));
+        $this->assertStringStartsWith('https://wa.me/972501234567?text=', $response->json('whatsapp_url'));
+        $this->assertStringContainsString("صورة المنتج: ".asset('storage/products/perfume.jpg'), $initialMessage);
+        $this->assertStringContainsString("صورة المنتج: ".asset('storage/products/second.png'), $initialMessage);
+        $this->assertSame(2, substr_count($initialMessage, 'صورة المنتج:'));
+        $this->assertStringContainsString($shop->publicUrl(), $initialMessage);
         $this->get($shop->publicUrl())->assertOk()->assertDontSee('id="eleganceOrderShareDialog"',false)
-            ->assertDontSee('id="eleganceSharePhotos"',false)->assertSee('إرسال الطلب على واتساب');
+            ->assertDontSee('id="eleganceSharePhotos"',false)->assertSee('إرسال الطلب على واتساب')
+            ->assertDontSee('window.OzmanOrderPhotoShare',false)->assertSee('window.OzmanOrderWhatsapp',false);
         $product->update(['main_image'=>'products/replacement.jpg','name'=>'Changed after order']);
         $share=$this->getJson($url)->assertOk()->assertHeader('Cache-Control','no-store, private')
             ->assertJsonPath('shop_id',$shop->id)->assertJsonPath('shop_url',$shop->publicUrl())
@@ -187,6 +194,10 @@ class CosmeticsCustomerRewardsTest extends TestCase
         $this->assertStringNotContainsString('untrusted.invalid',json_encode($share->json()));
         $spin=$this->postJson($response->json('purchase_wheel.spin_url'))->assertOk();
         $this->assertStringContainsString('purchase prize',$spin->json('order_share.text'));
+        $wheelMessage = rawurldecode($spin->json('whatsapp_url'));
+        $this->assertStringContainsString(asset('storage/products/perfume.jpg'), $wheelMessage);
+        $this->assertStringContainsString(asset('storage/products/second.png'), $wheelMessage);
+        $this->assertStringContainsString($shop->publicUrl(), $wheelMessage);
         $this->getJson($spin->json('order_share_url'))->assertOk();
         $this->assertStringContainsString('purchase prize',$this->getJson($url)->json('text'));
         $this->assertDatabaseCount('front_orders',1);

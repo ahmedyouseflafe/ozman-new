@@ -93,8 +93,8 @@
     orderButton.addEventListener('click', event => {
         event.preventDefault(); event.stopImmediatePropagation();
         if (sending) return;
-        if (!window.OzmanBeautyCart?.length && window.OzmanOrderPhotoShare.hasPending()) {
-            window.OzmanOrderPhotoShare.send();
+        if (!window.OzmanBeautyCart?.length && window.OzmanOrderWhatsapp.hasPending()) {
+            window.OzmanOrderWhatsapp.send();
         } else if (window.OzmanBeautyCart?.length) form.requestSubmit();
     }, true);
     form.addEventListener('submit', async event => {
@@ -112,16 +112,9 @@
             window.OzmanSignupReward.consumed();
             window.OzmanBeautyCart.splice(0); window.OzmanBeautyCartSync();
             status.textContent = `تم حفظ طلبك ${data.order_number} — ${Number(data.total).toFixed(2)} ₪`;
-            window.OzmanOrderPhotoShare.remember(data.order_share_url);
-            // Prepare files without a second website screen. The original order button
-            // retries the saved order if sharing is cancelled or requires a fresh tap.
+            window.OzmanOrderWhatsapp.remember(data.order_share_url, data.whatsapp_url);
             if (!window.RestaurantPurchaseWheel?.ordered(data)) {
-                try {
-                    await window.OzmanOrderPhotoShare.prepare(data.order_share_url, data.order_share);
-                    await window.OzmanOrderPhotoShare.send();
-                } catch (_) {
-                    status.textContent = 'طلبك محفوظ. تعذّر تجهيز الصور؛ اضغط إرسال الطلب للمحاولة ثانية بدون تكرار الطلب.';
-                }
+                await window.OzmanOrderWhatsapp.send();
             }
         } catch (error) {
             status.textContent = error.name === 'AbortError' ? 'تأخر تأكيد الطلب. تحقق من المحل قبل إعادة الإرسال.' : error.message;

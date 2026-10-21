@@ -548,7 +548,7 @@ class RestaurantController extends Controller
             default => 'طلب جديد',
         };
 
-        $items = collect($order->items ?? [])->map(function (array $item): string {
+        $items = collect($order->items ?? [])->map(function (array $item) use ($shop): string {
             $details = array_filter([
                 filled($item['size'] ?? null) ? 'الحجم: '.$item['size'] : null,
                 filled($item['addons'] ?? null) ? 'إضافات: '.implode('، ', $item['addons']) : null,
@@ -557,9 +557,14 @@ class RestaurantController extends Controller
                 filled($item['notes'] ?? null) ? 'ملاحظة: '.$item['notes'] : null,
             ]);
 
-            return '• '.((int) ($item['qty'] ?? 1)).'× '.($item['name'] ?? 'صنف')
+            $line = '• '.((int) ($item['qty'] ?? 1)).'× '.($item['name'] ?? 'صنف')
                 .($details ? ' ('.implode(' | ', $details).')' : '')
                 .' — '.number_format((float) ($item['line_total'] ?? (($item['price'] ?? 0) * ($item['qty'] ?? 1))), 2).' ₪';
+            if ($shop->catalog_type === 'cosmetics' && $shop->slug === 'elegance-perfumes'
+                && preg_match('/^https?:\/\/\S+$/i', $item['image_url'] ?? '')) {
+                $line .= "\nصورة المنتج: ".$item['image_url'];
+            }
+            return $line;
         })->all();
 
         $lines = [
