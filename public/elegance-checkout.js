@@ -4,7 +4,7 @@
     if (!config) return;
     const $ = id => document.getElementById(id), form = $('eleganceCheckoutForm');
     const orderButton = $('beautyWhatsappOrder'), status = $('eleganceCheckoutStatus');
-    orderButton.textContent = 'تأكيد الطلب وتجهيز الصور';
+    orderButton.textContent = 'إرسال الطلب على واتساب';
     const key = `ozman.cosmetics.${config.shopId}`;
     const read = name => { try { return localStorage.getItem(name); } catch (_) { return null; } };
     const write = (name, value) => { try { localStorage.setItem(name, value); } catch (_) {} };
@@ -92,7 +92,10 @@
     }
     orderButton.addEventListener('click', event => {
         event.preventDefault(); event.stopImmediatePropagation();
-        if (!sending && window.OzmanBeautyCart?.length) form.requestSubmit();
+        if (sending) return;
+        if (!window.OzmanBeautyCart?.length && window.OzmanOrderPhotoShare.hasPending()) {
+            window.OzmanOrderPhotoShare.send();
+        } else if (window.OzmanBeautyCart?.length) form.requestSubmit();
     }, true);
     form.addEventListener('submit', async event => {
         event.preventDefault();
@@ -109,9 +112,17 @@
             window.OzmanSignupReward.consumed();
             window.OzmanBeautyCart.splice(0); window.OzmanBeautyCartSync();
             status.textContent = `تم حفظ طلبك ${data.order_number} — ${Number(data.total).toFixed(2)} ₪`;
-            $('closeBeautyCart').click();
             window.OzmanOrderPhotoShare.remember(data.order_share_url);
-            if (!window.RestaurantPurchaseWheel?.ordered(data)) window.OzmanOrderPhotoShare.openFromUrl(data.order_share_url);
+            // Prepare files without a second website screen. The original order button
+            // retries the saved order if sharing is cancelled or requires a fresh tap.
+            if (!window.RestaurantPurchaseWheel?.ordered(data)) {
+                try {
+                    await window.OzmanOrderPhotoShare.prepare(data.order_share_url, data.order_share);
+                    await window.OzmanOrderPhotoShare.send();
+                } catch (_) {
+                    status.textContent = 'طلبك محفوظ. تعذّر تجهيز الصور؛ اضغط إرسال الطلب للمحاولة ثانية بدون تكرار الطلب.';
+                }
+            }
         } catch (error) {
             status.textContent = error.name === 'AbortError' ? 'تأخر تأكيد الطلب. تحقق من المحل قبل إعادة الإرسال.' : error.message;
         } finally { sending = false; orderButton.removeAttribute('aria-disabled'); }

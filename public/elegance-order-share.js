@@ -3,139 +3,119 @@
     const config = window.OZMAN_ELEGANCE_CHECKOUT;
     if (!config) return;
     const $ = id => document.getElementById(id);
-    const dialog = $('eleganceOrderShareDialog'), status = $('eleganceShareStatus');
-    const shareButton = $('eleganceSharePhotos'), resume = $('eleganceReshareOrder');
     const key = `ozman.cosmetics.${config.shopId}.photo-order`;
-    let endpoint = '', payload = null, files = [], previews = [], batch = 0, busy = false, generation = 0;
+    const photos = new Map();
+    let endpoint = '', payload = null, files = [], batch = 0, busy = false, preparing = null, revision = 0;
     const batchSize = 10;
-    document.querySelector('.cart-card h2').after(resume);
-    const close = () => window.OzmanBeautyOverlay.close(dialog);
-    $('eleganceShareClose').onclick = close;
-    dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
-    dialog.addEventListener('click', event => { if (event.target === dialog) close(); });
-    dialog.addEventListener('close', () => { if (!dialog.open && dialog.classList.contains('open')) close(); });
+    const status = (text, target) => { (target || $('eleganceCheckoutStatus')).textContent = text; };
+    function refreshButton() {
+        if (endpoint && !window.OzmanBeautyCart?.length) $('beautyWhatsappOrder')?.classList.remove('disabled');
+    }
     function remember(url) {
         if (!url) return;
         const parsed = new URL(url, location.href);
-        if (parsed.origin !== location.origin) return;
-        endpoint = parsed.href; resume.hidden = false;
+        if (parsed.origin !== location.origin) throw new Error('رابط الطلب غير صالح.');
+        if (endpoint !== parsed.href) { payload = null; files = []; batch = 0; }
+        endpoint = parsed.href;
         try { sessionStorage.setItem(key, endpoint); } catch (_) {}
+        refreshButton();
     }
     try { remember(sessionStorage.getItem(key)); } catch (_) {}
-    resume.onclick = () => {
-        $('closeBeautyCart').click();
-        openFromUrl(endpoint);
-    };
     async function request(url, json = false) {
         const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 20000);
         try {
-            const response = await fetch(url, {signal:controller.signal, cache:'no-store', credentials:json ? 'same-origin' : 'omit'});
-            if (!response.ok) throw new Error('تعذّر تحميل بيانات الطلب أو إحدى الصور.');
+            const response = await fetch(url, {signal:controller.signal, cache:json ? 'no-store' : 'default', credentials:json ? 'same-origin' : 'omit'});
+            if (!response.ok) throw new Error('تعذّر تحميل الطلب أو صورته.');
             if (json) return await response.json();
             const blob = await response.blob();
-            if (!blob.type.startsWith('image/') || blob.size > 20 * 1024 * 1024) throw new Error('صورة المنتج غير صالحة للمشاركة.');
+            if (!blob.type.startsWith('image/') || blob.size > 20 * 1024 * 1024) throw new Error('صورة المنتج غير صالحة.');
             return blob;
         } finally { clearTimeout(timer); }
     }
-    async function photo(item, index) {
-        const blob = await request(item.image_url), url = URL.createObjectURL(blob);
-        try {
-            const image = new Image(); image.src = url; await image.decode();
-            const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-            canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-            const context = canvas.getContext('2d');
-            context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height);
-            context.drawImage(image, 0, 0, canvas.width, canvas.height);
-            const jpeg = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', .9));
-            if (!jpeg) throw new Error('تعذّر تجهيز الصورة.');
-            return new File([jpeg], `product-${item.product_id || index + 1}.jpg`, {type:'image/jpeg'});
-        } finally { URL.revokeObjectURL(url); }
+    function photo(url) {
+        if (photos.has(url)) return photos.get(url);
+        const promise = (async () => {
+            const blob = await request(url), objectUrl = URL.createObjectURL(blob);
+            try {
+                const image = new Image(); image.src = objectUrl; await image.decode();
+                const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+                canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+                const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+                const jpeg = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', .9));
+                if (!jpeg) throw new Error('تعذّر تجهيز الصورة.');
+                return jpeg;
+            } finally { URL.revokeObjectURL(objectUrl); }
+        })();
+        photos.set(url, promise);
+        promise.catch(() => { if (photos.get(url) === promise) photos.delete(url); });
+        return promise;
     }
-    function currentFiles() { return files.slice(batch * batchSize, (batch + 1) * batchSize); }
-    function ready() {
-        const supported = !!files.length && !!navigator.share && !!navigator.canShare?.({files:currentFiles()});
-        shareButton.disabled = !supported;
-        shareButton.textContent = files.length > batchSize
-            ? `مشاركة الصور — دفعة ${batch + 1} من ${Math.ceil(files.length / batchSize)}` : 'مشاركة الصور والطلب';
-        if (!supported && files.length) status.textContent = 'المتصفح الحالي لا يدعم مشاركة الصور. احفظ الصور من القائمة وأرفقها في واتساب، أو افتح المحل في متصفح جوالك الذي يدعم المشاركة.';
-    }
-    async function openFromUrl(url) {
+    // Prepare selected images while the customer fills checkout, before the send tap.
+    document.addEventListener('beauty:cart-changed', () => {
+        refreshButton();
+        let cursor = 0;
+        const urls = [...new Set((window.OzmanBeautyCart || []).map(item => config.productImages?.[item.id]).filter(Boolean))];
+        for (let worker = 0; worker < Math.min(3, urls.length); worker++) (async () => {
+            while (cursor < urls.length) { const url = urls[cursor++]; try { await photo(url); } catch (_) {} }
+        })();
+    });
+    async function prepare(url, data) {
         remember(url);
-        if (!endpoint) return;
-        const turn = ++generation;
+        const turn = ++revision;
         payload = null; files = []; batch = 0;
-        previews.forEach(URL.revokeObjectURL); previews = [];
-        $('eleganceShareImages').replaceChildren(); $('eleganceShareMessage').value = '';
-        shareButton.disabled = true; shareButton.textContent = 'تجهيز الصور…';
-        $('eleganceShareCopy').disabled = true; $('eleganceShareRetry').hidden = true; $('eleganceShareText').hidden = true;
-        window.OzmanBeautyOverlay.open(dialog);
-        status.textContent = 'تم حفظ الطلب. جارٍ تحميل صوره…';
-        try {
-            const data = await request(endpoint, true);
-            if (turn !== generation) return;
-            if (Number(data.shop_id) !== Number(config.shopId)) throw new Error('هذا الطلب تابع لمحل آخر.');
-            payload = data;
-            $('eleganceOrderShareTitle').textContent = `صور الطلب ${data.order_number}`;
-            $('eleganceShareMessage').value = data.text;
-            $('eleganceShareCopy').disabled = false;
-            $('eleganceShareText').href = data.whatsapp_url || '#';
-            $('eleganceShareText').hidden = !data.whatsapp_url;
-            const withImages = data.items.filter(item => item.image_url);
-            const prepared = new Array(withImages.length);
+        const task = (async () => {
+            const next = data || await request(endpoint, true);
+            if (Number(next.shop_id) !== Number(config.shopId)) throw new Error('هذا الطلب تابع لمحل آخر.');
+            const items = next.items.filter(item => item.image_url);
+            const prepared = new Array(items.length);
             let cursor = 0;
-            // Limit simultaneous decoding on phones; keep product order stable.
-            await Promise.all(Array.from({length:Math.min(3, withImages.length)}, async () => {
-                while (cursor < withImages.length && turn === generation) {
-                    const index = cursor++;
-                    prepared[index] = await photo(withImages[index], index);
+            await Promise.all(Array.from({length:Math.min(3, items.length)}, async () => {
+                while (cursor < items.length) {
+                    const index = cursor++, item = items[index];
+                    prepared[index] = new File([await photo(item.image_url)], `product-${item.product_id || index + 1}.jpg`, {type:'image/jpeg'});
                 }
             }));
-            if (turn !== generation) return;
-            files = prepared;
-            files.forEach((file, index) => {
-                const url = URL.createObjectURL(file); previews.push(url);
-                const link = document.createElement('a'); link.href = url; link.download = file.name;
-                const img = document.createElement('img'); img.src = url; img.alt = withImages[index].name;
-                const label = document.createElement('span'); label.textContent = `${withImages[index].name} × ${withImages[index].qty} — حفظ الصورة`;
-                link.append(img, label); $('eleganceShareImages').append(link);
-            });
-            const missing = data.items.filter(item => !item.image_url).map(item => item.name);
-            status.textContent = files.length ? `جاهز: ${files.length} صورة. اختار واتساب ثم محادثة المحل.` : 'المنتجات في هذا الطلب ليس لها صور محفوظة.';
-            ready();
-            if (missing.length) status.textContent += ` المنتجات بدون صورة: ${missing.join('، ')}.`;
-        } catch (_) {
-            if (turn !== generation) return;
-            files = []; shareButton.disabled = true;
-            status.textContent = 'تعذّر تجهيز الصور. طلبك محفوظ؛ أعد المحاولة بدون إنشاء طلب جديد. إذا انتهت صلاحية الطلب القديم، تواصل مع المحل.';
-            $('eleganceShareRetry').hidden = false;
-        }
+            if (turn !== revision) return;
+            payload = next; files = prepared; batch = 0;
+        })();
+        preparing = task;
+        try { await task; } finally { if (preparing === task) preparing = null; }
     }
-    $('eleganceShareRetry').onclick = () => openFromUrl(endpoint);
-    shareButton.onclick = async () => {
-        if (busy || !payload || !currentFiles().length) return;
-        busy = true; shareButton.disabled = true;
+    async function send(url = endpoint, target = null) {
+        if (busy) return;
+        busy = true;
         try {
-            // Call synchronously from the tap: fetching here would lose iOS user activation.
-            await navigator.share({files:currentFiles(), title:`طلب ${payload.order_number}`, text:payload.text});
+            if (url !== endpoint || !payload) {
+                status('جارٍ تجهيز الطلب والصور…', target);
+                if (url === endpoint && preparing) await preparing;
+                else await prepare(url);
+            }
+            const current = files.slice(batch * batchSize, (batch + 1) * batchSize);
+            if (!current.length) {
+                status('المنتجات في هذا الطلب ليس لها صور محفوظة.', target);
+                return;
+            }
+            if (!navigator.share || !navigator.canShare?.({files:current})) {
+                status('هذا المتصفح لا يدعم إرسال الصور. افتح المحل على الجوال بمتصفح يدعم مشاركة الصور؛ الطلب محفوظ.', target);
+                return;
+            }
+            // No await before this call for an already prepared order/retry/wheel.
+            await navigator.share({files:current, title:`طلب ${payload.order_number}`, text:payload.text});
             if ((batch + 1) * batchSize < files.length) {
-                batch++; status.textContent = 'تابع بمشاركة الدفعة التالية في نفس محادثة واتساب.';
+                batch++;
+                status(`اضغط إرسال الطلب لإرسال باقي الصور — دفعة ${batch + 1} من ${Math.ceil(files.length / batchSize)}.`, target);
             } else {
-                batch = 0; status.textContent = 'تم فتح المشاركة. تأكد من إرسال الصور وتفاصيل الطلب داخل واتساب. يمكنك مشاركتها مرة ثانية من هنا.';
+                batch = 0;
+                status('اختار واتساب ومحادثة المحل وأكمل الإرسال هناك. لإعادة المشاركة اضغط إرسال الطلب.', target);
             }
         } catch (error) {
-            status.textContent = error.name === 'AbortError' ? 'تم إلغاء المشاركة. الصور والطلب جاهزان للمحاولة مرة ثانية.' : 'تعذّرت مشاركة الصور. جرّب مرة ثانية أو احفظ الصور وأرفقها يدويًا.';
-        } finally { busy = false; ready(); }
-    };
-    $('eleganceShareCopy').onclick = async () => {
-        if (!payload) return;
-        try { await navigator.clipboard.writeText(payload.text); status.textContent = 'تم نسخ تفاصيل الطلب ورابط المحل.'; }
-        catch (_) {
-            $('eleganceShareMessage').closest('details').open = true;
-            $('eleganceShareMessage').focus(); $('eleganceShareMessage').select();
-            status.textContent = 'حدّد النص وانسخه لإرساله مع الصور.';
-        }
-    };
-    window.OzmanOrderPhotoShare = {remember, openFromUrl};
+            if (error.name === 'AbortError') status('أُلغيت المشاركة. اضغط إرسال الطلب للمحاولة ثانية؛ طلبك محفوظ.', target);
+            else if (error.name === 'NotAllowedError') status('الطلب والصور جاهزين. اضغط إرسال الطلب مرة ثانية لفتح المشاركة.', target);
+            else status('تعذّر تجهيز أو مشاركة الصور. اضغط إرسال الطلب للمحاولة ثانية؛ لن يتكرر طلبك المحفوظ.', target);
+        } finally { busy = false; refreshButton(); }
+    }
+    window.OzmanOrderPhotoShare = {remember, prepare, send, hasPending:() => !!endpoint};
 })();

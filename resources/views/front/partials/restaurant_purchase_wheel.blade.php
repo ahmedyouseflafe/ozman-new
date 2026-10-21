@@ -13,7 +13,7 @@
         default => ['عجلة الشراء','أرسل طلباً بالمبلغ المطلوب لفتح العجلة.','لف العجلة','متابعة إلى واتساب','إغلاق','تعذّر التحميل، حاول مجدداً','جائزتك: ','مبلغ الطلب'],
     };
     if ($shop->slug === 'elegance-perfumes' && $shop->catalog_type === 'cosmetics') {
-        $pwText[3] = match($locale) {'en'=>'Share order photos', 'he'=>'שיתוף תמונות ההזמנה', default=>'مشاركة الطلب بالصور'};
+        $pwText[3] = match($locale) {'en'=>'Send order on WhatsApp', 'he'=>'שליחת ההזמנה בוואטסאפ', default=>'إرسال الطلب على واتساب'};
     }
 @endphp
 <style>
@@ -69,6 +69,13 @@ body{padding-bottom:90px}
    const res=await fetch(url,{method,headers:{Accept:'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]')?.content||@json(csrf_token())}});
    if(!res.ok)throw new Error(t[5]); return res.json();
  };
+ const preparePhotos=async data=>{
+   if(!data.order_share_url || !window.OzmanOrderPhotoShare)return;
+   const button=el('purchaseWheelWhatsapp');button.disabled=true;
+   try{await window.OzmanOrderPhotoShare.prepare(data.order_share_url,data.order_share);}
+   catch(_){msg.textContent='تعذّر تجهيز الصور؛ اضغط إرسال الطلب لإعادة المحاولة.';}
+   finally{button.disabled=false;}
+ };
  async function open(){
    if(!dialog.open)dialog.showModal();
    if(busy)return;
@@ -79,6 +86,7 @@ body{padding-bottom:90px}
      const data=await request(pending.url);
      if(Number(data.shop_id)!==@json($shop->id)){pending=null;save();ready();throw new Error(t[5]);}
      pending.whatsapp_url=data.whatsapp_url;pending.order_share_url=data.order_share_url;save();el('purchaseWheelWhatsapp').hidden=!data.whatsapp_url && !data.order_share_url;
+     await preparePhotos(data);
      wheel=data.wheel;
      if(data.reward){result(data.reward);return;}
      if(!wheel)throw new Error(t[5]);
@@ -91,13 +99,14 @@ body{padding-bottom:90px}
  trigger.onclick=open;
  el('purchaseWheelClose').onclick=()=>dialog.close();
  el('purchaseWheelWhatsapp').onclick=()=>{
-   if(pending?.order_share_url && window.OzmanOrderPhotoShare){dialog.close();window.OzmanOrderPhotoShare.openFromUrl(pending.order_share_url);}
+   if(pending?.order_share_url && window.OzmanOrderPhotoShare){window.OzmanOrderPhotoShare.send(pending.order_share_url,msg);}
    else if(pending?.whatsapp_url)window.location.assign(pending.whatsapp_url);
  };
  spin.onclick=async()=>{
    if(busy||!pending)return;busy=true;spin.disabled=true;el('purchaseWheelWhatsapp').disabled=true;
    try{const data=await request(pending.spin_url,'POST');
      pending.whatsapp_url=data.whatsapp_url;pending.order_share_url=data.order_share_url;save();el('purchaseWheelWhatsapp').hidden=!data.whatsapp_url && !data.order_share_url;
+     await preparePhotos(data);el('purchaseWheelWhatsapp').disabled=true;
      el('purchaseWheelDisc').style.transform=`rotate(${1800-(data.reward.segment_index+.5)*360/wheel.segments.length}deg)`;
      await new Promise(resolve=>setTimeout(resolve,3100));result(data.reward);
    }catch(e){msg.textContent=e.message;}finally{busy=false;spin.disabled=false;el('purchaseWheelWhatsapp').disabled=false;}

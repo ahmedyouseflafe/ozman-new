@@ -39,6 +39,7 @@
 @php
 $eleganceCheckoutConfig = [
     'shopId' => $shop->id,
+    'productImages' => array_map(fn ($images) => $images[0] ?? null, $productGalleries),
     'orderUrl' => route('cosmetics.orders.store', $shop),
     'csrfUrl' => route('csrf.refresh'),
     'legacyKey' => 'ozman.restaurant.'.$shop->id.'.customer.v'.($shop->customer_registration_version ?? 1),
@@ -47,6 +48,6 @@ $eleganceCheckoutConfig = [
 <script>
 window.OZMAN_ELEGANCE_CHECKOUT = @json($eleganceCheckoutConfig);
 </script>
-@include('front.partials.elegance_order_share')
+<script>{!! file_get_contents(base_path('public/elegance-order-share.js')) !!}</script>
 <script>{!! file_get_contents(base_path('public/elegance-checkout.js')) !!}</script>
 @endif

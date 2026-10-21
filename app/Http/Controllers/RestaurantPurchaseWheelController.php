@@ -23,6 +23,7 @@ class RestaurantPurchaseWheelController extends Controller
         $wheel = self::eligible($order);
         return response()->json(['shop_id' => $order->shop_id, 'shop_name' => $order->shop->name,
             'order_share_url' => CosmeticsCheckoutController::shareUrl($order),
+            'order_share' => CosmeticsCheckoutController::sharePayload($order),
             'whatsapp_url' => app(RestaurantController::class)->restaurantWhatsappUrl($order->shop, $order),
             'wheel' => $wheel ? ['title' => $wheel->title, 'segments' => $wheel->segments->map(fn($s) => ['label'=>$s->label,'color'=>$s->color])] : null,
             'reward' => $order->purchase_reward ? json_decode($order->purchase_reward, true) : null])->header('Cache-Control', 'private, no-store');
@@ -61,6 +62,7 @@ class RestaurantPurchaseWheelController extends Controller
         return response()->json([
             'shop_id' => $order->shop_id,
             'order_share_url' => CosmeticsCheckoutController::shareUrl($order),
+            'order_share' => CosmeticsCheckoutController::sharePayload($order),
             'reward' => json_decode($order->purchase_reward, true),
             'whatsapp_url' => app(RestaurantController::class)->restaurantWhatsappUrl($order->shop, $order),
         ])->header('Cache-Control', 'private, no-store');

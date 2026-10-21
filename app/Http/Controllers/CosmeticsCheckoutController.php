@@ -67,6 +67,7 @@ class CosmeticsCheckoutController extends Controller
             'ok'=>true,'order_id'=>$order->id,'order_number'=>$order->order_number,'total'=>(float)$order->total,
             'whatsapp_url'=>app(RestaurantController::class)->restaurantWhatsappUrl($shop, $order),
             'order_share_url'=>self::shareUrl($order),
+            'order_share'=>self::sharePayload($order),
             'purchase_wheel'=>RestaurantPurchaseWheelController::eligible($order) ? [
                 'url'=>URL::signedRoute('restaurant.purchase-wheel.show',$order),
                 'spin_url'=>URL::signedRoute('restaurant.purchase-wheel.spin',$order),
@@ -85,7 +86,14 @@ class CosmeticsCheckoutController extends Controller
         $shop = $order->shop;
         abort_unless($shop?->is_active && $shop->slug === 'elegance-perfumes' && $shop->catalog_type === 'cosmetics'
             && $order->order_channel === 'whatsapp' && $order->status !== 'cancelled', 404);
-        return response()->json([
+        return response()->json(self::sharePayload($order))->header('Cache-Control', 'private, no-store');
+    }
+
+    public static function sharePayload(FrontOrder $order): ?array
+    {
+        $shop = $order->shop;
+        if ($shop?->slug !== 'elegance-perfumes' || $shop?->catalog_type !== 'cosmetics') return null;
+        return [
             'shop_id'=>$shop->id, 'shop_name'=>$shop->name, 'shop_url'=>$shop->publicUrl(),
             'order_number'=>$order->order_number,
             'text'=>app(RestaurantController::class)->restaurantWhatsappMessage($shop, $order),
@@ -94,6 +102,6 @@ class CosmeticsCheckoutController extends Controller
                 'product_id'=>$item['product_id'] ?? null, 'name'=>$item['name'], 'qty'=>$item['qty'],
                 'image_url'=>$item['image_url'] ?? null,
             ])->values(),
-        ])->header('Cache-Control', 'private, no-store');
+        ];
     }
 }
