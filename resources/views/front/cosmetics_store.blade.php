@@ -168,7 +168,7 @@
     </section>
 </main>
 <aside class="beauty-cart" aria-live="polite"><div><strong id="beautyCartCount">0 {{ __('منتجات في السلة') }}</strong><small id="beautyCartTotal">0.00 ₪</small></div><button type="button" id="openBeautyCart"><i class="ti ti-shopping-bag"></i></button></aside>
-<div class="cart-sheet" id="beautyCartSheet" aria-hidden="true"><section class="cart-card" role="dialog" aria-modal="true" aria-label="{{ __('سلة الطلب') }}"><h2>{{ __('سلة طلبك') }}</h2><div class="cart-items" id="beautyCartItems"></div><div class="cart-total"><span>{{ __('المجموع') }}</span><span id="beautyCartSheetTotal">0.00 ₪</span></div><div class="cart-actions"><a id="beautyWhatsappOrder" class="disabled" target="_blank" rel="noopener noreferrer"><i class="ti ti-brand-whatsapp"></i>&nbsp; {{ __('إرسال الطلب واتساب') }}</a><button type="button" id="closeBeautyCart">{{ __('إغلاق') }}</button></div></section></div>
+<dialog class="cart-sheet beauty-viewport-modal" id="beautyCartSheet" aria-hidden="true" aria-label="{{ __('سلة الطلب') }}"><section class="cart-card"><button type="button" class="beauty-cart-close-top" id="closeBeautyCartTop" aria-label="{{ __('إغلاق') }}" autofocus>×</button><h2>{{ __('سلة طلبك') }}</h2><div class="cart-items" id="beautyCartItems"></div><div class="cart-total"><span>{{ __('المجموع') }}</span><span id="beautyCartSheetTotal">0.00 ₪</span></div><div class="cart-actions"><a id="beautyWhatsappOrder" class="disabled" target="_blank" rel="noopener noreferrer"><i class="ti ti-brand-whatsapp"></i>&nbsp; {{ __('إرسال الطلب واتساب') }}</a><button type="button" id="closeBeautyCart">{{ __('إغلاق') }}</button></div></section></dialog>
 @if(!empty($purchaseRewardWheels) || $raffleCardsAvailable)
 <aside class="beauty-reward-tools" aria-label="جوائز المتجر">
     @if(!empty($purchaseRewardWheels))<button type="button" class="beauty-reward-tool" id="beautyPurchaseWheelOpen"><span>◉</span><span><strong>عجلة الشراء</strong><small>ادخل على الجائزة بعد إتمام طلبك</small></span></button>@endif
@@ -181,13 +181,13 @@
 @if($raffleCardsAvailable)
 <div class="beauty-modal" id="beautyRaffleModal" aria-hidden="true"><section class="beauty-modal-card" role="dialog" aria-modal="true" aria-labelledby="beautyRaffleTitle"><button type="button" class="beauty-modal-close" data-close-beauty-modal="beautyRaffleModal" aria-label="إغلاق">×</button><p class="beauty-modal-kicker">بطاقات الربح</p><h2 id="beautyRaffleTitle">تحقق من رقم بطاقتك</h2><p class="beauty-modal-intro">اكتب رقم البطاقة من 6 أرقام أو امسح رمزها بالكاميرا.</p><form class="beauty-form" id="beautyRaffleForm"><label class="beauty-field">رقم البطاقة<input class="beauty-card-number" id="beautyRaffleNumber" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required></label><label class="beauty-field">الاسم<input id="beautyRaffleName" autocomplete="name" required></label><label class="beauty-field">الجوال أو واتساب<input id="beautyRaffleWhatsapp" inputmode="tel" autocomplete="tel" required></label><button type="submit" class="beauty-form-action">تحقق من البطاقة</button><button type="button" class="beauty-form-action beauty-scan-action" id="beautyStartScan">مسح البطاقة بالكاميرا</button></form><div class="beauty-scanner" id="beautyScanner"><video id="beautyScannerVideo" playsinline muted></video></div><div class="beauty-raffle-result" id="beautyRaffleResult"></div></section></div>
 @endif
-<div class="beauty-product-video-modal" id="beautyProductVideoModal" aria-hidden="true">
+<dialog class="beauty-product-video-modal beauty-viewport-modal" id="beautyProductVideoModal" aria-hidden="true" aria-labelledby="beautyProductVideoTitle">
     <button type="button" class="beauty-product-video-close" id="beautyProductVideoClose" aria-label="إغلاق الفيديو">×</button>
-    <section class="beauty-product-video-dialog" role="dialog" aria-modal="true" aria-labelledby="beautyProductVideoTitle">
+    <section class="beauty-product-video-dialog">
         <video id="beautyProductVideoPlayer" controls playsinline preload="metadata"></video>
         <div class="beauty-product-video-meta"><strong id="beautyProductVideoTitle"></strong><span>الصوت مفعّل</span></div>
     </section>
-</div>
+</dialog>
 <style>
 .beauty-picture-frame{position:relative;min-width:0;padding:0 32px;background:#100b14}.beauty-picture-frame .product-picture{height:100%}.beauty-card-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:4;display:grid;place-items:center;width:28px;height:44px;padding:0;border:1px solid #ff80b870;border-radius:12px;background:#160d19ce;color:#fff;font-size:22px;cursor:pointer;box-shadow:0 3px 12px #0006}.beauty-card-arrow.gallery-forward{left:2px}.beauty-card-arrow.gallery-back{right:2px}.beauty-card-arrow:hover{background:#54253e}.beauty-card-arrow:focus-visible{outline:3px solid #ff80b8;outline-offset:-3px}.product-picture{touch-action:pan-y pinch-zoom}.beauty-gallery-controls button{font-size:24px}.beauty-product-image-dialog{padding:0 48px}.beauty-gallery-controls button{position:absolute;top:50%;transform:translateY(-50%);width:40px;padding:6px}.beauty-gallery-controls #beautyImagePrev{right:0}.beauty-gallery-controls #beautyImageNext{left:0}@media(max-width:720px){.beauty-picture-frame{grid-row:1/3}.beauty-product:has(.beauty-picture-frame){grid-template-columns:150px minmax(0,1fr)}.beauty-product-image-dialog{padding:0 36px}.beauty-gallery-controls button{width:32px}}
 </style>
@@ -210,9 +210,9 @@
  .beauty-product .add-beauty-cart{flex:1;min-height:40px;min-width:96px}
 }
 </style>
-<div class="beauty-product-image-modal" id="beautyProductImageModal" aria-hidden="true">
+<dialog class="beauty-product-image-modal beauty-viewport-modal" id="beautyProductImageModal" aria-hidden="true" aria-label="صورة المنتج المكبرة">
     <button type="button" class="beauty-product-image-close" id="beautyProductImageClose" aria-label="إغلاق الصورة">×</button>
-    <section class="beauty-product-image-dialog" role="dialog" aria-modal="true" aria-label="صورة المنتج المكبرة">
+    <section class="beauty-product-image-dialog">
         <img id="beautyProductImageViewer" src="" alt="">
         <nav class="beauty-gallery-controls" aria-label="صور المنتج">
             <button type="button" id="beautyImagePrev" aria-label="الصورة السابقة">&#10095;</button>
@@ -220,7 +220,8 @@
             <button type="button" id="beautyImageNext" aria-label="الصورة التالية">&#10094;</button>
         </nav>
     </section>
-</div>
+</dialog>
+@include('front.partials.cosmetics_overlays')
 <style>
 .beauty-gallery-badge{position:absolute;top:10px;left:8px;background:#190e20e8;color:#fff;padding:5px 9px;border:1px solid #ff80b880;border-radius:20px;font-size:11px;pointer-events:none}.beauty-gallery-controls{display:flex;justify-content:center;align-items:center;gap:18px;margin-top:12px}.beauty-gallery-controls button{border:1px solid #ff80b880;border-radius:12px;background:#27152c;color:#fff;padding:10px 16px;min-height:44px;cursor:pointer}.beauty-gallery-controls button[hidden]{display:none}.beauty-gallery-controls output{color:#fff}.beauty-product-image-dialog #beautyProductImageViewer{max-height:calc(100dvh - 160px);touch-action:pan-y pinch-zoom}.beauty-product-image-modal button:focus-visible{outline:3px solid #ff80b8;outline-offset:3px}
 </style>
@@ -298,7 +299,7 @@
     })();
 </script>
 <script>
-(() => {const slider=document.querySelector('[data-beauty-display]'),slides=[...(slider?.querySelectorAll('.beauty-display-slide')||[])];let current=0,timer;const play=()=>slides[current]?.querySelector('video')?.play().catch(()=>{});const show=next=>{slides[current]?.querySelector('video')?.pause();slides[current]?.classList.remove('active');current=next%slides.length;slides[current]?.classList.add('active');play()};play();if(slides.length>1){const loop=()=>{timer=setTimeout(()=>{show(current+1);loop()},Number(slides[current]?.dataset.duration)||8000)};loop()}document.querySelectorAll('[data-beauty-category]').forEach(button=>button.addEventListener('click',()=>{const key=button.dataset.beautyCategory;document.querySelectorAll('[data-beauty-category]').forEach(item=>item.classList.toggle('active',item===button));document.querySelectorAll('[data-beauty-pane]').forEach(pane=>pane.hidden=pane.dataset.beautyPane!==key)}));const cart=window.OzmanBeautyCart=[],$=id=>document.getElementById(id),fmt=value=>`${Number(value).toFixed(2)} ₪`,sync=()=>{const count=cart.reduce((n,item)=>n+item.qty,0),total=cart.reduce((n,item)=>n+item.qty*item.price,0);$('beautyCartCount').textContent=`${count} ${count===1?'منتج في السلة':'منتجات في السلة'}`;$('beautyCartTotal').textContent=fmt(total);$('beautyCartSheetTotal').textContent=fmt(total);$('beautyCartItems').innerHTML=cart.length?cart.map(item=>`<div class="cart-row"><span>${item.name} × ${item.qty}</span><span>${fmt(item.price*item.qty)} <button data-remove="${item.id}" aria-label="حذف">×</button></span></div>`).join(''):'<div class="empty-products" style="min-height:120px">السلة فارغة حاليًا.</div>';const message=cart.map(item=>`• ${item.name} × ${item.qty} — ${fmt(item.price*item.qty)}`).join('%0A');const order=$('beautyWhatsappOrder');order.href=cart.length&&@json((bool)$whatsapp)?`https://wa.me/{{ $whatsapp }}?text=${encodeURIComponent('مرحباً، أود طلب المنتجات التالية من {{ $shop->name }}:%0A'+message+'%0A%0Aالمجموع: '+fmt(total))}`:'#';order.classList.toggle('disabled',!cart.length||!@json((bool)$whatsapp));document.querySelectorAll('[data-remove]').forEach(button=>button.onclick=()=>{const index=cart.findIndex(item=>String(item.id)===button.dataset.remove);if(index>-1)cart.splice(index,1);sync()});document.dispatchEvent(new Event('beauty:cart-changed'))};document.querySelectorAll('[data-add-product]').forEach(button=>button.onclick=()=>{const item=cart.find(item=>String(item.id)===button.dataset.id);if(item)item.qty++;else cart.push({id:button.dataset.id,name:button.dataset.name,price:Number(button.dataset.price),qty:1});sync()});$('openBeautyCart').onclick=()=>{$('beautyCartSheet').classList.add('open');$('beautyCartSheet').setAttribute('aria-hidden','false');sync()};$('closeBeautyCart').onclick=()=>{$('beautyCartSheet').classList.remove('open');$('beautyCartSheet').setAttribute('aria-hidden','true')};$('beautyCartSheet').onclick=e=>{if(e.target===$('beautyCartSheet'))$('closeBeautyCart').click()};window.OzmanBeautyCartSync=sync;sync()})();
+(() => {const slider=document.querySelector('[data-beauty-display]'),slides=[...(slider?.querySelectorAll('.beauty-display-slide')||[])];let current=0,timer;const play=()=>slides[current]?.querySelector('video')?.play().catch(()=>{});const show=next=>{slides[current]?.querySelector('video')?.pause();slides[current]?.classList.remove('active');current=next%slides.length;slides[current]?.classList.add('active');play()};play();if(slides.length>1){const loop=()=>{timer=setTimeout(()=>{show(current+1);loop()},Number(slides[current]?.dataset.duration)||8000)};loop()}document.querySelectorAll('[data-beauty-category]').forEach(button=>button.addEventListener('click',()=>{const key=button.dataset.beautyCategory;document.querySelectorAll('[data-beauty-category]').forEach(item=>item.classList.toggle('active',item===button));document.querySelectorAll('[data-beauty-pane]').forEach(pane=>pane.hidden=pane.dataset.beautyPane!==key)}));const cart=window.OzmanBeautyCart=[],$=id=>document.getElementById(id),fmt=value=>`${Number(value).toFixed(2)} ₪`,sync=()=>{const count=cart.reduce((n,item)=>n+item.qty,0),total=cart.reduce((n,item)=>n+item.qty*item.price,0);$('beautyCartCount').textContent=`${count} ${count===1?'منتج في السلة':'منتجات في السلة'}`;$('beautyCartTotal').textContent=fmt(total);$('beautyCartSheetTotal').textContent=fmt(total);$('beautyCartItems').innerHTML=cart.length?cart.map(item=>`<div class="cart-row"><span>${item.name} × ${item.qty}</span><span>${fmt(item.price*item.qty)} <button data-remove="${item.id}" aria-label="حذف">×</button></span></div>`).join(''):'<div class="empty-products" style="min-height:120px">السلة فارغة حاليًا.</div>';const message=cart.map(item=>`• ${item.name} × ${item.qty} — ${fmt(item.price*item.qty)}`).join('%0A');const order=$('beautyWhatsappOrder');order.href=cart.length&&@json((bool)$whatsapp)?`https://wa.me/{{ $whatsapp }}?text=${encodeURIComponent('مرحباً، أود طلب المنتجات التالية من {{ $shop->name }}:%0A'+message+'%0A%0Aالمجموع: '+fmt(total))}`:'#';order.classList.toggle('disabled',!cart.length||!@json((bool)$whatsapp));document.querySelectorAll('[data-remove]').forEach(button=>button.onclick=()=>{const index=cart.findIndex(item=>String(item.id)===button.dataset.remove);if(index>-1)cart.splice(index,1);sync()});document.dispatchEvent(new Event('beauty:cart-changed'))};document.querySelectorAll('[data-add-product]').forEach(button=>button.onclick=()=>{const item=cart.find(item=>String(item.id)===button.dataset.id);if(item)item.qty++;else cart.push({id:button.dataset.id,name:button.dataset.name,price:Number(button.dataset.price),qty:1});sync()});$('openBeautyCart').onclick=()=>{sync();window.OzmanBeautyOverlay.open($('beautyCartSheet'))};$('closeBeautyCart').onclick=()=>{window.OzmanBeautyOverlay.close($('beautyCartSheet'))};$('beautyCartSheet').onclick=e=>{if(e.target===$('beautyCartSheet'))$('closeBeautyCart').click()};window.OzmanBeautyCartSync=sync;sync()})();
 </script>
 <script>
 (() => {
@@ -569,9 +570,7 @@
         player.pause();
         player.removeAttribute('src');
         player.load();
-        modal.classList.remove('open');
-        modal.setAttribute('aria-hidden', 'true');
-        document.body.style.overflow = '';
+        window.OzmanBeautyOverlay.close(modal);
     };
     const open = productId => {
         const clip = clips[String(productId)];
@@ -581,9 +580,7 @@
         player.volume = 1;
         player.loop = true;
         title.textContent = clip.title;
-        modal.classList.add('open');
-        modal.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden';
+        window.OzmanBeautyOverlay.open(modal);
         player.play().catch(() => {});
     };
     document.addEventListener('click', event => {
@@ -668,17 +665,12 @@
         if (startX !== null && Math.abs(event.changedTouches[0].clientX - startX) > 45) show(event.changedTouches[0].clientX < startX ? 1 : -1);
         startX = null;
     }, {passive:true});
-    const releaseScroll = () => {
-        if (!document.querySelector('.beauty-product-video-modal.open')) document.body.style.overflow = '';
-    };
     const close = () => {
         if (!modal) return;
-        modal.classList.remove('open');
-        modal.setAttribute('aria-hidden', 'true');
+        window.OzmanBeautyOverlay.close(modal);
         viewer?.removeAttribute('src');
         if (viewer) viewer.alt = '';
-        releaseScroll();
-        opener?.focus();
+        opener?.focus({preventScroll:true});
     };
     const open = trigger => {
         if (!modal || !viewer || !trigger.dataset.productImage) return;
@@ -686,10 +678,8 @@
         images = galleries[trigger.closest('.beauty-product')?.querySelector('[data-add-product]')?.dataset.id] || [trigger.dataset.productImage];
         index = Math.max(0, images.indexOf(trigger.dataset.productImage)); show(0);
         viewer.alt = trigger.dataset.productTitle || 'صورة المنتج';
-        modal.classList.add('open');
-        modal.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden';
-        closeButton.focus();
+        window.OzmanBeautyOverlay.open(modal);
+        closeButton.focus({preventScroll:true});
     };
     document.addEventListener('click', event => {
         const trigger = event.target.closest('[data-product-image]');
