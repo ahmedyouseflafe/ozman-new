@@ -437,6 +437,10 @@
             <i class="ti ti-chart-bar" aria-hidden="true"></i>
             إحصائيات كل المحلات
         </a>
+        <a href="{{ route('admin.analytics.index') }}#adminPush" class="admin-sidebar-item nav-item">
+            <i class="ti ti-device-mobile" aria-hidden="true"></i>
+            تثبيت تطبيق الإدارة
+        </a>
         @endif
 
         @if($canSee(['dashboard']))

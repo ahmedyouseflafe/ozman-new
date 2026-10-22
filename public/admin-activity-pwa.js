@@ -6,16 +6,37 @@
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     let registration, subscription, key, installPrompt, busy = false;
     const status = message => {$('adminPushStatus').textContent = message;};
-    function installed() {$('adminInstall').hidden = standalone();$('adminInstallState').textContent = standalone() ? 'مثبّت على جهازك' : 'تطبيق الإدارة';}
+    function installed() {
+        // Standalone may be the parent Ozman app, not this administration PWA.
+        // Keep installation help reachable instead of assuming this app is installed.
+        $('adminInstall').hidden = false;
+        $('adminInstall').textContent = standalone() ? 'خيارات تثبيت تطبيق الإدارة' : 'تثبيت تطبيق الإدارة';
+        $('adminInstallState').textContent = standalone() ? 'مفتوح بوضع التطبيق' : 'تطبيق الإدارة';
+    }
     installed();
     window.addEventListener('beforeinstallprompt', event => {event.preventDefault();installPrompt = event;});
-    window.addEventListener('appinstalled', () => {installPrompt = null;$('adminInstall').hidden = true;$('adminInstallState').textContent = 'تم التثبيت';});
-    $('adminInstall').onclick = async () => {
-        if (installPrompt) {await installPrompt.prompt();await installPrompt.userChoice;installPrompt = null;return;}
+    window.addEventListener('appinstalled', () => {installPrompt = null;$('adminInstall').textContent = 'تعليمات فتح تطبيق الإدارة';$('adminInstallState').textContent = 'تم التثبيت';});
+    function installHelp() {
         $('adminInstallHelp').hidden = false;
         $('adminInstallHelp').textContent = ios
             ? 'على الآيفون: افتح هذه اللوحة في Safari، اضغط مشاركة (أو قائمة المزيد ثم مشاركة)، اختر «إضافة إلى الشاشة الرئيسية» ثم «إضافة». افتح الأيقونة الجديدة، سجّل الدخول إن طُلب، ثم فعّل الإشعارات. تتطلب الإشعارات iOS 16.4 أو أحدث.'
-            : 'من قائمة المتصفح اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية». إذا كنت داخل متصفح تطبيق آخر، افتح الرابط في Chrome أو Safari أولًا.';
+            : 'على أندرويد: افتح '+location.origin+'/admin/analytics في Chrome مباشرة، ثم افتح قائمة ⋮ واختر «إضافة إلى الشاشة الرئيسية» ثم «تثبيت» إذا ظهر. إذا ظهر «فتح التطبيق» فهو مثبّت بالفعل. إذا فتحت اللوحة من واتساب أو تطبيق أوزمان، افتح الرابط في Chrome أولًا.';
+    }
+    $('adminInstall').onclick = async () => {
+        const prompt = installPrompt;
+        if (prompt) {
+            installPrompt = null;
+            try {
+                await prompt.prompt();
+                const choice = await prompt.userChoice;
+                if (choice.outcome === 'accepted') {
+                    $('adminInstallHelp').hidden = false;
+                    $('adminInstallHelp').textContent = 'وافقت على التثبيت. بعد اكتماله افتح أيقونة «إدارة أوزمان» من الشاشة الرئيسية، ثم فعّل الإشعارات.';
+                    return;
+                }
+            } catch { /* A stale/unavailable prompt falls back to visible instructions. */ }
+        }
+        installHelp();
     };
     function controls(active) {
         $('adminPushEnable').hidden = active;

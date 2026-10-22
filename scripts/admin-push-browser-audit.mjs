@@ -39,6 +39,12 @@ try {
     assert.equal(await evaluate("(async () => (await navigator.serviceWorker.getRegistration('/admin/analytics')).scope)()"),base+'/admin/');
     const manifest=await evaluate("fetch('/admin/analytics/manifest.webmanifest').then(r=>r.json())");
     assert.equal(manifest.id,'/admin/analytics');assert.equal(manifest.scope,'/admin/');
+    await evaluate("document.getElementById('adminInstall').click()");
+    await until("!document.getElementById('adminInstallHelp').hidden");
+    assert.ok(await evaluate("document.getElementById('adminInstallHelp').textContent.includes('Chrome')"));
+    // Even a stale native prompt must show useful instructions, not disappear or throw.
+    await evaluate("(()=>{const e=new Event('beforeinstallprompt');e.prompt=async()=>{throw Error('expired')};window.dispatchEvent(e);document.getElementById('adminInstallHelp').hidden=true;document.getElementById('adminInstall').click()})()");
+    await until("!document.getElementById('adminInstallHelp').hidden");
     for(const [width,height] of [[320,740],[390,844],[768,1024],[1440,1000]]){
         await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<800});await delay(150);
         assert.ok(await evaluate("document.documentElement.scrollWidth<=innerWidth+1"),'overflow at '+width);
@@ -50,6 +56,12 @@ try {
     await click('adminPushTest');await until('pushAudit.calls.some(c=>c.url.endsWith("/test"))');
     await click('adminPushDisable');await until('!pushAudit.registered && document.getElementById("adminPushTest").hidden');
     assert.equal(await evaluate('pushAudit.sub'),null);
+    // A page opened inside the parent Ozman app must not lose its install controls.
+    const standaloneScript = (await send('Page.addScriptToEvaluateOnNewDocument',{source:"const originalMatchMedia=window.matchMedia.bind(window);window.matchMedia=q=>q==='(display-mode: standalone)'?{matches:true}:originalMatchMedia(q);"})).identifier;
+    await send('Page.navigate',{url:base+'/admin/analytics'});
+    await until("!!document.getElementById('adminInstall') && document.getElementById('adminInstall').textContent.includes('خيارات')");
+    assert.equal(await evaluate("document.getElementById('adminInstall').hidden"),false);
+    await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:standaloneScript});
     // iPhone install guidance is shown before permission requests in a normal Safari tab.
     await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:injected});injected=null;
     await send('Emulation.setUserAgentOverride',{userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1'});
