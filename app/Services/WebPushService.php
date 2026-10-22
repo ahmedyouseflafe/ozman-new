@@ -22,6 +22,17 @@ class WebPushService
         return $this->vapidConfiguration()['publicKey'];
     }
 
+    public function sendAdminDevice(\App\Models\AdminPushSubscription $subscription, array $payload): string
+    {
+        $push = new WebPush(['VAPID' => $this->vapidConfiguration()], ['TTL' => 86400, 'urgency' => 'high'],
+            new \GuzzleHttp\Client(['timeout' => 12, 'connect_timeout' => 5, 'allow_redirects' => false]));
+        $report = $push->sendOneNotification(new Subscription($subscription->endpoint, $subscription->public_key,
+            $subscription->auth_token, $subscription->content_encoding),
+            json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+        if ($report->isSubscriptionExpired()) return 'expired';
+        return $report->isSuccess() ? 'sent' : 'retry';
+    }
+
     public function sendToShop(Shop $shop, string $title, string $body, string $url, array $data = []): int
     {
         $subscriptions = WebPushSubscription::query()

@@ -13,5 +13,4 @@ class ShopActivityEvent extends Model
     public function shop() { return $this->belongsTo(Shop::class); }
     public function actor() { return $this->belongsTo(User::class, 'actor_id'); }
 
-    public const NOTIFICATIONS = ['sale_confirmed', 'order_created', 'order_cancelled', 'sale_reversed'];
 }

@@ -47,7 +47,15 @@ use App\Http\Controllers\WebPushSubscriptionController;
 use App\Models\AdminNotification;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/admin/analytics/manifest.webmanifest', [\App\Http\Controllers\AdminPwaController::class, 'manifest']);
+Route::get('/admin/analytics/sw.js', [\App\Http\Controllers\AdminPwaController::class, 'worker']);
+Route::get('/admin/analytics/icon/{size}.png', [\App\Http\Controllers\AdminPwaController::class, 'icon'])->whereNumber('size');
 Route::middleware(['auth', \App\Http\Middleware\EnsureAnalyticsAdmin::class])->prefix('admin/analytics')->name('admin.analytics.')->group(function () {
+    Route::get('/push/key', [\App\Http\Controllers\AdminPushController::class, 'key'])->middleware('throttle:30,1');
+    Route::post('/push/subscription', [\App\Http\Controllers\AdminPushController::class, 'store'])->middleware('throttle:30,1');
+    Route::post('/push/status', [\App\Http\Controllers\AdminPushController::class, 'status']);
+    Route::delete('/push/subscription', [\App\Http\Controllers\AdminPushController::class, 'destroy']);
+    Route::post('/push/test', [\App\Http\Controllers\AdminPushController::class, 'test'])->middleware('throttle:5,1');
     Route::get('/', [\App\Http\Controllers\ShopAnalyticsController::class, 'index'])->name('index');
     Route::get('/data', [\App\Http\Controllers\ShopAnalyticsController::class, 'data'])->name('data');
     Route::get('/activity', [\App\Http\Controllers\ShopAnalyticsController::class, 'activity'])->name('activity');

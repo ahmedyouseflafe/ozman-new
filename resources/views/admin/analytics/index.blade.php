@@ -4,6 +4,12 @@
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>مركز متابعة المحلات | Ozman</title>
+    <link rel="manifest" href="/admin/analytics/manifest.webmanifest">
+    <link rel="icon" type="image/png" href="/admin/analytics/icon/192.png">
+    <link rel="apple-touch-icon" href="/admin/analytics/icon/180.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="إدارة أوزمان">
+    <meta name="theme-color" content="#2563eb">
     @include('admin.analytics.styles')
 </head>
 <body>
@@ -25,6 +31,7 @@
         <header class="analytics-top"><span>أوزمان <b>/</b> إحصائيات المحلات</span><span class="live-label" id="syncStatus" role="status">جارٍ تحميل البيانات…</span></header>
         <div class="page-intro"><div><span class="eyebrow">كل محلاتك، صورة أوضح</span><h1>مركز متابعة المحلات</h1><p>تابع الأداء، افهم مبيعاتك، وابقَ على اطلاع بكل عملية.</p></div><button id="exportReport" type="button" class="button secondary">↓ تصدير التقرير CSV</button></div>
         @unless($ready)<div class="notice error">اللوحة جاهزة، ويلزم تشغيل <bdi>php artisan migrate --force</bdi> على السيرفر لتفعيل الإحصائيات الجديدة.</div>@endunless
+        @include('admin.analytics.push')
         <form id="analyticsFilters" class="filters panel">
             <label class="shop-filter">المتجر<select name="shop_id" id="shopFilter"><option value="">كل المحلات</option>@foreach($shops as $shop)<option value="{{ $shop->id }}">{{ $shop->name }}</option>@endforeach</select></label>
             <label>من تاريخ<input name="from" type="date" value="{{ now()->startOfMonth()->toDateString() }}" required></label>
@@ -52,4 +59,5 @@
 @include('admin.analytics.notifications')
 <script>window.OzmanAnalyticsConfig = @json(['base' => url('/admin/analytics'), 'ready' => $ready]);</script>
 <script>{!! file_get_contents(public_path('admin-shop-analytics.js')) !!}</script>
+<script>{!! file_get_contents(public_path('admin-activity-pwa.js')) !!}</script>
 </body></html>

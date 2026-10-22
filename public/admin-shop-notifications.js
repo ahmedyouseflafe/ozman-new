@@ -30,7 +30,7 @@
             $('ozActivityStatus').classList.remove('oz-activity-error');
             if(initialized&&data.latest>latest){
                 const fresh=data.events.filter(e=>e.id>latest), sale=fresh.find(e=>e.kind==='sale_confirmed'), event=sale||fresh[0];
-                if(event){$('ozActivityToast').textContent=event.title+' — '+event.shop;$('ozActivityToast').hidden=!$('ozActivityPanel').hidden;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('ozActivityToast').hidden=true,6500);if(sale)ping();}
+                if(event){$('ozActivityToast').textContent=event.title+' — '+event.shop;$('ozActivityToast').hidden=!$('ozActivityPanel').hidden;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('ozActivityToast').hidden=true,6500);ping();}
                 document.dispatchEvent(new CustomEvent('ozman:shop-event'));
             }
             latest=data.latest;initialized=true;try{sessionStorage.setItem(seenKey,String(latest));}catch{}

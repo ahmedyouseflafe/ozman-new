@@ -54,7 +54,7 @@ class ShopAnalyticsController extends Controller
     {
         if (! app(ShopActivityRecorder::class)->available()) return response()->json(['ready' => false, 'events' => [], 'unread' => 0, 'latest' => 0]);
         $lastRead = (int) DB::table('shop_analytics_reads')->where('user_id', $request->user()->id)->value('last_event_id');
-        $query = ShopActivityEvent::whereIn('kind', ShopActivityEvent::NOTIFICATIONS);
+        $query = ShopActivityEvent::query();
         return response()->json(['ready' => true, 'latest' => (int) (clone $query)->max('id'), 'read_through' => $lastRead,
             'unread' => (clone $query)->where('id', '>', $lastRead)->count(),
             'events' => $query->with(['shop:id,name', 'actor:id,name'])->latest('id')->limit(30)->get()->map(fn ($e) => $this->event($e))]);
@@ -64,7 +64,7 @@ class ShopAnalyticsController extends Controller
     {
         abort_unless(app(ShopActivityRecorder::class)->available(), 503);
         $data = $request->validate(['through' => ['required', 'integer', 'min:0']]);
-        $max = (int) ShopActivityEvent::whereIn('kind', ShopActivityEvent::NOTIFICATIONS)->max('id');
+        $max = (int) ShopActivityEvent::max('id');
         DB::table('shop_analytics_reads')->insertOrIgnore(['user_id' => $request->user()->id, 'last_event_id' => 0]);
         DB::table('shop_analytics_reads')->where('user_id', $request->user()->id)
             ->where('last_event_id', '<', min($max, $data['through']))->update(['last_event_id' => min($max, $data['through'])]);

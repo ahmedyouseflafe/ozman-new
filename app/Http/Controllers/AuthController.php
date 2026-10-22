@@ -45,9 +45,9 @@ class AuthController extends Controller
                 ->onlyInput('email');
         }
 
-        // Owners can arrive through /login as well as /merchant-login, including
-        // from installed-app shortcuts. Both paths must persist their sign-in.
-        if (! $remember && Auth::user()->isShopOwner()) {
+        // Owners and central administrators retain sign-in when reopening their
+        // installed applications. Explicit logout still revokes this browser.
+        if (! $remember && (Auth::user()->isShopOwner() || Auth::user()->isSuperAdmin())) {
             Auth::login(Auth::user(), true);
         }
 
@@ -584,6 +584,10 @@ class AuthController extends Controller
         $webPushEndpointHash = $request->session()->get('merchant_web_push_endpoint_hash');
         $driverWebPushEndpointHash = $request->session()->get('driver_web_push_endpoint_hash');
         $userId = $request->user()?->id;
+        $adminEndpointHash = $request->session()->get('admin_web_push_endpoint_hash') ?? $request->cookie('admin_push_device');
+        if ($userId && is_string($adminEndpointHash) && \Illuminate\Support\Facades\Schema::hasTable('admin_push_subscriptions')) {
+            \App\Models\AdminPushSubscription::where('user_id', $userId)->where('endpoint_hash', $adminEndpointHash)->delete();
+        }
         if ($userId && is_string($token) && $token !== '') {
             PushDevice::query()
                 ->where('token', $token)
@@ -608,6 +612,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->route('login')->withoutCookie('admin_push_device');
     }
 }

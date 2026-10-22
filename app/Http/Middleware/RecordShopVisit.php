@@ -35,8 +35,9 @@ class RecordShopVisit
             }
             $key = ['shop_id' => $shop->id, 'day' => now()->toDateString(),
                 'visitor_hash' => hash_hmac('sha256', $visitor, config('app.key'))];
-            DB::table('shop_visit_days')->insertOrIgnore([...$key, 'page_views' => 0]);
+            $firstVisit = DB::table('shop_visit_days')->insertOrIgnore([...$key, 'page_views' => 0]);
             DB::table('shop_visit_days')->where($key)->increment('page_views');
+            if ($firstVisit) app(ShopActivityRecorder::class)->record($shop->id, 'shop_visit', 'زيارة جديدة للمتجر', [], $shop);
         } catch (\Throwable $e) { report($e); }
         return $response;
     }

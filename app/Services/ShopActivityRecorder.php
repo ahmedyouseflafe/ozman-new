@@ -22,13 +22,18 @@ class ShopActivityRecorder
     public function record(?int $shopId, string $kind, string $title, array $data = [], ?Model $subject = null, ?string $key = null): void
     {
         if (! $this->available()) return;
-        DB::table('shop_activity_events')->insertOrIgnore([
+        $key ??= 'activity:'.\Illuminate\Support\Str::uuid();
+        $inserted = DB::table('shop_activity_events')->insertOrIgnore([
             'shop_id' => $shopId, 'actor_id' => auth()->id(), 'kind' => $kind,
             'title' => mb_substr($title, 0, 255), 'event_key' => $key,
             'subject_type' => $subject ? class_basename($subject) : null,
             'subject_id' => $subject?->getKey(), 'data' => json_encode($data, JSON_UNESCAPED_UNICODE),
             'created_at' => now(),
         ]);
+        if ($inserted) {
+            $id = (int) DB::table('shop_activity_events')->where('event_key', $key)->value('id');
+            app(AdminActivityPush::class)->enqueue($id);
+        }
     }
 
     public function saving(Model $model): void
@@ -65,18 +70,25 @@ class ShopActivityRecorder
             $this->record($model->shop_id, $kind, 'الطلب '.$model->order_number.': '.$model->statusLabel(),
                 ['from' => $model->getOriginal('status'), 'to' => $model->status, 'total' => $model->total], $model);
             $this->sale($model);
-        } elseif ($model instanceof FrontOrder && $model->wasChanged(['total', 'discount', 'payment_status'])) {
+        } elseif ($model instanceof FrontOrder && array_diff(array_keys($model->getChanges()), ['updated_at'])) {
             $this->record($model->shop_id, 'order_updated', 'تعديل بيانات الطلب '.$model->order_number,
                 ['total' => $model->total, 'discount' => $model->discount, 'payment_status' => $model->payment_status], $model);
-        } elseif ($model instanceof Product && $model->wasChanged(['name', 'price', 'discount_price', 'quantity', 'is_active', 'category_id'])) {
+        } elseif ($model instanceof Product && array_diff(array_keys($model->getChanges()), ['updated_at'])) {
             $changes = [];
             foreach (['name', 'price', 'discount_price', 'quantity', 'is_active', 'category_id'] as $field) {
                 if ($model->wasChanged($field)) $changes[$field] = ['from' => $model->getOriginal($field), 'to' => $model->$field];
             }
+            $changes['fields'] = array_values(array_diff(array_keys($model->getChanges()), ['updated_at']));
             $this->record($model->shop_id, 'product_updated', 'تعديل منتج: '.$model->name, $changes, $model);
-        } elseif ($model instanceof Shop && $model->wasChanged(['name', 'is_active', 'is_accepting_orders'])) {
+        } elseif ($model instanceof Shop && array_diff(array_keys($model->getChanges()), ['updated_at'])) {
             $this->record($model->id, 'shop_updated', 'تعديل متجر: '.$model->name,
                 ['active' => $model->is_active, 'accepting_orders' => $model->is_accepting_orders], $model);
+        } elseif ($model instanceof \App\Models\ShopSignupReward) {
+            if ($model->wasChanged('spun_at') && $model->spun_at) $this->record($model->shop_id, 'reward_spun', 'تجربة عجلة الترحيب', [], $model);
+            if ($model->wasChanged('redeemed_at') && $model->redeemed_at) $this->record($model->shop_id, 'reward_redeemed', 'استخدام هدية الترحيب في طلب', [], $model);
+        } elseif ($model instanceof \App\Models\RewardWheel && ! array_diff(array_keys($model->getChanges()), ['updated_at', 'spin_cycle'])) {
+            // Internal quota/cycle maintenance is not a new configuration change.
+            return;
         } elseif (array_diff(array_keys($model->getChanges()), ['updated_at'])) {
             $this->content($model, 'تعديل');
         }
@@ -91,9 +103,14 @@ class ShopActivityRecorder
     private function content(Model $model, string $action): void
     {
         $label = match (class_basename($model)) {
-            'MainScreen' => 'شاشة', 'Advertisement' => 'إعلان', 'Category' => 'قسم', default => null,
+            'MainScreen' => 'شاشة', 'Advertisement' => 'إعلان', 'Category' => 'قسم',
+            'ShopStory' => 'ستوري', 'RewardWheel' => 'عجلة', 'RewardWheelSegment' => 'جائزة عجلة',
+            'SalonAppointment' => 'حجز صالون', 'ProductImage' => 'صورة منتج', 'ProductCampaign' => 'عرض منتج', default => null,
         };
-        if ($label) $this->record($model->shop_id, 'content_updated', $action.' '.$label.': '.($model->title ?? $model->name), [], $model);
+        $shopId = $model->shop_id;
+        if ($model instanceof \App\Models\RewardWheelSegment) $shopId = $model->wheel?->shop_id;
+        if ($model instanceof \App\Models\ProductImage || $model instanceof \App\Models\ProductCampaign) $shopId = $model->product?->shop_id;
+        if ($label) $this->record($shopId, 'content_updated', $action.' '.$label.': '.($model->title ?? $model->name ?? $model->label ?? ''), [], $model);
     }
 
     private function sale(FrontOrder $order): void

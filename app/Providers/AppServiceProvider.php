@@ -12,6 +12,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(\App\Services\ShopActivityRecorder::class);
+        $this->app->scoped(\App\Services\AdminActivityPush::class);
     }
 
     /**
@@ -20,7 +21,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         foreach ([\App\Models\FrontOrder::class, \App\Models\Product::class, \App\Models\VisitorRegistration::class, \App\Models\Shop::class,
-            \App\Models\MainScreen::class, \App\Models\Advertisement::class, \App\Models\Category::class] as $model) {
+            \App\Models\MainScreen::class, \App\Models\Advertisement::class, \App\Models\Category::class,
+            \App\Models\ShopStory::class, \App\Models\RewardWheel::class, \App\Models\RewardWheelSegment::class,
+            \App\Models\ShopSignupReward::class, \App\Models\SalonAppointment::class,
+            \App\Models\ProductImage::class, \App\Models\ProductCampaign::class] as $model) {
             $model::observe(\App\Services\ShopActivityRecorder::class);
         }
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, function ($event) {

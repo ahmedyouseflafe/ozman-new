@@ -88,11 +88,12 @@ class ShopAnalyticsTest extends TestCase
         $this->assertSame($firstDate, $order->sale_confirmed_at);
         $adminA = $this->admin(); $adminB = $this->admin();
         $data = $this->actingAs($adminA)->getJson('/admin/analytics/notifications')->assertOk()->json();
-        $this->assertEquals(2, $data['unread']);
-        $this->assertEquals('sale_confirmed', $data['events'][0]['kind']);
+        $this->assertEquals(6, $data['unread']); // Shop, order, two status changes, sale, and order edit.
+        $this->assertEquals('order_updated', $data['events'][0]['kind']);
+        $this->assertContains('sale_confirmed', array_column($data['events'], 'kind'));
         $this->postJson('/admin/analytics/read', ['through' => $data['latest']])->assertOk();
         $this->getJson('/admin/analytics/notifications')->assertJsonPath('unread', 0);
-        $this->actingAs($adminB)->getJson('/admin/analytics/notifications')->assertJsonPath('unread', 2);
+        $this->actingAs($adminB)->getJson('/admin/analytics/notifications')->assertJsonPath('unread', 6);
         $this->actingAs($adminA); $new = $this->order($shop);
         $this->postJson('/admin/analytics/read', ['through' => $data['latest']])->assertOk();
         $this->getJson('/admin/analytics/notifications')->assertJsonPath('unread', 1);
@@ -117,6 +118,7 @@ class ShopAnalyticsTest extends TestCase
         $this->get('/analytics-fixture/'.$shop->id)->assertOk(); $this->get('/analytics-fixture/'.$shop->id)->assertOk();
         $this->assertDatabaseCount('shop_visit_days', 1);
         $this->assertDatabaseHas('shop_visit_days', ['shop_id' => $shop->id, 'page_views' => 2]);
+        $this->assertSame(1, ShopActivityEvent::where('kind', 'shop_visit')->where('shop_id', $shop->id)->count());
         $this->get('/analytics-fixture/'.$shop->id, ['User-Agent' => 'Googlebot'])->assertOk();
         $this->get('/analytics-fixture/99999')->assertNotFound();
         $this->actingAs($this->admin())->get('/analytics-fixture/'.$shop->id)->assertOk();

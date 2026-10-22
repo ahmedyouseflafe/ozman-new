@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('real-estate:send-alerts')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+Schedule::command('admin:send-activity-push')->everyMinute()->withoutOverlapping(5);
