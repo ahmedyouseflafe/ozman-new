@@ -47,6 +47,16 @@ use App\Http\Controllers\WebPushSubscriptionController;
 use App\Models\AdminNotification;
 use Illuminate\Support\Facades\Route;
 
+Route::middleware(['auth', \App\Http\Middleware\EnsureAnalyticsAdmin::class])->prefix('admin/analytics')->name('admin.analytics.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\ShopAnalyticsController::class, 'index'])->name('index');
+    Route::get('/data', [\App\Http\Controllers\ShopAnalyticsController::class, 'data'])->name('data');
+    Route::get('/activity', [\App\Http\Controllers\ShopAnalyticsController::class, 'activity'])->name('activity');
+    Route::get('/notifications', [\App\Http\Controllers\ShopAnalyticsController::class, 'notifications'])->name('notifications');
+    Route::post('/read', [\App\Http\Controllers\ShopAnalyticsController::class, 'read'])->name('read');
+    Route::get('/export', [\App\Http\Controllers\ShopAnalyticsController::class, 'export'])->name('export');
+    Route::get('/orders/{order}', [\App\Http\Controllers\ShopAnalyticsController::class, 'order'])->name('order');
+});
+
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/restaurant-purchase-wheel/{order}', [\App\Http\Controllers\RestaurantPurchaseWheelController::class, 'show'])->middleware('signed')->name('restaurant.purchase-wheel.show');
 Route::post('/restaurant-purchase-wheel/{order}/spin', [\App\Http\Controllers\RestaurantPurchaseWheelController::class, 'spin'])->middleware(['signed', 'throttle:20,1'])->name('restaurant.purchase-wheel.spin');
@@ -112,6 +122,8 @@ Route::get('/csrf-token', [FrontController::class, 'csrfToken'])
 Route::get('/market', [FrontController::class, 'index'])->name('front.home');
 Route::get('/front/shops/{shop}', [FrontController::class, 'index'])->name('front.shop');
 Route::get('/stores/{shop:slug}', [FrontController::class, 'index'])->name('front.shop.slug');
+Route::post('/stores/{shop:slug}/orders', [\App\Http\Controllers\CatalogCheckoutController::class, 'store'])
+    ->middleware('throttle:20,1')->name('catalog.orders.store');
 Route::get('/restaurants/{shop:slug}', [RestaurantController::class, 'menu'])->name('restaurant.menu');
 Route::post('/restaurants/{shop:slug}/customer-registration', [\App\Http\Controllers\RestaurantCustomerRegistrationController::class, 'store'])
     ->middleware('throttle:20,1')

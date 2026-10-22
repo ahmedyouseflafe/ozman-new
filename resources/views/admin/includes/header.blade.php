@@ -1,3 +1,4 @@
+@include('admin.analytics.notifications')
 @once
     <style>
         .topbar.admin-neon-header {

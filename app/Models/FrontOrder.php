@@ -66,7 +66,7 @@ class FrontOrder extends Model
         'delivered_at' => 'datetime',
     ];
 
-    protected $hidden = ['customer_push_token'];
+    protected $hidden = ['customer_push_token', 'checkout_token_hash', 'checkout_payload_hash'];
 
     public function shop(): BelongsTo
     {

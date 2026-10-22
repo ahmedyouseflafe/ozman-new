@@ -68,6 +68,7 @@
         .bakery-moments--daily{grid-template-columns:minmax(0,1fr)}
         .bakery-moments--daily .bakery-moment{background:linear-gradient(135deg,#56411d,#2a1b0e)}
     </style>
+@include('front.partials.catalog_checkout')
 </head>
 <body>
 @unless($dailyJoyOnly)
@@ -191,7 +192,7 @@
     document.addEventListener('click', event => { const button = event.target.closest('[data-add]'); if (!button) return; const found = cart.find(item => item.id === button.dataset.add); if (found) found.quantity += 1; else cart.push({id:button.dataset.add,name:button.dataset.name,price:Number(button.dataset.price),quantity:1}); renderCart(); flyToSweetCart(button); });
     items.onclick = event => { const button = event.target.closest('[data-remove]'); if (!button) return; const index = cart.findIndex(item => item.id === button.dataset.remove); if (index >= 0) cart.splice(index,1); renderCart(); };
     const layer = document.getElementById('cartLayer'); document.getElementById('cartButton').onclick = () => { layer.classList.add('open'); renderCart(); }; document.getElementById('cartClose').onclick = () => layer.classList.remove('open'); layer.onclick = event => { if (event.target === layer) layer.classList.remove('open'); };
-    document.getElementById('sendOrder').onclick = () => { if (!cart.length) return; const name = document.getElementById('customerName').value.trim(), phone = document.getElementById('customerPhone').value.trim(); if (!name || !phone) { alert('اكتب الاسم ورقم الجوال أولًا.'); return; } const sum = cart.reduce((value, item) => value + item.price * item.quantity, 0); const lines = cart.map(item => '- ' + item.quantity + '× ' + item.name + ': ' + money(item.price * item.quantity)); const target = @json($whatsappNumber); if (!target) { alert('لا يوجد رقم واتساب مضاف للمحل بعد.'); return; } window.open('https://wa.me/' + target + '?text=' + encodeURIComponent('طلب جديد من ' + name + '\nرقم التواصل: ' + phone + '\n\n' + lines.join('\n') + '\n\nالمجموع: ' + money(sum)), '_blank', 'noopener'); };
+    document.getElementById('sendOrder').onclick = () => { if (!cart.length) return; const name = document.getElementById('customerName').value.trim(), phone = document.getElementById('customerPhone').value.trim(); if (!name || !phone) { alert('اكتب الاسم ورقم الجوال أولًا.'); return; } window.OzmanSaveCatalogOrder(cart, name, phone, document.getElementById('sendOrder')); };
     const lightbox = document.getElementById('lightbox'), image = lightbox.querySelector('img'); document.querySelectorAll('[data-image]').forEach(button => button.onclick = () => { image.src = button.dataset.image; lightbox.classList.add('open'); }); lightbox.onclick = event => { if (event.target === lightbox || event.target.tagName === 'BUTTON') lightbox.classList.remove('open'); };
     const slides = [...document.querySelectorAll('[data-slide]')]; let current = 0; if (slides.length > 1) setInterval(() => { slides[current].classList.remove('active'); current = (current + 1) % slides.length; slides[current].classList.add('active'); }, 6500);
     renderCart();

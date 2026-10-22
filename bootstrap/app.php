@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\CanonicalDomain::class,
             \App\Http\Middleware\LanguageMiddleware::class,
             \App\Http\Middleware\AddSiteIcon::class,
+            \App\Http\Middleware\RecordShopVisit::class,
         ]);
 
         $middleware->alias([

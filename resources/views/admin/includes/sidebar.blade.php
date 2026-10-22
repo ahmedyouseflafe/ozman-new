@@ -432,6 +432,13 @@
     <nav class="admin-sidebar-nav">
         <div class="admin-sidebar-section">عام</div>
 
+        @if($isSuperAdmin)
+        <a href="{{ route('admin.analytics.index') }}" class="admin-sidebar-item nav-item">
+            <i class="ti ti-chart-bar" aria-hidden="true"></i>
+            إحصائيات كل المحلات
+        </a>
+        @endif
+
         @if($canSee(['dashboard']))
         <a href="{{ route('dashboard') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
@@ -797,6 +804,7 @@
 
 </nav>
 
+@include('admin.analytics.notifications')
 @once
 <script>
     document.addEventListener('DOMContentLoaded', () => {
