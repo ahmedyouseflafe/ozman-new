@@ -93,6 +93,9 @@ class User extends Authenticatable
         return $this->role === 'marketer';
     }
 
+    public function isPromoter(): bool { return $this->role === 'promoter'; }
+    public function promoterProfile() { return $this->hasOne(PromoterProfile::class); }
+
     public function isEmployee(): bool
     {
         return $this->role === 'employee';
@@ -153,6 +156,7 @@ class User extends Authenticatable
 
     public function canAccessRouteName(?string $routeName): bool
     {
+        if ($this->isPromoter()) return in_array($routeName, ['dashboard', 'logout', 'lang.switch'], true) || str_starts_with($routeName ?? '', 'promoter.');
         if (! $routeName) {
             return false;
         }
@@ -175,6 +179,7 @@ class User extends Authenticatable
 
     public function canAccessAnyRoute(array $routeNames): bool
     {
+        if ($this->isPromoter()) return collect($routeNames)->contains(fn ($name) => $this->canAccessRouteName($name));
         if ($this->isSuperAdmin()) {
             return true;
         }
@@ -212,6 +217,7 @@ class User extends Authenticatable
 
     public function accessibleShopIds(): array
     {
+        if ($this->isPromoter()) return [];
         if ($this->isSuperAdmin()) {
             return [];
         }

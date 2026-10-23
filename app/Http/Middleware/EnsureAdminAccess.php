@@ -25,6 +25,11 @@ class EnsureAdminAccess
             return redirect()->route('driver.dashboard');
         }
 
+        if ($user->isPromoter()) {
+            abort_unless($user->is_active && $request->routeIs('dashboard', 'dashboard.main') && $request->isMethod('GET'), 403);
+            return redirect()->route('promoter.dashboard');
+        }
+
         // Do not leave a stale or non-admin web session on a Forbidden page.
         // Clear it so the next destination is always the normal login screen.
         if (! in_array($user->role, ['super_admin', 'shop_owner', 'agent', 'distributor', 'marketer', 'employee'], true)) {

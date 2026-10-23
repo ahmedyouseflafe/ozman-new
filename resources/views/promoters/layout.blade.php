@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#faf9f6">
+    <title>{{ $__env->yieldContent('title', 'مروّجات أوزمان') }}</title>
+    <meta name="description" content="{{ $__env->yieldContent('description', 'اكتشف المحلات من خلال ستوريات وفيديوهات مروّجات أوزمان.') }}">
+    <style>{!! file_get_contents(public_path('promoter-social.css')) !!}</style>
+</head>
+<body>
+<header class="social-header"><div class="social-wrap header-row">
+    <a class="social-brand" href="{{ route('promoters.index') }}"><span class="brand-mark">O<span>·</span></span><span>Ozman <b>Creators</b><small>حكايات من محلاتنا</small></span></a>
+    <nav aria-label="تنقل المروّجات"><a href="{{ route('promoters.index') }}">اكتشف المروّجات</a><a href="{{ route('home') }}">أوزمان ↗</a><a class="button small" href="{{ route('promoter.dashboard') }}">{{ auth()->user()?->isPromoter() ? 'لوحتي' : 'دخول المروّجة' }}</a></nav>
+</div></header>
+<main class="social-wrap">
+    @if(session('status'))<div class="notice" role="status">{{ session('status') }}</div>@endif
+    @if($errors->any())<div class="notice error" role="alert"><strong>راجع البيانات التالية:</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+    @yield('content')
+</main>
+<footer class="social-wrap social-footer"><span>اكتشافات قريبة منك.</span><a href="{{ route('home') }}">جزء من أوزمان ↗</a></footer>
+@yield('scripts')
+</body></html>

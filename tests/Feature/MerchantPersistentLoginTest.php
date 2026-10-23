@@ -64,11 +64,11 @@ class MerchantPersistentLoginTest extends TestCase
             ->get(route('merchant-app.launch',$shop))->assertCookieMissing($name);
     }
 
-    public function test_general_admin_login_without_remember_is_still_session_only(): void
+    public function test_general_admin_login_remembers_the_installed_admin_application(): void
     {
         $admin=User::factory()->create(['role'=>'super_admin','is_active'=>true]);
         $name=Auth::guard()->getRecallerName();
-        $this->post(route('login.store'),['email'=>$admin->email,'password'=>'password'])->assertCookieMissing($name);
+        $this->post(route('login.store'),['email'=>$admin->email,'password'=>'password'])->assertCookie($name);
     }
 
     public function test_deactivated_owner_cannot_launch_using_a_remember_cookie(): void

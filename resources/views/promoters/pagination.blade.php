@@ -1,0 +1,1 @@
+@if($items->hasPages())<nav class="pagination" aria-label="صفحات المحتوى">@if($items->previousPageUrl())<a class="button outline" href="{{ $items->previousPageUrl() }}">السابق</a>@endif<span>{{ $items->currentPage() }} / {{ $items->lastPage() }}</span>@if($items->nextPageUrl())<a class="button outline" href="{{ $items->nextPageUrl() }}">التالي</a>@endif</nav>@endif

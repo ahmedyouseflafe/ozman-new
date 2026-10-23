@@ -47,7 +47,7 @@ class AuthController extends Controller
 
         // Owners and central administrators retain sign-in when reopening their
         // installed applications. Explicit logout still revokes this browser.
-        if (! $remember && (Auth::user()->isShopOwner() || Auth::user()->isSuperAdmin())) {
+        if (! $remember && (Auth::user()->isShopOwner() || Auth::user()->isSuperAdmin() || Auth::user()->isPromoter())) {
             Auth::login(Auth::user(), true);
         }
 
@@ -248,6 +248,7 @@ class AuthController extends Controller
     public function dashboard(Request $request): View|RedirectResponse
     {
         $user = $request->user();
+        if ($user?->isPromoter()) return redirect()->route('promoter.dashboard');
 
         if ($user?->isRestaurantDriver()) {
             return redirect()->route('driver.dashboard');

@@ -1,0 +1,1 @@
+@if($profile->avatar)<img src="{{ route('promoters.avatar', $profile) }}" alt="{{ $profile->display_name }}" loading="lazy">@else<span class="avatar-initial" aria-label="{{ $profile->display_name }}">{{ mb_substr($profile->display_name, 0, 1) }}</span>@endif

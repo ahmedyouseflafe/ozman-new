@@ -66,6 +66,21 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAnalyticsAdmin::class])->p
 });
 
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
+Route::get('/promoters', [\App\Http\Controllers\PromoterController::class, 'directory'])->name('promoters.index');
+Route::get('/promoters/{slug}', [\App\Http\Controllers\PromoterController::class, 'show'])->name('promoters.show');
+Route::get('/promoter-media/avatar/{profile}', [\App\Http\Controllers\PromoterController::class, 'avatar'])->name('promoters.avatar');
+Route::get('/promoter-media/posts/{post}/{part?}', [\App\Http\Controllers\PromoterController::class, 'media'])->name('promoters.media');
+Route::middleware(['auth', \App\Http\Middleware\EnsurePromoterAccess::class])->prefix('promoter')->name('promoter.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\PromoterController::class, 'dashboard'])->name('dashboard');
+    Route::get('/accounts', [\App\Http\Controllers\PromoterController::class, 'accounts'])->name('accounts');
+    Route::post('/accounts', [\App\Http\Controllers\PromoterController::class, 'createAccount'])->middleware('throttle:10,1')->name('accounts.store');
+    Route::patch('/accounts/{profile}', [\App\Http\Controllers\PromoterController::class, 'updateAccount'])->name('accounts.update');
+    Route::get('/profiles/{profile}', [\App\Http\Controllers\PromoterController::class, 'editor'])->name('manage');
+    Route::put('/profiles/{profile}', [\App\Http\Controllers\PromoterController::class, 'updateProfile'])->name('profile.update');
+    Route::post('/profiles/{profile}/posts', [\App\Http\Controllers\PromoterController::class, 'storePost'])->middleware('throttle:15,1')->name('posts.store');
+    Route::put('/posts/{post}', [\App\Http\Controllers\PromoterController::class, 'updatePost'])->name('posts.update');
+    Route::delete('/posts/{post}', [\App\Http\Controllers\PromoterController::class, 'deletePost'])->name('posts.destroy');
+});
 Route::get('/restaurant-purchase-wheel/{order}', [\App\Http\Controllers\RestaurantPurchaseWheelController::class, 'show'])->middleware('signed')->name('restaurant.purchase-wheel.show');
 Route::post('/restaurant-purchase-wheel/{order}/spin', [\App\Http\Controllers\RestaurantPurchaseWheelController::class, 'spin'])->middleware(['signed', 'throttle:20,1'])->name('restaurant.purchase-wheel.spin');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');

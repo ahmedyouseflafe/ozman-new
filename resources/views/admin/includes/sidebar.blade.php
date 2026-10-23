@@ -441,6 +441,10 @@
             <i class="ti ti-device-mobile" aria-hidden="true"></i>
             تثبيت تطبيق الإدارة
         </a>
+        <a href="{{ route('promoter.accounts') }}" class="admin-sidebar-item nav-item">
+            <i class="ti ti-user-star" aria-hidden="true"></i>
+            حسابات المروّجات
+        </a>
         @endif
 
         @if($canSee(['dashboard']))
