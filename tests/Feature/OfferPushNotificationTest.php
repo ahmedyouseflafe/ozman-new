@@ -56,6 +56,14 @@ class OfferPushNotificationTest extends TestCase
             ->assertHeader('Content-Type', 'application/javascript; charset=UTF-8');
     }
 
+    public function test_owner_browsing_a_shop_also_gets_the_prompt_but_install_page_stays_accessible(): void
+    {
+        $owner = User::factory()->create(['role' => 'shop_owner', 'is_active' => true]);
+        $shop = $this->shop('Shop', 'owner-notification-prompt', 'restaurant', $owner);
+        $this->actingAs($owner)->get(route('restaurant.menu', $shop))->assertOk()->assertSee('"showPrompt":true', false);
+        $this->get(route('shop-app.install', $shop))->assertOk()->assertSee('"showPrompt":false', false);
+    }
+
     public function test_publishing_a_story_broadcasts_it_to_the_global_audience(): void
     {
         Storage::fake('local');

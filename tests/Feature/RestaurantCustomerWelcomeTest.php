@@ -12,14 +12,14 @@ class RestaurantCustomerWelcomeTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_bankai_welcome_replaces_the_separate_offer_prompt_in_each_language(): void
+    public function test_bankai_also_shows_the_global_offer_prompt_in_each_language(): void
     {
         $shop = $this->shop('bankai-sushi');
         foreach (['ar' => 'أهلًا فيك في بانكاي', 'en' => 'Welcome to Bankai', 'he' => 'ברוכים הבאים לבנקאי'] as $locale => $title) {
             $this->withSession(['locale' => $locale])->get(route('restaurant.menu', $shop))
                 ->assertOk()->assertSee('id="bankaiWelcome"', false)
                 ->assertSee($title)->assertSee('id="bankaiEnablePush"', false)
-                ->assertSee('"showPrompt":false', false)
+                ->assertSee('"showPrompt":true', false)
                 ->assertSee('ozman.restaurant.'.$shop->id.'.customer.v1', false);
         }
     }
