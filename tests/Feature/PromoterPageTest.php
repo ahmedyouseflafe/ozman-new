@@ -154,4 +154,30 @@ class PromoterPageTest extends TestCase
         $profile->update(['display_name' => '</title><script>alert(1)</script>', 'bio' => '" onload="alert(2)']);
         $this->get($profile->publicUrl())->assertOk()->assertDontSee('</title><script>alert(1)</script>',false)->assertDontSee('content="" onload=',false);
     }
+
+    public function test_avatar_removal_is_owner_or_admin_only_and_preserves_profile_content(): void
+    {
+        Storage::fake('local');
+        $profile = $this->profile();
+        $other = $this->profile('other');
+        $path = 'promoters/avatars/remove.jpg';
+        Storage::disk('local')->put($path, 'avatar');
+        $profile->update(['avatar' => $path, 'bio' => 'Keep biography']);
+        $post = $this->content($profile);
+        $this->actingAs($other->user)->delete(route('promoter.avatar.destroy', $profile))->assertForbidden();
+        Storage::disk('local')->assertExists($path);
+        $this->actingAs($profile->user)->get(route('promoter.manage', $profile))->assertOk()->assertSee('حذف صورة الملف');
+        $this->delete(route('promoter.avatar.destroy', $profile))->assertRedirect();
+        Storage::disk('local')->assertMissing($path);
+        $this->assertNull($profile->fresh()->avatar);
+        $this->assertSame('Keep biography', $profile->fresh()->bio);
+        $this->assertDatabaseHas('promoter_posts', ['id' => $post->id]);
+        $this->get(route('promoter.manage', $profile))->assertDontSee('form="deleteProfileAvatar"', false)->assertSee('<span class="avatar-initial"', false);
+        $this->delete(route('promoter.avatar.destroy', $profile))->assertRedirect();
+        Storage::disk('local')->put($path, 'avatar');
+        $profile->refresh()->update(['avatar' => $path]);
+        $this->actingAs(User::factory()->create(['role' => 'super_admin', 'is_active' => true]))->delete(route('promoter.avatar.destroy', $profile))->assertRedirect();
+        $this->assertNull($profile->fresh()->avatar);
+        Storage::disk('local')->assertMissing($path);
+    }
 }

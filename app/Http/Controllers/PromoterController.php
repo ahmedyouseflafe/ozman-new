@@ -101,6 +101,18 @@ class PromoterController extends Controller
         return back()->with('status', 'تم حفظ الملف الشخصي.');
     }
 
+    public function deleteAvatar(Request $request, PromoterProfile $profile)
+    {
+        $this->manage($request, $profile);
+        $path = $profile->avatar;
+        $profile->update(['avatar' => null]);
+        if ($path) {
+            Storage::disk('local')->delete($path);
+        }
+
+        return back()->with('status', 'تم حذف صورة الملف الشخصي.');
+    }
+
     public function storePost(Request $request, PromoterProfile $profile)
     {
         $this->manage($request, $profile);

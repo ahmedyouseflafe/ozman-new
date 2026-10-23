@@ -77,6 +77,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsurePromoterAccess::class])->p
     Route::patch('/accounts/{profile}', [\App\Http\Controllers\PromoterController::class, 'updateAccount'])->name('accounts.update');
     Route::get('/profiles/{profile}', [\App\Http\Controllers\PromoterController::class, 'editor'])->name('manage');
     Route::put('/profiles/{profile}', [\App\Http\Controllers\PromoterController::class, 'updateProfile'])->name('profile.update');
+    Route::delete('/profiles/{profile}/avatar', [\App\Http\Controllers\PromoterController::class, 'deleteAvatar'])->name('avatar.destroy');
     Route::post('/profiles/{profile}/posts', [\App\Http\Controllers\PromoterController::class, 'storePost'])->middleware('throttle:15,1')->name('posts.store');
     Route::put('/posts/{post}', [\App\Http\Controllers\PromoterController::class, 'updatePost'])->name('posts.update');
     Route::delete('/posts/{post}', [\App\Http\Controllers\PromoterController::class, 'deletePost'])->name('posts.destroy');
