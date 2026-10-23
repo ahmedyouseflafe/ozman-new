@@ -132,7 +132,21 @@
             'unsubscribeUrl' => route('offers.push.destroy'),
             'vapidPublicKey' => $webPushPublicKey,
             'showPrompt' => ! request()->routeIs('shop-app.install', 'merchant-app.install'),
-            'iosLabel' => 'على iPhone أو iPad: افتح الموقع في Safari، ثم مشاركة ← إضافة إلى الشاشة الرئيسية. افتحه من الأيقونة الجديدة وفعّل الإشعارات. يلزم iOS 16.4 أو أحدث.',
+            'iosLabel' => match (app()->getLocale()) {
+                'en' => 'Notifications are unavailable here. You can skip and browse without installing anything.',
+                'he' => 'התראות אינן זמינות כאן. אפשר לדלג ולגלוש ללא התקנה.',
+                default => 'الإشعارات مش متاحة من هون. بتقدر تتخطّى وتكمل تصفح بدون تثبيت.',
+            },
+            'iosBodyLabel' => match (app()->getLocale()) {
+                'en' => 'Receive offers from all stores, or skip and continue browsing.',
+                'he' => 'קבלו מבצעים מכל החנויות, או דלגו והמשיכו לגלוש.',
+                default => 'فعّل الإشعارات لتصلك عروض كل المحلات، أو تخطّى وكمل تصفح.',
+            },
+            'skipLabel' => match (app()->getLocale()) {
+                'en' => 'Skip and browse',
+                'he' => 'דלג והמשך לגלוש',
+                default => 'تخطّي ومتابعة التصفح',
+            },
             'unsupportedLabel' => 'هذا المتصفح لا يدعم إشعارات الموقع. افتح الرابط في متصفح يدعم الإشعارات مثل Chrome على أندرويد. إذا كنت داخل واتساب أو إنستغرام، افتح الرابط في المتصفح الخارجي.',
             'recheckLabel' => 'تحقّق من التفعيل مجددًا',
             'title' => $offerLabels['title'],

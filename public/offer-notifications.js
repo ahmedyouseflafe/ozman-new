@@ -10,6 +10,10 @@
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
     const permission = () => supported ? Notification.permission : 'unsupported';
+    const iosSkipKey = 'ozman.offer-push.ios-skipped';
+    const iosSkipped = () => {
+        try { return ios && sessionStorage.getItem(iosSkipKey) === '1'; } catch (_) { return false; }
+    };
     const bounded = promise => new Promise((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error('offer-push-timeout')), 15000);
         Promise.resolve(promise).then(value => { clearTimeout(timer);resolve(value); }, error => { clearTimeout(timer);reject(error); });
@@ -67,7 +71,7 @@
     };
 
     const mountPrompt = () => {
-        if (!config.showPrompt || document.querySelector('[data-offer-push-prompt]')) {
+        if (!config.showPrompt || iosSkipped() || document.querySelector('[data-offer-push-prompt]')) {
             return;
         }
 
@@ -100,9 +104,10 @@
             <section class="offer-push-card">
                 <div class="offer-push-icon" aria-hidden="true">🔔</div>
                 <strong>${config.title}</strong>
-                <p>${config.body}</p>
+                <p>${ios ? config.iosBodyLabel : config.body}</p>
                 <div class="offer-push-actions">
                     <button type="button" data-offer-push-enable>${config.allowLabel}</button>
+                    ${ios ? `<button type="button" data-offer-push-skip>${config.skipLabel}</button>` : ''}
                 </div>
                 <p class="offer-push-status" data-offer-push-status role="status" aria-live="polite"></p>
             </section>
@@ -110,18 +115,28 @@
         document.body.appendChild(backdrop);
         const previousOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
-        backdrop.addEventListener('cancel', event => event.preventDefault());
         backdrop.showModal();
-        const finish = () => { backdrop.close();backdrop.remove();document.body.style.overflow = previousOverflow;window.removeEventListener('ozman:offer-push-ready', finish); };
+        let finished = false;
+        const finish = () => {
+            if (finished) return;
+            finished = true;
+            backdrop.close();backdrop.remove();document.body.style.overflow = previousOverflow;window.removeEventListener('ozman:offer-push-ready', finish);
+        };
+        const skip = () => {
+            try { sessionStorage.setItem(iosSkipKey, '1'); } catch (_) { /* Browsing still resumes without storage. */ }
+            finish();
+        };
+        backdrop.querySelector('[data-offer-push-skip]')?.addEventListener('click', skip);
+        backdrop.addEventListener('cancel', event => { event.preventDefault();if (ios) skip(); });
         window.addEventListener('ozman:offer-push-ready', finish, { once: true });
 
         const enableButton = backdrop.querySelector('[data-offer-push-enable]');
         const status = backdrop.querySelector('[data-offer-push-status]');
 
         const explain = () => {
-            if (ios && !standalone) {
+            if (ios && (!standalone || !supported)) {
                 status.textContent = config.iosLabel;
-                enableButton.textContent = config.recheckLabel;
+                enableButton.hidden = true;
                 return true;
             }
             if (!supported) {
