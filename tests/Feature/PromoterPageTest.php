@@ -180,4 +180,46 @@ class PromoterPageTest extends TestCase
         $this->assertNull($profile->fresh()->avatar);
         Storage::disk('local')->assertMissing($path);
     }
+
+    public function test_name_changes_update_urls_keep_old_links_and_reserve_them(): void
+    {
+        $profile = $this->profile('ahmed');
+        $other = $this->profile('second');
+        $old = $profile->publicUrl();
+        $this->actingAs($profile->user)->put(route('promoter.profile.update', $profile), ['display_name' => 'Rima Ali Salman'])->assertRedirect();
+        $profile->refresh();
+        $this->assertSame('rima-ali-salman', $profile->slug);
+        $this->get($old)->assertRedirect($profile->publicUrl());
+        $this->get($profile->publicUrl())->assertOk()->assertSee('@rima-ali-salman');
+        $this->actingAs($other->user)->put(route('promoter.profile.update', $other), ['display_name' => 'Rima Ali Salman'])->assertRedirect();
+        $this->assertSame('rima-ali-salman-2', $other->fresh()->slug);
+        $this->actingAs($profile->user)->put(route('promoter.profile.update', $profile), ['display_name' => 'Rima Discoveries'])->assertRedirect();
+        $this->get($old)->assertRedirect($profile->fresh()->publicUrl());
+        $this->get('/promoters/rima-ali-salman')->assertRedirect($profile->fresh()->publicUrl());
+        $this->actingAs($other->user)->put(route('promoter.profile.update', $other), ['display_name' => 'Ahmed'])->assertRedirect();
+        $this->assertSame('ahmed-2', $other->fresh()->slug);
+        $admin = User::factory()->create(['role' => 'super_admin', 'is_active' => true]);
+        $this->actingAs($admin)->postJson('/promoter/accounts', ['display_name' => 'Someone else', 'slug' => 'ahmed', 'email' => 'new@example.test', 'password' => 'testing-password'])->assertUnprocessable();
+        $profile->update(['is_active' => false]);
+        Auth::logout();
+        $this->get($old)->assertNotFound();
+    }
+
+    public function test_existing_names_are_backfilled_and_unicode_names_have_stable_urls(): void
+    {
+        $profile = $this->profile('old-link');
+        $profile->update(['display_name' => 'Rima Ali Salman']);
+        $migration = require database_path('migrations/2026_10_23_000002_sync_promoter_urls_with_profile_names.php');
+        $migration->down();
+        $migration->up();
+        $this->assertSame('rima-ali-salman', $profile->fresh()->slug);
+        $this->get('/promoters/old-link')->assertRedirect($profile->fresh()->publicUrl());
+        $this->actingAs($profile->user)->put(route('promoter.profile.update', $profile), ['display_name' => 'ريما علي سلمان'])->assertRedirect();
+        $slug = $profile->fresh()->slug;
+        $this->assertNotEmpty($slug);
+        $this->assertLessThanOrEqual(80, mb_strlen($slug));
+        $this->get($profile->fresh()->publicUrl())->assertOk();
+        $this->put(route('promoter.profile.update', $profile), ['display_name' => 'ريما علي سلمان'])->assertRedirect();
+        $this->assertSame($slug, $profile->fresh()->slug);
+    }
 }

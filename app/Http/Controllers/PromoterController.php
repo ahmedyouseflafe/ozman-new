@@ -34,12 +34,15 @@ class PromoterController extends Controller
     {
         $this->admin($request);
         $data = $request->validate(['display_name' => ['required', 'string', 'max:100'],
-            'slug' => ['required', 'string', 'min:3', 'max:80', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/D', 'unique:promoter_profiles,slug'],
+            'slug' => ['required', 'string', 'min:3', 'max:80', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/D', 'unique:promoter_profiles,slug', 'unique:promoter_profile_slugs,slug'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'], 'password' => ['required', 'string', 'min:10', 'max:128']]);
         $profile = DB::transaction(function () use ($data) {
             $user = User::create(['name' => $data['display_name'], 'email' => $data['email'], 'password' => $data['password'], 'role' => 'promoter', 'is_active' => true]);
 
-            return PromoterProfile::create(['user_id' => $user->id, 'slug' => $data['slug'], 'display_name' => $data['display_name'], 'is_active' => true]);
+            $profile = PromoterProfile::create(['user_id' => $user->id, 'slug' => $data['slug'], 'display_name' => $data['display_name'], 'is_active' => true]);
+            DB::table('promoter_profile_slugs')->insert(['slug' => $profile->slug, 'promoter_profile_id' => $profile->id]);
+
+            return $profile;
         });
 
         return redirect()->route('promoter.manage', $profile)->with('status', 'تم إنشاء حساب المروّجة. الدخول بالبريد وكلمة المرور اللذين حددتهما.');
@@ -88,7 +91,10 @@ class PromoterController extends Controller
         abort_if($request->hasFile('avatar') && ! $path, 500, 'تعذّر حفظ الصورة.');
         $old = $profile->avatar;
         try {
-            $profile->update(['display_name' => $data['display_name'], 'bio' => $data['bio'] ?? null, ...($path ? ['avatar' => $path] : [])]);
+            DB::transaction(function () use ($profile, $data, $path) {
+                $profile->update(['display_name' => $data['display_name'], 'bio' => $data['bio'] ?? null, ...($path ? ['avatar' => $path] : [])]);
+                app(\App\Services\PromoterProfileUrl::class)->sync($profile);
+            });
         } catch (\Throwable $e) {
             if ($path) {
                 Storage::disk('local')->delete($path);
@@ -165,7 +171,13 @@ class PromoterController extends Controller
 
     public function show(string $slug)
     {
-        $profile = PromoterProfile::published()->where('slug', $slug)->firstOrFail();
+        $profile = PromoterProfile::published()->where('slug', $slug)->first();
+        if (! $profile) {
+            $profileId = DB::table('promoter_profile_slugs')->where('slug', $slug)->value('promoter_profile_id');
+            $profile = PromoterProfile::published()->whereKey($profileId)->firstOrFail();
+
+            return redirect()->to($profile->publicUrl(), 302)->header('Cache-Control', 'no-store');
+        }
         $visible = $profile->posts()->visible()->with('shop');
         $posts = (clone $visible)->where('kind', 'post')->latest()->paginate(12);
         $stories = (clone $visible)->where('kind', 'story')->oldest('id')->get();

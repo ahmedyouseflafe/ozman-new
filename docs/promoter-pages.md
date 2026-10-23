@@ -2,6 +2,8 @@
 
 Independent `promoter` role; this does not reuse marketer permissions. Public directory: `/promoters`. A public profile lives at `/promoters/{slug}`. Super administrators manage accounts at `/promoter/accounts` (also linked in the admin sidebar). Promoters sign in through `/login` and are redirected to their own studio at `/promoter`.
 
+Saving the profile derives its canonical URL from the display name. Duplicate names receive a numeric suffix. Previously used URLs remain reserved to the same profile and redirect directly to its current URL; disabled pages remain unavailable at old URLs too. The `2026_10_23_000002` migration updates existing profiles to match their current names and preserves their original URLs. Its rollback removes historical redirects but keeps the latest canonical names.
+
 ## Deployment
 
 ```sh
