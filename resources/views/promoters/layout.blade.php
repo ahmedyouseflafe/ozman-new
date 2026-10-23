@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#faf9f6">
+    <script>{!! file_get_contents(public_path('promoter-theme.js')) !!}</script>
     <title>{{ $__env->yieldContent('title', 'مروّجات أوزمان') }}</title>
     <meta name="description" content="{{ $__env->yieldContent('description', 'اكتشف المحلات من خلال ستوريات وفيديوهات مروّجات أوزمان.') }}">
     <style>{!! file_get_contents(public_path('promoter-social.css')) !!}</style>
@@ -10,7 +11,7 @@
 <body>
 <header class="social-header"><div class="social-wrap header-row">
     <a class="social-brand" href="{{ route('promoters.index') }}"><span class="brand-mark">O<span>·</span></span><span>Ozman <b>Creators</b><small>حكايات من محلاتنا</small></span></a>
-    <nav aria-label="تنقل المروّجات"><a href="{{ route('promoters.index') }}">اكتشف المروّجات</a><a href="{{ route('home') }}">أوزمان ↗</a><a class="button small" href="{{ route('promoter.dashboard') }}">{{ auth()->user()?->isPromoter() ? 'لوحتي' : 'دخول المروّجة' }}</a></nav>
+    <nav aria-label="تنقل المروّجات"><a href="{{ route('promoters.index') }}">اكتشف المروّجات</a><a href="{{ route('home') }}">أوزمان ↗</a><a class="button small" href="{{ route('promoter.dashboard') }}">{{ auth()->user()?->isPromoter() ? 'لوحتي' : 'دخول المروّجة' }}</a><button type="button" class="theme-toggle" id="promoterThemeToggle" aria-label="الوضع الداكن" aria-pressed="false"><span aria-hidden="true">☾</span><span data-theme-label>Dark</span></button></nav>
 </div></header>
 <main class="social-wrap">
     @if(session('status'))<div class="notice" role="status">{{ session('status') }}</div>@endif

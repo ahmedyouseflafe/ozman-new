@@ -5,3 +5,24 @@
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
 
 .avatar-ring,.story-ring{display:flex;align-items:center;justify-content:center;overflow:hidden}.avatar-ring img,.story-ring img{display:block;min-width:0;min-height:0;flex-shrink:1;aspect-ratio:1}
+
+.theme-toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font-size:12px;white-space:nowrap}.theme-toggle>[aria-hidden]{font-size:19px;line-height:1}
+:root[data-theme="dark"]{color-scheme:dark;--paper:#17131d;--ink:#f2edf6;--muted:#b5aabd;--line:#403549;--purple:#c4a1f0;--wash:#32273e;--lime:#e4ecaf}
+[data-theme="dark"] .social-header{background:#201a27}
+[data-theme="dark"] .profile-hero{background:linear-gradient(115deg,#352641,#241d2c)}
+[data-theme="dark"] .hero-decoration{color:#695078;opacity:.45}
+[data-theme="dark"] .bio{color:#cec0d7}
+[data-theme="dark"] .profile-stats{border-color:var(--line)}
+[data-theme="dark"] :is(.screen-grid,.post-card,.creator-card,.panel){background:#231c2b}
+[data-theme="dark"] :is(.button:not(.outline),.brand-mark){color:#201329}
+[data-theme="dark"] :is(.story-ring,.playlist-thumb,.post-visual){background:#382c43}
+[data-theme="dark"] .playlist-item.active{border-color:#806496}
+[data-theme="dark"] .empty-state{background:#282031;border-color:#655173}
+[data-theme="dark"] :is(input:not([type=radio]):not([type=checkbox]),textarea,select){background:#19141f;border-color:#51435e;color:var(--ink)}
+[data-theme="dark"] .upload-area{background:#2d2337;border-color:#79618d}
+[data-theme="dark"] .upload-area input{background:#19141f!important}
+[data-theme="dark"] .notice{background:#20392d;color:#b5e4c3}
+[data-theme="dark"] .notice.error{background:#432533;color:#ffc1ce}
+[data-theme="dark"] .danger{color:#ffadbd}
+[data-theme="dark"] .media-status{color:#ffadbd!important}
+@media(max-width:600px){.social-header nav{flex-basis:100%;justify-content:flex-start}.theme-toggle{margin-inline-start:auto}}
