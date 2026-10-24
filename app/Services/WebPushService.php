@@ -12,11 +12,28 @@ use Illuminate\Support\Facades\Schema;
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\VAPID;
 use Minishlink\WebPush\WebPush;
+use Psr\Http\Client\ClientInterface;
 use RuntimeException;
 use Throwable;
 
 class WebPushService
 {
+    public function __construct(private ?ClientInterface $httpClient = null) {}
+
+    private function transport(array $options): WebPush
+    {
+        return new WebPush(['VAPID' => $this->vapidConfiguration()], $options,
+            $this->httpClient ?? new \GuzzleHttp\Client(['timeout' => 12, 'connect_timeout' => 5, 'allow_redirects' => false]));
+    }
+
+    public function verifyConfiguration(): void
+    {
+        $keys = VAPID::validate($this->vapidConfiguration());
+        // Exercise signing without making an HTTP request or exposing credentials.
+        VAPID::getVapidHeaders('https://fcm.googleapis.com', $keys['subject'], $keys['publicKey'],
+            $keys['privateKey'], \Minishlink\WebPush\ContentEncoding::aes128gcm);
+    }
+
     public function publicKey(): string
     {
         return $this->vapidConfiguration()['publicKey'];
@@ -24,8 +41,7 @@ class WebPushService
 
     public function sendAdminDevice(\App\Models\AdminPushSubscription $subscription, array $payload): string
     {
-        $push = new WebPush(['VAPID' => $this->vapidConfiguration()], ['TTL' => 86400, 'urgency' => 'high'],
-            new \GuzzleHttp\Client(['timeout' => 12, 'connect_timeout' => 5, 'allow_redirects' => false]));
+        $push = $this->transport(['TTL' => 86400, 'urgency' => 'high']);
         $report = $push->sendOneNotification(new Subscription($subscription->endpoint, $subscription->public_key,
             $subscription->auth_token, $subscription->content_encoding),
             json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
@@ -134,10 +150,7 @@ class WebPushService
 
     private function deliver(iterable $subscriptions, string $payload, string $subscriptionModel, array $logContext): int
     {
-        $webPush = new WebPush(
-            ['VAPID' => $this->vapidConfiguration()],
-            ['TTL' => 300, 'urgency' => 'high', 'batchSize' => 100],
-        );
+        $webPush = $this->transport(['TTL' => 300, 'urgency' => 'high', 'batchSize' => 100]);
         $webPush->setReuseVAPIDHeaders(true);
 
         foreach ($subscriptions as $storedSubscription) {
@@ -181,6 +194,9 @@ class WebPushService
         $configuredPublicKey = config('services.web_push.public_key');
         $configuredPrivateKey = config('services.web_push.private_key');
 
+        if (filled($configuredPublicKey) !== filled($configuredPrivateKey)) {
+            throw new RuntimeException('Both WEB_PUSH_PUBLIC_KEY and WEB_PUSH_PRIVATE_KEY must be configured together.');
+        }
         if (filled($configuredPublicKey) && filled($configuredPrivateKey)) {
             return [
                 'subject' => $this->subject(),
@@ -231,12 +247,13 @@ class WebPushService
         try {
             $keys = json_decode((string) file_get_contents($path), true, flags: JSON_THROW_ON_ERROR);
         } catch (Throwable) {
-            return null;
+            throw new RuntimeException('The existing Web Push key file cannot be read. Restore it; do not rotate subscribed devices silently.');
         }
 
-        return is_array($keys) && filled($keys['publicKey'] ?? null) && filled($keys['privateKey'] ?? null)
-            ? $keys
-            : null;
+        if (! is_array($keys) || blank($keys['publicKey'] ?? null) || blank($keys['privateKey'] ?? null)) {
+            throw new RuntimeException('The existing Web Push key file is incomplete. Restore the original key pair.');
+        }
+        return $keys;
     }
 
     private function generateVapidKeys(): array
@@ -261,8 +278,8 @@ class WebPushService
             }
 
             return [
-                'publicKey' => $this->base64UrlEncode("\x04".$ec['x'].$ec['y']),
-                'privateKey' => $this->base64UrlEncode($ec['d']),
+                'publicKey' => $this->base64UrlEncode("\x04".str_pad($ec['x'], 32, "\x00", STR_PAD_LEFT).str_pad($ec['y'], 32, "\x00", STR_PAD_LEFT)),
+                'privateKey' => $this->base64UrlEncode(str_pad($ec['d'], 32, "\x00", STR_PAD_LEFT)),
             ];
         }
     }

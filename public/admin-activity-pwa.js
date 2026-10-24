@@ -44,21 +44,15 @@
         $('adminPushDisable').hidden = !active;
     }
     async function api(path, method = 'POST', data) {
-        const response = await fetch(config.base+'/push/'+path, {method, credentials: 'same-origin', cache: 'no-store',
-            headers: {Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': config.csrf},
-            ...(data ? {body: JSON.stringify(data)} : {}), signal: AbortSignal.timeout(25000)});
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(response.status === 401 || response.status === 419 ? 'انتهت الجلسة. حدّث الصفحة وسجّل الدخول إذا طُلب.'
-            : response.status === 403 ? 'هذه الميزة للإدارة الرئيسية فقط.'
-            : response.status === 409 ? 'الجهاز مربوط بحساب إدارة آخر. سجّل الخروج من الحساب السابق أولًا.'
-            : body.message || 'تعذّر الاتصال بخدمة الإشعارات. حاول مجددًا.');
-        return body;
+        try {
+            return await window.OzmanWebPush.request(config.base+'/push/'+path, {method, data});
+        } catch (error) { throw new Error(window.OzmanWebPush.message(error)); }
     }
-    function decode(value) {
-        const raw = atob(value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4-value.length%4)%4));
-        return Uint8Array.from(raw, c => c.charCodeAt(0));
+    async function save() {
+        const result = await api('subscription', 'POST', {...subscription.toJSON(), device_name: ios ? 'iPhone / iPad' : /Android/.test(navigator.userAgent) ? 'Android' : 'متصفح الإدارة'});
+        if (result.registered !== true) throw new Error('السيرفر لم يؤكد حفظ الاشتراك. حاول مجددًا.');
+        return result;
     }
-    function save() {return api('subscription', 'POST', {...subscription.toJSON(), device_name: ios ? 'iPhone / iPad' : /Android/.test(navigator.userAgent) ? 'Android' : 'متصفح الإدارة'});}
     async function prepare() {
         if (ios && !standalone()) {
             status('ثبّت اللوحة على الشاشة الرئيسية وافتحها من الأيقونة لتفعيل إشعارات الآيفون.');
@@ -67,16 +61,16 @@
         if (!isSecureContext || !('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
             status('إشعارات الخلفية غير مدعومة هنا. افتح اللوحة في متصفح حديث أو من التطبيق المثبّت.');return;
         }
-        registration = await navigator.serviceWorker.register('/admin/analytics/sw.js', {scope: '/admin/', updateViaCache: 'none'});
-        if (!registration.active) await new Promise((resolve, reject) => {
-            const worker = registration.installing || registration.waiting;
-            if (!worker) {reject(new Error('تعذّر تهيئة تطبيق الإدارة. حدّث الصفحة.'));return;}
-            const timer = setTimeout(() => reject(new Error('تهيئة التطبيق تأخرت. حدّث الصفحة وحاول ثانية.')), 15000);
-            const check = () => {if(worker.state === 'activated'){clearTimeout(timer);resolve();}else if(worker.state === 'redundant'){clearTimeout(timer);reject(new Error('تعذّر تهيئة التطبيق.'));}};
-            worker.addEventListener('statechange', check);check();
-        });
+        registration = await window.OzmanWebPush.register('/admin/analytics/sw.js', '/admin/');
         key = (await api('key', 'GET')).key;
         subscription = await registration.pushManager.getSubscription();
+        if (subscription?.options?.applicationServerKey) {
+            const actual = btoa(String.fromCharCode(...new Uint8Array(subscription.options.applicationServerKey))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            if (actual !== key.replace(/=+$/, '')) {
+                controls(false);$('adminPushEnable').disabled = false;
+                status('تغيّر إعداد الإشعارات. اضغط تفعيل لتحديث اشتراك هذا الجهاز.');return;
+            }
+        }
         if (subscription && Notification.permission === 'granted') {
             const device = await api('status', 'POST', {endpoint: subscription.endpoint});
             controls(device.registered);
@@ -91,22 +85,16 @@
     async function run(action) {
         if (busy) return;busy = true;
         for (const id of ['adminPushEnable','adminPushTest','adminPushDisable']) $(id).disabled = true;
-        try {await action();} catch (error) {status(error.message || 'تعذّر إكمال العملية. حاول ثانية.');}
+        try {await action();} catch (error) {status((error.code ? window.OzmanWebPush.message(error) : error.message) || 'تعذّر إكمال العملية. حاول ثانية.');}
         finally {busy = false;for (const id of ['adminPushEnable','adminPushTest','adminPushDisable']) $(id).disabled = false;}
     }
     $('adminPushEnable').onclick = () => run(async () => {
         // Permission must be requested directly during the tap, before any network await (Safari).
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {status('لم يتم السماح بالإشعارات. يمكنك تفعيلها لاحقًا من إعدادات الجهاز.');return;}
-        subscription = await registration.pushManager.getSubscription();
-        if (subscription?.options.applicationServerKey) {
-            const actual = new Uint8Array(subscription.options.applicationServerKey), expected = decode(key);
-            if (actual.length !== expected.length || actual.some((b,i) => b !== expected[i])) {
-                await api('subscription', 'DELETE', {endpoint: subscription.endpoint});
-                await subscription.unsubscribe();subscription = null;
-            }
-        }
-        subscription ||= await registration.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: decode(key)});
+        registration = await window.OzmanWebPush.register('/admin/analytics/sw.js', '/admin/');
+        key = (await api('key', 'GET')).key;
+        subscription = await window.OzmanWebPush.subscription(registration, key);
         await save();controls(true);status('تم التفعيل. اضغط «إرسال إشعار تجريبي» وتأكد من ظهوره على الجوال.');
     });
     $('adminPushTest').onclick = () => run(async () => {const result = await api('test', 'POST', {endpoint: subscription.endpoint});status(result.message);});
@@ -114,5 +102,9 @@
         await api('subscription', 'DELETE', {endpoint: subscription.endpoint});
         await subscription.unsubscribe();subscription = null;controls(false);status('تم إيقاف إشعارات هذا الجهاز. باقي أجهزتك تبقى مفعّلة.');
     });
-    prepare().catch(error => {status(error.message || 'تعذّر تجهيز الإشعارات. حدّث الصفحة وحاول مجددًا.');});
+    prepare().catch(error => {
+        controls(false);
+        $('adminPushEnable').disabled = false;
+        status((error.code ? window.OzmanWebPush.message(error) : error.message) || 'تعذّر تجهيز الإشعارات. حدّث الصفحة وحاول مجددًا.');
+    });
 })();

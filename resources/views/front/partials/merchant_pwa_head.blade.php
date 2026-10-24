@@ -20,6 +20,7 @@
 
 @if($merchantPwaEnabled || $offerNotificationsEnabled)
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @include('front.partials.web_push_client')
 @endif
 
 @if($customerPwaEnabled)

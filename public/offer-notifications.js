@@ -14,63 +14,25 @@
     const iosSkipped = () => {
         try { return ios && sessionStorage.getItem(iosSkipKey) === '1'; } catch (_) { return false; }
     };
-    const bounded = promise => new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error('offer-push-timeout')), 15000);
-        Promise.resolve(promise).then(value => { clearTimeout(timer);resolve(value); }, error => { clearTimeout(timer);reject(error); });
-    });
-    const registrationPromise = supported ? navigator.serviceWorker.register(config.serviceWorkerUrl, { scope: '/' }) : Promise.resolve(null);
+    const push = window.OzmanWebPush;
+    const registrationPromise = supported ? push.register(config.serviceWorkerUrl) : Promise.resolve(null);
     registrationPromise.catch((error) => console.error('Unable to register the offer notification service worker.', error));
 
-    const urlBase64ToUint8Array = (value) => {
-        const padding = '='.repeat((4 - value.length % 4) % 4);
-        const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
-        const raw = window.atob(base64);
-        return Uint8Array.from([...raw].map((character) => character.charCodeAt(0)));
-    };
-
-    const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
-
-    const storeSubscription = async (subscription) => {
-        const serialized = subscription.toJSON();
-        serialized.contentEncoding = window.PushManager?.supportedContentEncodings?.[0] || 'aes128gcm';
-
-        const response = await fetch(config.subscribeUrl, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken(),
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify({
-                source_shop_id: config.sourceShopId,
-                subscription: serialized,
-            }),
-        });
-
-        if (!response.ok) throw new Error(`offer-subscription:${response.status}`);
-        return subscription;
-    };
-
+    let subscribing;
     const subscribe = async () => {
         if (!supported) throw new Error('offer-push-unsupported');
-        const registration = await bounded(registrationPromise);
-        let subscription = await registration.pushManager.getSubscription();
-
-        if (!subscription) {
-            subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(config.vapidPublicKey),
-            });
-        }
-
-        await bounded(storeSubscription(subscription));
-        window.dispatchEvent(new Event('ozman:offer-push-ready'));
-        return subscription;
+        if (subscribing) return subscribing;
+        subscribing = (async () => {
+            const registration = await push.register(config.serviceWorkerUrl);
+            const subscription = await push.subscription(registration, config.vapidPublicKey);
+            await push.save(config.subscribeUrl, subscription, { source_shop_id: config.sourceShopId });
+            window.dispatchEvent(new Event('ozman:offer-push-ready'));
+            return subscription;
+        })().finally(() => { subscribing = null; });
+        return subscribing;
     };
 
-    const mountPrompt = () => {
+    const mountPrompt = (initialError) => {
         if (!config.showPrompt || iosSkipped() || document.querySelector('[data-offer-push-prompt]')) {
             return;
         }
@@ -153,6 +115,10 @@
             return false;
         };
         explain();
+        if (initialError && supported && permission() === 'granted') {
+            status.dataset.state = 'error';
+            status.textContent = push.message(initialError);
+        }
 
         enableButton.addEventListener('click', async () => {
             if (!supported || (ios && !standalone)) { window.location.reload();return; }
@@ -168,13 +134,13 @@
                     return;
                 }
 
-                await bounded(subscribe());
+                await subscribe();
                 status.dataset.state = 'success';
                 status.textContent = config.successLabel;
             } catch (error) {
                 console.error('Unable to enable offer notifications.', error);
                 status.dataset.state = 'error';
-                status.textContent = config.errorLabel;
+                status.textContent = push.message(error);
             } finally {
                 enableButton.disabled = false;
             }
@@ -184,7 +150,7 @@
     const start = () => {
         if (permission() === 'granted') {
             // Browser permission alone does not mean the server has a subscription.
-            subscribe().catch((error) => { console.error('Unable to refresh offer notification subscription.', error);mountPrompt(); });
+            subscribe().catch((error) => { console.error('Unable to refresh offer notification subscription.', error);mountPrompt(error); });
             return;
         }
 

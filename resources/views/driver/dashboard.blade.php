@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @include('front.partials.web_push_client')
     <title>طلبات التوصيل | {{ $driver->shop->name }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -92,10 +93,6 @@
         notificationMessage.textContent = message;
         notificationMessage.classList.toggle('error', error);
     };
-    const decodeKey = key => {
-        const base64 = (key + '='.repeat((4 - key.length % 4) % 4)).replace(/-/g,'+').replace(/_/g,'/');
-        return Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-    };
     notificationButton.addEventListener('click', async () => {
         if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
             showMessage('هذا المتصفح لا يدعم إشعارات الطلبات. أبقِ الصفحة مفتوحة لرؤية الطلبات مباشرة.', true); return;
@@ -107,16 +104,12 @@
             const keyResponse = await fetch(keyUrl, {headers:{Accept:'application/json'}});
             if (!keyResponse.ok) throw new Error('تعذّر تجهيز مفتاح الإشعارات.');
             const {public_key: publicKey} = await keyResponse.json();
-            const registration = await navigator.serviceWorker.register(workerUrl, {scope:'/'});
-            let subscription = await registration.pushManager.getSubscription();
-            if (!subscription) subscription = await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decodeKey(publicKey)});
-            const serialized = subscription.toJSON();
-            serialized.contentEncoding = window.PushManager?.supportedContentEncodings?.[0] || 'aes128gcm';
-            const response = await fetch(subscribeUrl, {method:'POST',credentials:'same-origin',headers:{Accept:'application/json','Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content},body:JSON.stringify({subscription:serialized})});
-            if (!response.ok) throw new Error('تعذّر ربط الجهاز بإشعارات المندوب.');
+            const registration = await window.OzmanWebPush.register(workerUrl);
+            const subscription = await window.OzmanWebPush.subscription(registration, publicKey);
+            await window.OzmanWebPush.save(subscribeUrl, subscription);
             showMessage('تم تفعيل إشعارات طلبات التوصيل لهذا الحساب.');
             notificationButton.innerHTML = '<i class="ti ti-bell-check"></i> الإشعارات مفعّلة';
-        } catch (error) { showMessage(error.message || 'تعذّر تفعيل الإشعارات.', true); }
+        } catch (error) { showMessage((error.code ? window.OzmanWebPush.message(error) : error.message) || 'تعذّر تفعيل الإشعارات.', true); }
         finally { notificationButton.disabled = false; }
     });
 })();

@@ -6,6 +6,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @include('front.partials.web_push_client')
     <title>إدارة مطعم {{ $shop->name }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1465,12 +1466,6 @@
             let statusUpdating = false;
             let feedController = null;
 
-            const decodePushKey = key => {
-                const base64 = (key + '='.repeat((4 - key.length % 4) % 4))
-                    .replace(/-/g, '+').replace(/_/g, '/');
-                return Uint8Array.from(atob(base64), character => character.charCodeAt(0));
-            };
-
             async function enableBackgroundNotifications(requestPermission = false) {
                 if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
                     throw new Error('هذا المتصفح لا يدعم إشعارات الخلفية.');
@@ -1491,30 +1486,12 @@
                 if (!keyResponse.ok) throw new Error('تعذّر تجهيز إشعارات الخلفية.');
                 const { public_key: publicKey } = await keyResponse.json();
 
-                const registration = await navigator.serviceWorker.register(serviceWorkerUrl, { scope: '/' });
-                let subscription = await registration.pushManager.getSubscription();
-                if (!subscription) {
-                    subscription = await registration.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: decodePushKey(publicKey),
-                    });
-                }
-                const serialized = subscription.toJSON();
-                serialized.contentEncoding = window.PushManager?.supportedContentEncodings?.[0] || 'aes128gcm';
-                const saveResponse = await fetch(pushSubscriptionUrl, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        Accept: 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                    },
-                    body: JSON.stringify({
-                        shop_id: {{ (int) $shop->id }},
-                        subscription: serialized,
-                    }),
-                });
-                if (!saveResponse.ok) throw new Error('تعذّر ربط هذا الجهاز بإشعارات المطعم.');
+                try {
+                    const registration = await window.OzmanWebPush.register(serviceWorkerUrl);
+                    const subscription = await window.OzmanWebPush.subscription(registration, publicKey);
+                    await window.OzmanWebPush.save(pushSubscriptionUrl, subscription, { shop_id: {{ (int) $shop->id }} });
+                } catch (error) { throw new Error(window.OzmanWebPush.message(error)); }
+
             }
 
             const periodLabels = {

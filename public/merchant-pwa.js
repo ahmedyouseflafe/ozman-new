@@ -84,34 +84,8 @@
         return;
     }
 
-    const registrationPromise = navigator.serviceWorker.register(config.serviceWorkerUrl, { scope: '/' });
-
-    const urlBase64ToUint8Array = (value) => {
-        const padding = '='.repeat((4 - value.length % 4) % 4);
-        const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
-        const raw = window.atob(base64);
-        return Uint8Array.from([...raw].map((character) => character.charCodeAt(0)));
-    };
-
-    const storeSubscription = async (subscription) => {
-        const serialized = subscription.toJSON();
-        serialized.contentEncoding = window.PushManager?.supportedContentEncodings?.[0] || 'aes128gcm';
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-        const response = await fetch(config.subscribeUrl, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify({ shop_id: config.shopId, subscription: serialized }),
-        });
-
-        if (!response.ok) throw new Error(`subscription:${response.status}`);
-        return subscription;
-    };
+    const push = window.OzmanWebPush;
+    const registrationPromise = push.register(config.serviceWorkerUrl);
 
     const subscribeToNotifications = async (askPermission = true) => {
         if (!('Notification' in window) || !('PushManager' in window)) {
@@ -127,16 +101,9 @@
         }
 
         setStatus('جارٍ ربط الإشعارات بهذا المحل…', 'loading');
-        const registration = await registrationPromise;
-        let subscription = await registration.pushManager.getSubscription();
-        if (!subscription) {
-            subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(config.vapidPublicKey),
-            });
-        }
-
-        await storeSubscription(subscription);
+        const registration = await push.register(config.serviceWorkerUrl);
+        const subscription = await push.subscription(registration, config.vapidPublicKey);
+        await push.save(config.subscribeUrl, subscription, { shop_id: config.shopId });
         notificationButtons.forEach((button) => {
             button.classList.add('enabled');
             button.innerHTML = '<span aria-hidden="true">✓</span> الإشعارات مفعّلة';
@@ -189,7 +156,7 @@
             await subscribeToNotifications(true);
         } catch (error) {
             console.error('Unable to enable merchant PWA notifications.', error);
-            setStatus('تعذر تفعيل الإشعارات. تحقق من الاتصال وحاول مجددًا.', 'error');
+            setStatus(push.message(error), 'error');
         }
     }));
 

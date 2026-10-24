@@ -59,5 +59,6 @@
 @include('admin.analytics.notifications')
 <script>window.OzmanAnalyticsConfig = @json(['base' => url('/admin/analytics'), 'ready' => $ready]);</script>
 <script>{!! file_get_contents(public_path('admin-shop-analytics.js')) !!}</script>
+@include('front.partials.web_push_client')
 <script>{!! file_get_contents(public_path('admin-activity-pwa.js')) !!}</script>
 </body></html>
