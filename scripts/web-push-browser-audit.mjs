@@ -22,6 +22,12 @@ const server=createServer(async(req,res)=>{
     <script>
     window.OZMAN_OFFER_NOTIFICATIONS=${JSON.stringify({showPrompt:true,title:'فعّل إشعارات العروض',body:'عروض كل المحلات',allowLabel:'تفعيل الإشعارات',iosLabel:'يمكنك التخطي',iosBodyLabel:'عروض اختيارية',skipLabel:'تخطي ومتابعة التصفح',deniedLabel:'اسمح بالإشعارات من المتصفح',requestingLabel:'جارٍ التفعيل',serviceWorkerUrl:'/merchant-pwa-sw.js',subscribeUrl:'/subscribe',vapidPublicKey:key,sourceShopId:1})};
     window.providerCalls=0;
+    if(location.search.includes('hung')) {
+        window.permissionCalls=0;
+        Notification.requestPermission=()=>{window.permissionCalls++;return new Promise(resolve=>{window.resolvePermission=resolve;});};
+        const originalTimer=window.setTimeout.bind(window);
+        window.setTimeout=(fn,ms,...args)=>originalTimer(fn,ms===20000?100:ms,...args);
+    }
     PushManager.prototype.getSubscription=async()=>null;
     PushManager.prototype.subscribe=async()=>{window.providerCalls++;return {toJSON:()=>({endpoint:'https://push.example.test/browser',keys:{auth:'test',p256dh:'test'}})};};
     </script><script src="/web-push-client.js"></script><script src="/offer-notifications.js"></script></body></html>`);
@@ -44,7 +50,7 @@ try{
         await send('Emulation.setDeviceMetricsOverride',{width,height:800,deviceScaleFactor:1,mobile:width<500});
         await send('Page.navigate',{url:origin+'/?width='+width});
         await until('!!document.querySelector("[data-offer-push-prompt]")?.open');
-        assert.equal(await evaluate(`(()=>{const r=document.querySelector('.offer-push-card').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&!document.querySelector('[data-offer-push-skip]');})()`),true);
+        assert.equal(await evaluate(`(()=>{const r=document.querySelector('.offer-push-card').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&document.querySelector('[data-offer-push-skip]').hidden;})()`),true);
         await send('Browser.setPermission',{permission:{name:'notifications'},setting:'granted',origin});
         await evaluate(`document.querySelector('[data-offer-push-enable]').click()`);
         await until(`!document.querySelector('[data-offer-push-prompt]')`);
@@ -54,6 +60,33 @@ try{
         console.log('PASS real worker, CSRF recovery, saved subscription, dialog closes at '+width+'px');
     }
     assert.equal(saved,3);assert.equal(refreshed,3);
+    await send('Browser.setPermission',{permission:{name:'notifications'},setting:'denied',origin});
+    await send('Page.navigate',{url:origin+'/?denied'});
+    await until('!!document.querySelector("[data-offer-push-prompt]")?.open');
+    assert.equal(await evaluate(`document.querySelector('[data-offer-push-skip]').hidden`),false);
+    await evaluate(`document.querySelector('[data-offer-push-enable]').click()`);
+    assert.equal(await evaluate('window.providerCalls'),0);
+    await send('Browser.setPermission',{permission:{name:'notifications'},setting:'granted',origin});
+    await evaluate(`window.dispatchEvent(new Event('focus'));document.querySelector('[data-offer-push-enable]').click()`);
+    await until(`!document.querySelector('[data-offer-push-prompt]')`);
+    assert.equal(saved,4);console.log('PASS blocked permission recovery after browser settings change');
+    await send('Browser.setPermission',{permission:{name:'notifications'},setting:'prompt',origin});
+    await send('Page.navigate',{url:origin+'/?hung'});
+    await until('!!document.querySelector("[data-offer-push-prompt]")?.open');
+    await evaluate(`document.querySelector('[data-offer-push-enable]').click()`);
+    await until(`!document.querySelector('[data-offer-push-enable]').disabled`);
+    assert.equal(await evaluate(`document.querySelector('[data-offer-push-status]').dataset.state`),'error');
+    await evaluate(`document.querySelector('[data-offer-push-enable]').click()`);
+    assert.equal(await evaluate('window.permissionCalls'),1);
+    await evaluate(`document.querySelector('[data-offer-push-skip]').click();window.resolvePermission('granted')`);
+    assert.equal(await evaluate('window.providerCalls'),0);
+    assert.equal(await evaluate('document.body.style.overflow'),'');
+    await send('Page.navigate',{url:origin+'/?another-shop'});
+    await until('!!window.OzmanOfferNotifications');
+    await wait(100);
+    assert.equal(await evaluate(`!!document.querySelector('[data-offer-push-prompt]')`),false);
+    await evaluate(`sessionStorage.clear()`);
+    console.log('PASS hanging permission timeout, single prompt, skip across shops, no false activation');
     await send('Emulation.setUserAgentOverride',{userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1',platform:'iPhone'});
     await send('Browser.setPermission',{permission:{name:'notifications'},setting:'prompt',origin});
     await send('Page.navigate',{url:origin+'/?ios'});
@@ -61,5 +94,5 @@ try{
     assert.equal(await evaluate(`document.querySelector('[data-offer-push-enable]').hidden`),true);
     await evaluate(`document.querySelector('[data-offer-push-skip]').click()`);
     await until(`!document.querySelector('[data-offer-push-prompt]')`);
-    assert.equal(saved,3);console.log('PASS iOS skip without installation or subscription');
+    assert.equal(saved,4);console.log('PASS iOS skip without installation or subscription');
 }finally{await send('Emulation.setUserAgentOverride',{userAgent:''});ws.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}

@@ -11,14 +11,23 @@
     const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
     const permission = () => supported ? Notification.permission : 'unsupported';
     const iosSkipKey = 'ozman.offer-push.ios-skipped';
+    const skipKey = 'ozman.offer-push.skipped';
     const iosSkipped = () => {
-        try { return ios && sessionStorage.getItem(iosSkipKey) === '1'; } catch (_) { return false; }
+        try { return sessionStorage.getItem(skipKey) === '1' || (ios && sessionStorage.getItem(iosSkipKey) === '1'); } catch (_) { return false; }
     };
     const push = window.OzmanWebPush;
     const registrationPromise = supported ? push.register(config.serviceWorkerUrl) : Promise.resolve(null);
     registrationPromise.catch((error) => console.error('Unable to register the offer notification service worker.', error));
 
-    let subscribing;
+    let subscribing, permissionRequest;
+    const requestPermission = () => {
+        // Keep the native call inside the click gesture; never stack prompts.
+        if (!permissionRequest) {
+            permissionRequest = Promise.resolve(Notification.requestPermission())
+                .finally(() => { permissionRequest = null; });
+        }
+        return permissionRequest;
+    };
     const subscribe = async () => {
         if (!supported) throw new Error('offer-push-unsupported');
         if (subscribing) return subscribing;
@@ -69,7 +78,7 @@
                 <p>${ios ? config.iosBodyLabel : config.body}</p>
                 <div class="offer-push-actions">
                     <button type="button" data-offer-push-enable>${config.allowLabel}</button>
-                    ${ios ? `<button type="button" data-offer-push-skip>${config.skipLabel}</button>` : ''}
+                    <button type="button" data-offer-push-skip ${ios ? '' : 'hidden'}>${config.skipLabel}</button>
                 </div>
                 <p class="offer-push-status" data-offer-push-status role="status" aria-live="polite"></p>
             </section>
@@ -79,70 +88,102 @@
         document.body.style.overflow = 'hidden';
         backdrop.showModal();
         let finished = false;
+        let attempt = 0, attemptTimer;
         const finish = () => {
             if (finished) return;
             finished = true;
+            attempt++;clearTimeout(attemptTimer);
+            window.removeEventListener('focus', recheck);
+            document.removeEventListener('visibilitychange', recheck);
             backdrop.close();backdrop.remove();document.body.style.overflow = previousOverflow;window.removeEventListener('ozman:offer-push-ready', finish);
         };
         const skip = () => {
-            try { sessionStorage.setItem(iosSkipKey, '1'); } catch (_) { /* Browsing still resumes without storage. */ }
+            try { sessionStorage.setItem(skipKey, '1'); } catch (_) { /* Browsing still resumes without storage. */ }
             finish();
         };
         backdrop.querySelector('[data-offer-push-skip]')?.addEventListener('click', skip);
-        backdrop.addEventListener('cancel', event => { event.preventDefault();if (ios) skip(); });
+        backdrop.addEventListener('cancel', event => { event.preventDefault();if (!skipButton.hidden) skip(); });
         window.addEventListener('ozman:offer-push-ready', finish, { once: true });
 
         const enableButton = backdrop.querySelector('[data-offer-push-enable]');
+        const skipButton = backdrop.querySelector('[data-offer-push-skip]');
         const status = backdrop.querySelector('[data-offer-push-status]');
 
         const explain = () => {
             if (ios && (!standalone || !supported)) {
                 status.textContent = config.iosLabel;
                 enableButton.hidden = true;
+                skipButton.hidden = false;
                 return true;
             }
             if (!supported) {
                 status.textContent = config.unsupportedLabel;
-                enableButton.textContent = config.recheckLabel;
+                enableButton.hidden = true;
+                skipButton.hidden = false;
                 return true;
             }
             if (permission() === 'denied') {
                 status.textContent = config.deniedLabel;
                 enableButton.textContent = config.recheckLabel;
+                skipButton.hidden = false;
                 return true;
             }
             enableButton.textContent = config.allowLabel;
             return false;
         };
+        function recheck() {
+            if (!finished && !enableButton.disabled && !document.hidden) explain();
+        }
+        window.addEventListener('focus', recheck);
+        document.addEventListener('visibilitychange', recheck);
         explain();
         if (initialError && supported && permission() === 'granted') {
             status.dataset.state = 'error';
             status.textContent = push.message(initialError);
+            skipButton.hidden = false;
         }
 
         enableButton.addEventListener('click', async () => {
             if (!supported || (ios && !standalone)) { window.location.reload();return; }
             if (explain()) return;
             enableButton.disabled = true;
+            skipButton.hidden = false;
+            status.dataset.state = '';
             status.textContent = config.requestingLabel;
+            const currentAttempt = ++attempt;
+            // Native permission prompts can remain unresolved indefinitely.
+            // Release the UI even when the browser/provider cannot be cancelled.
+            attemptTimer = setTimeout(() => {
+                if (finished || currentAttempt !== attempt) return;
+                attempt++;
+                enableButton.disabled = false;
+                status.dataset.state = 'error';
+                status.textContent = config.timeoutLabel || config.errorLabel;
+            }, 20000);
 
             try {
-                const result = permission() === 'granted' ? 'granted' : await Notification.requestPermission();
+                const result = permission() === 'granted' ? 'granted' : await requestPermission();
+                if (finished || currentAttempt !== attempt) return;
                 if (result !== 'granted') {
                     status.dataset.state = 'error';
-                    status.textContent = config.deniedLabel;
+                    status.textContent = result === 'denied' ? config.deniedLabel : (config.dismissedLabel || config.deniedLabel);
                     return;
                 }
 
                 await subscribe();
+                if (finished || currentAttempt !== attempt) return;
                 status.dataset.state = 'success';
                 status.textContent = config.successLabel;
             } catch (error) {
+                if (finished || currentAttempt !== attempt) return;
                 console.error('Unable to enable offer notifications.', error);
                 status.dataset.state = 'error';
                 status.textContent = push.message(error);
             } finally {
-                enableButton.disabled = false;
+                if (currentAttempt === attempt) {
+                    clearTimeout(attemptTimer);
+                    enableButton.disabled = false;
+                }
             }
         });
     };
