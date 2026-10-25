@@ -109,4 +109,38 @@ class PromoterFollowTest extends TestCase
         $user->delete();
         $this->assertDatabaseCount('promoter_followers', 0);
     }
+
+    public function test_owner_identity_handles_string_ids_and_composer_is_private(): void
+    {
+        $profile = $this->profile();
+        $profile->user_id = (string) $profile->user_id;
+        $this->assertTrue($profile->isOwnedBy($profile->user));
+        $this->assertTrue($profile->canBeManagedBy($profile->user));
+        $this->actingAs($profile->user);
+        $this->assertStringNotContainsString('promoterFollowForm', view('promoters.follow-button', ['profile' => $profile, 'following' => false])->render());
+        $response = $this->actingAs($profile->user)->get($profile->publicUrl());
+        $response->assertOk()->assertSee('id="profileComposer"', false)->assertSee('data-compose="story"', false)->assertDontSee('id="promoterFollowForm"', false);
+        if (getenv('OZMAN_PROFILE_PREVIEW')) {
+            file_put_contents(storage_path('app/promoter-profile-preview.html'), $response->getContent());
+        }
+        $this->actingAs(User::factory()->create(['role' => 'customer', 'is_active' => true]))
+            ->get($profile->publicUrl())->assertOk()->assertDontSee('id="profileComposer"', false)->assertDontSee('data-compose="story"', false)->assertSee('id="promoterFollowForm"', false);
+        $this->actingAs(User::factory()->create(['role' => 'super_admin', 'is_active' => true]))
+            ->get($profile->publicUrl())->assertOk()->assertSee('id="profileComposer"', false)->assertDontSee('id="promoterFollowForm"', false);
+    }
+
+    public function test_inline_composer_publishes_story_with_expiration_and_enforces_ownership(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $profile = $this->profile();
+        $payload = ['kind' => 'story', 'caption' => 'New story', 'media' => \Illuminate\Http\UploadedFile::fake()->image('story.jpg')];
+        $url = route('promoter.posts.store', $profile);
+        $this->actingAs(User::factory()->create(['role' => 'promoter', 'is_active' => true]))->postJson($url, $payload)->assertForbidden();
+        $this->actingAs($profile->user)->postJson($url, $payload)->assertCreated()->assertJson(['published' => true, 'url' => $profile->publicUrl()]);
+        $post = $profile->posts()->sole();
+        $this->assertSame('story', $post->kind);
+        $this->assertTrue($post->expires_at->equalTo($post->created_at->copy()->addDay()));
+        $this->postJson($url, ['kind' => 'story'])->assertUnprocessable()->assertJsonValidationErrors('media');
+        $this->assertDatabaseCount('promoter_posts', 1);
+    }
 }

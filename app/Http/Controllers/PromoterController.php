@@ -20,7 +20,7 @@ class PromoterController extends Controller
 
     private function manage(Request $request, PromoterProfile $profile): void
     {
-        abort_unless($request->user()->isSuperAdmin() || (int) $profile->user_id === (int) $request->user()->id, 403);
+        abort_unless($profile->canBeManagedBy($request->user()), 403);
     }
 
     public function accounts(Request $request)
@@ -142,6 +142,10 @@ class PromoterController extends Controller
             throw $e;
         }
 
+        if ($request->expectsJson()) {
+            return response()->json(['published' => true, 'url' => $profile->publicUrl()], 201);
+        }
+
         return back()->with('status', $data['kind'] === 'story' ? 'تم نشر الستوري بصفحتك لمدة 24 ساعة.' : 'تم نشر المحتوى بصفحتك.');
     }
 
@@ -186,8 +190,10 @@ class PromoterController extends Controller
         $stories = (clone $visible)->where('kind', 'story')->oldest('id')->get();
         $videos = (clone $visible)->where('kind', 'post')->where('type', 'video')->latest()->limit(30)->get();
         $shopCount = (clone $visible)->whereHas('shop', fn ($q) => $q->where('is_active', true))->distinct()->count('shop_id');
+        $canManage = $profile->canBeManagedBy($request->user());
+        $shops = $canManage ? Shop::where('is_active', true)->orderBy('name')->get(['id', 'name']) : collect();
 
-        return response()->view('promoters.profile', compact('profile', 'posts', 'stories', 'videos', 'shopCount', 'following'))->header('Cache-Control', 'private, no-store');
+        return response()->view('promoters.profile', compact('profile', 'posts', 'stories', 'videos', 'shopCount', 'following', 'canManage', 'shops'))->header('Cache-Control', 'private, no-store');
     }
 
     public function avatar(Request $request, PromoterProfile $profile)

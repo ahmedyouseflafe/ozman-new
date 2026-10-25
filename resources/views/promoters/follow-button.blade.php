@@ -1,4 +1,4 @@
-@if(auth()->id() !== $profile->user_id)
+@if(! $profile->isOwnedBy(auth()->user()) && ! $profile->canBeManagedBy(auth()->user()))
 <div class="follow-control">
     @auth
     <form id="promoterFollowForm" method="post" action="{{ route('promoters.follow.store', $profile) }}" data-login="{{ route('promoters.follow.account', $profile) }}">

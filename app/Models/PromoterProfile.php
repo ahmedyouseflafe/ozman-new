@@ -25,6 +25,16 @@ class PromoterProfile extends Model
         return $this->belongsToMany(User::class, 'promoter_followers')->withTimestamps();
     }
 
+    public function isOwnedBy(?User $user): bool
+    {
+        return $user && (int) $user->id === (int) $this->user_id;
+    }
+
+    public function canBeManagedBy(?User $user): bool
+    {
+        return $user?->is_active && ($user->isSuperAdmin() || ($user->isPromoter() && $this->isOwnedBy($user)));
+    }
+
     public function scopePublished($query)
     {
         return $query->where('is_active', true)->whereHas('user', fn ($q) => $q->where('is_active', true)->where('role', 'promoter'));

@@ -98,7 +98,7 @@
         if (dialog.open) frame = requestAnimationFrame(tick);
     }
     function openViewer(kind, selected, button) {
-        items = kind === 'story' ? data.stories : data.posts;
+        items = kind === 'story' ? data.stories : kind === 'reel' ? data.videos : data.posts;
         if (!items[selected]) return;
         index = selected;isStory = kind === 'story';opener = button;
         player?.pause();oldOverflow = document.body.style.overflow;document.body.style.overflow = 'hidden';
@@ -106,6 +106,7 @@
     }
     document.querySelectorAll('[data-story]').forEach(button => button.addEventListener('click', () => openViewer('story', Number(button.dataset.story), button)));
     document.querySelectorAll('[data-post]').forEach(button => button.addEventListener('click', () => openViewer('post', Number(button.dataset.post), button)));
+    document.querySelectorAll('[data-reel]').forEach(button => button.addEventListener('click', () => openViewer('reel', Number(button.dataset.reel), button)));
     byId('viewerClose').addEventListener('click', () => dialog.close());
     byId('viewerPrevious').addEventListener('click', () => move(-1));
     byId('viewerNext').addEventListener('click', () => move(1));

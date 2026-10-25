@@ -61,7 +61,7 @@ class PromoterFollowController extends Controller
     {
         $this->published($profile);
         abort_unless($request->user()?->is_active, 403);
-        abort_if($request->user()->id === $profile->user_id, 422, 'لا يمكنك متابعة حسابك نفسه.');
+        abort_if($profile->isOwnedBy($request->user()), 422, 'لا يمكنك متابعة حسابك نفسه.');
         // The unique pair and upsert make repeated requests safe, including retries.
         DB::table('promoter_followers')->upsert([
             'promoter_profile_id' => $profile->id, 'user_id' => $request->user()->id,
