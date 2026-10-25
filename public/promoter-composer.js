@@ -18,8 +18,11 @@
     const status = document.getElementById('composerStatus');
     const progress = document.getElementById('composerProgress');
     const close = document.getElementById('composerClose');
-    let objectUrl = null, busy = false, opener = null, overflow = '', videoOnly = false;
+    let objectUrl = null, busy = false, opener = null, overflow = '', videoOnly = false, selectedFile = null;
     const types = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'];
+    const camera = new window.OzmanCreatorCamera(dialog.querySelector('[data-camera]'), file => selectFile(file), text => status.textContent = text, active => {
+        preview.hidden = active;publish.disabled = active || busy || !selectedFile;
+    });
     function clearPreview() {
         const video = preview.querySelector('video');
         if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
@@ -29,20 +32,23 @@
     }
     function open(kind, button) {
         if (dialog.open) return;
-        form.reset();clearPreview();status.textContent = '';progress.hidden = true;publish.disabled = true;
+        camera.stop();form.reset();selectedFile = null;fileInput.required = true;clearPreview();status.textContent = '';progress.hidden = true;publish.disabled = true;
         form.elements.kind.value = kind === 'story' ? 'story' : 'post';
         videoOnly = kind === 'video';
+        document.getElementById('composerPhoto').hidden = videoOnly;
+        document.getElementById('nativePhoto').closest('label').hidden = videoOnly;
         fileInput.accept = videoOnly ? 'video/mp4,video/webm' : types.join(',');
         document.getElementById('composerTitle').textContent = kind === 'story' ? 'إضافة ستوري' : videoOnly ? 'إضافة فيديو' : 'منشور جديد';
         document.getElementById('composerHint').textContent = kind === 'story' ? 'الستوري بتظهر بصفحتك لمدة 24 ساعة.' : 'المنشور بيظهر على صفحتك.';
         opener = button;overflow = document.body.style.overflow;document.body.style.overflow = 'hidden';
-        dialog.showModal();fileInput.click();
+        dialog.showModal();
     }
     document.querySelectorAll('[data-compose]').forEach(button => button.addEventListener('click', () => open(button.dataset.compose, button)));
-    document.getElementById('composerChoose').addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', () => {
-        clearPreview();status.textContent = '';publish.disabled = true;
-        const file = fileInput.files[0];
+    document.getElementById('composerChoose').addEventListener('click', () => {if (!busy) {camera.stop();fileInput.click();}});
+    document.getElementById('composerPhoto').addEventListener('click', () => {if(!busy) camera.open('photo');});
+    document.getElementById('composerVideo').addEventListener('click', () => {if(!busy) camera.open('video');});
+    function selectFile(file) {
+        camera.stop();selectedFile = null;fileInput.required = true;clearPreview();status.textContent = '';publish.disabled = true;
         if (!file) return;
         if (!types.includes(file.type) || (videoOnly && !file.type.startsWith('video/'))) {
             status.textContent = videoOnly ? 'اختار فيديو MP4 أو WebM.' : 'اختار صورة JPG أو PNG أو WebP، أو فيديو MP4 أو WebM.';
@@ -54,15 +60,19 @@
         if (media.tagName === 'VIDEO') {media.controls = true;media.playsInline = true;media.preload = 'metadata';}
         else media.alt = 'معاينة قبل النشر';
         media.addEventListener('error', () => {status.textContent = 'تعذّرت المعاينة على جهازك. يمكنك اختيار ملف آخر أو محاولة نشر الملف المدعوم.';});
-        preview.replaceChildren(media);publish.disabled = false;
-    });
+        preview.replaceChildren(media);selectedFile = file;fileInput.required = false;publish.disabled = false;
+    }
+    fileInput.addEventListener('change', () => selectFile(fileInput.files[0]));
+    ['nativePhoto','nativeVideo'].forEach(id => document.getElementById(id).addEventListener('change', event => selectFile(event.target.files[0])));
     close.addEventListener('click', () => {if (!busy) dialog.close();});
     dialog.addEventListener('cancel', event => {if (busy) event.preventDefault();});
-    dialog.addEventListener('close', () => {clearPreview();form.reset();document.body.style.overflow = overflow;opener?.focus({preventScroll:true});});
+    dialog.addEventListener('close', () => {camera.stop();selectedFile = null;clearPreview();form.reset();document.body.style.overflow = overflow;opener?.focus({preventScroll:true});});
     form.addEventListener('submit', event => {
         event.preventDefault();
-        if (busy || !fileInput.files.length || !form.reportValidity()) return;
+        if (busy || !selectedFile || !form.reportValidity()) return;
+        camera.stop();
         const body = new FormData(form);
+        body.set('media', selectedFile, selectedFile.name);
         busy = true;publish.disabled = true;close.disabled = true;
         form.querySelectorAll('input,textarea,select').forEach(field => field.disabled = true);
         progress.hidden = false;progress.value = 0;publish.textContent = 'جارٍ النشر…';status.textContent = 'جارٍ رفع الملف…';

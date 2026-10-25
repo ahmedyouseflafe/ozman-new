@@ -58,4 +58,39 @@ try{
         assert.equal(posts,before+2);
         console.log('PASS '+width+'px: owner controls, tabs, inline story preview, validation, double submit, publish/reload');
     }
+    // Synthetic camera only: no access to the user's physical camera or microphone.
+    await evaluate(`
+        window.cameraStreams=[];window.cameraRequests=[];
+        window.makeCameraStream=()=>{const c=document.createElement('canvas');c.width=320;c.height=240;const x=c.getContext('2d');let n=0;const timer=setInterval(()=>{x.fillStyle=n++%2?'red':'blue';x.fillRect(0,0,320,240);},50);const s=c.captureStream(20);cameraStreams.push(s);return s;};
+        navigator.mediaDevices.getUserMedia=async constraints=>{cameraRequests.push(constraints);return makeCameraStream();};
+        document.querySelector('[data-compose="story"]').click();document.getElementById('composerPhoto').click();
+    `);
+    await until(`!!document.querySelector('#profileComposer [data-camera-video]').videoWidth && !document.querySelector('#profileComposer [data-camera-snap]').disabled`);
+    await evaluate(`document.querySelector('#profileComposer [data-camera-snap]').click()`);
+    await until(`!!document.querySelector('#composerPreview img') && !document.getElementById('composerPublish').disabled`);
+    assert.equal(await evaluate(`cameraStreams.every(s=>s.getTracks().every(t=>t.readyState==='ended'))`),true);
+    assert.equal(await evaluate(`cameraRequests[0].audio`),false);
+    await evaluate(`document.getElementById('composerVideo').click()`);
+    await until(`!document.querySelector('#profileComposer [data-camera-record]').disabled`);
+    await evaluate(`document.querySelector('#profileComposer [data-camera-record]').click()`);
+    await new Promise(resolve=>setTimeout(resolve,1200));
+    await evaluate(`document.querySelector('#profileComposer [data-camera-record]').click()`);
+    await until(`!!document.querySelector('#composerPreview video') && !document.getElementById('composerPublish').disabled`);
+    assert.equal(await evaluate(`cameraStreams.every(s=>s.getTracks().every(t=>t.readyState==='ended'))`),true);
+    assert.equal(await evaluate(`cameraRequests.at(-1).audio`),true);
+    // Close while permission is pending; a late stream must be stopped immediately.
+    await evaluate(`navigator.mediaDevices.getUserMedia=()=>new Promise(r=>window.resolveCamera=r);document.getElementById('composerPhoto').click();document.getElementById('composerClose').click();`);
+    await until(`!document.getElementById('profileComposer').open`);
+    await evaluate(`resolveCamera(makeCameraStream())`);
+    await until(`cameraStreams.every(s=>s.getTracks().every(t=>t.readyState==='ended'))`);
+    await evaluate(`navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException('Denied','NotAllowedError');};document.querySelector('[data-compose="story"]').click();document.getElementById('composerPhoto').click();`);
+    await until(`document.getElementById('composerStatus').textContent.includes('إعدادات المتصفح')`);
+    await evaluate(`document.getElementById('composerClose').click()`);
+    await until(`!document.getElementById('profileComposer').open`);
+    await evaluate(`navigator.mediaDevices.getUserMedia=async()=>makeCameraStream();document.querySelector('[data-live-prepare]').click();document.getElementById('livePreparationCamera').click();`);
+    await until(`!!document.querySelector('#creatorLivePreparation [data-camera-video]').videoWidth`);
+    assert.equal(await evaluate(`!!document.querySelector('#creatorLivePreparation button[disabled]') && document.getElementById('creatorLivePreparation').textContent.includes('لا يشاهدك المتابعون')`),true);
+    await evaluate(`document.getElementById('livePreparationClose').click()`);
+    await until(`cameraStreams.every(s=>s.getTracks().every(t=>t.readyState==='ended'))`);
+    console.log('PASS camera: photo, real MediaRecorder video, permission denial, late stream cleanup, private live preview/cleanup');
 }finally{ws?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}

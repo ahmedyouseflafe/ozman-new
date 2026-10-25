@@ -14,6 +14,7 @@
             <div class="profile-actions">
                 @if($canManage)<a class="button outline" href="{{ route('promoter.manage', $profile) }}">تعديل الملف الشخصي</a><button class="button" type="button" data-compose="post">إضافة منشور</button>@else @include('promoters.follow-button') @endif
                 <button class="button outline" type="button" id="shareProfile">مشاركة الملف</button>
+                @if($canManage)<button class="button outline" type="button" data-live-prepare>◉ بث مباشر</button>@endif
             </div>
             <p id="profileShareStatus" role="status"></p>
         </div>

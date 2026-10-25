@@ -14,5 +14,5 @@
 <script>window.PromoterPage=@json($pageData);</script>
 <script>{!! file_get_contents(public_path('promoter-social.js')) !!}</script>
 <script>{!! file_get_contents(public_path('promoter-follow.js')) !!}</script>
-<script>{!! file_get_contents(public_path('promoter-composer.js')) !!}</script>
+<script>{!! file_get_contents(public_path('promoter-camera.js')) !!}</script><script>{!! file_get_contents(public_path('promoter-composer.js')) !!}</script>
 @endsection
