@@ -20,6 +20,11 @@ class PromoterProfile extends Model
         return $this->hasMany(PromoterPost::class);
     }
 
+    public function followers()
+    {
+        return $this->belongsToMany(User::class, 'promoter_followers')->withTimestamps();
+    }
+
     public function scopePublished($query)
     {
         return $query->where('is_active', true)->whereHas('user', fn ($q) => $q->where('is_active', true)->where('role', 'promoter'));

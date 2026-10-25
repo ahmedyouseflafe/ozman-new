@@ -7,7 +7,7 @@
     @forelse($profiles as $profile)
     <a href="{{ $profile->publicUrl() }}" class="creator-card">
         <div class="avatar-ring">@include('promoters.avatar', ['profile' => $profile])</div>
-        <h2>{{ $profile->display_name }}</h2><span class="handle" dir="ltr">{{ '@'.$profile->slug }}</span><p>{{ \Illuminate\Support\Str::limit($profile->bio, 120) ?: 'اكتشف المحلات من خلال ستورياتي وفيديوهاتي.' }}</p><span class="pill">{{ $profile->posts_count }} منشور</span><span class="creator-arrow">←</span>
+        <h2>{{ $profile->display_name }}</h2><span class="handle" dir="ltr">{{ '@'.$profile->slug }}</span><p>{{ \Illuminate\Support\Str::limit($profile->bio, 120) ?: 'اكتشف المحلات من خلال ستورياتي وفيديوهاتي.' }}</p><span class="pill">{{ $profile->posts_count }} منشور</span><span class="pill">{{ $profile->followers_count }} متابع</span><span class="creator-arrow">←</span>
     </a>
     @empty
     <div class="empty-state"><span class="empty-icon">✳</span><h2>الحكايات بتبدأ قريبًا</h2><p>صفحات المروّجات ستظهر هنا بعد إضافتها من الإدارة.</p>@if(auth()->user()?->isSuperAdmin())<a class="button" href="{{ route('promoter.accounts') }}">إضافة حساب مروّجة</a>@endif</div>

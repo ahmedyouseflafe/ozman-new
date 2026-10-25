@@ -68,6 +68,11 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAnalyticsAdmin::class])->p
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/promoters', [\App\Http\Controllers\PromoterController::class, 'directory'])->name('promoters.index');
 Route::get('/promoters/{slug}', [\App\Http\Controllers\PromoterController::class, 'show'])->name('promoters.show');
+Route::get('/promoters/{profile}/follow/account', [\App\Http\Controllers\PromoterFollowController::class, 'account'])->name('promoters.follow.account');
+Route::post('/promoters/{profile}/follow/login', [\App\Http\Controllers\PromoterFollowController::class, 'login'])->middleware('throttle:5,1')->name('promoters.follow.login');
+Route::post('/promoters/{profile}/follow/register', [\App\Http\Controllers\PromoterFollowController::class, 'register'])->middleware('throttle:5,1')->name('promoters.follow.register');
+Route::put('/promoters/{profile}/follow', [\App\Http\Controllers\PromoterFollowController::class, 'store'])->middleware(['auth', 'throttle:30,1'])->name('promoters.follow.store');
+Route::delete('/promoters/{profile}/follow', [\App\Http\Controllers\PromoterFollowController::class, 'destroy'])->middleware(['auth', 'throttle:30,1'])->name('promoters.follow.destroy');
 Route::get('/promoter-media/avatar/{profile}', [\App\Http\Controllers\PromoterController::class, 'avatar'])->name('promoters.avatar');
 Route::get('/promoter-media/posts/{post}/{part?}', [\App\Http\Controllers\PromoterController::class, 'media'])->name('promoters.media');
 Route::middleware(['auth', \App\Http\Middleware\EnsurePromoterAccess::class])->prefix('promoter')->name('promoter.')->group(function () {

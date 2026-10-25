@@ -26,3 +26,5 @@
 [data-theme="dark"] .danger{color:#ffadbd}
 [data-theme="dark"] .media-status{color:#ffadbd!important}
 @media(max-width:600px){.social-header nav{flex-basis:100%;justify-content:flex-start}.theme-toggle{margin-inline-start:auto}}
+.follow-control{margin:16px 0}.follow-control form{margin:0}.follow-control [role=status]:empty{display:none}.follow-control [role=status]{font-size:13px;margin:8px 0}.follow-control button:disabled{opacity:.65;cursor:wait}
+@media(max-width:600px){.profile-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));row-gap:14px}.follow-control .button{width:100%}}

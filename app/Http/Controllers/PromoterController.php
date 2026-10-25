@@ -77,6 +77,7 @@ class PromoterController extends Controller
     {
         $this->manage($request, $profile);
 
+        $profile->loadCount('followers');
         return view('promoters.editor', ['profile' => $profile,
             'posts' => $profile->posts()->with('shop')->latest()->paginate(12),
             'shops' => Shop::where('is_active', true)->orderBy('name')->get(['id', 'name'])]);
@@ -166,10 +167,10 @@ class PromoterController extends Controller
 
     public function directory()
     {
-        return response()->view('promoters.directory', ['profiles' => PromoterProfile::published()->withCount(['posts' => fn ($q) => $q->visible()->where('kind', 'post')])->latest()->paginate(24)])->header('Cache-Control', 'no-store');
+        return response()->view('promoters.directory', ['profiles' => PromoterProfile::published()->withCount(['followers', 'posts' => fn ($q) => $q->visible()->where('kind', 'post')])->latest()->paginate(24)])->header('Cache-Control', 'no-store');
     }
 
-    public function show(string $slug)
+    public function show(Request $request, string $slug)
     {
         $profile = PromoterProfile::published()->where('slug', $slug)->first();
         if (! $profile) {
@@ -178,13 +179,15 @@ class PromoterController extends Controller
 
             return redirect()->to($profile->publicUrl(), 302)->header('Cache-Control', 'no-store');
         }
+        $profile->loadCount('followers');
+        $following = $request->user() && $profile->followers()->where('users.id', $request->user()->id)->exists();
         $visible = $profile->posts()->visible()->with('shop');
         $posts = (clone $visible)->where('kind', 'post')->latest()->paginate(12);
         $stories = (clone $visible)->where('kind', 'story')->oldest('id')->get();
         $videos = (clone $visible)->where('kind', 'post')->where('type', 'video')->latest()->limit(30)->get();
         $shopCount = (clone $visible)->whereHas('shop', fn ($q) => $q->where('is_active', true))->distinct()->count('shop_id');
 
-        return response()->view('promoters.profile', compact('profile', 'posts', 'stories', 'videos', 'shopCount'))->header('Cache-Control', 'no-store');
+        return response()->view('promoters.profile', compact('profile', 'posts', 'stories', 'videos', 'shopCount', 'following'))->header('Cache-Control', 'private, no-store');
     }
 
     public function avatar(Request $request, PromoterProfile $profile)

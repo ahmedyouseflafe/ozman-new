@@ -12,6 +12,7 @@
 <header class="social-header"><div class="social-wrap header-row">
     <a class="social-brand" href="{{ route('promoters.index') }}"><span class="brand-mark">O<span>·</span></span><span>Ozman <b>Creators</b><small>حكايات من محلاتنا</small></span></a>
     <nav aria-label="تنقل المروّجات"><a href="{{ route('promoters.index') }}">اكتشف المروّجات</a><a href="{{ route('home') }}">أوزمان ↗</a><a class="button small" href="{{ route('promoter.dashboard') }}">{{ auth()->user()?->isPromoter() ? 'لوحتي' : 'دخول المروّجة' }}</a><button type="button" class="theme-toggle" id="promoterThemeToggle" aria-label="الوضع الداكن" aria-pressed="false"><span aria-hidden="true">☾</span><span data-theme-label>Dark</span></button></nav>
+    @if(auth()->user()?->role === 'customer')<form method="post" action="{{ route('logout') }}">@csrf<button type="submit" class="text-link">تسجيل الخروج</button></form>@endif
 </div></header>
 <main class="social-wrap">
     @if(session('status'))<div class="notice" role="status">{{ session('status') }}</div>@endif
