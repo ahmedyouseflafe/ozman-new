@@ -19,7 +19,7 @@
     const registrationPromise = supported ? push.register(config.serviceWorkerUrl) : Promise.resolve(null);
     registrationPromise.catch((error) => console.error('Unable to register the offer notification service worker.', error));
 
-    let subscribing, permissionRequest;
+    let subscribing, permissionRequest, ready = false;
     const requestPermission = () => {
         // Keep the native call inside the click gesture; never stack prompts.
         if (!permissionRequest) {
@@ -35,14 +35,15 @@
             const registration = await push.register(config.serviceWorkerUrl);
             const subscription = await push.subscription(registration, config.vapidPublicKey);
             await push.save(config.subscribeUrl, subscription, { source_shop_id: config.sourceShopId });
+            ready = true;
             window.dispatchEvent(new Event('ozman:offer-push-ready'));
             return subscription;
         })().finally(() => { subscribing = null; });
         return subscribing;
     };
 
-    const mountPrompt = (initialError) => {
-        if (!config.showPrompt || iosSkipped() || document.querySelector('[data-offer-push-prompt]')) {
+    const mountPrompt = (initialError, force = false) => {
+        if (!config.showPrompt || (!force && iosSkipped()) || document.querySelector('[data-offer-push-prompt]')) {
             return;
         }
 
@@ -205,5 +206,5 @@
         start();
     }
 
-    window.OzmanOfferNotifications = { subscribe, registration: registrationPromise };
+    window.OzmanOfferNotifications = { subscribe, registration: registrationPromise, ready: () => ready && permission() === 'granted', prompt: () => mountPrompt(null, true) };
 })();

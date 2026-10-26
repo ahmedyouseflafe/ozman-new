@@ -59,7 +59,7 @@ class RestaurantCustomerRegistrationController extends Controller
             abort_unless($registration->type === 'customer' && (int) $registration->shop_id === (int) $shop->id
                 && $registration->marketing_source === 'restaurant_welcome', 404);
             $registration->update($details);
-            if ($registration->wasRecentlyCreated) app(ShopSignupRewardService::class)->issue($shop, $registration);
+            if ($registration->wasRecentlyCreated && ! \App\Services\RestaurantNotificationRewardService::applies($shop)) app(ShopSignupRewardService::class)->issue($shop, $registration);
         });
 
         return response()->json(['registered' => true], 200, ['Cache-Control' => 'no-store']);

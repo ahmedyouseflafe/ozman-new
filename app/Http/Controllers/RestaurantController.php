@@ -273,6 +273,7 @@ class RestaurantController extends Controller
             'longitude' => ['required_if:order_type,delivery', 'nullable', 'numeric', 'between:-180,180'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
             'registration_token' => ['nullable', 'string', 'regex:/\A[a-f0-9]{64}\z/'],
+            'skip_signup_reward' => ['sometimes', 'boolean'],
             'items' => ['required', 'array', 'min:1', 'max:100'],
             'items.*.product_id' => ['required', 'integer'],
             'items.*.qty' => ['required', 'integer', 'min:1', 'max:100'],
@@ -348,7 +349,7 @@ class RestaurantController extends Controller
             $customerPushToken = null;
         }
 
-        $order = app(\App\Services\ShopSignupRewardService::class)->placeOrder($shop, $data['registration_token'] ?? null, [
+        $orderAttributes = [
             'shop_id' => $shop->id, 'restaurant_table_id' => $table?->id,
             'order_number' => 'RST-' . now()->format('ymd') . '-' . Str::upper(Str::random(6)),
             'customer_name' => $data['customer_name'], 'customer_phone' => $data['customer_phone'] ?? null,
@@ -362,7 +363,10 @@ class RestaurantController extends Controller
             'estimated_preparation_minutes' => $estimatedPreparationMinutes ?: null,
             'customer_push_token' => $customerPushToken,
             'payment_status' => 'pending', 'status' => 'new',
-        ]);
+        ];
+        $order = \App\Services\RestaurantNotificationRewardService::applies($shop)
+            ? app(\App\Services\RestaurantNotificationRewardService::class)->checkout($shop, $request, $orderAttributes)
+            : app(\App\Services\ShopSignupRewardService::class)->placeOrder($shop, $data['registration_token'] ?? null, $orderAttributes);
         $request->session()->put([
             'restaurant_customer_names.'.$shop->id => $data['customer_name'],
         ]);

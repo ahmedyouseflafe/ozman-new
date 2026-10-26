@@ -2079,7 +2079,7 @@
                         <i class="ti ti-map-pin" aria-hidden="true"></i><span>{{ $restaurantLocationLabel }}@if(filled($shop->address))<small>{{ $shop->address }}</small>@endif</span>
                     </a>
                 @endif
-                @if($hasCustomerWelcome)
+                @if($hasCustomerWelcome && $shop->slug !== 'bankai-sushi')
                     <button type="button" class="bankai-profile-edit" id="bankaiProfileEdit"><i class="ti ti-user-circle" aria-hidden="true"></i> {{ match ($locale) { 'en' => 'My details', 'he' => 'הפרטים שלי', default => 'بياناتي' } }}</button>
                 @endif
             </header>
@@ -2271,7 +2271,11 @@
     <style>.meal-choice-section .choice{margin:7px 0}.meal-choice-hint{color:#a9c2cb;font-size:12px;margin:5px 0}.meal-choice-section [data-count]{color:#08dcf4}.meal-choice-qty{width:76px!important;min-width:60px;text-align:center}.meal-choice-section[data-valid="false"]{border-color:#4e6171}</style>
     <script>{!! file_get_contents(base_path('public/restaurant-meal-choices.js')) !!}</script>
     @if($hasCustomerWelcome)
-        @include('front.partials.restaurant_customer_welcome')
+        @if($shop->slug === 'bankai-sushi')
+            @include('front.partials.restaurant_notification_reward')
+        @else
+            @include('front.partials.restaurant_customer_welcome')
+        @endif
         @include('front.partials.shop_signup_wheel')
     @endif
     <script>
@@ -2719,7 +2723,7 @@
                     items: cart
                 };
                 try {
-                    const response = await fetch(@json(route('restaurant.orders.store', $shop)), {
+                    const sendOrder = () => fetch(@json(route('restaurant.orders.store', $shop)), {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -2728,7 +2732,12 @@
                         },
                         body: JSON.stringify(payload)
                     });
-                    const data = await response.json();
+                    let response = await sendOrder();
+                    let data = await response.json();
+                    if (response.status === 422 && data.errors?.signup_reward_used && window.confirm(data.errors.signup_reward_used.join(' '))) {
+                        payload.skip_signup_reward = true;
+                        response = await sendOrder();data = await response.json();
+                    }
                     if (!response.ok) {
                         const errors = data.errors ? Object.values(data.errors).flat().join(' ') : '';
                         throw new Error(errors || data.message || 'تحقق من البيانات')

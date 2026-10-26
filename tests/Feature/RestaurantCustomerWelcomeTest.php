@@ -15,10 +15,10 @@ class RestaurantCustomerWelcomeTest extends TestCase
     public function test_bankai_also_shows_the_global_offer_prompt_in_each_language(): void
     {
         $shop = $this->shop('bankai-sushi');
-        foreach (['ar' => 'أهلًا فيك في بانكاي', 'en' => 'Welcome to Bankai', 'he' => 'ברוכים הבאים לבנקאי'] as $locale => $title) {
+        foreach (['ar', 'en', 'he'] as $locale) {
             $this->withSession(['locale' => $locale])->get(route('restaurant.menu', $shop))
-                ->assertOk()->assertSee('id="bankaiWelcome"', false)
-                ->assertSee($title)->assertSee('id="bankaiEnablePush"', false)
+                ->assertOk()->assertDontSee('id="bankaiWelcome"', false)
+                ->assertSee('id="notificationGiftEnable"', false)->assertDontSee('id="bankaiProfileEdit"', false)
                 ->assertSee('"showPrompt":true', false)
                 ->assertSee('ozman.restaurant.'.$shop->id.'.customer.v1', false);
         }

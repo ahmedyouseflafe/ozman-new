@@ -9,6 +9,7 @@
     const error = message => { $('signupWheelError').textContent = message; $('signupWheelError').hidden = !message; };
     const requestError = status => Object.assign(new Error('reward request failed'), {status});
     const errorMessage = failure => failure?.name === 'AbortError' ? (ui.timeout || ui.error)
+        : failure?.status === 403 && window.OZMAN_NOTIFICATION_REWARD ? window.OZMAN_NOTIFICATION_REWARD.pending
         : failure?.status === 419 ? (ui.session || ui.error)
         : failure?.status === 429 ? (ui.rateLimit || ui.error)
         : failure?.status >= 500 ? (ui.server || ui.error)
@@ -49,7 +50,9 @@
     };
     // Elegance has no login form: remember the automatic welcome presentation
     // for this shop and visitor, including when they close without spinning.
-    const welcomeKey = () => !preview && window.OZMAN_ELEGANCE_CHECKOUT?.shopId
+    const welcomeKey = () => !preview && window.OZMAN_NOTIFICATION_REWARD
+        ? `ozman.restaurant.${window.OZMAN_NOTIFICATION_REWARD.shopId}.push-welcome.${reward?.welcome_id || 'legacy'}`
+        : !preview && window.OZMAN_ELEGANCE_CHECKOUT?.shopId
         ? `ozman.cosmetics.${window.OZMAN_ELEGANCE_CHECKOUT.shopId}.welcome-shown.${window.OzmanRestaurantCustomer?.token()}.${reward?.welcome_id || 'legacy'}` : null;
     const shownThisPage = new Set();
     const alreadyShown = () => {

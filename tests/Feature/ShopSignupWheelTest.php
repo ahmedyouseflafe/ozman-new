@@ -13,7 +13,7 @@ class ShopSignupWheelTest extends TestCase
 
     public function test_arabic_customer_can_register_without_location_and_receive_active_wheel(): void
     {
-        $shop = $this->shop('bankai-sushi');
+        $shop = $this->shop('legacy-signup-restaurant');
         $this->wheel($shop);
         $payload = ['registration_token'=>str_repeat('d',64), 'name'=>'محمد',
             'whatsapp'=>'٠٥٩١٢٣٤٥٦٧', 'address'=>'المغار', 'location_deferred'=>true,
@@ -28,7 +28,7 @@ class ShopSignupWheelTest extends TestCase
 
     public function test_owner_can_configure_own_wheel_without_changing_global_or_other_shop_wheels(): void
     {
-        $shop = $this->shop('bankai-sushi'); $other = $this->shop('other');
+        $shop = $this->shop('legacy-signup-restaurant'); $other = $this->shop('other');
         $global = RewardWheel::create(['key' => RewardWheel::CUSTOMER_SIGNUP_DISCOUNTS, 'title' => 'Global', 'is_active' => true]);
         $this->actingAs($shop->user)->get(route('reward-wheels.shop-signup.edit', $shop))->assertOk()->assertSee('عجلة التسجيل');
         $this->assertDatabaseCount('reward_wheels', 1); // Viewing is not creation or activation.
@@ -45,7 +45,7 @@ class ShopSignupWheelTest extends TestCase
 
     public function test_wheel_validation_rejects_invalid_discounts_and_insufficient_active_segments(): void
     {
-        $shop = $this->shop('bankai-sushi');$this->actingAs($shop->user);
+        $shop = $this->shop('legacy-signup-restaurant');$this->actingAs($shop->user);
         foreach ([['discount_value'=>101], ['discount_value'=>-1], ['discount_type'=>'free_shipping'], ['color'=>'red'], ['win_quota'=>-1], ['win_quota'=>3]] as $bad) {
             $settings=$this->settings();$settings['segments'][0]=[...$settings['segments'][0],...$bad];
             $this->putJson(route('reward-wheels.shop-signup.update',$shop),$settings)->assertUnprocessable();
@@ -57,7 +57,7 @@ class ShopSignupWheelTest extends TestCase
 
     public function test_registration_and_spin_are_once_and_survive_reload_and_admin_edits(): void
     {
-        $shop=$this->shop('bankai-sushi');$this->wheel($shop);
+        $shop=$this->shop('legacy-signup-restaurant');$this->wheel($shop);
         $this->register($shop);
         $this->register($shop);
         $this->assertDatabaseCount('shop_signup_rewards',1);
@@ -75,8 +75,8 @@ class ShopSignupWheelTest extends TestCase
 
     public function test_only_new_registrations_receive_enabled_shop_wheels_and_other_restaurants_can_opt_in(): void
     {
-        $shop=$this->shop('bankai-sushi');$this->register($shop);
-        $this->wheel($shop);$this->register($shop);
+        $shop=$this->shop('legacy-signup-restaurant');$this->wheel($shop, false);$this->register($shop);
+        RewardWheel::where('shop_id', $shop->id)->update(['is_active' => true]);$this->register($shop);
         $this->assertDatabaseCount('shop_signup_rewards',0);
         $this->register($shop,str_repeat('b',64),'0591234568');$this->assertDatabaseCount('shop_signup_rewards',1);
         $other=$this->shop('second-restaurant');$this->wheel($other,false);
@@ -87,7 +87,7 @@ class ShopSignupWheelTest extends TestCase
 
     public function test_first_order_applies_server_discount_once_and_ignores_client_totals(): void
     {
-        $shop=$this->shop('bankai-sushi');$this->wheel($shop);$this->register($shop);
+        $shop=$this->shop('legacy-signup-restaurant');$this->wheel($shop);$this->register($shop);
         $service=app(ShopSignupRewardService::class);$service->state($shop,str_repeat('a',64),true);
         $product=Product::create(['category_id'=>\App\Models\Category::create(['shop_id'=>$shop->id,'name'=>'Meals','slug'=>'meals','is_active'=>true])->id,'shop_id'=>$shop->id,'name'=>'Roll','slug'=>'test-roll','price'=>100,'quantity'=>50,'is_active'=>true]);
         $payload=['registration_token'=>str_repeat('a',64),'order_type'=>'pickup','customer_name'=>'Customer','customer_phone'=>'0591234567',
@@ -103,7 +103,7 @@ class ShopSignupWheelTest extends TestCase
 
     public function test_pending_spin_wrong_phone_invalid_order_and_other_shop_cannot_spend_reward(): void
     {
-        $shop=$this->shop('bankai-sushi');$this->wheel($shop);$this->register($shop);
+        $shop=$this->shop('legacy-signup-restaurant');$this->wheel($shop);$this->register($shop);
         $product=Product::create(['category_id'=>\App\Models\Category::create(['shop_id'=>$shop->id,'name'=>'Meals','slug'=>'meals','is_active'=>true])->id,'shop_id'=>$shop->id,'name'=>'Roll','slug'=>'test-roll','price'=>100,'quantity'=>50,'is_active'=>true]);
         $payload=['registration_token'=>str_repeat('a',64),'order_type'=>'pickup','customer_name'=>'Customer','customer_phone'=>'0591234567','items'=>[['product_id'=>$product->id,'qty'=>1]]];
         $url=route('restaurant.orders.store',$shop);
@@ -117,7 +117,7 @@ class ShopSignupWheelTest extends TestCase
 
     public function test_fixed_discount_is_capped_and_cancellation_does_not_restore_reward(): void
     {
-        $shop=$this->shop('bankai-sushi');$this->wheel($shop,true,'amount',200);$this->register($shop);
+        $shop=$this->shop('legacy-signup-restaurant');$this->wheel($shop,true,'amount',200);$this->register($shop);
         $service=app(ShopSignupRewardService::class);$service->state($shop,str_repeat('a',64),true);
         $order=$service->placeOrder($shop,str_repeat('a',64),['shop_id'=>$shop->id,'order_number'=>'CAP-1','customer_name'=>'Test','customer_phone'=>'0591234567','subtotal'=>30,'discount'=>0,'total'=>30]);
         $this->assertSame('0.00',$order->total);$this->assertSame('30.00',$order->discount);
@@ -126,7 +126,7 @@ class ShopSignupWheelTest extends TestCase
 
     public function test_no_prize_counts_as_a_spin_without_discount_or_gift(): void
     {
-        $shop=$this->shop('bankai-sushi');$settings=$this->settings();
+        $shop=$this->shop('legacy-signup-restaurant');$settings=$this->settings();
         foreach ($settings['segments'] as &$segment) {
             $segment['discount_type']='none';$segment['label']='حظ أوفر';
             unset($segment['discount_value']);
@@ -149,7 +149,7 @@ class ShopSignupWheelTest extends TestCase
     public function test_reset_is_scoped_backed_up_and_allows_new_registration(): void
     {
         \Illuminate\Support\Facades\Storage::fake('local');
-        $shop=$this->shop('bankai-sushi');$other=$this->shop('other');
+        $shop=$this->shop('legacy-signup-restaurant');$other=$this->shop('other');
         $this->wheel($shop);$this->wheel($other);$this->register($shop);$this->register($other);
         $service=app(ShopSignupRewardService::class);$token=str_repeat('a',64);
         $service->state($shop,$token,true);

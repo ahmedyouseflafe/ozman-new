@@ -13,7 +13,7 @@ class ShopSignupWheelGiftsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function shop(string $slug = 'bankai-sushi'): Shop
+    private function shop(string $slug = 'legacy-signup-restaurant'): Shop
     {
         return Shop::create(['user_id'=>User::factory()->create(['role'=>'shop_owner','is_active'=>true])->id,
             'name'=>$slug,'slug'=>$slug,'catalog_type'=>'restaurant','is_active'=>true,'is_accepting_orders'=>true,'whatsapp'=>'0591234567']);
