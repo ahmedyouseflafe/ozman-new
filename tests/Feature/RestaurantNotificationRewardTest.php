@@ -28,6 +28,16 @@ class RestaurantNotificationRewardTest extends TestCase
             'subscription' => ['endpoint' => 'https://push.example.test/'.$endpoint, 'keys' => ['p256dh' => 'public', 'auth' => 'secret']]])->assertOk();
     }
 
+    public function test_menu_renders_notification_gate_without_registration_form(): void
+    {
+        [$shop] = $this->setupShop();
+        $response = $this->get(route('restaurant.menu', $shop))->assertOk()
+            ->assertSee('notificationGiftEnable', false)->assertDontSee('id="bankaiWelcome"', false);
+        if (getenv('OZMAN_BANKAI_PREVIEW') === '1') {
+            file_put_contents(storage_path('app/bankai-preview.html'), $response->getContent());
+        }
+    }
+
     private function spin(Shop $shop, string $token = 'a'): ?array
     {
         return $this->postJson(route('restaurant.signup-reward', $shop), ['registration_token' => str_repeat($token, 64), 'spin' => true])->assertOk()->json('reward');

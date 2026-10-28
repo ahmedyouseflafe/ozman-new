@@ -43,6 +43,11 @@
                 meta.content = fresh.token;
                 response = await send();
             }
+            // A new session also needs its saved notification-device binding.
+            if (response.status === 403 && window.OZMAN_NOTIFICATION_REWARD && window.OzmanOfferNotifications?.ready?.()) {
+                await window.OzmanOfferNotifications.subscribe();
+                response = await send();
+            }
             if (!response.ok) throw requestError(response.status);
             const data = await response.json();
             return data.reward || null;
@@ -141,7 +146,12 @@
     });
     $('signupWheelClose').addEventListener('click', () => { if(!busy)dialog.close(); });
     dialog.addEventListener('cancel', event => { if(busy)event.preventDefault(); });
-    $('signupWheelReopen').addEventListener('click', () => {draw();open();});
+    $('signupWheelReopen').addEventListener('click', async () => {
+        if (window.OZMAN_NOTIFICATION_REWARD && !window.OzmanOfferNotifications?.ready?.()) {
+            reward = null;failed = false;draw();notify();window.OzmanOfferNotifications?.prompt?.();return;
+        }
+        await refresh();open();
+    });
     if (preview) {
         $('signupWheelClose').textContent = ui.close;
         window.OzmanSignupWheelPreview = data => {
@@ -153,6 +163,10 @@
         return;
     }
     document.addEventListener('restaurant:registered', () => refresh(true));
+    document.addEventListener('restaurant:notifications-unavailable', () => {
+        if (!window.OZMAN_NOTIFICATION_REWARD || busy) return;
+        reward = null;failed = false;draw();notify();if (dialog.open) dialog.close();
+    });
     // Give the reminder its own row below the header, clear of the logo and cart.
     document.querySelector('.restaurant-hero-layout')?.after($('signupWheelReopen'));
     window.OzmanSignupReward = {
@@ -167,7 +181,10 @@
             return Math.round(Math.min(subtotal, segment.discount_type === 'percent' ? subtotal*segment.discount_value/100 : segment.discount_value)*100)/100;
         },
         beforeOrder: async () => {
-            if (!window.OzmanRestaurantCustomer?.token()) return true;
+            if (!window.OzmanRestaurantCustomer?.token()) {
+                if (window.OZMAN_NOTIFICATION_REWARD) {reward = null;failed = false;draw();notify();}
+                return true;
+            }
             if (busy) {open();return false;}
             if (!await refresh()) {open();return false;}
             if (reward?.selected_index === null) {error(ui.pending);open();return false;}

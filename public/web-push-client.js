@@ -87,7 +87,12 @@
             response = await fetch(url, { method, credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
                 headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest' },
                 ...(data === undefined ? {} : { body: JSON.stringify(data) }) });
-        } catch (error) { throw failure('network', error); }
+            // Keep the timeout through the body download, not just headers.
+            if (response.ok) {
+                const body = await response.json().catch(error => { throw failure(error.name === 'AbortError' ? 'network' : 'invalid-response', error); });
+                return body;
+            }
+        } catch (error) { throw typeof error.code === 'string' ? error : failure('network', error); }
         finally { clearTimeout(timer); }
         if (response.status === 419 && retry) {
             const fresh = await request('/csrf-token', { retry: false });
@@ -96,9 +101,6 @@
             return request(url, { method, data, token: fresh.token, retry: false });
         }
         if (!response.ok) throw failure('http-' + response.status);
-        // A redirected login page or HTML error is not a saved subscription.
-        const body = await response.json().catch(() => { throw failure('invalid-response'); });
-        return body;
     }
     async function save(url, current, extra = {}) {
         const serialized = current.toJSON();

@@ -8,6 +8,7 @@ const source = name => readFileSync(new URL('../public/'+name, import.meta.url),
 const key=Buffer.concat([Buffer.from([4]),Buffer.alloc(64,7)]).toString('base64url');
 let saved=0, refreshed=0;
 const server=createServer(async(req,res)=>{
+    if(req.url==='/slow-body'){res.writeHead(200,{'Content-Type':'application/json'});res.flushHeaders();res.write('{');return;}
     if(req.url==='/csrf-token'){refreshed++;res.setHeader('Content-Type','application/json');res.end(JSON.stringify({token:'fresh'}));return;}
     if(req.url==='/subscribe'){
         let raw='';for await(const part of req)raw+=part;
@@ -48,6 +49,8 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(expression){for(let i=0;i<100;i++){if(await evaluate(expression))return;await wait(100);}throw Error('Timed out: '+expression);}
 try{
     await send('Page.enable');
+    await send('Page.navigate',{url:origin+'/?setup'});
+    await until('!!window.OzmanOfferNotifications');
     await evaluate('sessionStorage.clear()');
     for(const width of [320,390,1280]){
         await send('Browser.setPermission',{permission:{name:'notifications'},setting:'prompt',origin});
@@ -69,6 +72,10 @@ try{
         console.log('PASS real worker, CSRF recovery, saved subscription, dialog closes at '+width+'px');
     }
     assert.equal(saved,3);assert.equal(refreshed,3);
+    assert.equal(await evaluate(`(async()=>{const old=setTimeout;window.setTimeout=(fn,ms,...args)=>old(fn,ms===20000?100:ms,...args);try{await OzmanWebPush.request('/slow-body');return 'unexpected';}catch(e){return e.code;}finally{window.setTimeout=old;}})()`),'network');
+    await evaluate('OzmanOfferNotifications.prompt()');
+    assert.equal(await evaluate('!!document.querySelector("[data-offer-push-prompt]")'),false);
+    console.log('PASS slow response body timeout and already-enabled button');
     await send('Browser.setPermission',{permission:{name:'notifications'},setting:'denied',origin});
     await send('Page.navigate',{url:origin+'/?denied'});
     await until('!!document.querySelector("[data-offer-push-prompt]")?.open');

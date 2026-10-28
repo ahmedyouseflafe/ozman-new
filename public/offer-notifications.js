@@ -43,7 +43,7 @@
     };
 
     const mountPrompt = (initialError, force = false) => {
-        if (!config.showPrompt || (!force && iosSkipped()) || document.querySelector('[data-offer-push-prompt]')) {
+        if ((!config.showPrompt && !force) || (!force && iosSkipped()) || document.querySelector('[data-offer-push-prompt]')) {
             return;
         }
 
@@ -59,6 +59,7 @@
             .offer-push-actions button{min-height:49px;padding:10px 17px;border:1px solid #27434f;border-radius:15px;background:#0b1720;color:#dce9ee;font:800 13px Cairo,Arial,sans-serif;cursor:pointer}
             .offer-push-actions [data-offer-push-enable]{border:0;background:linear-gradient(135deg,#0bdcf3,#3eb8ff);color:#00151b;font-size:14px}
             .offer-push-actions button:disabled{opacity:.58;cursor:wait}
+            .offer-push-actions button[hidden]{display:none!important}
             .offer-push-status{min-height:20px;margin:12px 0 0!important;color:#8fa8b4!important;font-size:11px!important}
             .offer-push-status[data-state=error]{color:#ff8c98!important}
             .offer-push-status[data-state=success]{color:#35df91!important}
@@ -96,7 +97,7 @@
             attempt++;clearTimeout(attemptTimer);
             window.removeEventListener('focus', recheck);
             document.removeEventListener('visibilitychange', recheck);
-            backdrop.close();backdrop.remove();document.body.style.overflow = previousOverflow;window.removeEventListener('ozman:offer-push-ready', finish);
+            backdrop.close();backdrop.remove();style.remove();document.body.style.overflow = previousOverflow;window.removeEventListener('ozman:offer-push-ready', finish);
         };
         const skip = () => {
             try { sessionStorage.setItem(skipKey, '1'); } catch (_) { /* Browsing still resumes without storage. */ }
@@ -206,5 +207,11 @@
         start();
     }
 
-    window.OzmanOfferNotifications = { subscribe, registration: registrationPromise, ready: () => ready && permission() === 'granted', prompt: () => mountPrompt(null, true) };
+    window.OzmanOfferNotifications = { subscribe, registration: registrationPromise, ready: () => ready && permission() === 'granted', prompt: () => {
+        if (ready && permission() === 'granted') {
+            window.dispatchEvent(new Event('ozman:offer-push-ready'));
+            return;
+        }
+        mountPrompt(null, true);
+    } };
 })();

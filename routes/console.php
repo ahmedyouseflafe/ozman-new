@@ -10,3 +10,7 @@ Artisan::command('inspire', function () {
 
 Schedule::command('real-estate:send-alerts')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
 Schedule::command('admin:send-activity-push')->everyMinute()->withoutOverlapping(5);
+Artisan::command('promoters:send-notifications', function () {
+    $this->info('Sent: '.app(\App\Services\PromoterFollowerNotifications::class)->flush());
+});
+Schedule::command('promoters:send-notifications')->everyMinute()->withoutOverlapping(5);

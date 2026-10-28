@@ -49,6 +49,14 @@ class WebPushService
         return $report->isSuccess() ? 'sent' : 'retry';
     }
 
+    public function sendCommunityDevice(\App\Models\CommunityPushSubscription $subscription, array $payload): string
+    {
+        $push = $this->transport(['TTL' => 3600, 'urgency' => 'normal']);
+        $report = $push->sendOneNotification(new Subscription($subscription->endpoint, $subscription->public_key,
+            $subscription->auth_token, $subscription->content_encoding), json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+        return $report->isSubscriptionExpired() ? 'expired' : ($report->isSuccess() ? 'sent' : 'retry');
+    }
+
     public function sendToShop(Shop $shop, string $title, string $body, string $url, array $data = []): int
     {
         $subscriptions = WebPushSubscription::query()

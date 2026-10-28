@@ -54,7 +54,7 @@ self.addEventListener('push', (event) => {
             url: payload.url || '/',
             payload: payload.data || {},
         },
-        actions: [{ action: 'open', title: 'فتح الطلب' }],
+        actions: [{ action: 'open', title: payload.actionTitle || 'فتح الطلب' }],
     };
 
     event.waitUntil(self.registration.showNotification(title, options));

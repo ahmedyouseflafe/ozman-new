@@ -18,6 +18,14 @@
         setTimeout(() => document.dispatchEvent(new Event('restaurant:registered')), 0);
     };
     window.addEventListener('ozman:offer-push-ready', activated);
+    const recheck = () => {
+        if (!enabled()) {
+            button.hidden = false;
+            document.dispatchEvent(new Event('restaurant:notifications-unavailable'));
+        }
+    };
+    window.addEventListener('focus', recheck);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) recheck(); });
     const init = () => {
         document.querySelector('.restaurant-hero-layout')?.after(button);
         // Preserve previously saved checkout details without requiring registration.

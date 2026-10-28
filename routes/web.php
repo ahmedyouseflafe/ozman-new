@@ -66,6 +66,19 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAnalyticsAdmin::class])->p
 });
 
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
+Route::get('/community/login', [\App\Http\Controllers\CommunityAccountController::class, 'loginPage'])->name('community.login');
+Route::post('/community/login', [\App\Http\Controllers\CommunityAccountController::class, 'login'])->middleware(['guest','throttle:5,1'])->name('community.login.store');
+Route::post('/community/register', [\App\Http\Controllers\CommunityAccountController::class, 'register'])->middleware(['guest','throttle:5,1'])->name('community.register');
+Route::get('/creator-invitation/{token}', [\App\Http\Controllers\PromoterInvitationController::class, 'show'])->middleware('throttle:30,1')->name('promoter.invitation');
+Route::post('/creator-invitation/{token}', [\App\Http\Controllers\PromoterInvitationController::class, 'accept'])->middleware('throttle:5,1')->name('promoter.invitation.accept');
+Route::middleware(['auth','throttle:60,1'])->prefix('community')->name('community.')->group(function () {
+    Route::get('/account', [\App\Http\Controllers\CommunityAccountController::class, 'account'])->name('account');
+    Route::put('/account', [\App\Http\Controllers\CommunityAccountController::class, 'update'])->name('update');
+    Route::post('/updates/{update}', [\App\Http\Controllers\CommunityAccountController::class, 'read'])->name('read');
+    Route::get('/push/key', [\App\Http\Controllers\CommunityAccountController::class, 'key'])->name('push.key');
+    Route::post('/push', [\App\Http\Controllers\CommunityAccountController::class, 'subscribe'])->name('push.store');
+    Route::delete('/push', [\App\Http\Controllers\CommunityAccountController::class, 'unsubscribe'])->name('push.destroy');
+});
 Route::get('/promoters', [\App\Http\Controllers\PromoterController::class, 'directory'])->name('promoters.index');
 Route::get('/promoters/{slug}', [\App\Http\Controllers\PromoterController::class, 'show'])->name('promoters.show');
 Route::get('/promoters/{profile}/follow/account', [\App\Http\Controllers\PromoterFollowController::class, 'account'])->name('promoters.follow.account');
@@ -80,6 +93,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsurePromoterAccess::class])->p
     Route::get('/accounts', [\App\Http\Controllers\PromoterController::class, 'accounts'])->name('accounts');
     Route::post('/accounts', [\App\Http\Controllers\PromoterController::class, 'createAccount'])->middleware('throttle:10,1')->name('accounts.store');
     Route::patch('/accounts/{profile}', [\App\Http\Controllers\PromoterController::class, 'updateAccount'])->name('accounts.update');
+    Route::post('/accounts/{profile}/invitation', [\App\Http\Controllers\PromoterInvitationController::class, 'renew'])->middleware('throttle:10,1')->name('accounts.invitation');
     Route::get('/profiles/{profile}', [\App\Http\Controllers\PromoterController::class, 'editor'])->name('manage');
     Route::put('/profiles/{profile}', [\App\Http\Controllers\PromoterController::class, 'updateProfile'])->name('profile.update');
     Route::delete('/profiles/{profile}/avatar', [\App\Http\Controllers\PromoterController::class, 'deleteAvatar'])->name('avatar.destroy');

@@ -581,6 +581,10 @@ class AuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
+        $communityHash = $request->session()->get('community_push_endpoint_hash') ?? $request->cookie('community_push_device');
+        if ($request->user() && is_string($communityHash) && \Illuminate\Support\Facades\Schema::hasTable('community_push_subscriptions')) {
+            \App\Models\CommunityPushSubscription::where('user_id', $request->user()->id)->where('endpoint_hash', $communityHash)->delete();
+        }
         $token = $request->session()->get('app_push_token');
         $webPushEndpointHash = $request->session()->get('merchant_web_push_endpoint_hash');
         $driverWebPushEndpointHash = $request->session()->get('driver_web_push_endpoint_hash');

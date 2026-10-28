@@ -35,9 +35,9 @@ class PromoterController extends Controller
         $this->admin($request);
         $data = $request->validate(['display_name' => ['required', 'string', 'max:100'],
             'slug' => ['required', 'string', 'min:3', 'max:80', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/D', 'unique:promoter_profiles,slug', 'unique:promoter_profile_slugs,slug'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'], 'password' => ['required', 'string', 'min:10', 'max:128']]);
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'], 'password' => ['nullable', 'string', 'min:10', 'max:128']]);
         $profile = DB::transaction(function () use ($data) {
-            $user = User::create(['name' => $data['display_name'], 'email' => $data['email'], 'password' => $data['password'], 'role' => 'promoter', 'is_active' => true]);
+            $user = User::create(['name' => $data['display_name'], 'email' => $data['email'], 'password' => $data['password'] ?? \Illuminate\Support\Str::random(64), 'role' => 'promoter', 'is_active' => true]);
 
             $profile = PromoterProfile::create(['user_id' => $user->id, 'slug' => $data['slug'], 'display_name' => $data['display_name'], 'is_active' => true]);
             DB::table('promoter_profile_slugs')->insert(['slug' => $profile->slug, 'promoter_profile_id' => $profile->id]);
@@ -45,7 +45,8 @@ class PromoterController extends Controller
             return $profile;
         });
 
-        return redirect()->route('promoter.manage', $profile)->with('status', 'تم إنشاء حساب المروّجة. الدخول بالبريد وكلمة المرور اللذين حددتهما.');
+        return redirect()->route('promoter.accounts')->with('status', 'تم إنشاء الحساب. انسخ رابط الدعوة وأرسله لصاحب الحساب ليختار كلمة مروره.')
+            ->with('invitation_url', PromoterInvitationController::issue($profile->user));
     }
 
     public function updateAccount(Request $request, PromoterProfile $profile)
@@ -59,6 +60,9 @@ class PromoterController extends Controller
                 $fields += ['password' => $data['password'], 'remember_token' => null];
             }
             $profile->user->forceFill($fields)->save();
+            if (! $data['is_active'] || ! empty($data['password'])) {
+                DB::table('promoter_invitations')->where('user_id', $profile->user_id)->delete();
+            }
         });
 
         return back()->with('status', 'تم تحديث الحساب.');
@@ -134,9 +138,12 @@ class PromoterController extends Controller
             $poster = $request->file('poster')?->store('promoters/posters', 'local');
             abort_unless($media, 500);
             abort_if($request->hasFile('poster') && ! $poster, 500, 'تعذّر حفظ غلاف الفيديو.');
-            $profile->posts()->create(['kind' => $data['kind'], 'type' => str_starts_with($request->file('media')->getMimeType(), 'video/') ? 'video' : 'image',
+            DB::transaction(function () use ($profile, $data, $request, $media, $poster) {
+            $post = $profile->posts()->create(['kind' => $data['kind'], 'type' => str_starts_with($request->file('media')->getMimeType(), 'video/') ? 'video' : 'image',
                 'shop_id' => $data['shop_id'] ?? null, 'caption' => $data['caption'] ?? null, 'media' => $media, 'poster' => $poster,
                 'is_active' => true, 'expires_at' => $data['kind'] === 'story' ? now()->addDay() : null]);
+            app(\App\Services\PromoterFollowerNotifications::class)->publish($post);
+            });
         } catch (\Throwable $e) {
             Storage::disk('local')->delete(array_filter([$media, $poster]));
             throw $e;
