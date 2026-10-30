@@ -3754,7 +3754,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const selectedCenter = centersData[index % centersData.length];
             if (
                 (
-                    ['restaurant', 'electronics', 'clothing', 'cosmetics', 'sweets', 'real_estate', 'advertising_services', 'furniture_appliances'].includes(selectedCenter?.catalog_type)
+                    ['restaurant', 'electronics', 'clothing', 'cosmetics', 'sweets', 'real_estate', 'advertising_services', 'furniture_appliances', 'dental'].includes(selectedCenter?.catalog_type)
                     || selectedCenter?.home_section === 'home_furniture'
                 )
                 && selectedCenter?.public_url
@@ -3886,6 +3886,7 @@ document.addEventListener('DOMContentLoaded', () => {
             shoes: { title: 'أحذية', icon: 'fa-shoe-prints' },
             sweets: { title: 'حلويات ومخبوزات', icon: 'fa-cake-candles' },
             cosmetics: { title: 'تجميل وعناية', icon: 'fa-spray-can-sparkles' },
+            dental: { title: 'عيادات الأسنان', icon: 'fa-tooth' },
             skin_care: { title: 'عناية بالبشرة', icon: 'fa-spa' },
             home_furniture: { title: 'أدوات منزلية وأثاث', icon: 'fa-couch' }
         };

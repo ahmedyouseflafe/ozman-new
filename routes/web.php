@@ -163,6 +163,7 @@ Route::get('/csrf-token', [FrontController::class, 'csrfToken'])
     ->middleware('throttle:30,1')
     ->name('csrf.refresh');
 Route::get('/market', [FrontController::class, 'index'])->name('front.home');
+Route::get('/dental/{shop:slug}', [\App\Http\Controllers\DentalClinicController::class, 'show'])->name('dental.clinic');
 Route::get('/front/shops/{shop}', [FrontController::class, 'index'])->name('front.shop');
 Route::get('/stores/{shop:slug}', [FrontController::class, 'index'])->name('front.shop.slug');
 Route::post('/stores/{shop:slug}/orders', [\App\Http\Controllers\CatalogCheckoutController::class, 'store'])

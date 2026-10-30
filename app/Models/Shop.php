@@ -231,6 +231,7 @@ class Shop extends Model
 
     public function publicRouteName(): string
     {
+        if ($this->catalog_type === 'dental') return 'dental.clinic';
         if ($this->catalog_type === 'furniture_appliances' || $this->home_section === 'home_furniture') {
             return 'furniture.store';
         }

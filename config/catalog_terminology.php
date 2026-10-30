@@ -12,6 +12,11 @@ $general = [
 ];
 
 return [
+    'dental' => array_replace($general, [
+        'item_singular' => 'خدمة', 'item_plural' => 'خدمات العيادة', 'add_item' => 'إضافة خدمة',
+        'category_singular' => 'قسم الخدمات', 'category_plural' => 'أقسام الخدمات', 'add_category' => 'إضافة قسم خدمات',
+        'place_singular' => 'العيادة', 'dashboard_label' => 'لوحة العيادة',
+    ]),
     'general' => $general,
     'clothing' => array_replace($general, [
         'item_singular' => 'قطعة أزياء',

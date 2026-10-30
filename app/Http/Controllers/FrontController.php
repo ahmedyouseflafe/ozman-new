@@ -27,6 +27,9 @@ class FrontController extends Controller
 
     public function index(?Shop $shop = null): View|RedirectResponse
     {
+        if ($shop?->exists && $shop->catalog_type === 'dental') {
+            return redirect()->route('dental.clinic', $shop);
+        }
         if ($shop?->exists && $shop->catalog_type === 'restaurant') {
             return redirect()->route('restaurant.menu', $shop);
         }
