@@ -19,7 +19,7 @@ try {
   assert.equal(await run('document.documentElement.scrollWidth<=innerWidth'),true,'overflow '+width);
   assert.equal(await run('getComputedStyle(document.querySelector(".hero")).display'),'grid','real rendered styles loaded');
   assert.equal(await run('!!document.querySelector("#products .product")'),true);
-  assert.equal(await run('document.querySelector(".actions a").getAttribute("href")'), 'http://localhost/krembo/krembo-company/catalog');
+  assert.equal(await run('document.querySelector(".actions a").getAttribute("href")'), '#outlets');
   if(width===390 || width===1440){const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});writeFileSync(new URL('storage/app/krembo-'+width+'.png',root),Buffer.from(shot.data,'base64'));}
   console.log('PASS krembo layout and service/contact links '+width+'px');
  }

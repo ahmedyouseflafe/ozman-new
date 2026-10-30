@@ -27,8 +27,13 @@ class KremboStoreTest extends TestCase
             Distributor::create(['shop_id'=>$company->id,'name'=>$company->is($shop)?'موزع الشركة':'Foreign distributor','is_active'=>true]);
         }
         Agent::create(['shop_id'=>$shop->id,'name'=>'Hidden agent','is_active'=>false]);
+        $shop->screens()->create(['type'=>'video','media'=>'videos/krembo.mp4','is_active'=>true,'needs_shop_assignment'=>false,'title'=>'Brand video']);
+        $shop->social()->create(['instagram'=>'https://www.instagram.com/example/','facebook'=>'javascript:alert(1)']);
+        Shop::create(['user_id'=>$shop->user_id,'name'=>'Local outlet','slug'=>'local-outlet','is_active'=>true,'distributor_id'=>$shop->distributors()->first()->id,'latitude'=>32,'longitude'=>35]);
         $response=$this->get($shop->publicUrl())->assertOk()->assertSee('كريمبو الشوكولاتة')->assertSee('وكيل الشركة')->assertSee('موزع الشركة')
             ->assertDontSee('Foreign product')->assertDontSee('Foreign agent')->assertDontSee('Foreign distributor')->assertDontSee('Hidden agent');
+        $response->assertSee('خدود الجدع')->assertSee('videos/krembo.mp4')->assertSee('Local outlet')
+            ->assertSee('query=32%2C35',false)->assertSee('https://www.instagram.com/example/',false)->assertDontSee('javascript:alert');
         $this->get(route('front.shop.slug',$shop))->assertRedirect($shop->publicUrl());
         if (getenv('OZMAN_KREMBO_PREVIEW')==='1') file_put_contents(storage_path('app/krembo-preview.html'),$response->getContent());
         $this->get(route('krembo.catalog',$shop))->assertOk()->assertViewHas('ozmanShop',fn($value)=>$value->is($shop))
