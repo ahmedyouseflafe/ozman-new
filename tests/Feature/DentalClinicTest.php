@@ -24,6 +24,7 @@ class DentalClinicTest extends TestCase
         $category=Category::create(['shop_id'=>$shop->id,'name'=>'العناية','slug'=>'care','is_active'=>true]);
         foreach ([true,false] as $active) Product::create(['shop_id'=>$shop->id,'category_id'=>$category->id,'name'=>$active?'فحص الأسنان':'خدمة مخفية','slug'=>$active?'exam':'hidden','price'=>100,'is_active'=>$active]);
         $response=$this->get($shop->publicUrl())->assertOk()->assertSee('عيادة الابتسامة')->assertSee('فحص الأسنان')->assertDontSee('خدمة مخفية')->assertSee('https://wa.me/972501234567',false);
+        $response->assertSee('id="dental-clinic-styles"', false)->assertSee('.hero{display:grid', false);
         if(getenv('OZMAN_DENTAL_PREVIEW')==='1') file_put_contents(storage_path('app/dental-preview.html'),$response->getContent());
         $shop->update(['is_active'=>false]);$this->get($shop->publicUrl())->assertNotFound();
     }

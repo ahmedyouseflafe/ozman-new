@@ -4,7 +4,7 @@
 <meta name="theme-color" content="#f5f8f5"><title>{{ $shop->name }} | عيادة أسنان</title>
 <meta name="description" content="{{ \Illuminate\Support\Str::limit(strip_tags($shop->description ?? 'تعرّف على العيادة وخدماتها وطرق التواصل معها.'),160) }}">
 @if($shop->logo)<link rel="icon" href="{{ asset($shop->logo) }}">@endif
-<link rel="stylesheet" href="{{ asset('dental-clinic.css') }}?v={{ filemtime(public_path('dental-clinic.css')) }}">
+<style id="dental-clinic-styles">{!! file_get_contents(public_path('dental-clinic.css')) !!}</style>
 </head><body>
 <header class="clinic-nav shell"><a class="brand" href="#">@if($shop->logo)<img src="{{ asset($shop->logo) }}" alt="">@else<span class="brand-symbol" aria-hidden="true">✧</span>@endif<span>{{ $shop->name }}<small>طب وعناية بالأسنان</small></span></a><nav aria-label="التنقل"><a href="#services">خدمات العيادة</a><a href="#about">عن العيادة</a><a href="#contact" class="button small">تواصل معنا ↗</a></nav></header>
 <main class="shell">
