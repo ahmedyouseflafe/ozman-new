@@ -163,6 +163,8 @@ Route::get('/csrf-token', [FrontController::class, 'csrfToken'])
     ->middleware('throttle:30,1')
     ->name('csrf.refresh');
 Route::get('/market', [FrontController::class, 'index'])->name('front.home');
+Route::get('/krembo/{shop:slug}', [\App\Http\Controllers\KremboStoreController::class, 'show'])->name('krembo.store');
+Route::get('/krembo/{shop:slug}/catalog', [\App\Http\Controllers\KremboStoreController::class, 'catalog'])->name('krembo.catalog');
 Route::get('/dental/{shop:slug}', [\App\Http\Controllers\DentalClinicController::class, 'show'])->name('dental.clinic');
 Route::get('/front/shops/{shop}', [FrontController::class, 'index'])->name('front.shop');
 Route::get('/stores/{shop:slug}', [FrontController::class, 'index'])->name('front.shop.slug');

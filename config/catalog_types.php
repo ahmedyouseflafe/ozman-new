@@ -1,6 +1,19 @@
 <?php
 
 return [
+    'krembo' => [
+        'label' => 'كريمبو — وكلاء وموزعون',
+        'description' => 'علامة كريمبو بكتالوج منتجات وشبكة وكلاء وموزعين.',
+        'suggested_categories' => ['الكريمبو', 'العبوات العائلية', 'كراتين الجملة'],
+        'icon' => 'ti-cookie',
+        'fields' => [
+            'flavor' => ['label'=>'النكهة','type'=>'text'],
+            'pieces_per_box' => ['label'=>'عدد القطع بالعبوة','type'=>'text'],
+            'boxes_per_carton' => ['label'=>'عدد العبوات بالكرتونة','type'=>'text'],
+            'storage_instructions' => ['label'=>'تعليمات الحفظ','type'=>'textarea'],
+            'allergens' => ['label'=>'المكونات ومسببات الحساسية','type'=>'textarea'],
+        ],
+    ],
     'dental' => [
         'label' => 'عيادة أسنان',
         'description' => 'صفحة الطبيب والعيادة، الخدمات وبيانات التواصل.',

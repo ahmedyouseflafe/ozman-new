@@ -12,6 +12,7 @@ $general = [
 ];
 
 return [
+    'krembo' => array_replace($general, ['item_plural'=>'منتجات الكريمبو','place_singular'=>'الشركة','dashboard_label'=>'لوحة الشركة']),
     'dental' => array_replace($general, [
         'item_singular' => 'خدمة', 'item_plural' => 'خدمات العيادة', 'add_item' => 'إضافة خدمة',
         'category_singular' => 'قسم الخدمات', 'category_plural' => 'أقسام الخدمات', 'add_category' => 'إضافة قسم خدمات',

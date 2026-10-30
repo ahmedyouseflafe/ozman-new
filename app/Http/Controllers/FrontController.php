@@ -27,6 +27,9 @@ class FrontController extends Controller
 
     public function index(?Shop $shop = null): View|RedirectResponse
     {
+        if ($shop?->exists && $shop->catalog_type === 'krembo' && !request()->routeIs('krembo.catalog')) {
+            return redirect()->route('krembo.store', $shop);
+        }
         if ($shop?->exists && $shop->catalog_type === 'dental') {
             return redirect()->route('dental.clinic', $shop);
         }
@@ -85,6 +88,10 @@ class FrontController extends Controller
                     ->find($ozmanSummary->id))
             : null;
 
+        // The legacy catalog calls its featured company "ozmanShop". For a
+        // Krembo company, its own products and network are the featured source.
+        if ($shop?->catalog_type === 'krembo') $ozmanShop = $shop;
+
         $shops = $shopSummaries
             ->where('slug', '!=', 'ozman')
             ->values();
@@ -105,7 +112,7 @@ class FrontController extends Controller
 
         $ozmanCategories = $ozmanShop?->categories ?? collect();
         $ozmanScreens = MainScreen::query()
-            ->forPlatform()
+            ->when($ozmanShop?->catalog_type === 'krembo', fn($query) => $query->where('shop_id', $ozmanShop->id), fn($query) => $query->forPlatform())
             ->where('is_active', true)
             ->latest()
             ->get();
@@ -115,6 +122,10 @@ class FrontController extends Controller
         $ozmanAdvertisements = Advertisement::query()
             ->where('is_active', true)
             ->where(function ($query) use ($ozmanShop) {
+                if ($ozmanShop?->catalog_type === 'krembo') {
+                    $query->where('shop_id', $ozmanShop->id);
+                    return;
+                }
                 $query->whereNull('shop_id');
 
                 if ($ozmanShop?->exists) {
@@ -217,6 +228,7 @@ class FrontController extends Controller
         abort_if($shops->isEmpty(), 404);
 
         $selectedShop = $shops->firstWhere('id', $distributor->shop_id) ?? $shops->first();
+        if ($selectedShop->catalog_type === 'krembo') $ozmanShop = $selectedShop;
         $shops = $shops
             ->reject(fn(Shop $listedShop) => $listedShop->id === $selectedShop->id)
             ->prepend($selectedShop)
@@ -225,7 +237,7 @@ class FrontController extends Controller
         $ozmanCategories = $ozmanShop?->categories ?? collect();
 
         $ozmanScreens = MainScreen::query()
-            ->forPlatform()
+            ->when($ozmanShop?->catalog_type === 'krembo', fn($query) => $query->where('shop_id', $ozmanShop->id), fn($query) => $query->forPlatform())
             ->where('is_active', true)
             ->latest()
             ->get();
@@ -244,6 +256,10 @@ class FrontController extends Controller
             'ozmanAdvertisements' => Advertisement::query()
                 ->where('is_active', true)
                 ->where(function ($query) use ($ozmanShop) {
+                    if ($ozmanShop?->catalog_type === 'krembo') {
+                        $query->where('shop_id', $ozmanShop->id);
+                        return;
+                    }
                     $query->whereNull('shop_id');
 
                     if ($ozmanShop?->exists) {

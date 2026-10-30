@@ -13,6 +13,8 @@ return [
         'settings.view', 'settings.profile', 'settings.password',
     ],
     'catalog_type_permissions' => [
+        'krembo' => ['agents.view','agents.create','agents.edit','agents.delete','agents.permissions',
+            'distributors.view','distributors.create','distributors.edit','distributors.delete','distributors.permissions'],
         'restaurant' => [
             'restaurant.view',
             'restaurant.customers.view',
@@ -31,6 +33,8 @@ return [
     ],
     'required' => ['dashboard.view', 'shops.view'],
     'catalog_type_required' => [
+        'krembo' => ['agents.view','agents.create','agents.edit','agents.permissions',
+            'distributors.view','distributors.create','distributors.edit','distributors.permissions'],
         'restaurant' => ['restaurant.view', 'restaurant.drivers.manage', 'restaurant.customers.view', 'reward_wheels.shop_signup'],
         'real_estate' => ['real_estate.view'],
     ],

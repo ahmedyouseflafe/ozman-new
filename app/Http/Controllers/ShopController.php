@@ -252,7 +252,7 @@ class ShopController extends Controller
         $data['is_active'] = $request->boolean('is_active');
         // Advertising-service storefronts start with their own services only.
         // Other storefronts can still disable the Ozman catalog later.
-        $data['show_ozman_products'] = $data['catalog_type'] !== 'advertising_services';
+        $data['show_ozman_products'] = !in_array($data['catalog_type'], ['advertising_services', 'krembo'], true);
 
         if (Auth::user()?->isDistributor()) {
             $distributor = $this->currentDistributorProfile();

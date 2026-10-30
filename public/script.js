@@ -3754,7 +3754,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const selectedCenter = centersData[index % centersData.length];
             if (
                 (
-                    ['restaurant', 'electronics', 'clothing', 'cosmetics', 'sweets', 'real_estate', 'advertising_services', 'furniture_appliances', 'dental'].includes(selectedCenter?.catalog_type)
+                    (['restaurant', 'electronics', 'clothing', 'cosmetics', 'sweets', 'real_estate', 'advertising_services', 'furniture_appliances', 'dental'].includes(selectedCenter?.catalog_type)
+                    || (selectedCenter?.catalog_type === 'krembo' && !location.pathname.startsWith('/krembo/') && !window.OZMAN_FRONT_CONFIG?.marketingContext?.distributor_id))
                     || selectedCenter?.home_section === 'home_furniture'
                 )
                 && selectedCenter?.public_url
@@ -3887,6 +3888,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sweets: { title: 'حلويات ومخبوزات', icon: 'fa-cake-candles' },
             cosmetics: { title: 'تجميل وعناية', icon: 'fa-spray-can-sparkles' },
             dental: { title: 'عيادات الأسنان', icon: 'fa-tooth' },
+            krembo: { title: 'كريمبو ووكلاء التوزيع', icon: 'fa-cookie-bite' },
             skin_care: { title: 'عناية بالبشرة', icon: 'fa-spa' },
             home_furniture: { title: 'أدوات منزلية وأثاث', icon: 'fa-couch' }
         };

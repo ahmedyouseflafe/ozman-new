@@ -59,7 +59,9 @@
         $ozmanName = $ozmanShop?->name ?? 'Ozman';
         $ozmanLogo = $ozmanShop?->logo ? asset($ozmanShop->logo) : asset('images/logo.svg');
         $locale = app()->getLocale();
-        $ozmanWelcomeText = __('أهلا بك في Ozman - اكتشف فئاتنا ومنتجاتنا المميزة');
+        $ozmanWelcomeText = $ozmanShop?->catalog_type === 'krembo'
+            ? __('أهلا بك في :shop - اكتشف أقسام ومنتجات المتجر', ['shop' => $ozmanName])
+            : __('أهلا بك في Ozman - اكتشف فئاتنا ومنتجاتنا المميزة');
         $welcomeText = __('أهلا بك في :shop - اكتشف أقسام ومنتجات المتجر', ['shop' => $shopName]);
         $languageLabels = ['ar' => 'العربية', 'he' => 'עברית', 'en' => 'English'];
         $frontLabels = [
