@@ -110,6 +110,11 @@
         const enableButton = backdrop.querySelector('[data-offer-push-enable]');
         const skipButton = backdrop.querySelector('[data-offer-push-skip]');
         const status = backdrop.querySelector('[data-offer-push-status]');
+        const blockedHelp = document.createElement('p');
+        blockedHelp.hidden = true;
+        blockedHelp.setAttribute('role', 'alert');
+        blockedHelp.textContent = config.blockedHelpLabel || config.deniedLabel;
+        status.after(blockedHelp);
 
         const explain = () => {
             if (ios && (!standalone || !supported)) {
@@ -134,7 +139,10 @@
             return false;
         };
         function recheck() {
-            if (!finished && !enableButton.disabled && !document.hidden) explain();
+            if (!finished && !enableButton.disabled && !document.hidden) {
+                if (permission() === 'granted') enableButton.click();
+                else explain();
+            }
         }
         window.addEventListener('focus', recheck);
         document.addEventListener('visibilitychange', recheck);
@@ -147,7 +155,16 @@
 
         enableButton.addEventListener('click', async () => {
             if (!supported || (ios && !standalone)) { window.location.reload();return; }
-            if (explain()) return;
+            if (explain()) {
+                // A denied browser permission cannot be requested again by a website.
+                // Show actionable help instead of silently returning on every click.
+                blockedHelp.hidden = false;
+                status.dataset.state = 'error';
+                status.textContent = config.stillBlockedLabel || config.deniedLabel;
+                blockedHelp.scrollIntoView({ block: 'nearest' });
+                return;
+            }
+            blockedHelp.hidden = true;
             enableButton.disabled = true;
             skipButton.hidden = false;
             status.dataset.state = '';

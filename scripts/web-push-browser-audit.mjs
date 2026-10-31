@@ -81,9 +81,11 @@ try{
     await until('!!document.querySelector("[data-offer-push-prompt]")?.open');
     assert.equal(await evaluate(`document.querySelector('[data-offer-push-skip]').hidden`),false);
     await evaluate(`document.querySelector('[data-offer-push-enable]').click()`);
+    assert.equal(await evaluate(`document.querySelector('[data-offer-push-status]').dataset.state`),'error');
+    assert.equal(await evaluate(`document.querySelector('[data-offer-push-prompt] [role="alert"]').hidden`),false);
     assert.equal(await evaluate('window.providerCalls'),0);
     await send('Browser.setPermission',{permission:{name:'notifications'},setting:'granted',origin});
-    await evaluate(`window.dispatchEvent(new Event('focus'));document.querySelector('[data-offer-push-enable]').click()`);
+    await evaluate(`window.dispatchEvent(new Event('focus'))`);
     await until(`!document.querySelector('[data-offer-push-prompt]')`);
     assert.equal(saved,4);console.log('PASS blocked permission recovery after browser settings change');
     await send('Browser.setPermission',{permission:{name:'notifications'},setting:'prompt',origin});
