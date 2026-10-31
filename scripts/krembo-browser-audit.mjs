@@ -22,6 +22,12 @@ try {
   assert.equal(await run('document.querySelector(".actions a").getAttribute("href")'), '#outlets');
   if(width===390 || width===1440){const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});writeFileSync(new URL('storage/app/krembo-'+width+'.png',root),Buffer.from(shot.data,'base64'));}
   console.log('PASS krembo layout and service/contact links '+width+'px');
+  await run('document.querySelector(".actions a").click()');
+  assert.equal(await run('document.querySelector(".outlet-dialog").open'),true);
+  assert.equal(await run('document.querySelector(".outlet-dialog").scrollWidth <= document.querySelector(".outlet-dialog").clientWidth'),true,'modal overflow '+width);
+  assert.equal(await run('!!document.querySelector("[data-outlet-list] [data-outlet]")'),true);
+  await run('document.querySelector("[data-close]").click()');
+  assert.equal(await run('document.querySelector(".outlet-dialog").open'),false);
  }
 } finally {ws?.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
 
