@@ -393,6 +393,8 @@
     $realEstateNavShop = $catalogNavShop?->catalog_type === 'real_estate' ? $catalogNavShop : null;
     $cosmeticsNavShop = $catalogNavShop?->catalog_type === 'cosmetics' ? $catalogNavShop : null;
     $canSeeSalonAppointments = $cosmeticsNavShop && ($isShopOwner || $canSee(['salon-appointments.index']));
+    $kremboNavShop = $catalogNavShop?->catalog_type === 'krembo' ? $catalogNavShop : null;
+    $canSeeShopOutlets = $kremboNavShop && ($isShopOwner || $canSee(['shop-outlets.index']));
     $catalogTerms = $catalogNavShop?->catalogTerms() ?? config('catalog_terminology.general', []);
     $catalogItemsLabel = $catalogTerms['item_plural'] ?? 'المنتجات';
     $catalogCategoriesLabel = $catalogTerms['category_plural'] ?? 'الفئات';
@@ -632,6 +634,14 @@
              class="admin-sidebar-item nav-item {{ request()->routeIs('front-orders.index') ? 'active' : '' }}">
              <i class="ti ti-receipt-2" aria-hidden="true"></i>
              طلبات الواجهة
+        </a>
+        @endif
+
+        @if($canSeeShopOutlets)
+        <a href="{{ route('shop-outlets.index', $kremboNavShop) }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('shop-outlets.*') ? 'active' : '' }}">
+             <i class="ti ti-map-pins" aria-hidden="true"></i>
+             نقاط البيع
         </a>
         @endif
 

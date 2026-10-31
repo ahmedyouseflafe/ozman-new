@@ -1,8 +1,11 @@
 (() => {
     const section = document.querySelector('#outlets');
     if (!section) return;
-    const list = section.querySelector('.network-grid');
+    const list = section.querySelector('.outlet-list');
+    // No outlets yet: let the #outlets links scroll to the single empty notice instead of opening an empty map.
+    if (!list) return;
     const cards = [...list.querySelectorAll('[data-outlet]')];
+    if (!cards.length) return;
     const status = section.querySelector('[data-location-status]');
     let busy = false;
     const dialog = document.createElement('dialog');
@@ -22,7 +25,7 @@
     };
     const mapMessage = dialog.querySelector('[data-map-message]');
     const modalList = dialog.querySelector('[data-outlet-list]');
-    const refreshList = () => { modalList.replaceChildren(...[...list.children].map(card => card.cloneNode(true))); };
+    const refreshList = () => { modalList.replaceChildren(...[...list.querySelectorAll('[data-outlet]')].map(card => card.cloneNode(true))); };
     new MutationObserver(() => { refreshList(); mapMessage.textContent = status.textContent; }).observe(section, {childList:true, subtree:true, characterData:true});
     dialog.querySelector('[data-close]').onclick = () => dialog.close();
     dialog.addEventListener('close', () => { document.body.style.overflow = previousOverflow; trigger?.focus(); });
@@ -96,6 +99,8 @@
                 card.querySelector('[data-distance]').textContent = Number.isFinite(km) ? (km < 1 ? Math.round(km * 1000) + ' متر' : km.toFixed(1) + ' كم') + ' تقريبًا' : 'المسافة غير محددة';
                 list.appendChild(card);
             });
+            // Cards are now ordered by distance, so the region headings no longer describe what follows them.
+            section.classList.add('is-ranked');
             status.textContent = 'تم تحديد موقعك. ' + (ranked.some(item => Number.isFinite(item.km)) ? 'المحلات مرتّبة من الأقرب للأبعد. المسافة بخط مستقيم وليست مسافة الطريق.' : 'لم تُضف نقاط بيع بإحداثيات بعد.');
         }, fail, {enableHighAccuracy:true, timeout:12000, maximumAge:60000});
     }));

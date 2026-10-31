@@ -69,7 +69,10 @@ class EnsureAdminAccess
             // shop owner must always be able to manage their own appointments,
             // even when their account already has a custom permission set.
             $isSalonAppointmentRoute = str_starts_with((string) $request->route()?->getName(), 'salon-appointments.');
-            abort_unless($isSalonAppointmentRoute || $user->canAccessRouteName($request->route()?->getName()), 403);
+            // Same for a Krembo company's own points of sale; the controller
+            // still limits each request to the owner's shop.
+            $isShopOutletRoute = str_starts_with((string) $request->route()?->getName(), 'shop-outlets.');
+            abort_unless($isSalonAppointmentRoute || $isShopOutletRoute || $user->canAccessRouteName($request->route()?->getName()), 403);
             $activeOwnedShopIds = $activeOwnedShops->pluck('id')->map(fn ($id) => (int) $id)->all();
         }
 

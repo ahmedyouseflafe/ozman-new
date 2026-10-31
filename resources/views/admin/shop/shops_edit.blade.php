@@ -1081,6 +1081,22 @@
                             </label>
                         </div>
 
+                        @if(data_get($shop, 'catalog_type') === 'krembo')
+                            <div style="height:15px"></div>
+                            <div class="form-group">
+                                <label class="form-label" for="hero_video_url"><i class="ti ti-brand-tiktok" aria-hidden="true"></i>رابط فيديو الهيرو</label>
+                                <div class="field">
+                                    <input type="url" id="hero_video_url" name="hero_video_url" dir="ltr"
+                                        value="{{ old('hero_video_url', data_get($shop, 'hero_video_url')) }}"
+                                        placeholder="https://www.tiktok.com/@user/video/1234567890">
+                                    <i class="ti ti-player-play field-icon"></i>
+                                </div>
+                                <span class="upload-sub">رابط فيديو تيك توك كامل. إذا تركته فاضي، بيظهر فيديو الشاشات أو فيديو أول منتج مميز.</span>
+                            </div>
+                            <div style="height:10px"></div>
+                            <a class="btn" href="{{ route('shop-outlets.index', $shop) }}"><i class="ti ti-map-pins" aria-hidden="true"></i> إدارة نقاط البيع</a>
+                        @endif
+
                         <div style="height:15px"></div>
 
                         <div class="switch-card">

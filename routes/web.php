@@ -283,6 +283,13 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::post('/push-notifications', [PushNotificationController::class, 'send'])->name('push-notifications.send');
     Route::get('/shops/{shop}/salon-appointments', [SalonAppointmentController::class, 'index'])->name('salon-appointments.index');
     Route::patch('/shops/{shop}/salon-appointments/{appointment}/status', [SalonAppointmentController::class, 'status'])->name('salon-appointments.status');
+    Route::scopeBindings()->group(function () {
+        Route::get('/shops/{shop}/outlets', [\App\Http\Controllers\ShopOutletController::class, 'index'])->name('shop-outlets.index');
+        Route::post('/shops/{shop}/outlets', [\App\Http\Controllers\ShopOutletController::class, 'store'])->name('shop-outlets.store');
+        Route::get('/shops/{shop}/outlets/{outlet}/edit', [\App\Http\Controllers\ShopOutletController::class, 'edit'])->name('shop-outlets.edit');
+        Route::put('/shops/{shop}/outlets/{outlet}', [\App\Http\Controllers\ShopOutletController::class, 'update'])->name('shop-outlets.update');
+        Route::delete('/shops/{shop}/outlets/{outlet}', [\App\Http\Controllers\ShopOutletController::class, 'destroy'])->name('shop-outlets.destroy');
+    });
     Route::get('/shops/{shop}/real-estate', [ModularServiceDashboardController::class, 'index'])->name('real-estate.dashboard');
     Route::get('/shops/{shop}/real-estate/categories/create', [ModularServiceDashboardController::class, 'createCategory'])->name('real-estate.dashboard.categories.create');
     Route::post('/shops/{shop}/real-estate/categories', [ModularServiceDashboardController::class, 'storeCategory'])->name('real-estate.dashboard.categories.store');

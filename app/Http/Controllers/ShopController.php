@@ -458,6 +458,11 @@ class ShopController extends Controller
             'payment_notes' => ['nullable', 'string'],
             'logo' => ['nullable', 'image', 'max:2048'],
             'banner' => ['nullable', 'image', 'max:4096'],
+            'hero_video_url' => ['nullable', 'string', 'max:500', function (string $attribute, mixed $value, \Closure $fail): void {
+                if (! Shop::tiktokVideoId($value)) {
+                    $fail('رابط فيديو الهيرو لازم يكون رابط فيديو تيك توك كامل، مثل https://www.tiktok.com/@user/video/1234567890');
+                }
+            }],
             'owner_email' => [
                 $shop || $usesCurrentUserAsOwner ? 'nullable' : 'required',
                 'email',

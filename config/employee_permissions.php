@@ -112,6 +112,14 @@ return [
                 'salon_appointments.manage' => ['label' => 'إدارة حجوزات الصالون', 'description' => 'تأكيد الموعد أو إكماله أو إلغاؤه.', 'routes' => ['salon-appointments.status']],
             ],
         ],
+        'shop_outlets' => [
+            'label' => 'نقاط بيع الكريمبو',
+            'description' => 'إدارة المحلات اللي بتبيع منتجات شركة الكريمبو وتظهر بصفحتها العامة.',
+            'permissions' => [
+                'shop_outlets.view' => ['label' => 'عرض نقاط البيع', 'description' => 'مشاهدة قائمة نقاط البيع.', 'routes' => ['shop-outlets.index']],
+                'shop_outlets.manage' => ['label' => 'إدارة نقاط البيع', 'description' => 'إضافة نقاط البيع وتعديلها وحذفها.', 'routes' => ['shop-outlets.store', 'shop-outlets.edit', 'shop-outlets.update', 'shop-outlets.destroy']],
+            ],
+        ],
         'real_estate' => [
             'label' => 'إدارة شركات البناء المتنقل',
             'description' => 'إدارة أقسام الخدمات والصور والمواصفات وطلبات العملاء ضمن الشركات المسموح للحساب بالوصول إليها.',

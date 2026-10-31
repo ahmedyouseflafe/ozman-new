@@ -22,6 +22,7 @@ class Shop extends Model
         'description',
         'logo',
         'banner',
+        'hero_video_url',
         'phone',
         'whatsapp',
         'email',
@@ -117,6 +118,22 @@ class Shop extends Model
     public function social()
     {
         return $this->hasOne(ShopSocial::class);
+    }
+
+    public function outlets(): HasMany
+    {
+        return $this->hasMany(ShopOutlet::class);
+    }
+
+    public static function tiktokVideoId(?string $url): ?string
+    {
+        if (! filled($url)) {
+            return null;
+        }
+
+        return preg_match('~^https?://(?:www\.|m\.)?tiktok\.com/(?:@[\w.\-]+/video|embed(?:/v2)?|v)/(\d{8,25})~i', trim($url), $matches)
+            ? $matches[1]
+            : null;
     }
 
     public function categories()
