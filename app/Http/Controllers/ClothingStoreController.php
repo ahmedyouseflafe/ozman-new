@@ -40,8 +40,34 @@ class ClothingStoreController extends Controller
             ->latest()
             ->get();
 
+        $user = auth()->user();
+        $canManage = $user && ((int) $shop->user_id === (int) $user->id || $user->isSuperAdmin());
+
+        $openTime = filled($shop->open_time) ? substr((string) $shop->open_time, 0, 5) : null;
+        $closeTime = filled($shop->close_time) ? substr((string) $shop->close_time, 0, 5) : null;
+        $isOpenNow = $this->isOpenNow($openTime, $closeTime);
+
         return view('front.clothing_store', compact(
-            'shop', 'categories', 'uncategorizedProducts', 'allProducts', 'displayItems'
+            'shop', 'categories', 'uncategorizedProducts', 'allProducts', 'displayItems',
+            'canManage', 'openTime', 'closeTime', 'isOpenNow'
         ));
+    }
+
+    private function isOpenNow(?string $openTime, ?string $closeTime): ?bool
+    {
+        if (! $openTime || ! $closeTime) {
+            return null;
+        }
+
+        $now = now('Asia/Jerusalem')->format('H:i');
+
+        if ($openTime === $closeTime) {
+            return true;
+        }
+
+        // Closing after midnight (e.g. 18:00 → 02:00) wraps into the next day.
+        return $openTime < $closeTime
+            ? $now >= $openTime && $now < $closeTime
+            : $now >= $openTime || $now < $closeTime;
     }
 }

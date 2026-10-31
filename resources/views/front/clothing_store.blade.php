@@ -12,6 +12,38 @@
         $heroImage = $mediaUrl($heroMedia);
         $lookProducts = $allProducts->take(3)->values();
         $whatsappNumber = preg_replace('/\D+/', '', (string) ($shop->whatsapp ?: $shop->phone));
+        $hasProducts = $allProducts->isNotEmpty();
+        $seasonNow = now('Asia/Jerusalem');
+        $seasonLabel = in_array($seasonNow->month, [3, 4, 5, 6, 7, 8], true) ? 'SPRING/SUMMER' : 'FALL/WINTER';
+        $normalizeSocialProfile = function (?string $value, string $base, bool $withAt = false): ?string {
+            if (! filled($value)) return null;
+            $value = trim($value);
+            if (preg_match('/^https?:\/\//i', $value)) return $value;
+            if (preg_match('/^(?:www\.)?[\w.-]+\.[a-z]{2,}\//i', $value)) return 'https://'.ltrim($value, '/');
+            $handle = ltrim($value, '@/');
+            return $handle === '' ? null : $base.($withAt ? '@' : '').$handle;
+        };
+        $storeSocial = optional($shop->social);
+        $storeSocialLinks = collect([
+            ['key' => 'facebook', 'label' => 'Facebook', 'icon' => 'ti-brand-facebook', 'url' => $normalizeSocialProfile($storeSocial->facebook, 'https://facebook.com/')],
+            ['key' => 'instagram', 'label' => 'Instagram', 'icon' => 'ti-brand-instagram', 'url' => $normalizeSocialProfile($storeSocial->instagram, 'https://instagram.com/')],
+            ['key' => 'tiktok', 'label' => 'TikTok', 'icon' => 'ti-brand-tiktok', 'url' => $normalizeSocialProfile($storeSocial->tiktok, 'https://tiktok.com/', true)],
+            ['key' => 'telegram', 'label' => 'Telegram', 'icon' => 'ti-brand-telegram', 'url' => $normalizeSocialProfile($storeSocial->telegram, 'https://t.me/')],
+            ['key' => 'snapchat', 'label' => 'Snapchat', 'icon' => 'ti-brand-snapchat', 'url' => $normalizeSocialProfile($storeSocial->snapchat, 'https://snapchat.com/add/')],
+            ['key' => 'twitter', 'label' => 'X', 'icon' => 'ti-brand-x', 'url' => $normalizeSocialProfile($storeSocial->twitter, 'https://x.com/')],
+            ['key' => 'youtube', 'label' => 'YouTube', 'icon' => 'ti-brand-youtube', 'url' => $normalizeSocialProfile($storeSocial->youtube, 'https://youtube.com/', true)],
+        ])->filter(fn ($link) => filled($link['url']))->values();
+        $storeWhatsappValue = trim((string) ($storeSocial->whatsapp ?: $shop->whatsapp));
+        $storeWhatsappDigits = preg_replace('/\D+/', '', $storeWhatsappValue);
+        $storeWhatsappUrl = preg_match('/^https?:\/\//i', $storeWhatsappValue)
+            ? $storeWhatsappValue
+            : ($storeWhatsappDigits ? 'https://wa.me/'.$storeWhatsappDigits : null);
+        $storePhoneTel = filled($shop->phone) ? preg_replace('/[^\d+]/', '', (string) $shop->phone) : null;
+        $storeAddress = implode('، ', array_filter([trim((string) $shop->city), trim((string) $shop->address)]));
+        $storeMapUrl = is_numeric($shop->latitude) && is_numeric($shop->longitude)
+            ? 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($shop->latitude.','.$shop->longitude)
+            : null;
+        $hasStoreInfo = $storeWhatsappUrl || $storePhoneTel || $storeAddress !== '' || $storeMapUrl || $openTime || $closeTime;
     @endphp
     @include('front.partials.merchant_pwa_head', ['pwaShop' => $shop])
     @include('front.partials.seo', [
@@ -36,17 +68,65 @@
         <div class="fashion-hero-media"><img src="{{ $heroImage }}" alt="{{ $shop->name }}"></div>
         <div class="fashion-hero-copy">
             <div class="hero-top"><a class="back-home" href="{{ route('home') }}"><i class="ti ti-arrow-right"></i> كل المحلات</a>@include('front.partials.public_language_switcher')</div>
-            <span class="season"><i class="ti ti-sparkles"></i> NEW SEASON / 2026</span>
+            <span class="season"><i class="ti ti-sparkles"></i> NEW SEASON · {{ $seasonLabel }} {{ $seasonNow->year }}</span>
             <h1>لبسك مش بس قطعة.<br><em>هذا ستايلك.</em></h1>
             <p>{{ $shop->description ?: 'اختيارات جريئة، قطع يومية، وتفاصيل تخليك تطلع بطريقتك.' }}</p>
-            <div class="hero-actions"><a href="#catalog"><i class="ti ti-hanger-2"></i> شوف المجموعة</a><a class="alt" href="#lookbook"><i class="ti ti-aperture"></i> اللوك بوك</a><button class="demo-try" id="demoTryOn" type="button" data-image="{{ route('virtual-tryon.demo-garment', ['v' => 'ivory-navy-3']) }}"><i class="ti ti-scan"></i> جرّب تيشيرت بالكاميرا</button></div>
+            @if($hasProducts)<div class="hero-actions"><a href="#catalog"><i class="ti ti-hanger-2"></i> شوف المجموعة</a><a class="alt" href="#lookbook"><i class="ti ti-aperture"></i> اللوك بوك</a><button class="demo-try" id="demoTryOn" type="button" data-image="{{ route('virtual-tryon.demo-garment', ['v' => 'ivory-navy-3']) }}"><i class="ti ti-scan"></i> جرّب تيشيرت بالكاميرا</button></div>@endif
             <div class="brand-signature"><img src="{{ $mediaUrl($shop->logo ?: $shop->banner) }}" alt="{{ $shop->name }}"><div><strong>{{ $shop->name }}</strong><span>CURATED FOR YOUR NEXT LOOK</span></div></div>
         </div>
     </section>
     <div class="ticker" aria-hidden="true"><span>NEW DROP — STYLE IT YOUR WAY — {{ $shop->name }} — NEW DROP — STYLE IT YOUR WAY — {{ $shop->name }} —</span></div>
+    @if($hasStoreInfo)
+    <section class="store-info" aria-label="{{ __('معلومات المحل') }}">
+        <div class="store-info-main">
+            <small>VISIT THE STORE</small>
+            <h2>{{ __('معلومات المحل') }}</h2>
+            <div class="store-info-meta">
+                @if(! is_null($isOpenNow))<span class="store-status {{ $isOpenNow ? 'is-open' : 'is-closed' }}"><i aria-hidden="true"></i>{{ $isOpenNow ? __('مفتوح الآن') : __('مغلق') }}</span>@endif
+                @if($openTime || $closeTime)
+                    <span><i class="ti ti-clock" aria-hidden="true"></i>{{ __('أوقات الدوام') }}:
+                        @if($openTime && $closeTime)<bdi dir="ltr">{{ $openTime }} – {{ $closeTime }}</bdi>
+                        @elseif($openTime){{ __('من الساعة') }} <bdi dir="ltr">{{ $openTime }}</bdi>
+                        @else{{ __('حتى الساعة') }} <bdi dir="ltr">{{ $closeTime }}</bdi>@endif
+                    </span>
+                @endif
+                @if($storeAddress !== '')<span><i class="ti ti-map-pin" aria-hidden="true"></i>{{ $storeAddress }}</span>@endif
+            </div>
+        </div>
+        @if($storeWhatsappUrl || $storePhoneTel || $storeMapUrl)
+        <div class="store-info-actions">
+            @if($storeWhatsappUrl)<a class="is-whatsapp" href="{{ $storeWhatsappUrl }}" target="_blank" rel="noopener noreferrer"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i>{{ __('واتساب') }}</a>@endif
+            @if($storePhoneTel)<a href="tel:{{ $storePhoneTel }}"><i class="ti ti-phone" aria-hidden="true"></i>{{ __('اتصال') }}</a>@endif
+            @if($storeMapUrl)<a href="{{ $storeMapUrl }}" target="_blank" rel="noopener noreferrer"><i class="ti ti-map-2" aria-hidden="true"></i>{{ __('افتح على الخريطة') }}</a>@endif
+        </div>
+        @endif
+    </section>
+    @endif
     <section class="fashion-intro"><article class="intro-tile"><i class="ti ti-shirt"></i><small>THE RIGHT FIT</small><strong>اختار المقاس بثقة</strong><p>المقاسات والألوان المتاحة تظهر لك قبل ما تضيف للسلة.</p></article><article class="intro-tile"><i class="ti ti-sparkles"></i><small>STYLE THE LOOK</small><strong>شوف القطع كلوك</strong><p>مش بس منتجات جنب بعض؛ رتبناها كإلهام للّبسة.</p></article><article class="intro-tile"><i class="ti ti-shopping-bag"></i><small>READY TO GO</small><strong>سلة سريعة وواضحة</strong><p>اختار مقاسك ولونك، وبعدها ابعت الطلب للمحل مباشرة.</p></article></section>
-    <section class="lookbook" id="lookbook"><header class="section-head"><div><small>THE EDIT / LOOKBOOK</small><h2>اختيارات هذا الأسبوع</h2></div><p>كل صورة توصلك للقطعة نفسها. اضغط على القطعة، اختار التفاصيل، وخلي اللوك يبدأ منك.</p></header><div class="look-grid">@forelse($lookProducts as $product)@php($attrs=$product->catalog_attributes ?: [])<article class="look-card"><button class="fashion-photo preview" type="button" data-id="{{ $product->id }}" data-name="{{ $product->localized('name') }}" data-price="{{ (float)($product->discount_price ?: $product->price) }}" data-image="{{ $mediaUrl($product->main_image) }}" data-description="{{ $product->localized('description') }}" data-sizes="{{ e(json_encode(data_get($attrs,'sizes',[]))) }}" data-colors="{{ e(json_encode(data_get($attrs,'colors',[]))) }}"><img src="{{ $mediaUrl($product->main_image) }}" alt="{{ $product->localized('name') }}"></button><div class="look-card-info"><h3>{{ $product->localized('name') }}</h3><span>{{ number_format((float)($product->discount_price ?: $product->price),2) }} ₪</span><button class="preview" type="button" data-id="{{ $product->id }}" data-name="{{ $product->localized('name') }}" data-price="{{ (float)($product->discount_price ?: $product->price) }}" data-image="{{ $mediaUrl($product->main_image) }}" data-description="{{ $product->localized('description') }}" data-sizes="{{ e(json_encode(data_get($attrs,'sizes',[]))) }}" data-colors="{{ e(json_encode(data_get($attrs,'colors',[]))) }}"><i class="ti ti-sparkles"></i> شوف التفاصيل</button></div></article>@empty<div class="empty"><div><i class="ti ti-camera-off"></i><p>أضف منتجات مع صور حتى يظهر اللوك بوك هنا.</p></div></div>@endforelse</div></section>
-    <section class="catalog" id="catalog"><header class="catalog-head"><div><small>SHOP THE DROP</small><h2>كل القطع، على ذوقك</h2></div><p>{{ $allProducts->count() }} قطعة متاحة من {{ $shop->name }}</p></header><nav class="filters"><button class="active" type="button" data-filter="all">كل المجموعة</button>@foreach($categories as $category)<button type="button" data-filter="cat-{{ $category->id }}">{{ $category->localized('name') }}</button>@endforeach @if($uncategorizedProducts->isNotEmpty())<button type="button" data-filter="uncategorized">إضافات جديدة</button>@endif</nav><div class="fashion-grid">@forelse($allProducts as $product)@php($attrs=$product->catalog_attributes ?: [])@php($sizes=data_get($attrs,'sizes',[]))@php($colors=data_get($attrs,'colors',[]))@php($sizes=is_array($sizes)?$sizes:array_filter(array_map('trim',explode(',',(string)$sizes))))@php($colors=is_array($colors)?$colors:array_filter(array_map('trim',explode(',',(string)$colors))))@php($price=(float)($product->discount_price ?: $product->price))<article class="fashion-card" data-card="{{ $product->category_id ? 'cat-'.$product->category_id : 'uncategorized' }}"><button class="fashion-photo preview" type="button" data-id="{{ $product->id }}" data-name="{{ $product->localized('name') }}" data-price="{{ $price }}" data-image="{{ $mediaUrl($product->main_image) }}" data-description="{{ $product->localized('description') }}" data-sizes="{{ e(json_encode($sizes)) }}" data-colors="{{ e(json_encode($colors)) }}"><img src="{{ $mediaUrl($product->main_image) }}" alt="{{ $product->localized('name') }}" loading="lazy">@if($product->is_featured)<span class="badge">اختيارنا</span>@endif</button><div class="fashion-info"><span class="fashion-brand">{{ data_get($attrs,'brand') ?: 'NEW EDIT' }}</span><h3 class="fashion-name">{{ $product->localized('name') }}</h3><div class="fashion-meta">@foreach(array_slice($sizes,0,3) as $size)<span>{{ $size }}</span>@endforeach @if(empty($sizes) && data_get($attrs,'material'))<span>{{ data_get($attrs,'material') }}</span>@endif</div><div class="fashion-bottom"><strong class="fashion-price">{{ number_format($price,2) }} ₪</strong><button class="fashion-add direct-add" type="button" data-id="{{ $product->id }}" data-name="{{ $product->localized('name') }}" data-price="{{ $price }}" aria-label="أضف {{ $product->localized('name') }}"><i class="ti ti-plus"></i></button></div></div></article>@empty<div class="empty"><div><i class="ti ti-hanger-off"></i><p>أضف منتجات الملابس من لوحة التحكم لتظهر المجموعة هنا.</p></div></div>@endforelse</div></section>
+    <section class="lookbook" id="lookbook"><header class="section-head"><div><small>THE EDIT / LOOKBOOK</small><h2>اختيارات هذا الأسبوع</h2></div><p>كل صورة توصلك للقطعة نفسها. اضغط على القطعة، اختار التفاصيل، وخلي اللوك يبدأ منك.</p></header><div class="look-grid">@forelse($lookProducts as $product)@php($attrs=$product->catalog_attributes ?: [])<article class="look-card"><button class="fashion-photo preview" type="button" data-id="{{ $product->id }}" data-name="{{ $product->localized('name') }}" data-price="{{ (float)($product->discount_price ?: $product->price) }}" data-image="{{ $mediaUrl($product->main_image) }}" data-description="{{ $product->localized('description') }}" data-sizes="{{ e(json_encode(data_get($attrs,'sizes',[]))) }}" data-colors="{{ e(json_encode(data_get($attrs,'colors',[]))) }}"><img src="{{ $mediaUrl($product->main_image) }}" alt="{{ $product->localized('name') }}"></button><div class="look-card-info"><h3>{{ $product->localized('name') }}</h3><span>{{ number_format((float)($product->discount_price ?: $product->price),2) }} ₪</span><button class="preview" type="button" data-id="{{ $product->id }}" data-name="{{ $product->localized('name') }}" data-price="{{ (float)($product->discount_price ?: $product->price) }}" data-image="{{ $mediaUrl($product->main_image) }}" data-description="{{ $product->localized('description') }}" data-sizes="{{ e(json_encode(data_get($attrs,'sizes',[]))) }}" data-colors="{{ e(json_encode(data_get($attrs,'colors',[]))) }}"><i class="ti ti-sparkles"></i> شوف التفاصيل</button></div></article>@empty @if($canManage)<div class="empty"><div><i class="ti ti-camera-off"></i><p>{{ __('أضف منتجات مع صور حتى يظهر اللوك بوك هنا.') }}</p></div></div>@else<div class="empty empty-soon"><div><i class="ti ti-sparkles"></i><strong>{{ __('المجموعة الجديدة قريباً') }}</strong><p>{{ __('تابعنا عشان تكون أول من يشوفها') }}</p></div></div>@endif @endforelse</div></section>
+    <section class="catalog" id="catalog"><header class="catalog-head"><div><small>SHOP THE DROP</small><h2>كل القطع، على ذوقك</h2></div><p>{{ $allProducts->count() }} قطعة متاحة من {{ $shop->name }}</p></header><nav class="filters"><button class="active" type="button" data-filter="all">كل المجموعة</button>@foreach($categories as $category)<button type="button" data-filter="cat-{{ $category->id }}">{{ $category->localized('name') }}</button>@endforeach @if($uncategorizedProducts->isNotEmpty())<button type="button" data-filter="uncategorized">إضافات جديدة</button>@endif</nav><div class="fashion-grid">@forelse($allProducts as $product)@php($attrs=$product->catalog_attributes ?: [])@php($sizes=data_get($attrs,'sizes',[]))@php($colors=data_get($attrs,'colors',[]))@php($sizes=is_array($sizes)?$sizes:array_filter(array_map('trim',explode(',',(string)$sizes))))@php($colors=is_array($colors)?$colors:array_filter(array_map('trim',explode(',',(string)$colors))))@php($price=(float)($product->discount_price ?: $product->price))<article class="fashion-card" data-card="{{ $product->category_id ? 'cat-'.$product->category_id : 'uncategorized' }}"><button class="fashion-photo preview" type="button" data-id="{{ $product->id }}" data-name="{{ $product->localized('name') }}" data-price="{{ $price }}" data-image="{{ $mediaUrl($product->main_image) }}" data-description="{{ $product->localized('description') }}" data-sizes="{{ e(json_encode($sizes)) }}" data-colors="{{ e(json_encode($colors)) }}"><img src="{{ $mediaUrl($product->main_image) }}" alt="{{ $product->localized('name') }}" loading="lazy">@if($product->is_featured)<span class="badge">اختيارنا</span>@endif</button><div class="fashion-info"><span class="fashion-brand">{{ data_get($attrs,'brand') ?: 'NEW EDIT' }}</span><h3 class="fashion-name">{{ $product->localized('name') }}</h3><div class="fashion-meta">@foreach(array_slice($sizes,0,3) as $size)<span>{{ $size }}</span>@endforeach @if(empty($sizes) && data_get($attrs,'material'))<span>{{ data_get($attrs,'material') }}</span>@endif</div><div class="fashion-bottom"><strong class="fashion-price">{{ number_format($price,2) }} ₪</strong><button class="fashion-add direct-add" type="button" data-id="{{ $product->id }}" data-name="{{ $product->localized('name') }}" data-price="{{ $price }}" aria-label="أضف {{ $product->localized('name') }}"><i class="ti ti-plus"></i></button></div></div></article>@empty @if($canManage)<div class="empty"><div><i class="ti ti-hanger-off"></i><p>{{ __('أضف منتجات الملابس من لوحة التحكم لتظهر المجموعة هنا.') }}</p></div></div>@else<div class="empty empty-soon"><div><i class="ti ti-sparkles"></i><strong>{{ __('المجموعة الجديدة قريباً') }}</strong><p>{{ __('تابعنا عشان تكون أول من يشوفها') }}</p></div></div>@endif @endforelse</div></section>
+    <footer class="store-footer">
+        <div class="store-footer-top">
+            <div class="store-footer-brand">
+                <img src="{{ $mediaUrl($shop->logo ?: $shop->banner) }}" alt="{{ $shop->name }}">
+                <div>
+                    <strong>{{ $shop->name }}</strong>
+                    @if($storeAddress !== '')<span><i class="ti ti-map-pin" aria-hidden="true"></i>{{ $storeAddress }}</span>@endif
+                </div>
+            </div>
+            @if($storeSocialLinks->isNotEmpty())
+            <nav class="store-footer-social" aria-label="{{ __('تابعنا') }}">
+                @foreach($storeSocialLinks as $socialLink)
+                    <a href="{{ $socialLink['url'] }}" target="_blank" rel="noopener noreferrer" aria-label="{{ $socialLink['label'] }}" title="{{ $socialLink['label'] }}"><i class="ti {{ $socialLink['icon'] }}" aria-hidden="true"></i></a>
+                @endforeach
+            </nav>
+            @endif
+        </div>
+        <div class="store-footer-bottom">
+            <a class="store-footer-all" href="{{ route('front.home') }}"><i class="ti ti-building-store" aria-hidden="true"></i>{{ __('كل المحلات') }}</a>
+            <p>{!! __('ضمن منصة :platform', ['platform' => '<a href="'.e(route('home')).'">Ozman</a>']) !!}</p>
+        </div>
+    </footer>
 </main>
 <button class="bag" id="bag" type="button"><i class="ti ti-shopping-bag"></i><span><strong><span id="bagCount">0</span> قطعة في السلة</strong><small id="bagTotal">0.00 ₪</small></span></button>
 <div class="overlay" id="bagLayer"><section class="sheet"><header class="sheet-head"><h2>سلتك</h2><button class="x" type="button" data-close="bagLayer">×</button></header><div class="cart-items" id="cartItems"></div><div class="total"><span>المجموع</span><span id="sheetTotal">0.00 ₪</span></div><div class="buyer"><input id="buyerName" placeholder="الاسم"><input id="buyerPhone" inputmode="tel" placeholder="رقم الجوال"></div><button class="send" id="sendOrder" type="button"><i class="ti ti-brand-whatsapp"></i> إرسال الطلب للمحل</button></section></div>
@@ -60,6 +140,38 @@
 </style>
 <style>.try-guide-toggle{display:flex;align-items:center;gap:8px;padding:10px 18px 0;color:#d8d5dd;font-size:11px;cursor:pointer}.try-guide-toggle input{accent-color:#d6ff38}</style>
 <style>.demo-try{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:46px;padding:0 16px;border:1px solid #d6ff38;border-radius:13px;background:#151516;color:var(--acid);font-size:11px;font-weight:900}.demo-try i{font-size:17px}.try-on{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:42px;margin-top:13px;border:1px solid #d6ff38;background:#252529;color:#f9f5ed;border-radius:12px;font-size:11px;font-weight:900}.try-on i{color:var(--acid);font-size:17px}.try-on small{padding:2px 5px;border-radius:5px;background:var(--acid);color:#171719;font-size:7px;letter-spacing:.08em}.try-on-overlay{align-items:center}.try-on-card{width:min(660px,100%);overflow:hidden;border:1px solid #d6ff388c;border-radius:25px;background:#161618;color:#f5f1ea;box-shadow:0 25px 80px #000b}.try-on-card header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid #ffffff18}.try-on-card header small{color:var(--acid);font-size:8px;font-weight:900;letter-spacing:.1em}.try-on-card h2{margin:4px 0 0;font-size:19px}.try-on-card header .x{border-color:#ffffff4d;color:#fff}.try-stage{position:relative;aspect-ratio:3/4;max-height:calc(100dvh - 200px);overflow:hidden;background:radial-gradient(circle at 50% 20%,#d6ff3824,transparent 33%),#09090a}.try-stage video,.try-stage canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:scaleX(-1)}.try-stage canvas{z-index:1;pointer-events:none}.try-hud{position:absolute;z-index:2;right:14px;bottom:14px;left:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border:1px solid #ffffff37;border-radius:12px;background:#101011bd;backdrop-filter:blur(10px);font-size:9px}.try-hud span{color:#e6e3e9}.try-hud i{color:var(--acid);font-size:15px;vertical-align:middle}.try-hud strong{color:var(--acid);font-size:9px}.try-on-card>p{margin:0;padding:11px 18px;color:#aaa7ae;font-size:9px;line-height:1.7}@media(max-width:520px){.demo-try{width:100%}.try-on-card{border-radius:19px}.try-hud{align-items:flex-start;flex-direction:column}.try-stage{aspect-ratio:9/13}}</style>
+<style>
+.store-info{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:18px;margin:16px 0;padding:20px 22px;border:1px solid var(--line);border-radius:26px;background:radial-gradient(circle at 8% 20%,#d6ff381c,transparent 30%),#1b1b1e}
+.store-info small{color:var(--acid);font-size:9px;font-weight:900;letter-spacing:.1em}
+.store-info h2{margin:4px 0 10px;font-family:'DM Serif Display',Cairo,serif;font-size:28px}
+.store-info-meta{display:flex;flex-wrap:wrap;gap:7px}
+.store-info-meta>span{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:4px 11px;border:1px solid #ffffff22;border-radius:999px;background:#232327;color:#d0cdd0;font-size:10px;font-weight:700;overflow-wrap:anywhere}
+.store-info-meta i{color:var(--acid);font-size:15px}
+.store-status i{flex-shrink:0;width:8px;height:8px;border-radius:50%;background:currentColor}
+.store-info-meta .store-status.is-open{border-color:#d6ff3888;color:var(--acid)}
+.store-info-meta .store-status.is-closed{border-color:#ff6b7a77;color:#ff8e99}
+.store-info-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.store-info-actions a{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 15px;border:1px solid #ffffff38;border-radius:13px;background:#252529;color:var(--bone);font-size:11px;font-weight:900}
+.store-info-actions a.is-whatsapp{border-color:transparent;background:var(--acid);color:#151516}
+.store-info-actions i{font-size:17px}
+.empty-soon i{color:var(--acid);font-size:30px}
+.empty-soon strong{display:block;margin-top:6px;color:var(--bone);font-size:17px}
+.empty-soon p{margin:4px 0 0;font-size:11px}
+.store-footer{margin-top:18px;padding:24px;border:1px solid var(--line);border-radius:32px;background:#151518}
+.store-footer-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.store-footer-brand{display:flex;align-items:center;gap:11px;min-width:0}
+.store-footer-brand img{flex-shrink:0;width:52px;height:52px;border-radius:50%;background:#fff;object-fit:contain}
+.store-footer-brand strong{display:block;font-size:15px;overflow-wrap:anywhere}
+.store-footer-brand span{display:flex;align-items:center;gap:5px;margin-top:3px;color:#aaa7ae;font-size:10px}
+.store-footer-social{display:flex;flex-wrap:wrap;gap:8px}
+.store-footer-social a{display:grid;place-items:center;width:40px;height:40px;border:1px solid #ffffff25;border-radius:12px;background:#1f1f23;color:var(--bone);font-size:19px;transition:.2s}
+.store-footer-social a:hover,.store-footer-social a:focus-visible{border-color:var(--acid);background:var(--acid);color:#151516}
+.store-footer-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid #ffffff18}
+.store-footer-all{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:0 14px;border-radius:12px;background:var(--acid);color:#151516;font-size:11px;font-weight:900}
+.store-footer-bottom p{margin:0;color:#aaa7ae;font-size:10px}
+.store-footer-bottom p a{color:var(--acid);font-weight:900}
+@media(max-width:760px){.store-info{grid-template-columns:1fr;margin:10px 0;padding:16px;border-radius:22px}.store-info h2{font-size:23px}.store-info-actions{justify-content:stretch}.store-info-actions a{flex:1 1 auto}.store-footer{margin-top:10px;padding:16px;border-radius:23px}.store-footer-bottom{flex-direction:column;align-items:stretch;text-align:center}}
+</style>
 
 <script>
 (() => {const cart=[],money=v=>Number(v||0).toFixed(2)+' ₪',$=id=>document.getElementById(id),toList=values=>Array.isArray(values)?values:(typeof values==='string'?values.split(',').map(value=>value.trim()).filter(Boolean):[]);let selected=null,size='',color='';const render=()=>{const total=cart.reduce((sum,item)=>sum+item.price*item.qty,0);$('bagCount').textContent=cart.reduce((sum,item)=>sum+item.qty,0);$('bagTotal').textContent=$('sheetTotal').textContent=money(total);$('cartItems').innerHTML=cart.length?cart.map(item=>'<div class="cart-row"><span>'+item.qty+'× '+item.name+'</span><span>'+money(item.price*item.qty)+' <button class="remove" data-remove="'+item.key+'">×</button></span></div>').join(''):'<div class="empty" style="min-height:120px">السلة فاضية — اختار قطعة تعجبك.</div>'};const add=item=>{const name=item.name+(item.size?' · '+item.size:'')+(item.color?' · '+item.color:'');const key=item.id+'|'+(item.size||'')+'|'+(item.color||'');const existing=cart.find(entry=>entry.key===key);if(existing)existing.qty++;else cart.push({key,id:item.id,name,price:Number(item.price),qty:1,size:item.size||null,color:item.color||null});render();$('bag').animate([{transform:'scale(1)'},{transform:'scale(1.18)'},{transform:'scale(1)'}],{duration:480,easing:'ease-out'})};const open=layer=>layer.classList.add('open'),close=layer=>layer.classList.remove('open');document.querySelectorAll('[data-close]').forEach(button=>button.onclick=()=>close($(button.dataset.close)));document.querySelectorAll('.overlay').forEach(layer=>layer.onclick=e=>{if(e.target===layer)close(layer)});$('bag').onclick=()=>open($('bagLayer'));document.querySelectorAll('[data-filter]').forEach(button=>button.onclick=()=>{document.querySelectorAll('[data-filter]').forEach(item=>item.classList.toggle('active',item===button));document.querySelectorAll('[data-card]').forEach(card=>card.hidden=button.dataset.filter!=='all'&&card.dataset.card!==button.dataset.filter)});document.querySelectorAll('.direct-add').forEach(button=>button.onclick=()=>add(button.dataset));const makeOptions=(target,values,kind)=>{target.innerHTML='';values.forEach((value,index)=>{const button=document.createElement('button');button.type='button';button.textContent=value;button.classList.toggle('active',index===0);button.onclick=()=>{[...target.children].forEach(x=>x.classList.toggle('active',x===button));if(kind==='size')size=value;else color=value};target.append(button)});if(kind==='size')size=values[0]||'';else color=values[0]||''};document.querySelectorAll('.preview').forEach(button=>button.onclick=()=>{selected=button.dataset;$('quickImage').dataset.productId=selected.id;size='';color='';$('quickImage').src=selected.image;$('quickImage').alt=selected.name;$('quickName').textContent=selected.name;$('quickPrice').textContent=money(selected.price);$('quickDescription').textContent=selected.description||'قطعة مختارة لتكمل ستايلك.';let sizes=[],colors=[];try{sizes=JSON.parse(selected.sizes||'[]')}catch(_){ }try{colors=JSON.parse(selected.colors||'[]')}catch(_){ }sizes=toList(sizes);colors=toList(colors);$('sizeLabel').hidden=!sizes.length;$('sizeOptions').hidden=!sizes.length;$('colorLabel').hidden=!colors.length;$('colorOptions').hidden=!colors.length;makeOptions($('sizeOptions'),sizes,'size');makeOptions($('colorOptions'),colors,'color');open($('quickLayer'))});$('quickAdd').onclick=()=>{if(!selected)return;add({...selected,size,color});close($('quickLayer'))};$('cartItems').onclick=e=>{const button=e.target.closest('[data-remove]');if(!button)return;const index=cart.findIndex(item=>item.key===button.dataset.remove);if(index>-1)cart.splice(index,1);render()};$('sendOrder').onclick=()=>{if(!cart.length)return;const name=$('buyerName').value.trim(),phone=$('buyerPhone').value.trim();if(!name||!phone){alert('اكتب الاسم ورقم الجوال أولًا.');return}window.OzmanSaveCatalogOrder(cart,name,phone,$('sendOrder'))};render()})();
