@@ -10,7 +10,16 @@
     dialog.setAttribute('aria-label', 'نقاط بيع خدود الجدع');
     dialog.innerHTML = '<header><h2>نقاط بيع خدود الجدع</h2><button type="button" data-close aria-label="إغلاق">×</button></header><button type="button" data-retry>تحديد موقعي وترتيب الأقرب</button><p data-map-message role="status"></p><div class="outlet-dialog-grid"><div data-outlet-list></div><div data-outlet-map aria-label="خريطة نقاط البيع"></div></div>';
     document.body.appendChild(dialog);
-    let map, loading, previousOverflow, trigger;
+    let map, loading, previousOverflow, trigger, userPosition, userMarker;
+    const locateButton = dialog.querySelector('[data-retry]');
+    const showUser = () => {
+        if (!map || !userPosition) return;
+        const point = [userPosition.latitude, userPosition.longitude];
+        if (userMarker) userMarker.setLatLng(point);
+        else userMarker = L.circleMarker(point, {radius:9,color:'#fff',weight:3,fillColor:'#1686e8',fillOpacity:1}).addTo(map).bindPopup('موقعك الحالي');
+        map.setView(point,13);
+        userMarker.openPopup();
+    };
     const mapMessage = dialog.querySelector('[data-map-message]');
     const modalList = dialog.querySelector('[data-outlet-list]');
     const refreshList = () => { modalList.replaceChildren(...[...list.children].map(card => card.cloneNode(true))); };
@@ -43,7 +52,7 @@
             });
             if (bounds.length) map.fitBounds(bounds,{padding:[35,35],maxZoom:14});
         }
-        requestAnimationFrame(() => map.invalidateSize());
+        requestAnimationFrame(() => { map.invalidateSize(); showUser(); });
     };
     modalList.addEventListener('click', event => {
         const card = event.target.closest('[data-outlet]');
@@ -64,12 +73,13 @@
         if (!dialog.open) { trigger = button; previousOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden'; dialog.showModal(); refreshList(); }
         loadMap().catch(() => { mapMessage.textContent = 'تعذر تحميل الخريطة. يمكنك فتح لوكيشن المحل من القائمة أو إعادة المحاولة.'; });
         if (busy) return;
-        if (!cards.length) { status.textContent = 'نقاط البيع ستُضاف قريبًا.'; return; }
         if (!navigator.geolocation) { status.textContent = 'تحديد الموقع غير متاح. يمكنك تصفح المحلات وفتح مواقعها مباشرة.'; return; }
         busy = true;
+        locateButton.disabled = true;
+        locateButton.textContent = 'جارٍ تحديد موقعك…';
         status.textContent = 'جارٍ تحديد موقعك… اسمح بالوصول للموقع لعرض الأقرب.';
         let settled = false;
-        const finish = () => { settled = true; busy = false; clearTimeout(timer); };
+        const finish = () => { settled = true; busy = false; clearTimeout(timer); locateButton.disabled = false; locateButton.textContent = 'تحديد موقعي وترتيب الأقرب'; };
         const fail = error => {
             if (settled) return;
             finish();
@@ -79,12 +89,14 @@
         navigator.geolocation.getCurrentPosition(position => {
             if (settled) return;
             finish();
+            userPosition = position.coords;
+            showUser();
             const ranked = cards.map((card, index) => ({card, index, km: distance(position.coords, card)})).sort((a,b) => (a.km - b.km) || a.index - b.index);
             ranked.forEach(({card, km}) => {
                 card.querySelector('[data-distance]').textContent = Number.isFinite(km) ? (km < 1 ? Math.round(km * 1000) + ' متر' : km.toFixed(1) + ' كم') + ' تقريبًا' : 'المسافة غير محددة';
                 list.appendChild(card);
             });
-            status.textContent = ranked.some(item => Number.isFinite(item.km)) ? 'المحلات مرتّبة من الأقرب للأبعد. المسافة بخط مستقيم وليست مسافة الطريق.' : 'إحداثيات المحلات لم تُضف بعد؛ يمكنك فتح مواقعها حسب العنوان.';
+            status.textContent = 'تم تحديد موقعك. ' + (ranked.some(item => Number.isFinite(item.km)) ? 'المحلات مرتّبة من الأقرب للأبعد. المسافة بخط مستقيم وليست مسافة الطريق.' : 'لم تُضف نقاط بيع بإحداثيات بعد.');
         }, fail, {enableHighAccuracy:true, timeout:12000, maximumAge:60000});
     }));
 })();
