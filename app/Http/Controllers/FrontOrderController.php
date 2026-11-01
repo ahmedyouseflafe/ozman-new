@@ -10,6 +10,7 @@ use App\Models\RewardWheelSegment;
 use App\Models\Shop;
 use App\Models\VisitorRegistration;
 use App\Rules\ValidPhoneNumber;
+use App\Services\FrontOrderPricing;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -71,11 +72,15 @@ class FrontOrderController extends Controller
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'map_link' => ['nullable', 'string', 'max:500'],
-            'items' => ['nullable', 'array'],
-            'items.*.name' => ['nullable', 'string', 'max:255'],
-            'items.*.price' => ['nullable', 'string', 'max:120'],
-            'items.*.qty' => ['nullable', 'integer', 'min:1'],
-            'items.*.img' => ['nullable', 'string', 'max:500'],
+            // The browser only says what and how many; prices are looked up on the server.
+            'items' => ['required', 'array', 'min:1', 'max:100'],
+            'items.*.product_id' => ['required', 'integer', 'min:1'],
+            'items.*.unit_key' => ['required', 'string', 'in:' . implode(',', FrontOrderPricing::UNIT_KEYS)],
+            'items.*.qty' => ['required', 'integer', 'min:1', 'max:10000'],
+            'signup_reward' => ['nullable', 'array'],
+            'signup_reward.discount_type' => ['nullable', 'string', 'max:30'],
+            'signup_reward.discount_value' => ['nullable', 'numeric', 'min:0'],
+            // Kept only to log when the browser's numbers disagree with the server's.
             'subtotal' => ['nullable', 'numeric', 'min:0'],
             'discount' => ['nullable', 'numeric', 'min:0'],
             'total' => ['nullable', 'numeric', 'min:0'],
@@ -111,7 +116,21 @@ class FrontOrderController extends Controller
             $validated['reward_wheel_id'] = null;
         }
 
-        unset($validated['visitor_type'], $validated['merchant_registration_token']);
+        // Merchant prices only for a logged-in shop or an approved merchant registration (checked above).
+        $isMerchant = $authenticatedShop !== null || $validated['visitor_type'] === 'merchant';
+        $pricing = app(FrontOrderPricing::class);
+        $priced = $pricing->price($validated['items'], $isMerchant, $validated['signup_reward'] ?? null);
+        $pricing->reportMismatch($validated, $priced, [
+            'shop_id' => $validated['shop_id'] ?? null,
+            'visitor' => $isMerchant ? 'merchant' : 'customer',
+            'ip' => $request->ip(),
+        ]);
+        $validated['items'] = $priced['items'];
+        $validated['subtotal'] = $priced['subtotal'];
+        $validated['discount'] = $priced['discount'];
+        $validated['total'] = $priced['total'];
+
+        unset($validated['visitor_type'], $validated['merchant_registration_token'], $validated['signup_reward']);
 
         if (! empty($validated['reward_wheel_id'])) {
             $wheel = RewardWheel::query()
@@ -209,36 +228,6 @@ class FrontOrderController extends Controller
             'Content-Type' => 'image/svg+xml',
             'Cache-Control' => 'public, max-age=86400',
         ]);
-    }
-
-    public function reward(Request $request, FrontOrder $order): JsonResponse
-    {
-        $validated = $request->validate([
-            'reward_label' => ['required', 'string', 'max:255'],
-            'reward_discount_value' => ['nullable', 'numeric', 'min:0'],
-            'reward_discount_type' => ['nullable', 'string', 'max:30'],
-            'reward_gift_image' => ['nullable', 'string', 'max:500'],
-            'reward_color' => ['nullable', 'string', 'max:30'],
-            'reward_won_at' => ['nullable', 'date'],
-        ]);
-
-        $order->update([
-            'reward_label' => $validated['reward_label'],
-            'reward_discount_value' => $validated['reward_discount_value'] ?? null,
-            'reward_discount_type' => $validated['reward_discount_type'] ?? null,
-            'reward_gift_image' => $validated['reward_gift_image'] ?? null,
-            'reward_color' => $validated['reward_color'] ?? null,
-            'reward_won_at' => $validated['reward_won_at'] ?? now(),
-        ]);
-
-        $this->notify(
-            'front_order_reward_won',
-            'هدية عجلة الشراء',
-            sprintf('%s ربح: %s', $order->order_number, $order->reward_label),
-            $order
-        );
-
-        return response()->json(['ok' => true]);
     }
 
     public function status(Request $request, FrontOrder $order)

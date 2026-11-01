@@ -14,10 +14,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
+use Tests\Concerns\MakesFrontOrderProducts;
 use Tests\TestCase;
 
 class MerchantOrderingTest extends TestCase
 {
+    use MakesFrontOrderProducts;
     use RefreshDatabase;
 
     public function test_distributor_creates_a_separate_shop_owner_account_linked_to_him(): void
@@ -125,7 +127,7 @@ class MerchantOrderingTest extends TestCase
 
         $this->actingAs($merchant)->postJson(route('front-orders.store'), [
             'customer_name' => 'Marketer linked merchant',
-            'items' => [['name' => 'طلب عمولة', 'price' => '200', 'qty' => 1]],
+            'items' => [$this->frontOrderItem($this->frontOrderProduct(null, ['package_price' => 200]))],
             'subtotal' => 200,
             'discount' => 0,
             'total' => 200,
@@ -335,7 +337,7 @@ class MerchantOrderingTest extends TestCase
             'marketing_source' => 'distributor',
             'customer_name' => 'متجر الاختبار',
             'customer_phone' => '0590000000',
-            'items' => [['name' => 'كرتونة', 'price' => '10', 'qty' => 2]],
+            'items' => [$this->frontOrderItem($this->frontOrderProduct($otherShop, ['customer_carton_price' => 30, 'carton_price' => 10]), 'carton', 2)],
             'subtotal' => 20,
             'discount' => 0,
             'total' => 20,
@@ -346,6 +348,8 @@ class MerchantOrderingTest extends TestCase
         $response->assertOk();
 
         $order = FrontOrder::query()->latest('id')->firstOrFail();
+        // A logged-in shop always pays merchant prices, whatever visitor_type the browser claims.
+        $this->assertSame('20.00', $order->total);
         $this->assertSame($merchantShop->id, $order->shop_id);
         $this->assertSame($linkedDistributor->id, $order->distributor_id);
         $this->assertSame('merchant_account', $order->marketing_source);
@@ -404,7 +408,7 @@ class MerchantOrderingTest extends TestCase
 
         $this->postJson(route('front-orders.store'), [
             'customer_name' => 'QR merchant',
-            'items' => [['name' => 'طلب QR', 'price' => '250', 'qty' => 1]],
+            'items' => [$this->frontOrderItem($this->frontOrderProduct(null, ['package_price' => 250]))],
             'subtotal' => 250,
             'discount' => 0,
             'total' => 250,
@@ -537,7 +541,7 @@ class MerchantOrderingTest extends TestCase
 
         $this->postJson(route('front-orders.store'), [
             'customer_name' => $shop->name,
-            'items' => [['name' => 'أول طلب', 'price' => '300', 'qty' => 1]],
+            'items' => [$this->frontOrderItem($this->frontOrderProduct(null, ['package_price' => 300]))],
             'subtotal' => 300,
             'discount' => 0,
             'total' => 300,

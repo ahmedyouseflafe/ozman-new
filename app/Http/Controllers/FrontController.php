@@ -9,6 +9,7 @@ use App\Models\MainScreen;
 use App\Models\Product;
 use App\Models\RewardWheel;
 use App\Models\Shop;
+use App\Services\FrontOrderPricing;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -617,7 +618,9 @@ class FrontController extends Controller
                 'type' => $campaign->type,
                 'src' => $this->imageUrl($campaign->media, ''),
                 'title' => $campaign->localized('title'),
-                'offer_type' => $campaign->offer_type,
+                // An offer outside its dates keeps its media but stops changing the cart price,
+                // exactly like the server-side pricing in FrontOrderPricing.
+                'offer_type' => FrontOrderPricing::campaignIsRunning($campaign) ? $campaign->offer_type : null,
                 'unit_key' => $campaign->unit_key,
                 'offer_quantity' => $campaign->offer_quantity,
                 'min_quantity' => $campaign->min_quantity,

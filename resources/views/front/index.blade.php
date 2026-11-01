@@ -1014,7 +1014,6 @@
                         '',
                         $raffleSettings['whatsapp'] ?? '' ?: ($shop?->whatsapp ?: $shop?->phone ?: '970599000000'))),
                 raffleSocialLinks: @json($ozmanSocialLinks->reject(fn($link) => ($link['icon'] ?? '') === 'fab fa-whatsapp')->values()),
-                orderRewardUrlTemplate: @json(url('/front-orders/__ORDER__/reward')),
                 orderSpinRewardUrlTemplate: @json(url('/front-orders/__ORDER__/spin-reward')),
                 showVisitorRegistration: @json(!($isDashboardPreview ?? false) && !$authenticatedMerchantShop),
                 forceVisitorRegistration: {{ in_array(request('type'), ['customer', 'merchant'], true) ? 'true' : 'false' }},

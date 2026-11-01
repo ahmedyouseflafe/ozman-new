@@ -7,10 +7,12 @@ use App\Services\LoyaltyPoints;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Tests\Concerns\MakesFrontOrderProducts;
 use Tests\TestCase;
 
 class LoyaltyPointsTest extends TestCase
 {
+    use MakesFrontOrderProducts;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -168,8 +170,13 @@ class LoyaltyPointsTest extends TestCase
     {
         $customer = $this->customer();
         $shop = $this->shop();
+        // Two lines of 131.58 ₪: the server applies the 5% cart discount itself, and ignores the forged total.
+        $items = [
+            $this->frontOrderItem($this->frontOrderProduct($shop, ['customer_package_price' => 131.58])),
+            $this->frontOrderItem($this->frontOrderProduct($shop, ['customer_package_price' => 131.58])),
+        ];
         $this->actingAs($customer)->postJson(route('front-orders.store'), ['shop_id' => $shop->id, 'customer_name' => 'Lina', 'order_channel' => 'whatsapp', 'visitor_type' => 'customer',
-            'subtotal' => 263.16, 'discount' => 13.16, 'total' => 250])->assertOk();
+            'items' => $items, 'subtotal' => 1, 'discount' => 0, 'total' => 1])->assertOk();
         $order = FrontOrder::where('shop_id', $shop->id)->firstOrFail();
         $this->assertSame(['263.16', '13.16', '250.00'], [$order->subtotal, $order->discount, $order->total]);
         $this->assertSame([0, 20], $this->balance($customer));

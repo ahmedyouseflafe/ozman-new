@@ -238,12 +238,11 @@ Route::post('/visitor-registrations', [VisitorRegistrationController::class, 'st
 Route::get('/visitor-registrations/status/{token}', [VisitorRegistrationController::class, 'status'])
     ->middleware('throttle:30,1')
     ->name('visitor-registrations.status');
-Route::post('/front-orders', [FrontOrderController::class, 'store'])->name('front-orders.store');
+Route::post('/front-orders', [FrontOrderController::class, 'store'])->middleware('throttle:30,1')->name('front-orders.store');
 Route::post('/raffle/check', [RaffleCardController::class, 'check'])->name('raffle.check');
 Route::get('/raffle-card/{cardNumber}', [RaffleCardController::class, 'openCard'])->name('front.raffle-card.open');
 Route::get('/front-orders/{order}/qr.svg', [FrontOrderController::class, 'qr'])->name('front-orders.qr');
 Route::post('/front-orders/{order}/spin-reward', [FrontOrderController::class, 'spinReward'])->name('front-orders.spinReward');
-Route::patch('/front-orders/{order}/reward', [FrontOrderController::class, 'reward'])->name('front-orders.reward');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

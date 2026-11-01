@@ -6,10 +6,12 @@ use App\Models\RewardWheel;
 use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\MakesFrontOrderProducts;
 use Tests\TestCase;
 
 class ShopPurchaseWheelIsolationTest extends TestCase
 {
+    use MakesFrontOrderProducts;
     use RefreshDatabase;
 
     public function test_shop_owner_created_purchase_wheel_is_bound_to_his_shop(): void
@@ -82,7 +84,7 @@ class ShopPurchaseWheelIsolationTest extends TestCase
         $payload = [
             'shop_id' => $shopA->id,
             'customer_name' => 'عميل عادي',
-            'items' => [['name' => 'منتج', 'price' => '150', 'qty' => 1]],
+            'items' => [$this->frontOrderItem($this->frontOrderProduct($shopA, ['customer_package_price' => 150]))],
             'subtotal' => 150,
             'discount' => 0,
             'total' => 150,

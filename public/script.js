@@ -1936,7 +1936,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? [pendingSingleProduct]
                     : ozmanCart);
 
+                // product_id + unit_key + qty decide the price on the server; the rest is for display.
                 return items.map((item) => ({
+                    product_id: Number(item.product_id || 0) || null,
+                    unit_key: item.unit_key || '',
                     name: item.name || '',
                     price: item.price || '',
                     unit_label: item.unit_label || '',
@@ -2022,6 +2025,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     longitude: profile.longitude || null,
                     map_link: profile.mapLink || '',
                     items: currentOrderItems(itemsOverride),
+                    signup_reward: currentVisitorType() === 'merchant' ? null : (() => {
+                        const reward = loadRewardDiscount();
+                        return reward ? { discount_type: reward.discount_type || null, discount_value: reward.discount_value ?? null } : null;
+                    })(),
                     subtotal,
                     discount,
                     total,

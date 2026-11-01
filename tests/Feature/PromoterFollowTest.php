@@ -23,7 +23,7 @@ class PromoterFollowTest extends TestCase
 
     public function test_follow_and_unfollow_are_idempotent_and_isolated_by_account(): void
     {
-        $profile = $this->profile();
+        $profile = $this->profile(); $this->withCredentials();
         $a = User::factory()->create(['role' => 'customer', 'is_active' => true]);
         $b = User::factory()->create(['role' => 'customer', 'is_active' => true]);
         $url = route('promoters.follow.store', $profile);
@@ -41,7 +41,7 @@ class PromoterFollowTest extends TestCase
 
     public function test_self_follow_disabled_users_and_unpublished_profiles_are_rejected(): void
     {
-        $profile = $this->profile();
+        $profile = $this->profile(); $this->withCredentials();
         $url = route('promoters.follow.store', $profile);
         $this->actingAs($profile->user)->putJson($url)->assertUnprocessable();
         $this->get($profile->publicUrl())->assertDontSee('id="promoterFollowForm"', false);
@@ -58,7 +58,7 @@ class PromoterFollowTest extends TestCase
 
     public function test_new_visitor_can_create_customer_account_and_follow_without_privilege_escalation(): void
     {
-        $profile = $this->profile();
+        $profile = $this->profile(); $this->withCredentials();
         $this->get(route('promoters.follow.account', $profile))->assertOk()->assertSee('إنشاء حساب ومتابعة');
         $this->post(route('promoters.follow.register', $profile), [
             'name' => 'Visitor', 'email' => 'visitor@example.test',
@@ -76,7 +76,7 @@ class PromoterFollowTest extends TestCase
 
     public function test_existing_account_login_requires_password_and_resumes_follow(): void
     {
-        $profile = $this->profile();
+        $profile = $this->profile(); $this->withCredentials();
         $user = User::factory()->create(['role' => 'customer', 'is_active' => true, 'password' => Hash::make('correct-password')]);
         $url = route('promoters.follow.login', $profile);
         $this->post($url, ['email' => $user->email, 'password' => 'wrong'])->assertSessionHasErrors('email');
@@ -89,7 +89,7 @@ class PromoterFollowTest extends TestCase
 
     public function test_duplicate_email_and_invalid_password_cannot_create_accounts(): void
     {
-        $profile = $this->profile();
+        $profile = $this->profile(); $this->withCredentials();
         $url = route('promoters.follow.register', $profile);
         $this->postJson($url, ['name' => 'Visitor', 'email' => $profile->user->email, 'password' => 'short', 'password_confirmation' => 'different'])
             ->assertUnprocessable()->assertJsonValidationErrors(['email', 'password']);
@@ -99,7 +99,7 @@ class PromoterFollowTest extends TestCase
 
     public function test_follow_survives_profile_rename_and_is_removed_when_account_is_deleted(): void
     {
-        $profile = $this->profile();
+        $profile = $this->profile(); $this->withCredentials();
         $user = User::factory()->create(['is_active' => true]);
         $this->actingAs($user)->putJson(route('promoters.follow.store', $profile))->assertOk();
         $profile->update(['slug' => 'new-name']);
@@ -110,7 +110,7 @@ class PromoterFollowTest extends TestCase
 
     public function test_owner_identity_handles_string_ids_and_composer_is_private(): void
     {
-        $profile = $this->profile();
+        $profile = $this->profile(); $this->withCredentials();
         $profile->user_id = (string) $profile->user_id;
         $this->assertTrue($profile->isOwnedBy($profile->user));
         $this->assertTrue($profile->canBeManagedBy($profile->user));
@@ -129,7 +129,7 @@ class PromoterFollowTest extends TestCase
 
     public function test_guest_follows_instantly_with_a_device_cookie_and_counts_with_accounts(): void
     {
-        $profile = $this->profile();
+        $profile = $this->profile(); $this->withCredentials();
         $url = route('promoters.follow.store', $profile);
         $this->get($profile->publicUrl())->assertOk()->assertSee('id="promoterFollowForm"', false)->assertSee('aria-pressed="false"', false);
 
@@ -157,7 +157,7 @@ class PromoterFollowTest extends TestCase
 
     public function test_guest_follows_merge_into_the_account_on_register_and_login_without_duplicates(): void
     {
-        $profile = $this->profile();
+        $profile = $this->profile(); $this->withCredentials();
         $token = str_repeat('a', 64);
         $this->withCookie(GuestFollows::COOKIE, $token)->putJson(route('promoters.follow.store', $profile))->assertOk();
 
@@ -180,7 +180,7 @@ class PromoterFollowTest extends TestCase
 
     public function test_create_account_link_opens_register_and_returns_to_the_promoter(): void
     {
-        $profile = $this->profile();
+        $profile = $this->profile(); $this->withCredentials();
         $this->get(route('community.login', ['tab' => 'register', 'return' => '/promoters/sara']))->assertOk()
             ->assertSee('register-first')->assertSee('id="register"', false);
         $this->post(route('community.register'), ['name' => 'Back', 'email' => 'back@example.test', 'password' => 'eight888', 'password_confirmation' => 'eight888'])
@@ -204,7 +204,7 @@ class PromoterFollowTest extends TestCase
 
     public function test_both_signup_forms_share_the_eight_character_rule(): void
     {
-        $profile = $this->profile();
+        $profile = $this->profile(); $this->withCredentials();
         foreach ([route('community.register'), route('promoters.follow.register', $profile)] as $i => $url) {
             $this->postJson($url, ['name' => 'Short', 'email' => "short$i@example.test", 'password' => 'seven77', 'password_confirmation' => 'seven77'])
                 ->assertUnprocessable()->assertJsonValidationErrors('password');
@@ -229,7 +229,7 @@ class PromoterFollowTest extends TestCase
     public function test_inline_composer_publishes_story_with_expiration_and_enforces_ownership(): void
     {
         \Illuminate\Support\Facades\Storage::fake('local');
-        $profile = $this->profile();
+        $profile = $this->profile(); $this->withCredentials();
         $payload = ['kind' => 'story', 'caption' => 'New story', 'media' => \Illuminate\Http\UploadedFile::fake()->image('story.jpg')];
         $url = route('promoter.posts.store', $profile);
         $this->actingAs(User::factory()->create(['role' => 'promoter', 'is_active' => true]))->postJson($url, $payload)->assertForbidden();
