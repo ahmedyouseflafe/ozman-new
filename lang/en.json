@@ -120,5 +120,19 @@
   "تابعنا عشان تكون أول من يشوفها": "Follow us to be the first to see it",
   "تابعنا": "Follow us",
   "كل المحلات": "All stores",
-  "ضمن منصة :platform": "Part of the :platform platform"
+  "ضمن منصة :platform": "Part of the :platform platform",
+  "8 أحرف على الأقل.": "At least 8 characters.",
+  "متابعة +": "Follow +",
+  "متابَع ✓": "Following ✓",
+  "إلغاء المتابعة": "Unfollow",
+  "تمت متابعة الحساب.": "You are now following this account.",
+  "تم إلغاء المتابعة.": "You unfollowed this account.",
+  "انتهت الجلسة. حدّث الصفحة وحاول مجددًا.": "Your session expired. Refresh the page and try again.",
+  "انتظر قليلًا ثم حاول مجددًا.": "Please wait a moment and try again.",
+  "تعذّر حفظ المتابعة. حاول مجددًا.": "Could not save the follow. Please try again.",
+  "تعذّر تأكيد المتابعة. حدّث الصفحة.": "Could not confirm the follow. Refresh the page.",
+  "تأخر الاتصال. حاول مجددًا للتأكد من حفظ المتابعة.": "The connection is slow. Try again to make sure the follow was saved.",
+  "تابعت :name ✓ — احفظ متابعاتك على كل أجهزتك": "You followed :name ✓ — keep your follows on all your devices",
+  "إنشاء حساب": "Create account",
+  "لاحقاً": "Later"
 }

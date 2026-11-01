@@ -16,7 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Protected pages must send logged-out visitors to the login screen.
         // Without this Laravel returns an authentication error instead of a redirect.
-        $middleware->redirectGuestsTo('/login');
+        // Customer pages (/community/*) use the customer login, never the dashboard one.
+        $middleware->redirectGuestsTo(fn (\Illuminate\Http\Request $request) => $request->is('community', 'community/*')
+            ? route('community.login')
+            : '/login');
 
         $middleware->web(replace: [
             \Illuminate\Session\Middleware\StartSession::class => \App\Http\Middleware\StartPageSession::class,

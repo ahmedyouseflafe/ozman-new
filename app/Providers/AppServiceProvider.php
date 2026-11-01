@@ -20,6 +20,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Customer sign-up rule, shared by /community/register and the promoter follow form.
+        \Illuminate\Validation\Rules\Password::defaults(fn () => \Illuminate\Validation\Rules\Password::min(8)->max(128));
+
         foreach ([\App\Models\FrontOrder::class, \App\Models\Product::class, \App\Models\VisitorRegistration::class, \App\Models\Shop::class,
             \App\Models\MainScreen::class, \App\Models\Advertisement::class, \App\Models\Category::class,
             \App\Models\ShopStory::class, \App\Models\RewardWheel::class, \App\Models\RewardWheelSegment::class,

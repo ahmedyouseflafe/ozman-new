@@ -25,6 +25,18 @@ class PromoterProfile extends Model
         return $this->belongsToMany(User::class, 'promoter_followers')->withTimestamps();
     }
 
+    public function guestFollowers()
+    {
+        return $this->hasMany(PromoterGuestFollower::class);
+    }
+
+    // Account followers plus device (guest) followers; uses withCount values when loaded.
+    public function followerTotal(): int
+    {
+        return (int) ($this->followers_count ?? $this->followers()->count())
+            + (int) ($this->guest_followers_count ?? $this->guestFollowers()->count());
+    }
+
     public function isOwnedBy(?User $user): bool
     {
         return $user && (int) $user->id === (int) $this->user_id;

@@ -7,7 +7,7 @@
             <h1>{{ $profile->display_name }}</h1>
             <div class="profile-stats">
                 <div><strong>{{ $posts->total() }}</strong><span>منشور</span></div>
-                <div><strong id="promoterFollowerCount">{{ $profile->followers_count }}</strong><span>متابع</span></div>
+                <div><strong id="promoterFollowerCount">{{ $profile->followerTotal() }}</strong><span>متابع</span></div>
                 <div><strong>{{ $shopCount }}</strong><span>محل مذكور</span></div>
             </div>
             <p class="bio">{{ $profile->bio ?: 'أشارككم محلات وتجارب تستحق الزيارة. شوفوا آخر ستورياتي وفيديوهاتي هنا.' }}</p>

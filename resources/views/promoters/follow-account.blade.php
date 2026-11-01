@@ -10,8 +10,8 @@
 <section class="panel"><h2>حساب جديد</h2><form class="stack" method="post" action="{{ route('promoters.follow.register', $profile) }}">@csrf
 <label>اسمك<input name="name" value="{{ old('name') }}" maxlength="100" autocomplete="name" required></label>
 <label>البريد الإلكتروني<input type="email" name="email" value="{{ old('email') }}" maxlength="255" autocomplete="email" dir="ltr" required></label>
-<label>كلمة المرور<input type="password" name="password" minlength="8" autocomplete="new-password" required><small>8 أحرف على الأقل.</small></label>
-<label>تأكيد كلمة المرور<input type="password" name="password_confirmation" minlength="8" autocomplete="new-password" required></label>
+<label>كلمة المرور<input type="password" name="password" minlength="8" maxlength="128" autocomplete="new-password" required><small>{{ __('8 أحرف على الأقل.') }}</small></label>
+<label>تأكيد كلمة المرور<input type="password" name="password_confirmation" minlength="8" maxlength="128" autocomplete="new-password" required></label>
 <button class="button" type="submit">إنشاء حساب ومتابعة</button></form></section>
 </div>
 @endsection

@@ -2,23 +2,30 @@
 namespace App\Http\Controllers;
 use App\Models\{User, PromoterProfile, PromoterUpdate, CommunityPushSubscription};
 use Illuminate\Http\Request;
+use App\Services\GuestFollows;
 use Illuminate\Support\Facades\{Auth, DB};
+use Illuminate\Validation\Rules\Password;
 
 class CommunityAccountController extends Controller {
     private function active(Request $r): void { abort_unless($r->user()?->is_active,403); }
-    public function loginPage() { return response()->view('promoters.community-login')->header('Cache-Control','no-store'); }
+    public function loginPage(Request $r) {
+        // "Create account" from a promoter page brings the visitor back to that page afterwards.
+        $return=$r->query('return');
+        if (!$r->user() && is_string($return) && preg_match('~^/promoters/[A-Za-z0-9._\-]+$~',$return)) redirect()->setIntendedUrl(url($return));
+        return response()->view('promoters.community-login',['registerFirst'=>$r->query('tab')==='register'])->header('Cache-Control','no-store');
+    }
     public function login(Request $r) {
         $data=$r->validate(['email'=>['required','email'],'password'=>['required','string']]);
         if (!Auth::attempt([...$data,'is_active'=>true],true)) return back()->withErrors(['email'=>'البريد أو كلمة المرور غير صحيحة.'])->onlyInput('email');
-        $r->session()->regenerate();
-        return redirect()->route($r->user()->isPromoter() || $r->user()->isSuperAdmin() ? 'promoter.dashboard' : 'community.account');
+        $r->session()->regenerate(); app(GuestFollows::class)->merge($r,$r->user());
+        return redirect()->intended(route($r->user()->isPromoter() || $r->user()->isSuperAdmin() ? 'promoter.dashboard' : 'community.account'));
     }
     public function register(Request $r) {
         abort_if($r->user(),403);
         $data=$r->validate(['name'=>['required','string','max:100'],'email'=>['required','email','max:255','unique:users,email'],
-            'phone'=>['nullable','string','max:30'],'password'=>['required','string','min:10','max:128','confirmed']]);
-        $user=User::create([...$data,'role'=>'customer','is_active'=>true]); Auth::login($user,true); $r->session()->regenerate();
-        return redirect()->route('community.account')->with('status','أهلًا فيك! اكتشف المروّجين وتابع حساباتك المفضلة.');
+            'phone'=>['nullable','string','max:30'],'password'=>['required','string','confirmed',Password::defaults()]]);
+        $user=User::create([...$data,'role'=>'customer','is_active'=>true]); Auth::login($user,true); $r->session()->regenerate(); app(GuestFollows::class)->merge($r,$user);
+        return redirect()->intended(route('community.account'))->with('status','أهلًا فيك! اكتشف المروّجين وتابع حساباتك المفضلة.');
     }
     public function account(Request $r) {
         $this->active($r); $user=$r->user();

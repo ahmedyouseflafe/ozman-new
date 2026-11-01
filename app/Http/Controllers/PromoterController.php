@@ -81,7 +81,7 @@ class PromoterController extends Controller
     {
         $this->manage($request, $profile);
 
-        $profile->loadCount('followers');
+        $profile->loadCount(['followers', 'guestFollowers']);
         return view('promoters.editor', ['profile' => $profile,
             'posts' => $profile->posts()->with('shop')->latest()->paginate(12),
             'shops' => Shop::where('is_active', true)->orderBy('name')->get(['id', 'name'])]);
@@ -178,7 +178,7 @@ class PromoterController extends Controller
 
     public function directory()
     {
-        return response()->view('promoters.directory', ['profiles' => PromoterProfile::published()->withCount(['followers', 'posts' => fn ($q) => $q->visible()->where('kind', 'post')])->latest()->paginate(24)])->header('Cache-Control', 'no-store');
+        return response()->view('promoters.directory', ['profiles' => PromoterProfile::published()->withCount(['followers', 'guestFollowers', 'posts' => fn ($q) => $q->visible()->where('kind', 'post')])->latest()->paginate(24)])->header('Cache-Control', 'no-store');
     }
 
     public function show(Request $request, string $slug)
@@ -190,8 +190,10 @@ class PromoterController extends Controller
 
             return redirect()->to($profile->publicUrl(), 302)->header('Cache-Control', 'no-store');
         }
-        $profile->loadCount('followers');
-        $following = $request->user() && $profile->followers()->where('users.id', $request->user()->id)->exists();
+        $profile->loadCount(['followers', 'guestFollowers']);
+        $following = $request->user()
+            ? $profile->followers()->where('users.id', $request->user()->id)->exists()
+            : app(\App\Services\GuestFollows::class)->isFollowing($request, $profile);
         $visible = $profile->posts()->visible()->with('shop');
         $posts = (clone $visible)->where('kind', 'post')->latest()->paginate(12);
         $stories = (clone $visible)->where('kind', 'story')->oldest('id')->get();
