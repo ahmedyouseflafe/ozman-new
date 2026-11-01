@@ -141,7 +141,7 @@
     </section>
 </main>
 <button class="cart-button" id="cartButton" type="button"><i class="ti ti-shopping-bag"></i><span><strong><span id="cartCount">0</span> أصناف في السلة</strong><small id="cartTotal">0.00 ₪</small></span></button>
-<div class="layer" id="cartLayer"><section class="sheet"><header class="sheet-head"><h2>سلة الحلويات</h2><button class="close" id="cartClose" type="button">×</button></header><div class="items" id="cartItems"></div><div class="total"><span>المجموع</span><span id="sheetTotal">0.00 ₪</span></div><div class="fields"><input id="customerName" placeholder="اسمك"><input id="customerPhone" inputmode="tel" placeholder="رقم الجوال أو واتساب"></div><button class="send" id="sendOrder" type="button"><i class="ti ti-brand-whatsapp"></i> إرسال الطلب عبر واتساب</button></section></div>
+<div class="layer" id="cartLayer"><section class="sheet"><header class="sheet-head"><h2>سلة الحلويات</h2><button class="close" id="cartClose" type="button">×</button></header><div class="items" id="cartItems"></div><div class="total"><span>المجموع</span><span id="sheetTotal">0.00 ₪</span></div>@include('front.partials.loyalty_hint', ['total' => '#sheetTotal'])<div class="fields"><input id="customerName" placeholder="اسمك"><input id="customerPhone" inputmode="tel" placeholder="رقم الجوال أو واتساب"></div><button class="send" id="sendOrder" type="button"><i class="ti ti-brand-whatsapp"></i> إرسال الطلب عبر واتساب</button></section></div>
 <div class="lightbox" id="lightbox"><button type="button">×</button><img src="" alt=""></div>
 <script>
 (() => {

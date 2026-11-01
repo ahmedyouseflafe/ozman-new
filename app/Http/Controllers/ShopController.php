@@ -341,6 +341,7 @@ class ShopController extends Controller
         );
         $data['is_active'] = $request->boolean('is_active');
         $data['show_ozman_products'] = $request->boolean('show_ozman_products');
+        $data['loyalty_enabled'] = $request->boolean('loyalty_enabled');
         $previousSlug = $shop->slug;
 
         if ($this->isSuperAdmin()) {

@@ -159,6 +159,14 @@ return [
                 'employees.permissions' => ['label' => 'تعديل صلاحيات موظفي الإدارة', 'description' => 'منح أو سحب صلاحيات الموظفين.', 'routes' => ['employees.permissions.edit', 'employees.permissions.update']],
             ],
         ],
+        'customer_points' => [
+            'label' => 'نقاط العملاء',
+            'description' => 'أرصدة نقاط الولاء لعملاء المجتمع والتعديل اليدوي عليها.',
+            'permissions' => [
+                'customer_points.view' => ['label' => 'عرض نقاط العملاء', 'description' => 'قائمة العملاء وأرصدتهم المؤكدة والمعلّقة.', 'routes' => ['customer-points.index']],
+                'customer_points.adjust' => ['label' => 'تعديل نقاط العملاء يدوياً', 'description' => 'إضافة أو خصم نقاط مع سبب إجباري يُسجَّل باسم الموظف.', 'routes' => ['customer-points.adjust']],
+            ],
+        ],
         'users' => [
             'label' => 'جميع حسابات المستخدمين',
             'description' => 'قائمة الحسابات بمختلف أدوارها؛ مناسبة للإدارة العليا.',
@@ -175,6 +183,7 @@ return [
                 'settings.password' => ['label' => 'تغيير كلمة مرور الحساب', 'description' => 'تغيير كلمة مرور الحساب الحالي.', 'routes' => ['settings.password.update']],
                 'settings.system' => ['label' => 'تعديل إعدادات النظام العامة', 'description' => 'تغييرات تؤثر على النظام كله؛ للإدارة العليا.', 'routes' => ['settings.system.update']],
                 'settings.notifications' => ['label' => 'تعديل إعدادات الإشعارات', 'description' => 'تحديد أنواع الإشعارات وطريقة عرضها.', 'routes' => ['settings.notifications.update']],
+                'settings.loyalty' => ['label' => 'تعديل إعدادات برنامج النقاط', 'description' => 'تفعيل برنامج نقاط العملاء أو إيقافه وتحديد نسبة النقاط.', 'routes' => ['settings.loyalty.update']],
                 'notifications.manage' => ['label' => 'إدارة إشعارات لوحة الإدارة', 'description' => 'تعيين إشعارات الإدارة كمقروءة.', 'routes' => ['admin.notifications.readAll']],
             ],
         ],

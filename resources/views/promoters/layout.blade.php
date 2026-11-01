@@ -20,7 +20,7 @@
 <main class="social-wrap">
     <div class="profile-actions" style="margin-top:16px">
     @auth
-        <a class="button outline small account-button" href="{{ route('community.account') }}">@if(auth()->user()->isCustomer())@include('promoters.customer-avatar', ['user' => auth()->user(), 'class' => 'is-small'])@endif<span>حسابي · المتابعات والإشعارات 🔔</span></a>
+        <a class="button outline small account-button" href="{{ route('community.account') }}">@if(auth()->user()->isCustomer())@include('promoters.customer-avatar', ['user' => auth()->user(), 'class' => 'is-small'])@endif<span>حسابي · المتابعات والإشعارات 🔔</span>@if(auth()->user()->isCustomer())<span class="account-points" title="{{ __('رصيد النقاط') }}">⭐ {{ number_format(app(\App\Services\LoyaltyPoints::class)->balance(auth()->user())) }}</span>@endif</a>
         @if(auth()->user()->isSuperAdmin())<a class="button small" href="{{ route('promoter.accounts') }}">إضافة وإدارة المروّجين</a>@endif
     @else
         <a class="button small" href="{{ route('community.login') }}">دخول / إنشاء حساب عميل</a>

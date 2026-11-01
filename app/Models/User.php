@@ -98,6 +98,8 @@ class User extends Authenticatable
 
     public function isCustomer(): bool { return $this->role === 'customer'; }
 
+    public function loyaltyEntries() { return $this->hasMany(LoyaltyPointEntry::class); }
+
     // Community avatar: uploaded photo, or the name's first letter on a color derived from the name.
     public function avatarUrl(): ?string
     {

@@ -535,6 +535,47 @@
                             </button>
                         </div>
                     </form>
+
+                    <form class="panel" action="{{ route('settings.loyalty.update') }}" method="post" id="loyalty">
+                        @csrf
+                        @method('PUT')
+                        <div class="panel-head">
+                            <div class="panel-icon"><i class="ti ti-star" aria-hidden="true"></i></div>
+                            <div>
+                                <h2 class="panel-title">{{ __('برنامج النقاط') }}</h2>
+                                <p class="panel-subtitle">{{ __('نقاط ولاء لعملاء المجتمع المسجّلين على مشترياتهم.') }}</p>
+                            </div>
+                        </div>
+
+                        <div class="toggle-list">
+                            <label class="toggle-row">
+                                <span>
+                                    <span class="toggle-title">{{ __('تفعيل البرنامج') }}</span>
+                                    <span class="toggle-subtitle">{{ __('عند الإيقاف الطلبات الجديدة ما بتاخد نقاط. النقاط الموجودة بتضل.') }}</span>
+                                </span>
+                                <span class="switch">
+                                    <input type="checkbox" name="loyalty_enabled" value="1" @checked(old('loyalty_enabled', $loyaltySettings['enabled']))>
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="loyaltyAmount">{{ __('كل مبلغ (₪)') }}</label>
+                                <input id="loyaltyAmount" type="number" name="loyalty_amount" min="1" max="100000" step="1" inputmode="numeric" required value="{{ old('loyalty_amount', $loyaltySettings['amount']) }}">
+                            </div>
+                            <div class="field">
+                                <label for="loyaltyPoints">{{ __('بيعطي نقاط') }}</label>
+                                <input id="loyaltyPoints" type="number" name="loyalty_points" min="1" max="100000" step="1" inputmode="numeric" required value="{{ old('loyalty_points', $loyaltySettings['points']) }}">
+                            </div>
+
+                            <button class="btn-primary" type="submit">
+                                <i class="ti ti-device-floppy" aria-hidden="true"></i>
+                                {{ __('حفظ إعدادات النقاط') }}
+                            </button>
+                        </div>
+                    </form>
                 </section>
             </div>
         </main>

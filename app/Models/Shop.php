@@ -43,12 +43,14 @@ class Shop extends Model
         'is_active',
         'is_accepting_orders',
         'show_ozman_products',
+        'loyalty_enabled',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'is_accepting_orders' => 'boolean',
         'show_ozman_products' => 'boolean',
+        'loyalty_enabled' => 'boolean',
     ];
 
     protected $attributes = [
@@ -56,6 +58,7 @@ class Shop extends Model
         'is_active' => true,
         'is_accepting_orders' => true,
         'show_ozman_products' => true,
+        'loyalty_enabled' => true,
     ];
 
     public function catalogDefinition(): array

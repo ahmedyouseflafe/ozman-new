@@ -2176,7 +2176,7 @@
                     </div>
                 </div>
                 <div class="cart-items" id="cartItems"></div>
-                <div class="cart-total"><span>{{ $copy['total'] }}</span><strong><span id="total">0.00</span> ₪</strong></div>
+                <div class="cart-total"><span>{{ $copy['total'] }}</span><strong><span id="total">0.00</span> ₪</strong></div>@include('front.partials.loyalty_hint', ['total' => '#total'])
                 @if($hasCustomerWelcome)<p id="signupDiscountLine" hidden style="color:#51e4b0;font-size:12px" aria-live="polite"></p>@endif
                 @if($hasCustomerWelcome)<div id="signupGiftLine" hidden style="color:#51e4b0;padding:12px 0;font-size:13px" aria-live="polite"><img id="signupCartGiftImage" alt="" hidden style="width:64px;height:64px;object-fit:contain;vertical-align:middle;border-radius:10px;background:white;margin-inline-end:10px"><span id="signupCartGiftLabel"></span></div>@endif
                 @if($table)

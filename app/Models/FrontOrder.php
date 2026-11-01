@@ -10,6 +10,7 @@ class FrontOrder extends Model
 {
     protected $fillable = [
         'shop_id',
+        'user_id',
         'restaurant_table_id',
         'restaurant_driver_id',
         'distributor_id',
@@ -71,6 +72,16 @@ class FrontOrder extends Model
     public function shop(): BelongsTo
     {
         return $this->belongsTo(Shop::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function loyaltyEntries(): HasMany
+    {
+        return $this->hasMany(LoyaltyPointEntry::class);
     }
 
     public function restaurantTable(): BelongsTo

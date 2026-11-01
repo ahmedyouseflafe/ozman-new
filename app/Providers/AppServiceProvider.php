@@ -30,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
             \App\Models\ProductImage::class, \App\Models\ProductCampaign::class] as $model) {
             $model::observe(\App\Services\ShopActivityRecorder::class);
         }
+        \App\Models\FrontOrder::observe(\App\Observers\FrontOrderLoyaltyObserver::class);
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, function ($event) {
             // AuthController can issue a second Login event to enable remember-me.
             if (! $event->user->isShopOwner() || request()->attributes->get('analytics_login_recorded')) return;

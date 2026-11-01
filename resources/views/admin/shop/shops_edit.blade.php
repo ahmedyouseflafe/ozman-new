@@ -1126,6 +1126,20 @@
                                 <span class="slider"></span>
                             </label>
                         </div>
+
+                        <div class="switch-card">
+                            <div class="card-copy">
+                                <span class="card-icon"><i class="ti ti-star" aria-hidden="true"></i></span>
+                                <span>
+                                    <span class="card-title">{{ __('مشارك ببرنامج النقاط') }}</span>
+                                    <span class="card-sub">{{ __('العملاء المسجّلين بيكسبوا نقاط على طلباتهم من هذا المحل.') }}</span>
+                                </span>
+                            </div>
+                            <label class="switch" for="loyalty_enabled">
+                                <input type="checkbox" id="loyalty_enabled" name="loyalty_enabled" value="1" @checked(old('loyalty_enabled', data_get($shop, 'loyalty_enabled', true)))>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
                     </section>
 
                     <div class="form-actions">

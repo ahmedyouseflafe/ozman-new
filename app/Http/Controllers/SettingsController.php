@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\LoyaltyPoints;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,7 +13,7 @@ use Illuminate\View\View;
 
 class SettingsController extends Controller
 {
-    private const SETTINGS_PATH = 'ozman_settings.json';
+    public const SETTINGS_PATH = 'ozman_settings.json';
 
     public function index(): View
     {
@@ -28,6 +29,7 @@ class SettingsController extends Controller
             'systemName' => $settings['system_name'],
             'defaultCurrency' => $settings['currency'],
             'notificationSettings' => $settings['notifications'],
+            'loyaltySettings' => app(LoyaltyPoints::class)->settings(),
         ]);
     }
 
@@ -93,6 +95,20 @@ class SettingsController extends Controller
         $this->saveSettings($settings);
 
         return back()->with('status', 'تم حفظ إعدادات الإشعارات بنجاح.');
+    }
+
+    public function updateLoyalty(Request $request, LoyaltyPoints $loyalty): RedirectResponse
+    {
+        abort_unless($this->canAccessCurrentRoute(), 403);
+
+        $data = $request->validate([
+            'loyalty_amount' => ['required', 'integer', 'min:1', 'max:100000'],
+            'loyalty_points' => ['required', 'integer', 'min:1', 'max:100000'],
+        ]);
+
+        $loyalty->saveSettings($request->boolean('loyalty_enabled'), (int) $data['loyalty_amount'], (int) $data['loyalty_points']);
+
+        return back()->with('status', __('تم حفظ إعدادات برنامج النقاط.'));
     }
 
     private function settings(): array

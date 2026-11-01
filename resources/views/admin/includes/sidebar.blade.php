@@ -581,6 +581,14 @@
         </a>
         @endif
 
+        @if(($isSuperAdmin || $isPermissionManaged) && $canSee(['customer-points.index']))
+        <a href="{{ route('customer-points.index') }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('customer-points.*') ? 'active' : '' }}">
+             <i class="ti ti-star" aria-hidden="true"></i>
+             {{ __('نقاط العملاء') }}
+        </a>
+        @endif
+
         @if(($isSuperAdmin || $isPermissionManaged) && $canSee(['employees', 'employees.create', 'employees.edit', 'employees.permissions.edit']))
         <a href="{{ route('employees') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('employees*') ? 'active' : '' }}">

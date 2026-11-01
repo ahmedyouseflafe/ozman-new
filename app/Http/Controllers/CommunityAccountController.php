@@ -2,16 +2,16 @@
 namespace App\Http\Controllers;
 use App\Models\{User, PromoterProfile, PromoterUpdate, CommunityPushSubscription};
 use Illuminate\Http\Request;
-use App\Services\{CustomerAvatar, GuestFollows};
+use App\Services\{CustomerAvatar, GuestFollows, LoyaltyPoints};
 use Illuminate\Support\Facades\{Auth, DB};
 use Illuminate\Validation\Rules\Password;
 
 class CommunityAccountController extends Controller {
     private function active(Request $r): void { abort_unless($r->user()?->is_active,403); }
     public function loginPage(Request $r) {
-        // "Create account" from a promoter page brings the visitor back to that page afterwards.
+        // Links from promoter pages and store carts bring the visitor back afterwards. Same-site paths only (no //host or backslashes).
         $return=$r->query('return');
-        if (!$r->user() && is_string($return) && preg_match('~^/promoters/[A-Za-z0-9._\-]+$~',$return)) redirect()->setIntendedUrl(url($return));
+        if (!$r->user() && is_string($return) && strlen($return)<=2000 && preg_match('~^/(?![/\\\\])[^\s\\\\]*$~',$return)) redirect()->setIntendedUrl(url($return));
         return response()->view('promoters.community-login',['registerFirst'=>$r->query('tab')==='register'])->header('Cache-Control','no-store');
     }
     public function login(Request $r) {
@@ -30,12 +30,14 @@ class CommunityAccountController extends Controller {
         Auth::login($user,true); $r->session()->regenerate(); app(GuestFollows::class)->merge($r,$user);
         return redirect()->intended(route('community.account'))->with('status','أهلًا فيك! اكتشف المروّجين وتابع حساباتك المفضلة.');
     }
-    public function account(Request $r) {
+    public function account(Request $r, LoyaltyPoints $loyalty) {
         $this->active($r); $user=$r->user();
+        $points=['balance'=>$loyalty->balance($user),'pending'=>$loyalty->pendingPoints($user)];
+        $pointEntries=$user->loyaltyEntries()->with(['shop:id,name','order:id,order_number'])->latest('id')->paginate(10,['*'],'points');
         $profiles=PromoterProfile::published()->whereHas('followers',fn($q)=>$q->where('users.id',$user->id))->paginate(12,['*'],'following');
         $updates=PromoterUpdate::where('user_id',$user->id)->whereHas('post',fn($q)=>$q->visible()->whereHas('profile',fn($p)=>$p->published()->whereHas('followers',fn($f)=>$f->where('users.id',$user->id))))->with('post.profile')->latest()->paginate(15,['*'],'updates');
         $pushEnabled=CommunityPushSubscription::where('user_id',$user->id)->where('endpoint_hash',$r->session()->get('community_push_endpoint_hash') ?? $r->cookie('community_push_device'))->exists();
-        return response()->view('promoters.community-account',compact('user','profiles','updates','pushEnabled'))->header('Cache-Control','private, no-store');
+        return response()->view('promoters.community-account',compact('user','profiles','updates','pushEnabled','points','pointEntries'))->header('Cache-Control','private, no-store');
     }
     public function update(Request $r) {
         $this->active($r);

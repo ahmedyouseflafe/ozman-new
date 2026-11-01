@@ -622,6 +622,7 @@
                         <strong id="cartTotal">0</strong>
                     </div>
                 </div>
+                @include('front.partials.loyalty_hint', ['total' => '#cartTotal'])
 
                 <div class="cart-actions">
                     <button type="button" class="cart-clear-btn" id="cartClearBtn">{{ __('تفريغ السلة') }}</button>
