@@ -2,7 +2,7 @@
 namespace App\Http\Controllers;
 use App\Models\{User, PromoterProfile, PromoterUpdate, CommunityPushSubscription};
 use Illuminate\Http\Request;
-use App\Services\GuestFollows;
+use App\Services\{CustomerAvatar, GuestFollows};
 use Illuminate\Support\Facades\{Auth, DB};
 use Illuminate\Validation\Rules\Password;
 
@@ -20,11 +20,14 @@ class CommunityAccountController extends Controller {
         $r->session()->regenerate(); app(GuestFollows::class)->merge($r,$r->user());
         return redirect()->intended(route($r->user()->isPromoter() || $r->user()->isSuperAdmin() ? 'promoter.dashboard' : 'community.account'));
     }
-    public function register(Request $r) {
+    public function register(Request $r, CustomerAvatar $avatars) {
         abort_if($r->user(),403);
         $data=$r->validate(['name'=>['required','string','max:100'],'email'=>['required','email','max:255','unique:users,email'],
-            'phone'=>['nullable','string','max:30'],'password'=>['required','string','confirmed',Password::defaults()]]);
-        $user=User::create([...$data,'role'=>'customer','is_active'=>true]); Auth::login($user,true); $r->session()->regenerate(); app(GuestFollows::class)->merge($r,$user);
+            'phone'=>['nullable','string','max:30'],'password'=>['required','string','confirmed',Password::defaults()],...CustomerAvatar::rules()],CustomerAvatar::messages());
+        // The photo is optional; it is processed first so a bad image never leaves a half-created account.
+        $avatar=isset($data['avatar']) ? $avatars->store($data['avatar']) : null; unset($data['avatar']);
+        try { $user=User::create([...$data,'role'=>'customer','is_active'=>true,'avatar_path'=>$avatar]); } catch (\Throwable $e) { $avatars->delete($avatar); throw $e; }
+        Auth::login($user,true); $r->session()->regenerate(); app(GuestFollows::class)->merge($r,$user);
         return redirect()->intended(route('community.account'))->with('status','أهلًا فيك! اكتشف المروّجين وتابع حساباتك المفضلة.');
     }
     public function account(Request $r) {
@@ -38,6 +41,16 @@ class CommunityAccountController extends Controller {
         $this->active($r);
         $r->user()->update($r->validate(['name'=>['required','string','max:100'],'phone'=>['nullable','string','max:30']]));
         return back()->with('status','تم حفظ بياناتك.');
+    }
+    public function updateAvatar(Request $r, CustomerAvatar $avatars) {
+        $this->active($r); abort_unless($r->user()->isCustomer(),403);
+        $avatars->replace($r->user(),$r->validate(CustomerAvatar::rules(true),CustomerAvatar::messages())['avatar']);
+        return back()->with('status',__('تم تحديث صورتك.'));
+    }
+    public function destroyAvatar(Request $r, CustomerAvatar $avatars) {
+        $this->active($r); abort_unless($r->user()->isCustomer(),403);
+        $avatars->remove($r->user());
+        return back()->with('status',__('تم حذف صورتك.'));
     }
     public function read(Request $r, PromoterUpdate $update) {
         $this->active($r); abort_unless((int)$update->user_id===(int)$r->user()->id,403);

@@ -24,6 +24,7 @@ class User extends Authenticatable
         'phone',
         'password',
         'image',
+        'avatar_path',
         'role',
         'is_active',
     ];
@@ -94,6 +95,26 @@ class User extends Authenticatable
     }
 
     public function isPromoter(): bool { return $this->role === 'promoter'; }
+
+    public function isCustomer(): bool { return $this->role === 'customer'; }
+
+    // Community avatar: uploaded photo, or the name's first letter on a color derived from the name.
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path ? asset('storage/'.$this->avatar_path) : null;
+    }
+
+    public function avatarInitial(): string
+    {
+        return mb_strtoupper(mb_substr(trim((string) $this->name), 0, 1)) ?: '?';
+    }
+
+    public function avatarColor(): string
+    {
+        $palette = ['#7151a5', '#b5577b', '#3f7f8c', '#c0773a', '#5a7d3c', '#4f63a8', '#9a4f9e', '#a5544a'];
+
+        return $palette[crc32(mb_strtolower(trim((string) $this->name))) % count($palette)];
+    }
     public function promoterProfile() { return $this->hasOne(PromoterProfile::class); }
 
     public function isEmployee(): bool

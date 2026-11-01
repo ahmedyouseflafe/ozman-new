@@ -134,5 +134,21 @@
   "تأخر الاتصال. حاول مجددًا للتأكد من حفظ المتابعة.": "The connection is slow. Try again to make sure the follow was saved.",
   "تابعت :name ✓ — احفظ متابعاتك على كل أجهزتك": "You followed :name ✓ — keep your follows on all your devices",
   "إنشاء حساب": "Create account",
-  "لاحقاً": "Later"
+  "لاحقاً": "Later",
+  "أضف صورتك (اختياري)": "Add your photo (optional)",
+  "أضف صورة": "Add a photo",
+  "إزالة الصورة": "Remove photo",
+  "JPG أو PNG أو WebP، حتى 5 ميجا.": "JPG, PNG or WebP, up to 5 MB.",
+  "اضغط على الصورة لتغييرها.": "Tap the photo to change it.",
+  "الصورة لازم تكون JPG أو PNG أو WebP.": "The photo must be JPG, PNG or WebP.",
+  "حجم الصورة لازم يكون 5 ميجا أو أقل.": "The photo must be 5 MB or smaller.",
+  "تعذّر رفع الصورة. تأكد إن حجمها أقل من 5 ميجا.": "The photo could not be uploaded. Make sure it is under 5 MB.",
+  "تعذّرت معالجة الصورة. جرّب صورة ثانية.": "We couldn't process this photo. Try another one.",
+  "أبعاد الصورة كبيرة جداً. جرّب صورة أصغر.": "The photo dimensions are too large. Try a smaller one.",
+  "اختر صورة أولاً.": "Choose a photo first.",
+  "صورتك": "Your photo",
+  "حفظ الصورة": "Save photo",
+  "حذف الصورة": "Delete photo",
+  "تم تحديث صورتك.": "Your photo was updated.",
+  "تم حذف صورتك.": "Your photo was deleted."
 }

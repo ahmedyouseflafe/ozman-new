@@ -10,7 +10,8 @@
 <label>البريد الإلكتروني<input name="email" type="email" dir="ltr" autocomplete="email" value="{{ old('email') }}" required></label>
 <label>كلمة المرور<input name="password" type="password" autocomplete="current-password" required></label><button class="button">دخول لحسابي ←</button>
 </form><small>مروّج جديد؟ افتح رابط الدعوة اللي أرسلته إلك الإدارة لتعيين كلمة مرورك.</small></section>
-<section class="panel" id="register"><span class="eyebrow">ابدأ اكتشافك</span><h2>إنشاء حساب عميل</h2><p>ملفك للمتابعة والإشعارات، بدون صلاحيات نشر.</p><form method="post" action="{{ route('community.register') }}" class="stack">@csrf
+<section class="panel" id="register"><span class="eyebrow">ابدأ اكتشافك</span><h2>إنشاء حساب عميل</h2><p>ملفك للمتابعة والإشعارات، بدون صلاحيات نشر.</p><form method="post" action="{{ route('community.register') }}" class="stack" enctype="multipart/form-data">@csrf
+@include('promoters.avatar-picker')
 <label>اسمك<input name="name" autocomplete="name" @if($registerFirst ?? false) autofocus @endif maxlength="100" value="{{ old('name') }}" required></label>
 <label>البريد الإلكتروني<input name="email" type="email" dir="ltr" autocomplete="email" value="{{ old('email') }}" required></label>
 <label>رقم الجوال (اختياري)<input name="phone" type="tel" dir="ltr" autocomplete="tel" maxlength="30" value="{{ old('phone') }}"></label>

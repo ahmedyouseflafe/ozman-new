@@ -1,9 +1,17 @@
 @extends('promoters.layout')
 @section('title','حسابي • مجتمع أوزمان')
 @section('content')
-<section class="community-hero"><span class="eyebrow">مساحتك الشخصية</span><h1>أهلًا {{ $user->name }}</h1><p>حسابات بتتابعها، حكايات جديدة، وكل إشعاراتك هون.</p><div class="profile-actions"><a href="{{ route('promoters.index') }}" class="button">اكتشف المروّجين ←</a><a href="#updates" class="button outline">آخر التحديثات</a></div></section>
+<section class="community-hero"><span class="eyebrow">مساحتك الشخصية</span><div class="account-hero-identity">@if($user->isCustomer())@include('promoters.customer-avatar', ['class' => 'is-large'])@endif<h1>أهلًا {{ $user->name }}</h1></div><p>حسابات بتتابعها، حكايات جديدة، وكل إشعاراتك هون.</p><div class="profile-actions"><a href="{{ route('promoters.index') }}" class="button">اكتشف المروّجين ←</a><a href="#updates" class="button outline">آخر التحديثات</a></div></section>
 <div class="studio-columns">
 <aside class="stack">
+@if($user->isCustomer())
+<section class="panel customer-avatar-panel"><h2>{{ __('صورتك') }}</h2>
+<form method="post" action="{{ route('community.avatar.update') }}" enctype="multipart/form-data" class="stack">@csrf @method('PUT')
+@include('promoters.avatar-picker', ['label' => __('أضف صورة')])
+<button class="button" type="submit" data-avatar-save hidden>{{ __('حفظ الصورة') }}</button></form>
+@if($user->avatar_path)<form method="post" action="{{ route('community.avatar.destroy') }}">@csrf @method('DELETE')<button class="text-link danger" type="submit">{{ __('حذف الصورة') }}</button></form>@endif
+</section>
+@endif
 <section class="panel"><h2>ملفي الشخصي</h2><form method="post" action="{{ route('community.update') }}" class="stack">@csrf @method('PUT')
 <label>الاسم<input name="name" value="{{ old('name',$user->name) }}" maxlength="100" required autocomplete="name"></label>
 <label>رقم الجوال (اختياري)<input name="phone" type="tel" value="{{ old('phone',$user->phone) }}" maxlength="30" autocomplete="tel"></label>
@@ -16,7 +24,7 @@
 <section class="panel" id="updates"><h2>آخر التحديثات</h2><div class="stack">@forelse($updates as $update)<article class="community-update {{ $update->read_at ? '' : 'is-unread' }}"><span aria-hidden="true">{{ $update->post->kind==='story'?'◉':'▷' }}</span><div><strong>{{ $update->post->profile->display_name }}</strong><p>{{ $update->post->kind==='story'?'نشر ستوري جديدة':'نشر محتوى جديد' }} · {{ $update->created_at->diffForHumans() }}</p></div><form method="post" action="{{ route('community.read',$update) }}">@csrf<button class="button small outline">شاهد</button></form></article>@empty<div class="quiet-empty">أول ما ينزل جديد من الحسابات اللي بتتابعها، بتلاقيه هون.</div>@endforelse</div>@include('promoters.pagination',['items'=>$updates])</section></div></div>
 @endsection
 @section('scripts')
-<script>window.OZMAN_COMMUNITY_PUSH=@json(['enabled'=>$pushEnabled,'keyUrl'=>route('community.push.key'),'storeUrl'=>route('community.push.store'),'destroyUrl'=>route('community.push.destroy')]);</script>
+<script>window.OZMAN_COMMUNITY_PUSH={{ \Illuminate\Support\Js::from(['enabled'=>$pushEnabled,'keyUrl'=>route('community.push.key'),'storeUrl'=>route('community.push.store'),'destroyUrl'=>route('community.push.destroy')]) }};</script>
 <script src="{{ asset('web-push-client.js') }}?v={{ filemtime(public_path('web-push-client.js')) }}"></script>
 <script>{!! file_get_contents(public_path('community-push.js')) !!}</script>
 @endsection

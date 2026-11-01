@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PromoterProfile;
 use App\Models\User;
+use App\Services\CustomerAvatar;
 use App\Services\GuestFollows;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -44,7 +45,7 @@ class PromoterFollowController extends Controller
         return $this->store($request, $profile);
     }
 
-    public function register(Request $request, PromoterProfile $profile)
+    public function register(Request $request, PromoterProfile $profile, CustomerAvatar $avatars)
     {
         $this->published($profile);
         if (! $request->user()) {
@@ -52,8 +53,16 @@ class PromoterFollowController extends Controller
                 'name' => ['required', 'string', 'max:100'],
                 'email' => ['required', 'email', 'max:255', 'unique:users,email'],
                 'password' => ['required', 'string', 'confirmed', Password::defaults()],
-            ]);
-            $user = User::create([...$data, 'role' => 'customer', 'is_active' => true]);
+                ...CustomerAvatar::rules(),
+            ], CustomerAvatar::messages());
+            $avatar = isset($data['avatar']) ? $avatars->store($data['avatar']) : null;
+            unset($data['avatar']);
+            try {
+                $user = User::create([...$data, 'role' => 'customer', 'is_active' => true, 'avatar_path' => $avatar]);
+            } catch (\Throwable $e) {
+                $avatars->delete($avatar);
+                throw $e;
+            }
             Auth::login($user, true);
             $request->session()->regenerate();
             $this->guests->merge($request, $user);

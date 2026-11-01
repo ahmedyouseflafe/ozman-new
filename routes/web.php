@@ -74,6 +74,8 @@ Route::post('/creator-invitation/{token}', [\App\Http\Controllers\PromoterInvita
 Route::middleware(['auth','throttle:60,1'])->prefix('community')->name('community.')->group(function () {
     Route::get('/account', [\App\Http\Controllers\CommunityAccountController::class, 'account'])->name('account');
     Route::put('/account', [\App\Http\Controllers\CommunityAccountController::class, 'update'])->name('update');
+    Route::put('/avatar', [\App\Http\Controllers\CommunityAccountController::class, 'updateAvatar'])->middleware('throttle:10,1')->name('avatar.update');
+    Route::delete('/avatar', [\App\Http\Controllers\CommunityAccountController::class, 'destroyAvatar'])->name('avatar.destroy');
     Route::post('/updates/{update}', [\App\Http\Controllers\CommunityAccountController::class, 'read'])->name('read');
     Route::get('/push/key', [\App\Http\Controllers\CommunityAccountController::class, 'key'])->name('push.key');
     Route::post('/push', [\App\Http\Controllers\CommunityAccountController::class, 'subscribe'])->name('push.store');
