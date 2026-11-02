@@ -298,6 +298,11 @@
                             </div>
                         </div>
                     </div>
+                    {{-- Entry point to Ozman Creators (promoter pages) right under the Ozman logo. --}}
+                    <a href="{{ route('promoters.index') }}" class="location-btn promoters-entry-btn"
+                        style="justify-content: center; text-decoration: none; width: 100%; margin-top: 8px;">
+                        <i class="fas fa-star"></i> {{ __('المروّجين') }}
+                    </a>
                 </div>
                 <!-- Social icons -->
                 <div class="social-icons-vertical">
