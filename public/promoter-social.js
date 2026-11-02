@@ -70,6 +70,7 @@
         byId('storyProgress').hidden = !isStory;
         byId('storyProgress').firstElementChild.style.width = '0%';
         shopLink(byId('viewerShop'), item);
+        const giftButton = byId('viewerGift'); if (giftButton) giftButton.dataset.postId = item.id || '';
         const media = document.createElement(item.type === 'video' ? 'video' : 'img');
         media.addEventListener('error', () => {
             ready = false;pause(true);byId('viewerStatus').textContent = 'المحتوى غير متاح أو انتهت مدة عرضه. انتقل للتالي أو حدّث الصفحة.';

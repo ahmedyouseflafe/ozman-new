@@ -12,6 +12,7 @@
                 <div><strong>{{ $shopCount }}</strong><span>محل مذكور</span></div>
                 <div><strong>{{ number_format($profile->page_views) }}</strong><span>{{ __('زيارة') }}</span></div>
                 <div><strong id="promoterGiftPoints">{{ number_format($profile->gift_points) }}</strong><span>{{ __('🎁 نقاط هدايا') }}</span></div>
+                <div title="{{ __('كم مرة الزوار فتحوا محل من منشورات هالصفحة') }}"><strong>{{ number_format($shopVisits) }}</strong><span>{{ __('🛍 زيارة للمحلات') }}</span></div>
             </div>
             <p class="bio">{{ $profile->bio ?: 'أشارككم محلات وتجارب تستحق الزيارة. شوفوا آخر ستورياتي وفيديوهاتي هنا.' }}</p>
             <div class="profile-actions">
@@ -33,6 +34,33 @@
         @endforelse
     </div>
 </section>
+@if($featuredShops->isNotEmpty())
+<section class="featured-shops" aria-labelledby="featuredShopsTitle">
+    <h2 id="featuredShopsTitle">{{ __('المحلات اللي بحكي عنها') }}</h2>
+    <div class="featured-shops-row">
+        @foreach($featuredShops as $row)
+            @php($shop = $row['post']->shop)
+            <a class="featured-shop" href="{{ $row['post']->shopVisitUrl() }}">
+                <span class="featured-shop-logo">@if($shop->logo)<img src="{{ str_starts_with($shop->logo, 'http') ? $shop->logo : asset($shop->logo) }}" alt="" loading="lazy">@else{{ mb_substr(preg_replace('/^ال(?=\S)/u', '', trim($shop->name)) ?: $shop->name, 0, 1) }}@endif</span>
+                <span class="featured-shop-name">{{ $shop->name }}</span>
+                <span class="featured-shop-meta">{{ trans_choice('{1} منشور واحد|[2,*] :count منشورات', $row['posts_count'], ['count' => $row['posts_count']]) }}</span>
+                <span class="featured-shop-cta">{{ __('زور المحل ←') }}</span>
+            </a>
+        @endforeach
+    </div>
+</section>
+@endif
+@if($supporters->isNotEmpty())
+<section class="top-supporters" aria-labelledby="topSupportersTitle">
+    <h2 id="topSupportersTitle">{{ __('🏆 أكثر الداعمين') }}</h2>
+    <ol>
+        @foreach($supporters as $supporter)
+            @continue(! $supporter->sender)
+            <li><span class="supporter-rank">{{ $loop->iteration }}</span>@include('promoters.customer-avatar', ['user' => $supporter->sender, 'class' => 'is-small'])<span class="supporter-name">{{ \Illuminate\Support\Str::before(trim($supporter->sender->name).' ', ' ') }}</span><b>⭐ {{ number_format($supporter->total_points) }}</b></li>
+        @endforeach
+    </ol>
+</section>
+@endif
 <nav class="profile-tabs" aria-label="محتوى الحساب">
     <button type="button" id="postsTab" data-profile-tab="posts" aria-controls="posts" aria-pressed="true">▦ <span>المنشورات</span></button>
     <button type="button" id="reelsTab" data-profile-tab="promoterScreen" aria-controls="promoterScreen" aria-pressed="false">▷ <span>الفيديوهات</span></button>

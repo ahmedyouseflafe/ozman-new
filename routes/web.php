@@ -91,6 +91,7 @@ Route::delete('/promoters/{profile}/follow', [\App\Http\Controllers\PromoterFoll
 Route::post('/promoters/{profile}/gifts', [\App\Http\Controllers\PromoterGiftController::class, 'store'])->middleware('throttle:20,1')->name('promoters.gifts.store');
 Route::get('/promoter-media/avatar/{profile}', [\App\Http\Controllers\PromoterController::class, 'avatar'])->name('promoters.avatar');
 Route::get('/promoter-media/posts/{post}/{part?}', [\App\Http\Controllers\PromoterController::class, 'media'])->name('promoters.media');
+Route::get('/promoter-posts/{post}/shop', [\App\Http\Controllers\PromoterController::class, 'visitShop'])->middleware('throttle:60,1')->name('promoters.shop-visit');
 Route::middleware(['auth', \App\Http\Middleware\EnsurePromoterAccess::class])->prefix('promoter')->name('promoter.')->group(function () {
     Route::get('/', [\App\Http\Controllers\PromoterController::class, 'dashboard'])->name('dashboard');
     Route::get('/accounts', [\App\Http\Controllers\PromoterController::class, 'accounts'])->name('accounts');

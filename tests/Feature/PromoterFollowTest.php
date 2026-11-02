@@ -36,7 +36,7 @@ class PromoterFollowTest extends TestCase
         $this->deleteJson($url)->assertJsonPath('followers_count', 1);
         $this->assertDatabaseHas('promoter_followers', ['user_id' => $b->id]);
         $this->actingAs($profile->user)->get(route('promoter.manage', $profile))->assertOk()->assertSee('وصول صفحتك')->assertSee('<strong>1</strong>', false);
-        $this->get('/promoters')->assertOk()->assertSee('1 متابع');
+        $this->get('/promoters')->assertOk()->assertSee('<b>1</b> متابع', false);
     }
 
     public function test_self_follow_disabled_users_and_unpublished_profiles_are_rejected(): void
@@ -148,7 +148,7 @@ class PromoterFollowTest extends TestCase
 
         $this->actingAs(User::factory()->create(['role' => 'customer', 'is_active' => true]))->putJson($url)->assertJsonPath('followers_count', 2);
         $this->app['auth']->forgetGuards();
-        $this->get('/promoters')->assertSee('2 متابع');
+        $this->get('/promoters')->assertSee('<b>2</b> متابع', false);
         $this->withCookie(GuestFollows::COOKIE, $token)->deleteJson($url)->assertOk()->assertJson(['following' => false, 'followers_count' => 1]);
         $this->assertDatabaseCount('promoter_guest_followers', 0);
         // Unfollowing again is a no-op.

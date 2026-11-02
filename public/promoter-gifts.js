@@ -22,6 +22,8 @@
 
     document.querySelectorAll('[data-gift-open]').forEach((button) => button.addEventListener('click', () => {
         setStatus('');
+        // Opened from the post viewer: the gift is tied to that post.
+        dialog.dataset.postId = button.dataset.postId || '';
         if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', '');
     }));
     dialog.querySelectorAll('[data-gift-close]').forEach((button) => button.addEventListener('click', () => dialog.close()));
@@ -47,7 +49,7 @@
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf() },
-                body: JSON.stringify({ gift_id: Number(button.dataset.giftId) }),
+                body: JSON.stringify({ gift_id: Number(button.dataset.giftId), post_id: dialog.dataset.postId ? Number(dialog.dataset.postId) : null }),
             });
             const data = await response.json().catch(() => ({}));
             if (response.status === 401 && data.login) { window.location.href = data.login; return; }

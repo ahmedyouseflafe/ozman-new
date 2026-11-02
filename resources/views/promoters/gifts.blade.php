@@ -2,7 +2,7 @@
 @section('title', __('الهدايا والمستويات | أوزمان'))
 @section('content')
 <style>{!! file_get_contents(public_path('promoter-profile.css')) !!}</style>
-<div class="section-heading page-heading"><div><span class="eyebrow">{{ __('إدارة أوزمان') }}</span><h1>{{ __('الهدايا والمستويات') }}</h1><p>{{ __('الزباين بيهدوا المروّجين من نقاط مشترياتهم، والهدايا بترفع مستوى الصفحة.') }}</p></div><a class="button outline" href="{{ route('promoter.accounts') }}">{{ __('حسابات المروّجات') }}</a></div>
+<div class="section-heading page-heading"><div><span class="eyebrow">{{ __('إدارة أوزمان') }}</span><h1>{{ __('الهدايا والمستويات') }}</h1><p>{{ __('الزباين بيهدوا المروّجين من نقاط مشترياتهم، والهدايا بترفع مستوى الصفحة.') }}</p></div><a class="button outline" href="{{ route('promoter.accounts') }}">{{ __('حسابات المروّجين') }}</a></div>
 <div class="studio-columns">
 <section class="panel"><h2>{{ __('قائمة الهدايا') }}</h2>
 <div class="stack">

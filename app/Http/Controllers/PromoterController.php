@@ -185,7 +185,13 @@ class PromoterController extends Controller
             ? $query->orderByRaw(\App\Services\PromoterLevel::scoreSql().' desc')->latest('id')
             : $query->latest();
 
-        return response()->view('promoters.directory', ['profiles' => $query->paginate(24)->withQueryString(), 'sort' => $sort])->header('Cache-Control', 'no-store');
+        // Latest visible photos/videos from published pages, shown in the hero so visitors see real stories first.
+        $recent = PromoterPost::query()->visible()
+            ->whereHas('profile', fn ($q) => $q->published())
+            ->where(fn ($q) => $q->where('type', 'image')->orWhereNotNull('poster'))
+            ->with('profile')->latest('id')->limit(8)->get();
+
+        return response()->view('promoters.directory', ['profiles' => $query->paginate(24)->withQueryString(), 'sort' => $sort, 'recent' => $recent])->header('Cache-Control', 'no-store');
     }
 
     public function show(Request $request, string $slug)
@@ -210,6 +216,19 @@ class PromoterController extends Controller
         $shopCount = (clone $visible)->whereHas('shop', fn ($q) => $q->where('is_active', true))->distinct()->count('shop_id');
         $shops = $canManage ? Shop::where('is_active', true)->orderBy('name')->get(['id', 'name']) : collect();
 
+        // Shops this promoter talks about: newest post per shop gives the tracked "visit" link.
+        $shopRows = (clone $visible)->whereHas('shop', fn ($q) => $q->where('is_active', true))
+            ->selectRaw('shop_id, COUNT(*) as posts_count, MAX(id) as latest_post_id')
+            ->groupBy('shop_id')->orderByDesc('latest_post_id')->limit(12)->get();
+        $latestPosts = PromoterPost::query()->with('shop')->whereKey($shopRows->pluck('latest_post_id'))->get()->keyBy('id');
+        $featuredShops = $shopRows->map(fn ($row) => ['post' => $latestPosts[$row->latest_post_id] ?? null, 'posts_count' => (int) $row->posts_count])
+            ->filter(fn ($row) => $row['post']?->shop)->values();
+        $shopVisits = (int) $profile->posts()->sum('shop_clicks');
+        // Top supporters by gift points; only first names are shown publicly.
+        $supporters = \App\Models\PromoterGiftSend::query()->where('promoter_profile_id', $profile->id)->whereNotNull('user_id')
+            ->selectRaw('user_id, SUM(points) as total_points, COUNT(*) as gifts_count')
+            ->groupBy('user_id')->orderByDesc('total_points')->limit(5)->with('sender')->get();
+
         $loyalty = app(\App\Services\LoyaltyPoints::class);
         $gifting = [
             'gifts' => \App\Models\PromoterGift::available()->get(['id', 'name', 'icon', 'points']),
@@ -217,7 +236,7 @@ class PromoterController extends Controller
             'balance' => $loyalty->eligibleCustomer($request->user()) ? $loyalty->balance($request->user()) : null,
         ];
 
-        return response()->view('promoters.profile', compact('profile', 'posts', 'stories', 'videos', 'shopCount', 'following', 'canManage', 'shops', 'gifting'))->header('Cache-Control', 'private, no-store');
+        return response()->view('promoters.profile', compact('profile', 'posts', 'stories', 'videos', 'shopCount', 'following', 'canManage', 'shops', 'gifting', 'featuredShops', 'shopVisits', 'supporters'))->header('Cache-Control', 'private, no-store');
     }
 
     /** One visit per visitor session per day; the promoter and admins don't count. */
@@ -233,6 +252,20 @@ class PromoterController extends Controller
         $request->session()->put($key, now()->toDateString());
         PromoterProfile::query()->whereKey($profile->id)->increment('page_views');
         $profile->page_views = (int) $profile->page_views + 1;
+    }
+
+    /** Counts one shop visit per visitor session per post, then opens the shop. */
+    public function visitShop(Request $request, PromoterPost $post)
+    {
+        abort_unless($post->isVisible() && $post->shop?->is_active, 404);
+        $key = 'promoter_shop_visits.'.$post->id;
+        if (! $request->session()->has($key) && ! $post->profile->canBeManagedBy($request->user())
+            && ! preg_match('/bot|crawl|spider|preview|facebookexternalhit|whatsapp/i', (string) $request->userAgent())) {
+            $request->session()->put($key, true);
+            PromoterPost::query()->whereKey($post->id)->increment('shop_clicks');
+        }
+
+        return redirect()->away($post->shop->publicUrl());
     }
 
     public function avatar(Request $request, PromoterProfile $profile)

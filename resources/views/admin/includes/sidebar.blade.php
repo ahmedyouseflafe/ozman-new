@@ -445,7 +445,7 @@
         </a>
         <a href="{{ route('promoter.accounts') }}" class="admin-sidebar-item nav-item">
             <i class="ti ti-user-star" aria-hidden="true"></i>
-            حسابات المروّجات
+            حسابات المروّجين
         </a>
         @endif
 
