@@ -32,7 +32,7 @@ class CommunityAccountController extends Controller {
     }
     public function account(Request $r, LoyaltyPoints $loyalty) {
         $this->active($r); $user=$r->user();
-        $points=['balance'=>$loyalty->balance($user),'pending'=>$loyalty->pendingPoints($user)];
+        $points=['balance'=>$loyalty->balance($user),'pending'=>$loyalty->pendingPoints($user),'shops'=>$loyalty->shopBalances($user)];
         $pointEntries=$user->loyaltyEntries()->with(['shop:id,name','order:id,order_number'])->latest('id')->paginate(10,['*'],'points');
         $profiles=PromoterProfile::published()->whereHas('followers',fn($q)=>$q->where('users.id',$user->id))->paginate(12,['*'],'following');
         $updates=PromoterUpdate::where('user_id',$user->id)->whereHas('post',fn($q)=>$q->visible()->whereHas('profile',fn($p)=>$p->published()->whereHas('followers',fn($f)=>$f->where('users.id',$user->id))))->with('post.profile')->latest()->paginate(15,['*'],'updates');

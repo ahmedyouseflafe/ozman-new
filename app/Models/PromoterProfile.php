@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class PromoterProfile extends Model
 {
-    protected $fillable = ['user_id', 'slug', 'display_name', 'bio', 'avatar', 'is_active'];
+    protected $fillable = ['user_id', 'slug', 'display_name', 'bio', 'avatar', 'is_active', 'gift_points', 'page_views'];
 
-    protected $casts = ['is_active' => 'boolean'];
+    protected $casts = ['is_active' => 'boolean', 'gift_points' => 'integer', 'page_views' => 'integer'];
 
     public function user()
     {
@@ -28,6 +28,17 @@ class PromoterProfile extends Model
     public function guestFollowers()
     {
         return $this->hasMany(PromoterGuestFollower::class);
+    }
+
+    public function giftSends()
+    {
+        return $this->hasMany(PromoterGiftSend::class);
+    }
+
+    /** Level badge from gifts, followers and visits; see App\Services\PromoterLevel. */
+    public function level(): array
+    {
+        return app(\App\Services\PromoterLevel::class)->for($this);
     }
 
     // Account followers plus device (guest) followers; uses withCount values when loaded.

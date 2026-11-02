@@ -35,7 +35,7 @@ class PromoterFollowTest extends TestCase
         $this->actingAs($a)->deleteJson($url, ['user_id' => $b->id])->assertJson(['following' => false, 'followers_count' => 1]);
         $this->deleteJson($url)->assertJsonPath('followers_count', 1);
         $this->assertDatabaseHas('promoter_followers', ['user_id' => $b->id]);
-        $this->actingAs($profile->user)->get(route('promoter.manage', $profile))->assertOk()->assertSee('متابعو حسابك:')->assertSee('<strong>1</strong>', false);
+        $this->actingAs($profile->user)->get(route('promoter.manage', $profile))->assertOk()->assertSee('وصول صفحتك')->assertSee('<strong>1</strong>', false);
         $this->get('/promoters')->assertOk()->assertSee('1 متابع');
     }
 

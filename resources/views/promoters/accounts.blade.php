@@ -2,7 +2,7 @@
 @section('title', 'حسابات المروّجات | أوزمان')
 @section('content')
 @if(session('invitation_url'))<section class="panel invitation-share"><h2>الحساب جاهز — ابعت الدعوة لصاحبه</h2><p>انسخ الرابط وأرسله بشكل خاص. لا حاجة لإرسال كلمة مرور.</p><label>رابط الدعوة<input id="creatorInvitationLink" dir="ltr" readonly value="{{ session('invitation_url') }}" onclick="this.select()"></label><button type="button" class="button small" onclick="navigator.clipboard.writeText(document.getElementById('creatorInvitationLink').value).then(()=>this.textContent='تم النسخ').catch(()=>document.getElementById('creatorInvitationLink').select())">نسخ رابط الدعوة</button><p>صالح لمدة 3 أيام ويُستخدم مرة واحدة.</p></section>@endif
-<div class="section-heading page-heading"><div><span class="eyebrow">إدارة أوزمان</span><h1>حسابات المروّجات</h1><p>حساب مستقل وصفحة خاصة لكل مروّجة.</p></div><a class="button outline" href="{{ route('dashboard') }}">العودة للوحة التحكم</a></div>
+<div class="section-heading page-heading"><div><span class="eyebrow">إدارة أوزمان</span><h1>حسابات المروّجات</h1><p>حساب مستقل وصفحة خاصة لكل مروّجة.</p></div><div class="profile-actions"><a class="button" href="{{ route('promoter.gifts.index') }}">{{ __('🎁 الهدايا والمستويات') }}</a><a class="button outline" href="{{ route('dashboard') }}">العودة للوحة التحكم</a></div></div>
 <div class="studio-columns">
 <section class="panel"><h2>مروّجة جديدة</h2><form method="post" action="{{ route('promoter.accounts.store') }}" class="stack">@csrf
 <label>الاسم الظاهر<input name="display_name" maxlength="100" value="{{ old('display_name') }}" required autocomplete="name"></label>

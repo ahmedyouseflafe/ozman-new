@@ -176,9 +176,16 @@ class PromoterController extends Controller
         return back()->with('status', 'تم حذف المنشور.');
     }
 
-    public function directory()
+    public function directory(Request $request)
     {
-        return response()->view('promoters.directory', ['profiles' => PromoterProfile::published()->withCount(['followers', 'guestFollowers', 'posts' => fn ($q) => $q->visible()->where('kind', 'post')])->latest()->paginate(24)])->header('Cache-Control', 'no-store');
+        // Default: the pages with the most reach first, so shops see who customers actually visit.
+        $sort = $request->query('sort') === 'latest' ? 'latest' : 'reach';
+        $query = PromoterProfile::published()->withCount(['followers', 'guestFollowers', 'posts' => fn ($q) => $q->visible()->where('kind', 'post')]);
+        $query = $sort === 'reach'
+            ? $query->orderByRaw(\App\Services\PromoterLevel::scoreSql().' desc')->latest('id')
+            : $query->latest();
+
+        return response()->view('promoters.directory', ['profiles' => $query->paginate(24)->withQueryString(), 'sort' => $sort])->header('Cache-Control', 'no-store');
     }
 
     public function show(Request $request, string $slug)
@@ -190,6 +197,8 @@ class PromoterController extends Controller
 
             return redirect()->to($profile->publicUrl(), 302)->header('Cache-Control', 'no-store');
         }
+        $canManage = $profile->canBeManagedBy($request->user());
+        $this->countVisit($request, $profile, $canManage);
         $profile->loadCount(['followers', 'guestFollowers']);
         $following = $request->user()
             ? $profile->followers()->where('users.id', $request->user()->id)->exists()
@@ -199,10 +208,31 @@ class PromoterController extends Controller
         $stories = (clone $visible)->where('kind', 'story')->oldest('id')->get();
         $videos = (clone $visible)->where('kind', 'post')->where('type', 'video')->latest()->limit(30)->get();
         $shopCount = (clone $visible)->whereHas('shop', fn ($q) => $q->where('is_active', true))->distinct()->count('shop_id');
-        $canManage = $profile->canBeManagedBy($request->user());
         $shops = $canManage ? Shop::where('is_active', true)->orderBy('name')->get(['id', 'name']) : collect();
 
-        return response()->view('promoters.profile', compact('profile', 'posts', 'stories', 'videos', 'shopCount', 'following', 'canManage', 'shops'))->header('Cache-Control', 'private, no-store');
+        $loyalty = app(\App\Services\LoyaltyPoints::class);
+        $gifting = [
+            'gifts' => \App\Models\PromoterGift::available()->get(['id', 'name', 'icon', 'points']),
+            'canGift' => ! $canManage && $loyalty->eligibleCustomer($request->user()),
+            'balance' => $loyalty->eligibleCustomer($request->user()) ? $loyalty->balance($request->user()) : null,
+        ];
+
+        return response()->view('promoters.profile', compact('profile', 'posts', 'stories', 'videos', 'shopCount', 'following', 'canManage', 'shops', 'gifting'))->header('Cache-Control', 'private, no-store');
+    }
+
+    /** One visit per visitor session per day; the promoter and admins don't count. */
+    private function countVisit(Request $request, PromoterProfile $profile, bool $canManage): void
+    {
+        if ($canManage || preg_match('/bot|crawl|spider|preview|facebookexternalhit|whatsapp/i', (string) $request->userAgent())) {
+            return;
+        }
+        $key = 'promoter_visits.'.$profile->id;
+        if ($request->session()->get($key) === now()->toDateString()) {
+            return;
+        }
+        $request->session()->put($key, now()->toDateString());
+        PromoterProfile::query()->whereKey($profile->id)->increment('page_views');
+        $profile->page_views = (int) $profile->page_views + 1;
     }
 
     public function avatar(Request $request, PromoterProfile $profile)

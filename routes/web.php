@@ -88,6 +88,7 @@ Route::post('/promoters/{profile}/follow/login', [\App\Http\Controllers\Promoter
 Route::post('/promoters/{profile}/follow/register', [\App\Http\Controllers\PromoterFollowController::class, 'register'])->middleware('throttle:5,1')->name('promoters.follow.register');
 Route::put('/promoters/{profile}/follow', [\App\Http\Controllers\PromoterFollowController::class, 'store'])->middleware('throttle:20,1')->name('promoters.follow.store');
 Route::delete('/promoters/{profile}/follow', [\App\Http\Controllers\PromoterFollowController::class, 'destroy'])->middleware('throttle:20,1')->name('promoters.follow.destroy');
+Route::post('/promoters/{profile}/gifts', [\App\Http\Controllers\PromoterGiftController::class, 'store'])->middleware('throttle:20,1')->name('promoters.gifts.store');
 Route::get('/promoter-media/avatar/{profile}', [\App\Http\Controllers\PromoterController::class, 'avatar'])->name('promoters.avatar');
 Route::get('/promoter-media/posts/{post}/{part?}', [\App\Http\Controllers\PromoterController::class, 'media'])->name('promoters.media');
 Route::middleware(['auth', \App\Http\Middleware\EnsurePromoterAccess::class])->prefix('promoter')->name('promoter.')->group(function () {
@@ -96,6 +97,9 @@ Route::middleware(['auth', \App\Http\Middleware\EnsurePromoterAccess::class])->p
     Route::post('/accounts', [\App\Http\Controllers\PromoterController::class, 'createAccount'])->middleware('throttle:10,1')->name('accounts.store');
     Route::patch('/accounts/{profile}', [\App\Http\Controllers\PromoterController::class, 'updateAccount'])->name('accounts.update');
     Route::post('/accounts/{profile}/invitation', [\App\Http\Controllers\PromoterInvitationController::class, 'renew'])->middleware('throttle:10,1')->name('accounts.invitation');
+    Route::get('/gifts', [\App\Http\Controllers\PromoterGiftController::class, 'index'])->name('gifts.index');
+    Route::post('/gifts', [\App\Http\Controllers\PromoterGiftController::class, 'storeGift'])->name('gifts.store');
+    Route::patch('/gifts/{gift}', [\App\Http\Controllers\PromoterGiftController::class, 'updateGift'])->name('gifts.update');
     Route::get('/profiles/{profile}', [\App\Http\Controllers\PromoterController::class, 'editor'])->name('manage');
     Route::put('/profiles/{profile}', [\App\Http\Controllers\PromoterController::class, 'updateProfile'])->name('profile.update');
     Route::delete('/profiles/{profile}/avatar', [\App\Http\Controllers\PromoterController::class, 'deleteAvatar'])->name('avatar.destroy');

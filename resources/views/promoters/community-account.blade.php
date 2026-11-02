@@ -6,7 +6,9 @@
 <aside class="stack">
 <section class="panel loyalty-summary" aria-labelledby="loyaltyTitle"><h2 id="loyaltyTitle">{{ __('نقاطي') }} ⭐</h2>
 <div class="loyalty-balance"><div><strong>{{ number_format($points['balance']) }}</strong><span>{{ __('الرصيد المؤكد') }}</span></div><div class="is-pending"><strong>{{ number_format($points['pending']) }}</strong><span>{{ __('نقاط معلّقة') }}</span></div></div>
-<small>{{ __('النقاط المعلّقة بتتأكد لما المحل يسلّم الطلب، وبتنلغي إذا انلغى.') }}</small> <a class="text-link" href="#points">{{ __('سجل النقاط') }}</a></section>
+<small>{{ __('النقاط المعلّقة بتتأكد لما المحل يسلّم الطلب، وبتنلغي إذا انلغى.') }}</small> <a class="text-link" href="#points">{{ __('سجل النقاط') }}</a>
+@if(($points['shops'] ?? collect())->where('balance', '>', 0)->isNotEmpty())<div class="shop-balances"><h3>{{ __('نقاطك حسب المحل') }}</h3><ul>@foreach($points['shops']->where('balance', '>', 0) as $bucket)<li><span>{{ $bucket['shop_name'] ?? __('أوزمان') }}</span><b>⭐ {{ number_format($bucket['balance']) }}</b></li>@endforeach</ul><small>{{ __('كل النقاط بتنفع هدايا للمروّجين. والخصم بمحل معيّن بيكون من نقاط هالمحل بس.') }}</small></div>@endif
+</section>
 @if($user->isCustomer())
 <section class="panel customer-avatar-panel"><h2>{{ __('صورتك') }}</h2>
 <form method="post" action="{{ route('community.avatar.update') }}" enctype="multipart/form-data" class="stack">@csrf @method('PUT')

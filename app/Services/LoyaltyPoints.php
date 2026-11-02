@@ -185,6 +185,85 @@ class LoyaltyPoints
         return (int) $user->loyaltyEntries()->where('status', LoyaltyPointEntry::CONFIRMED)->sum('points');
     }
 
+    /**
+     * Confirmed points per shop the customer earned them from (null = Ozman / admin adjustments),
+     * oldest source first. Only these per-shop amounts can later become a discount at that same shop;
+     * gifts to promoters may use all of them.
+     *
+     * @return \Illuminate\Support\Collection<int, array{shop_id: ?int, shop_name: ?string, balance: int, since: ?string}>
+     */
+    public function shopBalances(User $user): \Illuminate\Support\Collection
+    {
+        $rows = $user->loyaltyEntries()
+            ->where('status', LoyaltyPointEntry::CONFIRMED)
+            ->selectRaw('shop_id, SUM(points) as balance, MIN(CASE WHEN points > 0 THEN created_at END) as since, MIN(CASE WHEN points > 0 THEN id END) as first_id')
+            ->groupBy('shop_id')
+            ->get();
+        $names = Shop::query()->whereIn('id', $rows->pluck('shop_id')->filter())->pluck('name', 'id');
+
+        return $rows
+            ->map(fn ($row) => [
+                'shop_id' => $row->shop_id !== null ? (int) $row->shop_id : null,
+                'shop_name' => $row->shop_id !== null ? ($names[$row->shop_id] ?? null) : null,
+                'balance' => (int) $row->balance,
+                'since' => $row->since,
+                'first_id' => (int) ($row->first_id ?? PHP_INT_MAX),
+            ])
+            ->sortBy([['since', 'asc'], ['first_id', 'asc']])
+            ->values();
+    }
+
+    /** Points earned at this shop that are still unspent (what a shop discount may use). */
+    public function shopBalance(User $user, ?Shop $shop): int
+    {
+        $row = $this->shopBalances($user)->firstWhere('shop_id', $shop?->id);
+
+        return max((int) ($row['balance'] ?? 0), 0);
+    }
+
+    /**
+     * Spends confirmed points on a promoter gift, taking them from the oldest shop first.
+     * Writes one negative "gift" ledger row per shop used, so each shop's own balance stays right.
+     * Must run inside the caller's transaction.
+     */
+    public function spendOnGift(User $user, int $points, \App\Models\PromoterGiftSend $send): void
+    {
+        if ($points <= 0) {
+            throw ValidationException::withMessages(['gift' => __('قيمة الهدية غير صالحة.')]);
+        }
+        // Serializes spending for one customer so two gifts at once cannot overdraw the balance.
+        User::query()->whereKey($user->id)->lockForUpdate()->first();
+        if ($this->balance($user) < $points) {
+            throw ValidationException::withMessages(['gift' => __('رصيد نقاطك المؤكد ما بيكفي لهالهدية.')]);
+        }
+
+        $left = $points;
+        foreach ($this->shopBalances($user) as $bucket) {
+            if ($left <= 0) {
+                break;
+            }
+            $take = min($left, $bucket['balance']);
+            if ($take <= 0) {
+                continue;
+            }
+            LoyaltyPointEntry::create([
+                'user_id' => $user->id, 'shop_id' => $bucket['shop_id'], 'promoter_gift_send_id' => $send->id,
+                'points' => -$take, 'type' => LoyaltyPointEntry::TYPE_GIFT, 'status' => LoyaltyPointEntry::CONFIRMED,
+                'note' => trim($send->gift_icon.' '.$send->gift_name.' → '.$send->profile?->display_name),
+            ]);
+            $left -= $take;
+        }
+
+        // A reversed order can leave one shop negative while the total is still enough; cover the rest without a shop.
+        if ($left > 0) {
+            LoyaltyPointEntry::create([
+                'user_id' => $user->id, 'shop_id' => null, 'promoter_gift_send_id' => $send->id,
+                'points' => -$left, 'type' => LoyaltyPointEntry::TYPE_GIFT, 'status' => LoyaltyPointEntry::CONFIRMED,
+                'note' => trim($send->gift_icon.' '.$send->gift_name.' → '.$send->profile?->display_name),
+            ]);
+        }
+    }
+
     public function pendingPoints(User $user): int
     {
         return (int) $user->loyaltyEntries()->where('status', LoyaltyPointEntry::PENDING)->sum('points');

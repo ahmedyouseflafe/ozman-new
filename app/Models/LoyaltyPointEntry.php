@@ -11,12 +11,13 @@ class LoyaltyPointEntry extends Model
     public const TYPE_REVERSE = 'reverse';
     public const TYPE_MANUAL = 'manual_adjust';
     public const TYPE_REDEEM = 'redeem';
+    public const TYPE_GIFT = 'gift';
 
     public const PENDING = 'pending';
     public const CONFIRMED = 'confirmed';
     public const CANCELLED = 'cancelled';
 
-    protected $fillable = ['user_id', 'front_order_id', 'shop_id', 'points', 'type', 'status', 'base_amount', 'note', 'created_by'];
+    protected $fillable = ['user_id', 'front_order_id', 'promoter_gift_send_id', 'shop_id', 'points', 'type', 'status', 'base_amount', 'note', 'created_by'];
 
     protected $casts = ['points' => 'integer', 'base_amount' => 'decimal:2'];
 
@@ -35,6 +36,11 @@ class LoyaltyPointEntry extends Model
         return $this->belongsTo(Shop::class);
     }
 
+    public function giftSend(): BelongsTo
+    {
+        return $this->belongsTo(PromoterGiftSend::class, 'promoter_gift_send_id');
+    }
+
     public function typeLabel(): string
     {
         return match ($this->type) {
@@ -42,6 +48,7 @@ class LoyaltyPointEntry extends Model
             self::TYPE_REVERSE => __('سحب نقاط طلب ملغي'),
             self::TYPE_MANUAL => __('تعديل من الإدارة'),
             self::TYPE_REDEEM => __('استبدال نقاط'),
+            self::TYPE_GIFT => __('هدية لمروّج'),
             default => $this->type,
         };
     }
