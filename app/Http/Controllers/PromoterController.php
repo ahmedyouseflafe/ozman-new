@@ -27,7 +27,10 @@ class PromoterController extends Controller
     {
         $this->admin($request);
 
-        return view('promoters.accounts', ['profiles' => PromoterProfile::with('user')->withCount('posts')->latest()->paginate(20)]);
+        return view('promoters.accounts', [
+            'pending' => PromoterProfile::pending()->with('user')->oldest()->get(),
+            'profiles' => PromoterProfile::whereNotNull('approved_at')->with('user')->withCount('posts')->latest()->paginate(20),
+        ]);
     }
 
     public function createAccount(Request $request)
@@ -39,7 +42,7 @@ class PromoterController extends Controller
         $profile = DB::transaction(function () use ($data) {
             $user = User::create(['name' => $data['display_name'], 'email' => $data['email'], 'password' => $data['password'] ?? \Illuminate\Support\Str::random(64), 'role' => 'promoter', 'is_active' => true]);
 
-            $profile = PromoterProfile::create(['user_id' => $user->id, 'slug' => $data['slug'], 'display_name' => $data['display_name'], 'is_active' => true]);
+            $profile = PromoterProfile::create(['user_id' => $user->id, 'slug' => $data['slug'], 'display_name' => $data['display_name'], 'is_active' => true, 'approved_at' => now()]);
             DB::table('promoter_profile_slugs')->insert(['slug' => $profile->slug, 'promoter_profile_id' => $profile->id]);
 
             return $profile;
@@ -73,6 +76,48 @@ class PromoterController extends Controller
         });
 
         return back()->with('status', 'تم تحديث الحساب.');
+    }
+
+    /** Accept a promoter who signed up: the page goes live and they get an email. */
+    public function approveApplication(Request $request, PromoterProfile $profile)
+    {
+        $this->admin($request);
+        abort_unless($profile->isPending() && $profile->user?->isPromoter(), 404);
+        DB::transaction(function () use ($profile) {
+            $profile->update(['approved_at' => now(), 'is_active' => true]);
+            $profile->user->forceFill(['is_active' => true])->save();
+        });
+        $this->notifyApplicant($profile->user, true);
+
+        return back()->with('status', __('تم قبول :name. صفحته صارت ظاهرة ووصله إيميل.', ['name' => $profile->display_name]));
+    }
+
+    /** Decline: the page and its reserved link are removed; the person keeps a customer account. */
+    public function rejectApplication(Request $request, PromoterProfile $profile)
+    {
+        $this->admin($request);
+        abort_unless($profile->isPending() && $profile->user?->isPromoter(), 404);
+        $user = $profile->user;
+        $paths = array_filter([$profile->avatar]);
+        DB::transaction(function () use ($profile, $user) {
+            DB::table('promoter_profile_slugs')->where('promoter_profile_id', $profile->id)->delete();
+            $profile->delete();
+            $user->forceFill(['role' => 'customer'])->save();
+        });
+        Storage::disk('local')->delete($paths);
+        $this->notifyApplicant($user, false);
+
+        return back()->with('status', __('تم رفض الطلب. الحساب ضل كحساب عميل.'));
+    }
+
+    private function notifyApplicant(User $user, bool $approved): void
+    {
+        try {
+            $user->notify(new \App\Notifications\PromoterApplicationDecided($approved));
+        } catch (\Throwable $e) {
+            // The decision is saved either way; a mail outage must not undo it.
+            report($e);
+        }
     }
 
     public function dashboard(Request $request)

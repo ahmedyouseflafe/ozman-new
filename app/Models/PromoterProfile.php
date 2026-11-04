@@ -6,9 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class PromoterProfile extends Model
 {
-    protected $fillable = ['user_id', 'slug', 'display_name', 'bio', 'avatar', 'is_active', 'gift_points', 'page_views'];
+    protected $fillable = ['user_id', 'slug', 'display_name', 'bio', 'avatar', 'is_active', 'approved_at', 'gift_points', 'page_views'];
 
-    protected $casts = ['is_active' => 'boolean', 'gift_points' => 'integer', 'page_views' => 'integer', 'archived_shop_clicks' => 'integer'];
+    protected $casts = ['is_active' => 'boolean', 'gift_points' => 'integer', 'page_views' => 'integer', 'archived_shop_clicks' => 'integer', 'approved_at' => 'datetime'];
+
+    protected static function booted(): void
+    {
+        // Pages are approved unless created as a pending application (approved_at => null passed explicitly).
+        static::creating(function (PromoterProfile $profile) {
+            if (! array_key_exists('approved_at', $profile->getAttributes())) {
+                $profile->approved_at = now();
+            }
+        });
+    }
 
     public function user()
     {
@@ -60,7 +70,7 @@ class PromoterProfile extends Model
 
     public function scopePublished($query)
     {
-        return $query->where('is_active', true)->whereHas('user', fn ($q) => $q->where('is_active', true)->where('role', 'promoter'));
+        return $query->where('is_active', true)->whereNotNull('approved_at')->whereHas('user', fn ($q) => $q->where('is_active', true)->where('role', 'promoter'));
     }
 
     public function publicUrl(): string
@@ -70,6 +80,17 @@ class PromoterProfile extends Model
 
     public function isPublished(): bool
     {
-        return $this->is_active && $this->user?->is_active && $this->user->isPromoter();
+        return $this->is_active && $this->approved_at !== null && $this->user?->is_active && $this->user->isPromoter();
+    }
+
+    /** Signed up as a promoter and waiting for the admin to accept the page. */
+    public function isPending(): bool
+    {
+        return $this->approved_at === null;
+    }
+
+    public function scopePending($query)
+    {
+        return $query->whereNull('approved_at');
     }
 }

@@ -106,6 +106,8 @@ Route::middleware(['auth', \App\Http\Middleware\EnsurePromoterAccess::class])->p
     Route::post('/accounts', [\App\Http\Controllers\PromoterController::class, 'createAccount'])->middleware('throttle:10,1')->name('accounts.store');
     Route::patch('/accounts/{profile}', [\App\Http\Controllers\PromoterController::class, 'updateAccount'])->name('accounts.update');
     Route::post('/accounts/{profile}/invitation', [\App\Http\Controllers\PromoterInvitationController::class, 'renew'])->middleware('throttle:10,1')->name('accounts.invitation');
+    Route::post('/accounts/{profile}/approve', [\App\Http\Controllers\PromoterController::class, 'approveApplication'])->name('accounts.approve');
+    Route::post('/accounts/{profile}/reject', [\App\Http\Controllers\PromoterController::class, 'rejectApplication'])->name('accounts.reject');
     Route::get('/gifts', [\App\Http\Controllers\PromoterGiftController::class, 'index'])->name('gifts.index');
     Route::post('/gifts', [\App\Http\Controllers\PromoterGiftController::class, 'storeGift'])->name('gifts.store');
     Route::patch('/gifts/{gift}', [\App\Http\Controllers\PromoterGiftController::class, 'updateGift'])->name('gifts.update');

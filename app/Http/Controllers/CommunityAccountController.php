@@ -2,7 +2,7 @@
 namespace App\Http\Controllers;
 use App\Models\{User, PromoterProfile, PromoterUpdate, CommunityPushSubscription};
 use Illuminate\Http\Request;
-use App\Services\{CustomerAvatar, GuestFollows, LoyaltyPoints};
+use App\Services\{CommunityUsername, CustomerAvatar, GuestFollows, LoyaltyPoints};
 use Illuminate\Support\Facades\{Auth, DB};
 use Illuminate\Validation\Rules\Password;
 
@@ -15,19 +15,50 @@ class CommunityAccountController extends Controller {
         return response()->view('promoters.community-login',['registerFirst'=>$r->query('tab')==='register'])->header('Cache-Control','no-store');
     }
     public function login(Request $r) {
-        $data=$r->validate(['email'=>['required','email'],'password'=>['required','string']]);
-        if (!Auth::attempt([...$data,'is_active'=>true],true)) return back()->withErrors(['email'=>'البريد أو كلمة المرور غير صحيحة.'])->onlyInput('email');
+        // One field for email or @username, like Instagram. Older forms still send "email".
+        $r->merge(['login'=>trim((string)($r->input('login') ?? $r->input('email')))]);
+        $data=$r->validate(['login'=>['required','string','max:255'],'password'=>['required','string']],['login.required'=>__('اكتب الإيميل أو اسم المستخدم.')]);
+        $field=str_contains($data['login'],'@') && !str_starts_with($data['login'],'@') ? 'email' : 'username';
+        $value=$field==='username' ? CommunityUsername::normalize($data['login']) : $data['login'];
+        if (!Auth::attempt([$field=>$value,'password'=>$data['password'],'is_active'=>true],true)) {
+            return back()->withErrors(['login'=>__('الإيميل/اسم المستخدم أو كلمة المرور غير صحيحة.')])->withInput(['login'=>$data['login']]);
+        }
         $r->session()->regenerate(); app(GuestFollows::class)->merge($r,$r->user());
-        return redirect()->intended(route($r->user()->isPromoter() || $r->user()->isSuperAdmin() ? 'promoter.dashboard' : 'community.account'));
+        $user=$r->user();
+        $creator=$user->isSuperAdmin() || ($user->isPromoter() && !$user->promoterProfile?->isPending());
+        return redirect()->intended(route($creator ? 'promoter.dashboard' : 'community.account'));
     }
     public function register(Request $r, CustomerAvatar $avatars) {
         abort_if($r->user(),403);
-        $data=$r->validate(['name'=>['required','string','max:100'],'email'=>['required','email','max:255','unique:users,email'],
-            'phone'=>['nullable','string','max:30'],'password'=>['required','string','confirmed',Password::defaults()],...CustomerAvatar::rules()],CustomerAvatar::messages());
+        $r->merge(['username'=>CommunityUsername::normalize($r->input('username')) ?: null,'account_type'=>$r->input('account_type','customer')]);
+        $promoter=$r->input('account_type')==='promoter';
+        $data=$r->validate(['account_type'=>['required','in:customer,promoter'],'name'=>['required','string','max:100'],'email'=>['required','email','max:255','unique:users,email'],
+            'username'=>CommunityUsername::rules($promoter),'phone'=>['nullable','string','max:30'],'password'=>['required','string',Password::defaults()],...CustomerAvatar::rules()],
+            [...CustomerAvatar::messages(),...CommunityUsername::messages()]);
+        if ($promoter) {
+            $slug=CommunityUsername::slugFor($data['username']);
+            if (strlen($slug)<3 || CommunityUsername::slugTaken($slug)) {
+                return back()->withErrors(['username'=>__('اسم المستخدم مأخوذ. جرّب اسم ثاني.')])->withInput($r->except('password','avatar'));
+            }
+        }
         // The photo is optional; it is processed first so a bad image never leaves a half-created account.
-        $avatar=isset($data['avatar']) ? $avatars->store($data['avatar']) : null; unset($data['avatar']);
-        try { $user=User::create([...$data,'role'=>'customer','is_active'=>true,'avatar_path'=>$avatar]); } catch (\Throwable $e) { $avatars->delete($avatar); throw $e; }
+        $avatar=isset($data['avatar']) ? $avatars->store($data['avatar']) : null;
+        $fields=['name'=>$data['name'],'email'=>$data['email'],'username'=>$data['username'] ?? null,'phone'=>$data['phone'] ?? null,'password'=>$data['password']];
+        try {
+            $user=DB::transaction(function () use($fields,$avatar,$promoter) {
+                $user=User::create([...$fields,'role'=>$promoter ? 'promoter' : 'customer','is_active'=>true,'avatar_path'=>$avatar]);
+                if ($promoter) {
+                    // The page stays hidden until the admin accepts it; the link is reserved now.
+                    $profile=PromoterProfile::create(['user_id'=>$user->id,'slug'=>CommunityUsername::slugFor($user->username),'display_name'=>$user->name,'is_active'=>false,'approved_at'=>null]);
+                    DB::table('promoter_profile_slugs')->insert(['slug'=>$profile->slug,'promoter_profile_id'=>$profile->id]);
+                }
+                return $user;
+            });
+        } catch (\Throwable $e) { $avatars->delete($avatar); throw $e; }
         Auth::login($user,true); $r->session()->regenerate(); app(GuestFollows::class)->merge($r,$user);
+        if ($promoter) {
+            return redirect()->route('community.account')->with('status',__('وصل طلبك كمروّج 🎉 الإدارة بتراجعه، وبيوصلك إيميل أول ما ينقبل. لهلأ بتقدر تتابع المروّجين وتجمع نقاط.'));
+        }
         return redirect()->intended(route('community.account'))->with('status','أهلًا فيك! اكتشف المروّجين وتابع حساباتك المفضلة.');
     }
     public function account(Request $r, LoyaltyPoints $loyalty) {
@@ -41,7 +72,12 @@ class CommunityAccountController extends Controller {
     }
     public function update(Request $r) {
         $this->active($r);
-        $r->user()->update($r->validate(['name'=>['required','string','max:100'],'phone'=>['nullable','string','max:30']]));
+        $user=$r->user();
+        $r->merge(['username'=>CommunityUsername::normalize($r->input('username', $user->username)) ?: null]);
+        // Promoters keep their username: it matches their page link.
+        $rules=['name'=>['required','string','max:100'],'phone'=>['nullable','string','max:30']];
+        if (!$user->isPromoter()) $rules['username']=CommunityUsername::rules((bool)$user->username,$user->id);
+        $user->update($r->validate($rules,CommunityUsername::messages()));
         return back()->with('status','تم حفظ بياناتك.');
     }
     public function updateAvatar(Request $r, CustomerAvatar $avatars) {

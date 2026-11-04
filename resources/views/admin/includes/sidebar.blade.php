@@ -446,6 +446,7 @@
         <a href="{{ route('promoter.accounts') }}" class="admin-sidebar-item nav-item">
             <i class="ti ti-user-star" aria-hidden="true"></i>
             حسابات المروّجين
+            @if($pendingPromoters = \App\Models\PromoterProfile::pending()->count())<span class="badge bg-danger rounded-pill ms-auto" title="{{ __('طلبات مروّجين بانتظار الموافقة') }}">{{ $pendingPromoters }}</span>@endif
         </a>
         @endif
 

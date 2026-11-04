@@ -20,6 +20,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'phone',
         'password',
@@ -102,6 +103,16 @@ class User extends Authenticatable
     public function earnsPoints(): bool { return in_array($this->role, ['customer', 'promoter'], true); }
 
     public function loyaltyEntries() { return $this->hasMany(LoyaltyPointEntry::class); }
+
+    protected static function booted(): void
+    {
+        // Every community account gets an @username; one is made from the email when none was chosen.
+        static::creating(function (User $user) {
+            if (! $user->username && $user->earnsPoints() && $user->email) {
+                $user->username = \App\Services\CommunityUsername::generate($user->email, $user->name);
+            }
+        });
+    }
 
     // Community avatar: uploaded photo, or the name's first letter on a color derived from the name.
     public function avatarUrl(): ?string

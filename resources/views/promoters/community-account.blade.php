@@ -1,7 +1,8 @@
 @extends('promoters.layout')
 @section('title','حسابي • مجتمع أوزمان')
 @section('content')
-<section class="community-hero"><span class="eyebrow">مساحتك الشخصية</span><div class="account-hero-identity">@if($user->isCustomer())@include('promoters.customer-avatar', ['class' => 'is-large'])@endif<h1>أهلًا {{ $user->name }}</h1></div><p>حسابات بتتابعها، حكايات جديدة، وكل إشعاراتك هون.</p><div class="profile-actions"><a href="{{ route('promoters.index') }}" class="button">اكتشف المروّجين ←</a><a href="#updates" class="button outline">آخر التحديثات</a></div></section>
+<section class="community-hero"><span class="eyebrow">مساحتك الشخصية</span><div class="account-hero-identity">@if($user->isCustomer())@include('promoters.customer-avatar', ['class' => 'is-large'])@endif<div><h1>أهلًا {{ $user->name }}</h1>@if($user->username)<span class="handle" dir="ltr">{{ '@'.$user->username }}</span>@endif</div></div><p>حسابات بتتابعها، حكايات جديدة، وكل إشعاراتك هون.</p><div class="profile-actions"><a href="{{ route('promoters.index') }}" class="button">اكتشف المروّجين ←</a><a href="#updates" class="button outline">آخر التحديثات</a></div></section>
+@if($user->isPromoter() && $user->promoterProfile?->isPending())<section class="panel pending-banner" role="status"><h2>{{ __('⏳ طلبك كمروّج قيد المراجعة') }}</h2><p>{{ __('الإدارة بتراجع طلبك، وأول ما ينقبل بيوصلك إيميل وبتفتح لوحتك وصفحتك') }} <bdi dir="ltr">/promoters/{{ $user->promoterProfile->slug }}</bdi>. {{ __('لهلأ حسابك شغّال كعميل: تابع المروّجين واجمع نقاط.') }}</p></section>@endif
 <div class="studio-columns">
 <aside class="stack">
 <section class="panel loyalty-summary" aria-labelledby="loyaltyTitle"><h2 id="loyaltyTitle">{{ __('نقاطي') }} ⭐</h2>
@@ -19,6 +20,7 @@
 @endif
 <section class="panel"><h2>ملفي الشخصي</h2><form method="post" action="{{ route('community.update') }}" class="stack">@csrf @method('PUT')
 <label>الاسم<input name="name" value="{{ old('name',$user->name) }}" maxlength="100" required autocomplete="name"></label>
+@unless($user->isPromoter())<label>{{ __('اسم المستخدم') }}<span class="username-field" dir="ltr"><span aria-hidden="true">@</span><input name="username" value="{{ old('username',$user->username) }}" maxlength="30" autocomplete="username" autocapitalize="none" spellcheck="false" pattern="[a-zA-Z0-9._]{3,30}"></span></label>@endunless
 <label>رقم الجوال (اختياري)<input name="phone" type="tel" value="{{ old('phone',$user->phone) }}" maxlength="30" autocomplete="tel"></label>
 <p class="handle" dir="ltr">{{ $user->email }}</p><button class="button outline">حفظ بياناتي</button></form><small>بيانات حسابك خاصة، ولا تُعرض للمروّجين على هذه الصفحة.</small></section>
 @include('promoters.password-form')
