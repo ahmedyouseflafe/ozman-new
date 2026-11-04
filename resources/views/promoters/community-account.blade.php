@@ -21,6 +21,7 @@
 <label>الاسم<input name="name" value="{{ old('name',$user->name) }}" maxlength="100" required autocomplete="name"></label>
 <label>رقم الجوال (اختياري)<input name="phone" type="tel" value="{{ old('phone',$user->phone) }}" maxlength="30" autocomplete="tel"></label>
 <p class="handle" dir="ltr">{{ $user->email }}</p><button class="button outline">حفظ بياناتي</button></form><small>بيانات حسابك خاصة، ولا تُعرض للمروّجين على هذه الصفحة.</small></section>
+@include('promoters.password-form')
 <section class="panel" id="communityPush"><h2>خليك قريب 🔔</h2><p>فعّل إشعارات الجهاز ليصلك جديد الحسابات اللي بتتابعها، حتى لو الصفحة مسكّرة.</p>
 <button class="button" id="communityPushEnable" type="button">تفعيل إشعارات المتابعة</button><button class="button outline" id="communityPushDisable" type="button" hidden>إيقافها على هذا الجهاز</button><p id="communityPushStatus" role="status" aria-live="polite">الإشعارات داخل حسابك موجودة حتى بدون تفعيل الجهاز.</p></section>
 </aside>

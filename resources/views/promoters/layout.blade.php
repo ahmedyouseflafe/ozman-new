@@ -18,12 +18,12 @@
     <nav aria-label="تنقل المروّجين">
         <a href="{{ route('promoters.index') }}">اكتشف المروّجين</a><a href="{{ route('home') }}">أوزمان ↗</a>
         @auth
-            <a class="button outline small account-button" href="{{ route('community.account') }}" title="{{ __('حسابي · المتابعات والإشعارات') }}">@if(auth()->user()->isCustomer())@include('promoters.customer-avatar', ['user' => auth()->user(), 'class' => 'is-small'])@endif<span>{{ __('حسابي') }} 🔔</span>@if(auth()->user()->isCustomer())<span class="account-points" title="{{ __('رصيد النقاط') }}">⭐ {{ number_format(app(\App\Services\LoyaltyPoints::class)->balance(auth()->user())) }}</span>@endif</a>
+            <a class="button outline small account-button" href="{{ route('community.account') }}" title="{{ __('حسابي · المتابعات والإشعارات') }}">@if(auth()->user()->isCustomer())@include('promoters.customer-avatar', ['user' => auth()->user(), 'class' => 'is-small'])@endif<span>{{ __('حسابي') }} 🔔</span>@if(auth()->user()->earnsPoints())<span class="account-points" title="{{ __('رصيد النقاط') }}">⭐ {{ number_format(app(\App\Services\LoyaltyPoints::class)->balance(auth()->user())) }}</span>@endif</a>
             @if(auth()->user()->isPromoter())<a class="button small" href="{{ route('promoter.dashboard') }}">{{ __('لوحتي') }}</a>@endif
             @if(auth()->user()->isSuperAdmin())<a class="button small" href="{{ route('promoter.accounts') }}">{{ __('إدارة المروّجين') }}</a>@endif
         @else
             <a class="button small" href="{{ route('community.login') }}">{{ __('دخول / حساب جديد') }}</a>
-            <a class="text-link creator-login" href="{{ route('promoter.dashboard') }}">{{ __('دخول المروّج') }}</a>
+            <a class="text-link creator-login" href="{{ route('community.login', ['return' => '/promoter']) }}">{{ __('دخول المروّج') }}</a>
         @endauth
         <button type="button" class="theme-toggle" id="promoterThemeToggle" aria-label="الوضع الداكن" aria-pressed="false"><span aria-hidden="true">☾</span><span data-theme-label>Dark</span></button>
         @if(auth()->user()?->role === 'customer')<form method="post" action="{{ route('logout') }}" class="header-logout">@csrf<button type="submit" class="text-link">{{ __('خروج') }}</button></form>@endif

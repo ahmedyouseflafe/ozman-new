@@ -8,7 +8,7 @@ class PromoterProfile extends Model
 {
     protected $fillable = ['user_id', 'slug', 'display_name', 'bio', 'avatar', 'is_active', 'gift_points', 'page_views'];
 
-    protected $casts = ['is_active' => 'boolean', 'gift_points' => 'integer', 'page_views' => 'integer'];
+    protected $casts = ['is_active' => 'boolean', 'gift_points' => 'integer', 'page_views' => 'integer', 'archived_shop_clicks' => 'integer'];
 
     public function user()
     {

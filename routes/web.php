@@ -69,11 +69,19 @@ Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/community/login', [\App\Http\Controllers\CommunityAccountController::class, 'loginPage'])->name('community.login');
 Route::post('/community/login', [\App\Http\Controllers\CommunityAccountController::class, 'login'])->middleware(['guest','throttle:5,1'])->name('community.login.store');
 Route::post('/community/register', [\App\Http\Controllers\CommunityAccountController::class, 'register'])->middleware(['guest','throttle:5,1'])->name('community.register');
+// Forgot password for customers and promoters (reset link by email).
+Route::middleware('guest')->group(function () {
+    Route::get('/community/forgot-password', [\App\Http\Controllers\CommunityPasswordController::class, 'request'])->name('community.password.request');
+    Route::post('/community/forgot-password', [\App\Http\Controllers\CommunityPasswordController::class, 'email'])->middleware('throttle:5,1')->name('community.password.email');
+    Route::get('/community/reset-password/{token}', [\App\Http\Controllers\CommunityPasswordController::class, 'edit'])->name('community.password.reset');
+    Route::post('/community/reset-password', [\App\Http\Controllers\CommunityPasswordController::class, 'update'])->middleware('throttle:5,1')->name('community.password.store');
+});
 Route::get('/creator-invitation/{token}', [\App\Http\Controllers\PromoterInvitationController::class, 'show'])->middleware('throttle:30,1')->name('promoter.invitation');
 Route::post('/creator-invitation/{token}', [\App\Http\Controllers\PromoterInvitationController::class, 'accept'])->middleware('throttle:5,1')->name('promoter.invitation.accept');
 Route::middleware(['auth','throttle:60,1'])->prefix('community')->name('community.')->group(function () {
     Route::get('/account', [\App\Http\Controllers\CommunityAccountController::class, 'account'])->name('account');
     Route::put('/account', [\App\Http\Controllers\CommunityAccountController::class, 'update'])->name('update');
+    Route::put('/password', [\App\Http\Controllers\CommunityPasswordController::class, 'change'])->middleware('throttle:6,1')->name('password.change');
     Route::put('/avatar', [\App\Http\Controllers\CommunityAccountController::class, 'updateAvatar'])->middleware('throttle:10,1')->name('avatar.update');
     Route::delete('/avatar', [\App\Http\Controllers\CommunityAccountController::class, 'destroyAvatar'])->name('avatar.destroy');
     Route::post('/updates/{update}', [\App\Http\Controllers\CommunityAccountController::class, 'read'])->name('read');

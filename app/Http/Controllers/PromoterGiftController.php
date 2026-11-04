@@ -26,7 +26,8 @@ class PromoterGiftController extends Controller
                 'login' => route('community.login', ['return' => parse_url($profile->publicUrl(), PHP_URL_PATH)]),
             ], 401);
         }
-        abort_unless($loyalty->eligibleCustomer($user), 403, __('الهدايا متاحة لحسابات العملاء فقط.'));
+        abort_unless($loyalty->eligibleCustomer($user), 403, __('الهدايا متاحة لحسابات العملاء والمروّجين فقط.'));
+        abort_if((int) $profile->user_id === (int) $user->id, 403, __('ما بتقدر تهدي صفحتك.'));
 
         $data = $request->validate([
             'gift_id' => ['required', 'integer', Rule::exists('promoter_gifts', 'id')->where('is_active', true)],

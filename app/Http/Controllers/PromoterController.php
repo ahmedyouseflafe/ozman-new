@@ -52,15 +52,22 @@ class PromoterController extends Controller
     public function updateAccount(Request $request, PromoterProfile $profile)
     {
         $this->admin($request);
-        $data = $request->validate(['is_active' => ['required', 'boolean'], 'password' => ['nullable', 'string', 'min:10', 'max:128']]);
-        DB::transaction(function () use ($profile, $data) {
+        $data = $request->validate(['is_active' => ['required', 'boolean'], 'password' => ['nullable', 'string', 'min:10', 'max:128'],
+            'email' => ['sometimes', 'required', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users', 'email')->ignore($profile->user_id)]]);
+        $emailChanged = isset($data['email']) && strcasecmp($data['email'], (string) $profile->user->email) !== 0;
+        DB::transaction(function () use ($profile, $data, $emailChanged) {
             $profile->update(['is_active' => $data['is_active']]);
             $fields = ['is_active' => $data['is_active']];
+            if ($emailChanged) {
+                // Old remember-me sessions and invitation links belonged to the previous address.
+                $fields += ['email' => $data['email'], 'remember_token' => null];
+                DB::table('password_reset_tokens')->where('email', $profile->user->email)->delete();
+            }
             if (! empty($data['password'])) {
                 $fields += ['password' => $data['password'], 'remember_token' => null];
             }
             $profile->user->forceFill($fields)->save();
-            if (! $data['is_active'] || ! empty($data['password'])) {
+            if (! $data['is_active'] || ! empty($data['password']) || $emailChanged) {
                 DB::table('promoter_invitations')->where('user_id', $profile->user_id)->delete();
             }
         });
@@ -82,9 +89,16 @@ class PromoterController extends Controller
         $this->manage($request, $profile);
 
         $profile->loadCount(['followers', 'guestFollowers']);
+        // Supporters and followers are shown by first name only, like on the public page.
+        $gifts = $profile->giftSends()->with('user:id,name')->latest('id')->paginate(10, ['*'], 'gifts');
+        $followers = $profile->followers()->select('users.id', 'users.name', 'users.avatar_path', 'users.role')
+            ->orderByPivot('created_at', 'desc')->paginate(20, ['*'], 'followers');
+
         return view('promoters.editor', ['profile' => $profile,
             'posts' => $profile->posts()->with('shop')->latest()->paginate(12),
-            'shops' => Shop::where('is_active', true)->orderBy('name')->get(['id', 'name'])]);
+            'shops' => Shop::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'gifts' => $gifts, 'followers' => $followers,
+            'shopVisits' => (int) $profile->posts()->sum('shop_clicks') + (int) $profile->archived_shop_clicks]);
     }
 
     public function updateProfile(Request $request, PromoterProfile $profile)
@@ -223,7 +237,7 @@ class PromoterController extends Controller
         $latestPosts = PromoterPost::query()->with('shop')->whereKey($shopRows->pluck('latest_post_id'))->get()->keyBy('id');
         $featuredShops = $shopRows->map(fn ($row) => ['post' => $latestPosts[$row->latest_post_id] ?? null, 'posts_count' => (int) $row->posts_count])
             ->filter(fn ($row) => $row['post']?->shop)->values();
-        $shopVisits = (int) $profile->posts()->sum('shop_clicks');
+        $shopVisits = (int) $profile->posts()->sum('shop_clicks') + (int) $profile->archived_shop_clicks;
         // Top supporters by gift points; only first names are shown publicly.
         $supporters = \App\Models\PromoterGiftSend::query()->where('promoter_profile_id', $profile->id)->whereNotNull('user_id')
             ->selectRaw('user_id, SUM(points) as total_points, COUNT(*) as gifts_count')

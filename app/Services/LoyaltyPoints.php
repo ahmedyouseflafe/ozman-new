@@ -71,7 +71,7 @@ class LoyaltyPoints
 
     public function eligibleCustomer(?User $user): bool
     {
-        return $user !== null && $user->isCustomer() && (bool) $user->is_active;
+        return $user !== null && $user->earnsPoints() && (bool) $user->is_active;
     }
 
     /** Final amount the customer pays: the stored total already includes cart discounts; a won wheel discount comes off too. */

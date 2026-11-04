@@ -14,3 +14,7 @@ Artisan::command('promoters:send-notifications', function () {
     $this->info('Sent: '.app(\App\Services\PromoterFollowerNotifications::class)->flush());
 });
 Schedule::command('promoters:send-notifications')->everyMinute()->withoutOverlapping(5);
+Artisan::command('promoters:prune-stories', function () {
+    $this->info('Deleted: '.app(\App\Services\PromoterStoryCleanup::class)->run());
+})->purpose('Delete promoter stories that expired more than 3 days ago, with their files');
+Schedule::command('promoters:prune-stories')->dailyAt('03:30')->withoutOverlapping(30);

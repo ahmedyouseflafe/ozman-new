@@ -9,7 +9,7 @@
 <section class="panel"><span class="eyebrow">أهلًا برجعتك</span><h2>تسجيل الدخول</h2><p>للعملاء والمروّجين. كل حساب بيفتح مساحته الخاصة.</p><form method="post" action="{{ route('community.login.store') }}" class="stack">@csrf
 <label>البريد الإلكتروني<input name="email" type="email" dir="ltr" autocomplete="email" value="{{ old('email') }}" required></label>
 <label>كلمة المرور<input name="password" type="password" autocomplete="current-password" required></label><button class="button">دخول لحسابي ←</button>
-</form><small>مروّج جديد؟ افتح رابط الدعوة اللي أرسلته إلك الإدارة لتعيين كلمة مرورك.</small></section>
+</form><a class="text-link" href="{{ route('community.password.request') }}">{{ __('نسيت كلمة المرور؟') }}</a><small>مروّج جديد؟ افتح رابط الدعوة اللي أرسلته إلك الإدارة لتعيين كلمة مرورك.</small></section>
 <section class="panel" id="register"><span class="eyebrow">ابدأ اكتشافك</span><h2>إنشاء حساب عميل</h2><p>ملفك للمتابعة والإشعارات، بدون صلاحيات نشر.</p><form method="post" action="{{ route('community.register') }}" class="stack" enctype="multipart/form-data">@csrf
 @include('promoters.avatar-picker')
 <label>اسمك<input name="name" autocomplete="name" @if($registerFirst ?? false) autofocus @endif maxlength="100" value="{{ old('name') }}" required></label>

@@ -17,7 +17,7 @@ class CustomerPointsController extends Controller
 
         $search = trim((string) $request->query('search', ''));
         $customers = User::query()
-            ->where('role', 'customer')
+            ->whereIn('role', ['customer', 'promoter'])
             ->when($search !== '', fn ($query) => $query->where(fn ($query) => $query
                 ->where('name', 'like', "%{$search}%")
                 ->orWhere('email', 'like', "%{$search}%")
@@ -30,7 +30,7 @@ class CustomerPointsController extends Controller
             ->withQueryString();
 
         $selected = $request->integer('customer')
-            ? User::query()->where('role', 'customer')->find($request->integer('customer'))
+            ? User::query()->whereIn('role', ['customer', 'promoter'])->find($request->integer('customer'))
             : null;
         $history = $selected?->loyaltyEntries()->with(['shop', 'order'])->latest('id')->limit(30)->get();
 
@@ -49,7 +49,7 @@ class CustomerPointsController extends Controller
     public function adjust(Request $request, User $customer, LoyaltyPoints $loyalty): RedirectResponse
     {
         abort_unless($this->canAccessCurrentRoute(), 403);
-        abort_unless($customer->isCustomer(), 404);
+        abort_unless($customer->earnsPoints(), 404);
 
         $data = $request->validate([
             'points' => ['required', 'integer', 'not_in:0', 'between:-100000,100000'],

@@ -112,7 +112,8 @@ class PromoterGiftsTest extends TestCase
         $this->postJson(route('promoters.gifts.store', $profile), ['gift_id' => $rose->id])
             ->assertStatus(401)->assertJsonStructure(['login']);
 
-        foreach (['shop_owner', 'promoter', 'super_admin'] as $role) {
+        // Promoters collect points too and may gift other pages; dashboard staff can't.
+        foreach (['shop_owner', 'super_admin'] as $role) {
             $this->actingAs(User::factory()->create(['role' => $role, 'is_active' => true]))
                 ->postJson(route('promoters.gifts.store', $profile), ['gift_id' => $rose->id])->assertForbidden();
         }

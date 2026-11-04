@@ -98,6 +98,9 @@ class User extends Authenticatable
 
     public function isCustomer(): bool { return $this->role === 'customer'; }
 
+    /** Community accounts that collect loyalty points: customers and promoters. */
+    public function earnsPoints(): bool { return in_array($this->role, ['customer', 'promoter'], true); }
+
     public function loyaltyEntries() { return $this->hasMany(LoyaltyPointEntry::class); }
 
     // Community avatar: uploaded photo, or the name's first letter on a color derived from the name.
