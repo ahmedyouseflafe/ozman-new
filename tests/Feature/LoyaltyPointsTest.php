@@ -209,7 +209,7 @@ class LoyaltyPointsTest extends TestCase
         $this->assertSame(['enabled' => true, 'amount' => 200, 'points' => 5], app(LoyaltyPoints::class)->settings());
 
         $this->actingAs($this->shop()->user)->get(route('customer-points.index'))->assertForbidden();
-        $this->actingAs($customer)->post($url, ['points' => 50, 'note' => 'self'])->assertRedirect(route('login'));
+        $this->actingAs($customer)->post($url, ['points' => 50, 'note' => 'self'])->assertRedirect(route('community.account'));
         $this->assertSame([30, 0], $this->balance($customer));
     }
 }

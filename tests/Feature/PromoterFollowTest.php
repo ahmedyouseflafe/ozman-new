@@ -71,7 +71,7 @@ class PromoterFollowTest extends TestCase
         $this->assertTrue($user->is_active);
         $this->assertTrue(Hash::check('visitor-password', $user->password));
         $this->assertDatabaseHas('promoter_followers', ['user_id' => $user->id]);
-        $this->get('/promoter')->assertForbidden();
+        $this->get('/promoter')->assertRedirect(route('community.account'));
     }
 
     public function test_existing_account_login_requires_password_and_resumes_follow(): void

@@ -61,8 +61,9 @@ class PromoterPageTest extends TestCase
         $this->delete(route('promoter.posts.destroy', $post))->assertForbidden();
         foreach (['marketer', 'shop_owner', 'customer'] as $role) {
             $this->actingAs(User::factory()->create(['role' => $role, 'is_active' => true]));
-            $this->get('/promoter')->assertForbidden();
-            $this->post('/promoter/accounts')->assertForbidden();
+            // Customers are redirected to their account; staff get a plain 403.
+            $role === 'customer' ? $this->get('/promoter')->assertRedirect(route('community.account')) : $this->get('/promoter')->assertForbidden();
+            $role === 'customer' ? $this->post('/promoter/accounts')->assertRedirect(route('community.account')) : $this->post('/promoter/accounts')->assertForbidden();
         }
         $this->assertDatabaseCount('promoter_posts', 1);
     }

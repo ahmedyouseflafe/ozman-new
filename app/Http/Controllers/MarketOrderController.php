@@ -135,6 +135,10 @@ class MarketOrderController extends Controller
 
     private function member(Request $request): void
     {
-        abort_unless($request->user()?->is_active && $request->user()->earnsPoints(), 403, __('المتجر الحر لحسابات العملاء والمروّجين.'));
+        if (! ($request->user()?->is_active && $request->user()->earnsPoints())) {
+            // Admins and staff browse the market but don't buy or sell in it.
+            throw new \Illuminate\Http\Exceptions\HttpResponseException(
+                redirect()->route('market.index')->with('status', __('البيع والطلب بالمتجر الحر لحسابات العملاء والمروّجين.')));
+        }
     }
 }

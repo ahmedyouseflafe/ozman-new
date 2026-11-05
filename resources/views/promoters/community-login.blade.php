@@ -38,6 +38,7 @@
 <button class="button">{{ __('تسجيل الدخول') }}</button>
 </form>
 <a class="text-link auth-forgot" href="{{ route('community.password.request') }}">{{ __('نسيت كلمة المرور؟') }}</a>
+@if(session('staff_login'))<p class="notice">{{ __('حسابات المحلات والموظفين بتدخل من هون:') }} <a class="text-link" href="{{ route('login') }}">{{ __('دخول لوحة التحكم ←') }}</a></p>@endif
 </section>
 <section class="panel auth-switch"><p>{{ __('ما عندك حساب؟') }} <a class="text-link" href="{{ route('community.login', ['tab' => 'register']) }}">{{ __('سجّل') }}</a></p>
 <p><a class="text-link" href="{{ route('community.login', ['tab' => 'register', 'as' => 'promoter']) }}">{{ __('بدك تصير مروّج؟ قدّم طلبك') }}</a></p></section>

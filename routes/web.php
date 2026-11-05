@@ -81,6 +81,7 @@ Route::post('/creator-invitation/{token}', [\App\Http\Controllers\PromoterInvita
 Route::middleware(['auth','throttle:60,1'])->prefix('community')->name('community.')->group(function () {
     Route::get('/account', [\App\Http\Controllers\CommunityAccountController::class, 'account'])->name('account');
     Route::put('/account', [\App\Http\Controllers\CommunityAccountController::class, 'update'])->name('update');
+    Route::post('/become-promoter', [\App\Http\Controllers\CommunityAccountController::class, 'becomePromoter'])->middleware('throttle:5,1')->name('become-promoter');
     Route::put('/password', [\App\Http\Controllers\CommunityPasswordController::class, 'change'])->middleware('throttle:6,1')->name('password.change');
     Route::put('/avatar', [\App\Http\Controllers\CommunityAccountController::class, 'updateAvatar'])->middleware('throttle:10,1')->name('avatar.update');
     Route::delete('/avatar', [\App\Http\Controllers\CommunityAccountController::class, 'destroyAvatar'])->name('avatar.destroy');

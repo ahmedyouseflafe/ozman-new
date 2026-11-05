@@ -46,7 +46,7 @@ class CreatorCommunityTest extends TestCase {
         $this->get(route('community.account'))->assertOk()->assertSee('Visitor');
         $this->put(route('community.update'),['name'=>'Updated','phone'=>'0597654321','role'=>'promoter'])->assertRedirect();
         $this->assertSame('customer',Auth::user()->fresh()->role);
-        $this->get(route('promoter.accounts'))->assertForbidden();
+        $this->get(route('promoter.accounts'))->assertRedirect(route('community.account'));
         Auth::user()->update(['is_active'=>false]);$this->get(route('community.account'))->assertForbidden();
     }
     public function test_post_upload_creates_only_follower_updates_and_push_is_retried(): void {

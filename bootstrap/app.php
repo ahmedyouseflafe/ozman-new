@@ -20,6 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn (\Illuminate\Http\Request $request) => $request->is('community', 'community/*', 'promoter', 'promoter/*', 'free-market/*')
             ? route('community.login')
             : '/login');
+        // Signed-in visitors opening a login page: customers go to their account, everyone else to the dashboard.
+        $middleware->redirectUsersTo(fn (\Illuminate\Http\Request $request) => $request->user()?->isCustomer() ? route('community.account') : '/dashboard');
 
         $middleware->web(replace: [
             \Illuminate\Session\Middleware\StartSession::class => \App\Http\Middleware\StartPageSession::class,

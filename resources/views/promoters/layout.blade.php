@@ -36,7 +36,7 @@
                 <summary class="account-button" title="{{ __('حسابي') }}">@if($me->earnsPoints())@include('promoters.customer-avatar', ['user' => $me, 'class' => 'is-small'])@else<span class="customer-avatar is-small" aria-hidden="true">{{ $me->avatarInitial() }}</span>@endif<span class="account-name">{{ __('حسابي') }}</span>@if($me->earnsPoints())<span class="account-points" title="{{ __('رصيد النقاط') }}">⭐ {{ number_format(app(\App\Services\LoyaltyPoints::class)->balance($me)) }}</span>@endif @if($alerts)<span class="pending-count" title="{{ __('بانتظارك') }}">{{ $alerts }}</span>@endif</summary>
                 <div class="account-menu-panel">
                     <p class="account-menu-head"><b>{{ $me->name }}</b>@if($me->username)<span dir="ltr">{{ '@'.$me->username }}</span>@endif</p>
-                    <a href="{{ route('community.account') }}">👤 {{ __('حسابي ونقاطي') }}</a>
+                    @if($me->earnsPoints())<a href="{{ route('community.account') }}">👤 {{ __('حسابي ونقاطي') }}</a>@endif
                     @if($me->isPromoter())@if($isCreator)<a href="{{ route('promoter.dashboard') }}">🎬 {{ __('لوحتي كمروّج') }}</a>@else<span class="account-menu-note">⏳ {{ __('طلبك كمروّج قيد المراجعة') }}</span>@endif @endif
                     @if($me->earnsPoints())
                         <hr><span class="account-menu-label">{{ __('المتجر الحر') }}</span>
@@ -67,11 +67,22 @@
 </main>
 <footer class="social-wrap social-footer"><span>اكتشافات قريبة منك.</span><a href="{{ route('home') }}">جزء من أوزمان ↗</a></footer>
 <div class="app-bottom-bar" role="navigation" aria-label="{{ __('التنقل') }}">
-    <a href="{{ route('promoters.index') }}" @class(['is-current' => request()->routeIs('promoters.*', 'promoter.*')])><span aria-hidden="true">★</span>{{ __('المروّجين') }}</a>
+    <a href="{{ route('promoters.index') }}" @class(['is-current' => request()->routeIs('promoters.*', 'promoter.manage')])><span aria-hidden="true">★</span>{{ __('المروّجين') }}</a>
     <a href="{{ route('market.index') }}" @class(['is-current' => request()->routeIs('market.index', 'market.show')])><span aria-hidden="true">🛍</span>{{ __('المتجر') }}</a>
-    <a class="app-bottom-add" href="{{ $isCreator && ! $inMarket ? route('promoter.dashboard').'#storyComposer' : ($me ? route('market.create') : route('community.login', ['return' => '/free-market/new'])) }}" aria-label="{{ $isCreator && ! $inMarket ? __('انشر حكاية') : __('بيع منتج') }}"><span aria-hidden="true">＋</span></a>
-    <a href="{{ $me ? route('market.purchases') : $loginUrl }}" @class(['is-current' => request()->routeIs('market.purchases', 'market.sales', 'market.mine')])><span aria-hidden="true">📦</span>{{ __('طلباتي') }}@if($pendingSales)<i class="pending-dot" aria-label="{{ __('طلبات جديدة') }}"></i>@endif</a>
-    <a href="{{ $me ? route('community.account') : route('community.login') }}" @class(['is-current' => request()->routeIs('community.*')])><span aria-hidden="true">👤</span>{{ $me ? __('حسابي') : __('دخول') }}</a>
+    @if($me && ! $me->earnsPoints())
+        {{-- Admins and staff: management shortcuts instead of buying and selling. --}}
+        <a class="app-bottom-add" href="{{ route('dashboard') }}" aria-label="{{ __('لوحة التحكم') }}"><span aria-hidden="true">⚙</span></a>
+        @if($me->isSuperAdmin())
+            <a href="{{ route('market.admin') }}" @class(['is-current' => request()->routeIs('market.admin')])><span aria-hidden="true">🏪</span>{{ __('إدارة المتجر') }}</a>
+            <a href="{{ route('promoter.accounts') }}" @class(['is-current' => request()->routeIs('promoter.accounts', 'promoter.gifts.*')])><span aria-hidden="true">👥</span>{{ __('المروّجين') }}@if($pendingPromoters)<i class="pending-dot"></i>@endif</a>
+        @else
+            <span></span><span></span>
+        @endif
+    @else
+        <a class="app-bottom-add" href="{{ $isCreator && ! $inMarket ? route('promoter.dashboard').'#storyComposer' : ($me ? route('market.create') : route('community.login', ['return' => '/free-market/new'])) }}" aria-label="{{ $isCreator && ! $inMarket ? __('انشر حكاية') : __('بيع منتج') }}"><span aria-hidden="true">＋</span></a>
+        <a href="{{ $me ? route('market.purchases') : $loginUrl }}" @class(['is-current' => request()->routeIs('market.purchases', 'market.sales', 'market.mine')])><span aria-hidden="true">📦</span>{{ __('طلباتي') }}@if($pendingSales)<i class="pending-dot" aria-label="{{ __('طلبات جديدة') }}"></i>@endif</a>
+        <a href="{{ $me ? route('community.account') : route('community.login') }}" @class(['is-current' => request()->routeIs('community.*')])><span aria-hidden="true">👤</span>{{ $me ? __('حسابي') : __('دخول') }}</a>
+    @endif
 </div>
 @yield('scripts')
 </body></html>

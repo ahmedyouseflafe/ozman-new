@@ -24,7 +24,7 @@ class AuthController extends Controller
     public function showLogin(): View|RedirectResponse
     {
         if (Auth::check()) {
-            return redirect()->route('dashboard');
+            return redirect()->route(Auth::user()->isCustomer() ? 'community.account' : 'dashboard');
         }
 
         return view('auth.login');
@@ -52,6 +52,10 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+        // Customers signing in here are sent to their community account, not the dashboard.
+        if (Auth::user()->isCustomer()) {
+            return redirect()->intended(route('community.account'));
+        }
         $this->attachAppPushDevice($request);
 
         return $this->redirectAfterLogin($request);
@@ -589,6 +593,8 @@ class AuthController extends Controller
         $webPushEndpointHash = $request->session()->get('merchant_web_push_endpoint_hash');
         $driverWebPushEndpointHash = $request->session()->get('driver_web_push_endpoint_hash');
         $userId = $request->user()?->id;
+        // Customers and promoters return to the community pages, not the dashboard login.
+        $community = (bool) $request->user()?->earnsPoints();
         $adminEndpointHash = $request->session()->get('admin_web_push_endpoint_hash') ?? $request->cookie('admin_push_device');
         if ($userId && is_string($adminEndpointHash) && \Illuminate\Support\Facades\Schema::hasTable('admin_push_subscriptions')) {
             \App\Models\AdminPushSubscription::where('user_id', $userId)->where('endpoint_hash', $adminEndpointHash)->delete();
@@ -616,6 +622,10 @@ class AuthController extends Controller
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        if ($community) {
+            return redirect()->route('promoters.index')->with('status', __('تم تسجيل الخروج. نشوفك قريب 👋'))->withoutCookie('admin_push_device');
+        }
 
         return redirect()->route('login')->withoutCookie('admin_push_device');
     }

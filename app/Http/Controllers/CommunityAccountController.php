@@ -23,8 +23,13 @@ class CommunityAccountController extends Controller {
         if (!Auth::attempt([$field=>$value,'password'=>$data['password'],'is_active'=>true],true)) {
             return back()->withErrors(['login'=>__('الإيميل/اسم المستخدم أو كلمة المرور غير صحيحة.')])->withInput(['login'=>$data['login']]);
         }
-        $r->session()->regenerate(); app(GuestFollows::class)->merge($r,$r->user());
         $user=$r->user();
+        // Shop owners, staff and drivers have their own login; this page is for the community.
+        if (!$user->earnsPoints() && !$user->isSuperAdmin()) {
+            Auth::logout(); $r->session()->invalidate(); $r->session()->regenerateToken();
+            return back()->withErrors(['login'=>__('هذا حساب محل أو موظف. ادخل من صفحة دخول لوحة التحكم.')])->withInput(['login'=>$data['login']])->with('staff_login',true);
+        }
+        $r->session()->regenerate(); app(GuestFollows::class)->merge($r,$user);
         $creator=$user->isSuperAdmin() || ($user->isPromoter() && !$user->promoterProfile?->isPending());
         return redirect()->intended(route($creator ? 'promoter.dashboard' : 'community.account'));
     }
@@ -63,12 +68,39 @@ class CommunityAccountController extends Controller {
     }
     public function account(Request $r, LoyaltyPoints $loyalty) {
         $this->active($r); $user=$r->user();
+        // The community account is for customers and promoters; admins and staff go to their own areas.
+        if (!$user->earnsPoints()) return redirect()->route($user->isSuperAdmin() ? 'promoter.accounts' : 'dashboard');
         $points=['balance'=>$loyalty->balance($user),'pending'=>$loyalty->pendingPoints($user),'shops'=>$loyalty->shopBalances($user)];
         $pointEntries=$user->loyaltyEntries()->with(['shop:id,name','order:id,order_number'])->latest('id')->paginate(10,['*'],'points');
         $profiles=PromoterProfile::published()->whereHas('followers',fn($q)=>$q->where('users.id',$user->id))->paginate(12,['*'],'following');
         $updates=PromoterUpdate::where('user_id',$user->id)->whereHas('post',fn($q)=>$q->visible()->whereHas('profile',fn($p)=>$p->published()->whereHas('followers',fn($f)=>$f->where('users.id',$user->id))))->with('post.profile')->latest()->paginate(15,['*'],'updates');
         $pushEnabled=CommunityPushSubscription::where('user_id',$user->id)->where('endpoint_hash',$r->session()->get('community_push_endpoint_hash') ?? $r->cookie('community_push_device'))->exists();
-        return response()->view('promoters.community-account',compact('user','profiles','updates','pushEnabled','points','pointEntries'))->header('Cache-Control','private, no-store');
+        $tab=in_array($r->query('tab'),['overview','following','points','settings'],true) ? $r->query('tab') : 'overview';
+        // Page numbers belong to one tab; follow them so pagination keeps its tab.
+        if (!$r->has('tab')) $tab=match(true){ $r->has('following') => 'following', $r->has('points') => 'points', default => $tab };
+        $market=['listings'=>\App\Models\MarketListing::where('user_id',$user->id)->where('status','active')->count(),
+            'sales'=>\App\Models\MarketOrder::where('seller_id',$user->id)->where('status','pending')->count(),
+            'purchases'=>\App\Models\MarketOrder::where('buyer_id',$user->id)->whereIn('status',['pending','accepted'])->count()];
+        $creator=$user->isPromoter() ? $user->promoterProfile?->loadCount(['followers','guestFollowers','posts']) : null;
+        $unread=PromoterUpdate::where('user_id',$user->id)->whereNull('read_at')->count();
+        return response()->view('promoters.community-account',compact('user','profiles','updates','pushEnabled','points','pointEntries','tab','market','creator','unread'))->header('Cache-Control','private, no-store');
+    }
+    /** An existing customer applies to become a promoter; the page waits for admin approval like a new signup. */
+    public function becomePromoter(Request $r) {
+        $this->active($r); $user=$r->user();
+        abort_unless($user->isCustomer(),403);
+        $r->merge(['username'=>CommunityUsername::normalize($r->input('username',$user->username)) ?: null]);
+        $data=$r->validate(['username'=>CommunityUsername::rules(true,$user->id),'bio'=>['nullable','string','max:600']],CommunityUsername::messages());
+        $slug=CommunityUsername::slugFor($data['username']);
+        if (strlen($slug)<3 || CommunityUsername::slugTaken($slug)) {
+            return back()->withErrors(['username'=>__('اسم المستخدم مأخوذ كرابط صفحة. جرّب اسم ثاني.')])->withInput();
+        }
+        DB::transaction(function () use($user,$data,$slug) {
+            $user->forceFill(['username'=>$data['username'],'role'=>'promoter'])->save();
+            $profile=PromoterProfile::create(['user_id'=>$user->id,'slug'=>$slug,'display_name'=>$user->name,'bio'=>$data['bio'] ?? null,'is_active'=>false,'approved_at'=>null]);
+            DB::table('promoter_profile_slugs')->insert(['slug'=>$slug,'promoter_profile_id'=>$profile->id]);
+        });
+        return redirect()->route('community.account')->with('status',__('وصل طلبك كمروّج 🎉 بيوصلك إيميل أول ما الإدارة تقبله.'));
     }
     public function update(Request $r) {
         $this->active($r);

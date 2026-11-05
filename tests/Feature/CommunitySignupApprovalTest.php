@@ -104,6 +104,8 @@ class CommunitySignupApprovalTest extends TestCase
         // Only pending applications can be approved or rejected; admin only.
         $live = PromoterProfile::create(['user_id' => User::factory()->create(['role' => 'promoter', 'is_active' => true])->id, 'slug' => 'live', 'display_name' => 'Live', 'is_active' => true, 'approved_at' => now()]);
         $this->actingAs($admin)->post(route('promoter.accounts.reject', $live))->assertNotFound();
-        $this->actingAs($user->fresh())->post(route('promoter.accounts.approve', $live))->assertForbidden();
+        // A customer is sent back to their account, never into the admin area.
+        $this->actingAs($user->fresh())->post(route('promoter.accounts.approve', $live))->assertRedirect(route('community.account'));
+        $this->assertTrue($live->fresh()->approved_at !== null);
     }
 }

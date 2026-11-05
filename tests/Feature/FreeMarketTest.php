@@ -67,7 +67,7 @@ class FreeMarketTest extends TestCase
         Storage::fake('local');
         $this->actingAs($this->member())->post(route('market.store'), $this->listingData(['images' => []]))->assertSessionHasErrors('images');
         $this->actingAs($this->member())->post(route('market.store'), $this->listingData(['price' => 0, 'category' => 'weapons']))->assertSessionHasErrors(['price', 'category']);
-        $this->actingAs($this->member('shop_owner'))->post(route('market.store'), $this->listingData())->assertForbidden();
+        $this->actingAs($this->member('shop_owner'))->post(route('market.store'), $this->listingData())->assertRedirect(route('market.index'));
         $this->assertSame(0, MarketListing::count());
     }
 

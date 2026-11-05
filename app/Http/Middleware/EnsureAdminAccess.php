@@ -30,6 +30,11 @@ class EnsureAdminAccess
             return redirect()->route('promoter.dashboard');
         }
 
+        // Customers belong to the community side; send them to their account instead of signing them out.
+        if ($user->isCustomer()) {
+            return redirect()->route('community.account')->with('status', __('لوحة التحكم للإدارة والمحلات. هاي مساحتك كعميل.'));
+        }
+
         // Do not leave a stale or non-admin web session on a Forbidden page.
         // Clear it so the next destination is always the normal login screen.
         if (! in_array($user->role, ['super_admin', 'shop_owner', 'agent', 'distributor', 'marketer', 'employee'], true)) {
