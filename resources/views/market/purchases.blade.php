@@ -3,7 +3,7 @@
 @section('content')
 <style>{!! file_get_contents(public_path('market.css')) !!}</style>
 @include('market.nav')
-<div class="section-heading"><div><span class="eyebrow">{{ __('المتجر الحر') }}</span><h1>{{ __('طلباتي') }}</h1></div></div>
+
 @error('order')<div class="notice error" role="alert">{{ $message }}</div>@enderror
 <div class="market-rows">
 @forelse($orders as $order)

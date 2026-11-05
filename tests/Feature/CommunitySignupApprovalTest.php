@@ -68,7 +68,7 @@ class CommunitySignupApprovalTest extends TestCase
 
         // Hidden from the public, no dashboard yet, but the customer account works.
         $this->get(route('promoters.show', 'lina-finds'))->assertNotFound();
-        $this->get(route('promoters.index'))->assertDontSee('Lina Haddad');
+        $this->get(route('promoters.index'))->assertDontSee('/promoters/lina-finds');
         $this->get(route('promoter.dashboard'))->assertRedirect(route('community.account'));
         $this->get(route('community.account'))->assertOk()->assertSee('طلبك كمروّج قيد المراجعة');
 

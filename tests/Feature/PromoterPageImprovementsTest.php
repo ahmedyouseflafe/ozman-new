@@ -110,11 +110,12 @@ class PromoterPageImprovementsTest extends TestCase
 
         $this->get(route('promoters.index'))->assertOk()
             ->assertSee('hero-stories', false)->assertSee(route('promoters.media', ['post' => $post, 'part' => 'media']), false)
-            ->assertSee('تعرّف على المروّجين')->assertSee('دخول / حساب جديد')->assertSee('دخول المروّج')
-            ->assertSee('creator-stats', false);
+            ->assertSee('تعرّف على المروّجين')->assertSee('دخول / حساب جديد')->assertSee('creator-stats', false)
+            // One app: section tabs in the header and a bottom bar on phones.
+            ->assertSee('app-tabs', false)->assertSee('app-bottom-bar', false)->assertSee(route('market.index'), false);
 
         $customer = User::factory()->create(['role' => 'customer', 'is_active' => true]);
         $this->actingAs($customer)->get(route('promoters.index'))->assertOk()
-            ->assertSee('account-button', false)->assertDontSee('دخول المروّج')->assertDontSee('دخول / حساب جديد');
+            ->assertSee('account-button', false)->assertSee(route('market.purchases'), false)->assertDontSee('دخول / حساب جديد');
     }
 }

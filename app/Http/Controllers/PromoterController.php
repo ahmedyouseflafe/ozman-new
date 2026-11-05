@@ -248,7 +248,8 @@ class PromoterController extends Controller
         $recent = PromoterPost::query()->visible()
             ->whereHas('profile', fn ($q) => $q->published())
             ->where(fn ($q) => $q->where('type', 'image')->orWhereNotNull('poster'))
-            ->with('profile')->latest('id')->limit(8)->get();
+            // One story bubble per creator, newest first.
+            ->with('profile')->latest('id')->limit(60)->get()->unique('promoter_profile_id')->take(12)->values();
 
         return response()->view('promoters.directory', ['profiles' => $query->paginate(24)->withQueryString(), 'sort' => $sort, 'recent' => $recent])->header('Cache-Control', 'no-store');
     }

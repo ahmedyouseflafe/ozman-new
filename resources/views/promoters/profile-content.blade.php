@@ -1,27 +1,35 @@
 <div class="social-profile">
-<section class="profile-hero">
-    <div class="profile-identity">
+<section class="profile-hero profile-card">
+    @php($level = $profile->level())
+    <div class="profile-top">
         @include('promoters.story-avatar', ['inlineComposer' => true])
-        <div class="profile-copy">
-            <div class="profile-topline"><span class="handle" dir="ltr">{{ '@'.$profile->slug }}</span>@if($canManage)<button class="icon-create" type="button" data-compose="post" aria-label="إضافة منشور">+</button>@endif</div>
-            @php($level = $profile->level())
-            <h1>{{ $profile->display_name }} <span class="level-badge level-{{ $level['key'] }}" id="promoterLevelBadge" title="{{ __('مستوى الصفحة حسب الهدايا والمتابعين والزيارات') }}">{{ $level['icon'] }} {{ __($level['name']) }}</span></h1>
-            <div class="profile-stats">
-                <div><strong>{{ $posts->total() }}</strong><span>منشور</span></div>
-                <div><strong id="promoterFollowerCount">{{ $profile->followerTotal() }}</strong><span>متابع</span></div>
-                <div><strong>{{ $shopCount }}</strong><span>محل مذكور</span></div>
-                <div><strong>{{ number_format($profile->page_views) }}</strong><span>{{ __('زيارة') }}</span></div>
-                <div><strong id="promoterGiftPoints">{{ number_format($profile->gift_points) }}</strong><span>{{ __('🎁 نقاط هدايا') }}</span></div>
-                <div title="{{ __('كم مرة الزوار فتحوا محل من منشورات هالصفحة') }}"><strong>{{ number_format($shopVisits) }}</strong><span>{{ __('🛍 زيارة للمحلات') }}</span></div>
-            </div>
-            <p class="bio">{{ $profile->bio ?: 'أشارككم محلات وتجارب تستحق الزيارة. شوفوا آخر ستورياتي وفيديوهاتي هنا.' }}</p>
-            <div class="profile-actions">
-                @if($canManage)<a class="button outline" href="{{ route('promoter.manage', $profile) }}">تعديل الملف الشخصي</a><button class="button" type="button" data-compose="post">إضافة منشور</button>@else @include('promoters.follow-button') @if($gifting['gifts']->isNotEmpty())<button class="button gift-open" type="button" data-gift-open>{{ __('🎁 ادعم بهدية') }}</button>@endif @endif
-                <button class="button outline" type="button" id="shareProfile">مشاركة الملف</button>
-                @if($canManage)<button class="button outline" type="button" data-live-prepare>◉ بث مباشر</button>@endif
-            </div>
-            <p id="profileShareStatus" role="status"></p>
+        <div class="profile-stats profile-main-stats">
+            <div><strong>{{ $posts->total() }}</strong><span>{{ __('منشور') }}</span></div>
+            <div><strong id="promoterFollowerCount">{{ $profile->followerTotal() }}</strong><span>{{ __('متابع') }}</span></div>
+            <div><strong>{{ number_format($profile->page_views) }}</strong><span>{{ __('زيارة') }}</span></div>
         </div>
+    </div>
+    <div class="profile-copy">
+        <h1>{{ $profile->display_name }} <span class="level-badge level-{{ $level['key'] }}" id="promoterLevelBadge" title="{{ __('مستوى الصفحة حسب الهدايا والمتابعين والزيارات') }}">{{ $level['icon'] }} {{ __($level['name']) }}</span></h1>
+        <span class="handle" dir="ltr">{{ '@'.$profile->slug }}</span>
+        <p class="bio">{{ $profile->bio ?: 'أشارككم محلات وتجارب تستحق الزيارة. شوفوا آخر ستورياتي وفيديوهاتي هنا.' }}</p>
+        <div class="profile-chips">
+            <span title="{{ __('نقاط الهدايا اللي وصلت الصفحة') }}">🎁 <strong id="promoterGiftPoints">{{ number_format($profile->gift_points) }}</strong> {{ __('نقاط هدايا') }}</span>
+            <span title="{{ __('كم مرة الزوار فتحوا محل من منشورات هالصفحة') }}">🛍 <strong>{{ number_format($shopVisits) }}</strong> {{ __('زيارة للمحلات') }}</span>
+            <span>🏪 <strong>{{ $shopCount }}</strong> {{ __('محل مذكور') }}</span>
+        </div>
+        <div class="profile-actions profile-action-row">
+            @if($canManage)
+                <button class="button" type="button" data-compose="post">{{ __('＋ منشور جديد') }}</button>
+                <a class="button outline" href="{{ route('promoter.manage', $profile) }}">{{ __('لوحتي') }}</a>
+                <button class="button outline icon-only" type="button" data-live-prepare title="{{ __('بث مباشر') }}" aria-label="{{ __('بث مباشر') }}">◉</button>
+            @else
+                @include('promoters.follow-button')
+                @if($gifting['gifts']->isNotEmpty())<button class="button gift-open" type="button" data-gift-open>{{ __('🎁 ادعم بهدية') }}</button>@endif
+            @endif
+            <button class="button outline icon-only" type="button" id="shareProfile" title="{{ __('مشاركة الملف') }}" aria-label="{{ __('مشاركة الملف') }}">↗</button>
+        </div>
+        <p id="profileShareStatus" role="status"></p>
     </div>
 </section>
 <section class="stories-section" aria-label="الستوريات">

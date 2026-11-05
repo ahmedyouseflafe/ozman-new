@@ -3,7 +3,7 @@
 @section('content')
 <style>{!! file_get_contents(public_path('market.css')) !!}</style>
 @include('market.nav')
-<div class="section-heading"><div><span class="eyebrow">{{ __('المتجر الحر') }}</span><h1>{{ __('منتجاتي') }}</h1></div><span>{{ $listings->total() }} {{ __('منتج') }}</span></div>
+
 <div class="market-rows">
 @forelse($listings as $listing)
 <article class="market-row">

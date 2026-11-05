@@ -3,7 +3,7 @@
 @section('description', \Illuminate\Support\Str::limit((string) $listing->description, 150) ?: $listing->title)
 @section('content')
 <style>{!! file_get_contents(public_path('market.css')) !!}</style>
-@include('market.nav')
+<a class="back-link" href="{{ url()->previous() !== url()->current() && str_contains(url()->previous(), '/free-market') ? url()->previous() : route('market.index') }}">{{ __('→ رجوع للمتجر') }}</a>
 @php($seller = $listing->seller)
 @unless($listing->isVisible())<div class="notice error" role="status">{{ __('هذا المنتج مش ظاهر بالمتجر حالياً:') }} {{ $listing->quantity < 1 ? __('خلصت الكمية') : $listing->statusLabel() }}.</div>@endunless
 <div class="market-detail">

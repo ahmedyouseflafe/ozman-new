@@ -89,6 +89,7 @@ class CustomerAvatarTest extends TestCase
         $promoter = User::factory()->create(['role' => 'promoter', 'is_active' => true]);
         $this->actingAs($promoter)->put(route('community.avatar.update'), ['avatar' => UploadedFile::fake()->image('a.jpg')])->assertForbidden();
         $this->delete(route('community.avatar.destroy'))->assertForbidden();
-        $this->get(route('community.account'))->assertOk()->assertDontSee('class="customer-avatar', false);
+        // The header shows an initial for everyone; the photo upload panel is for customers only.
+        $this->get(route('community.account'))->assertOk()->assertDontSee(route('community.avatar.update'), false);
     }
 }

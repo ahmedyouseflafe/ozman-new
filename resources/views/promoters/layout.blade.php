@@ -10,24 +10,55 @@
     <meta name="description" content="{{ $__env->yieldContent('description', 'اكتشف المحلات من خلال ستوريات وفيديوهات مروّجين أوزمان.') }}">
     <style>{!! file_get_contents(public_path('promoter-social.css')) !!}</style>
     <style>{!! file_get_contents(public_path('community.css')) !!}</style>
+    <style>{!! file_get_contents(public_path('community-shell.css')) !!}</style>
 </head>
 <body>
-<header class="social-header"><div class="social-wrap header-row">
-    <a class="social-brand" href="{{ route('promoters.index') }}"><span class="brand-mark">O<span>·</span></span><span>Ozman <b>Creators</b><small>حكايات من محلاتنا</small></span></a>
-    {{-- One header row: discovery, the visitor's own account, then role-specific links. --}}
-    <nav aria-label="تنقل المروّجين">
-        <a href="{{ route('promoters.index') }}">اكتشف المروّجين</a><a href="{{ route('market.index') }}">{{ __('المتجر الحر') }}</a><a href="{{ route('home') }}">أوزمان ↗</a>
+@php
+    $me = auth()->user();
+    $inMarket = request()->routeIs('market.*');
+    $isCreator = $me?->isPromoter() && $me->promoterProfile && ! $me->promoterProfile->isPending();
+    $pendingSales = $me?->earnsPoints() ? \App\Models\MarketOrder::where('seller_id', $me->id)->where('status', 'pending')->count() : 0;
+    $pendingPromoters = $me?->isSuperAdmin() ? \App\Models\PromoterProfile::pending()->count() : 0;
+    $alerts = $pendingSales + $pendingPromoters;
+    $loginUrl = route('community.login', ['return' => '/'.ltrim(request()->path(), '/')]);
+@endphp
+{{-- One app for the community: Creators and the Free Market, a single-row header and a bottom bar on phones. --}}
+<header class="app-header"><div class="social-wrap app-header-row">
+    <a class="social-brand app-brand" href="{{ route('promoters.index') }}"><span class="brand-mark">O<span>·</span></span><span>Ozman<small>{{ $inMarket ? __('المتجر الحر') : __('المروّجين') }}</small></span></a>
+    <div class="app-tabs" role="navigation" aria-label="{{ __('أقسام المجتمع') }}">
+        <a href="{{ route('promoters.index') }}" @class(['is-current' => ! $inMarket]) @if(! $inMarket) aria-current="page" @endif>★ {{ __('المروّجين') }}</a>
+        <a href="{{ route('market.index') }}" @class(['is-current' => $inMarket]) @if($inMarket) aria-current="page" @endif>🛍 {{ __('المتجر الحر') }}</a>
+    </div>
+    <div class="app-actions">
+        <button type="button" class="theme-toggle" id="promoterThemeToggle" aria-label="الوضع الداكن" aria-pressed="false"><span aria-hidden="true">☾</span><span data-theme-label class="visually-hidden">Dark</span></button>
         @auth
-            <a class="button outline small account-button" href="{{ route('community.account') }}" title="{{ __('حسابي · المتابعات والإشعارات') }}">@if(auth()->user()->isCustomer())@include('promoters.customer-avatar', ['user' => auth()->user(), 'class' => 'is-small'])@endif<span>{{ __('حسابي') }} 🔔</span>@if(auth()->user()->earnsPoints())<span class="account-points" title="{{ __('رصيد النقاط') }}">⭐ {{ number_format(app(\App\Services\LoyaltyPoints::class)->balance(auth()->user())) }}</span>@endif</a>
-            @if(auth()->user()->isPromoter())@if(auth()->user()->promoterProfile?->isPending())<span class="pending-chip">{{ __('⏳ طلبك قيد المراجعة') }}</span>@else<a class="button small" href="{{ route('promoter.dashboard') }}">{{ __('لوحتي') }}</a>@endif @endif
-            @if(auth()->user()->isSuperAdmin())<a class="button small" href="{{ route('promoter.accounts') }}">{{ __('إدارة المروّجين') }}@if($pendingPromoters = \App\Models\PromoterProfile::pending()->count()) <span class="pending-count" title="{{ __('طلبات بانتظار الموافقة') }}">{{ $pendingPromoters }}</span>@endif</a>@endif
+            <details class="account-menu">
+                <summary class="account-button" title="{{ __('حسابي') }}">@if($me->earnsPoints())@include('promoters.customer-avatar', ['user' => $me, 'class' => 'is-small'])@else<span class="customer-avatar is-small" aria-hidden="true">{{ $me->avatarInitial() }}</span>@endif<span class="account-name">{{ __('حسابي') }}</span>@if($me->earnsPoints())<span class="account-points" title="{{ __('رصيد النقاط') }}">⭐ {{ number_format(app(\App\Services\LoyaltyPoints::class)->balance($me)) }}</span>@endif @if($alerts)<span class="pending-count" title="{{ __('بانتظارك') }}">{{ $alerts }}</span>@endif</summary>
+                <div class="account-menu-panel">
+                    <p class="account-menu-head"><b>{{ $me->name }}</b>@if($me->username)<span dir="ltr">{{ '@'.$me->username }}</span>@endif</p>
+                    <a href="{{ route('community.account') }}">👤 {{ __('حسابي ونقاطي') }}</a>
+                    @if($me->isPromoter())@if($isCreator)<a href="{{ route('promoter.dashboard') }}">🎬 {{ __('لوحتي كمروّج') }}</a>@else<span class="account-menu-note">⏳ {{ __('طلبك كمروّج قيد المراجعة') }}</span>@endif @endif
+                    @if($me->earnsPoints())
+                        <hr><span class="account-menu-label">{{ __('المتجر الحر') }}</span>
+                        <a href="{{ route('market.create') }}">＋ {{ __('بيع منتج') }}</a>
+                        <a href="{{ route('market.mine') }}">🏷 {{ __('منتجاتي') }}</a>
+                        <a href="{{ route('market.sales') }}">📥 {{ __('طلبات وصلتني') }}@if($pendingSales) <span class="pending-count">{{ $pendingSales }}</span>@endif</a>
+                        <a href="{{ route('market.purchases') }}">📦 {{ __('طلباتي') }}</a>
+                    @endif
+                    @if($me->isSuperAdmin())
+                        <hr><span class="account-menu-label">{{ __('الإدارة') }}</span>
+                        <a href="{{ route('promoter.accounts') }}">{{ __('إدارة المروّجين') }}@if($pendingPromoters) <span class="pending-count" title="{{ __('طلبات بانتظار الموافقة') }}">{{ $pendingPromoters }}</span>@endif</a>
+                        <a href="{{ route('market.admin') }}">{{ __('إدارة المتجر') }}</a>
+                        <a href="{{ route('dashboard') }}">{{ __('لوحة التحكم') }}</a>
+                    @endif
+                    <hr><a href="{{ route('home') }}">{{ __('أوزمان ↗') }}</a>
+                    <form method="post" action="{{ route('logout') }}">@csrf<button type="submit">{{ __('تسجيل الخروج') }}</button></form>
+                </div>
+            </details>
         @else
             <a class="button small" href="{{ route('community.login') }}">{{ __('دخول / حساب جديد') }}</a>
-            <a class="text-link creator-login" href="{{ route('community.login', ['return' => '/promoter']) }}">{{ __('دخول المروّج') }}</a>
         @endauth
-        <button type="button" class="theme-toggle" id="promoterThemeToggle" aria-label="الوضع الداكن" aria-pressed="false"><span aria-hidden="true">☾</span><span data-theme-label>Dark</span></button>
-        @if(auth()->user()?->role === 'customer')<form method="post" action="{{ route('logout') }}" class="header-logout">@csrf<button type="submit" class="text-link">{{ __('خروج') }}</button></form>@endif
-    </nav>
+    </div>
 </div></header>
 <main class="social-wrap">
     @if(session('status'))<div class="notice" role="status">{{ session('status') }}</div>@endif
@@ -35,5 +66,12 @@
     @yield('content')
 </main>
 <footer class="social-wrap social-footer"><span>اكتشافات قريبة منك.</span><a href="{{ route('home') }}">جزء من أوزمان ↗</a></footer>
+<div class="app-bottom-bar" role="navigation" aria-label="{{ __('التنقل') }}">
+    <a href="{{ route('promoters.index') }}" @class(['is-current' => request()->routeIs('promoters.*', 'promoter.*')])><span aria-hidden="true">★</span>{{ __('المروّجين') }}</a>
+    <a href="{{ route('market.index') }}" @class(['is-current' => request()->routeIs('market.index', 'market.show')])><span aria-hidden="true">🛍</span>{{ __('المتجر') }}</a>
+    <a class="app-bottom-add" href="{{ $isCreator && ! $inMarket ? route('promoter.dashboard').'#storyComposer' : ($me ? route('market.create') : route('community.login', ['return' => '/free-market/new'])) }}" aria-label="{{ $isCreator && ! $inMarket ? __('انشر حكاية') : __('بيع منتج') }}"><span aria-hidden="true">＋</span></a>
+    <a href="{{ $me ? route('market.purchases') : $loginUrl }}" @class(['is-current' => request()->routeIs('market.purchases', 'market.sales', 'market.mine')])><span aria-hidden="true">📦</span>{{ __('طلباتي') }}@if($pendingSales)<i class="pending-dot" aria-label="{{ __('طلبات جديدة') }}"></i>@endif</a>
+    <a href="{{ $me ? route('community.account') : route('community.login') }}" @class(['is-current' => request()->routeIs('community.*')])><span aria-hidden="true">👤</span>{{ $me ? __('حسابي') : __('دخول') }}</a>
+</div>
 @yield('scripts')
 </body></html>

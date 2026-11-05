@@ -20,3 +20,12 @@
 .market-stats{margin-bottom:16px}
 @media(max-width:900px){.market-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.market-detail{grid-template-columns:1fr}}
 @media(max-width:640px){.market-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.market-card-body{padding:10px}.market-form-row{grid-template-columns:1fr}.market-row{flex-wrap:wrap}.market-row-actions{flex-direction:row;width:100%;justify-content:flex-start}.market-subnav .button{margin-inline-start:0}.market-filters label{flex-basis:calc(50% - 5px)}.market-filters .market-search{flex-basis:100%}}
+.market-search-bar{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px}.market-search-bar .market-search{flex:1 1 260px;min-width:0}.market-search-bar>.button{flex:0 0 auto}
+.market-more{margin:0;position:relative}.market-more summary{list-style:none;display:inline-flex;align-items:center;gap:6px;padding:11px 16px;border:1px solid #dbd3df;border-radius:10px;background:var(--paper);color:var(--ink);font-size:14px;font-weight:bold;cursor:pointer}.market-more summary::-webkit-details-marker{display:none}.market-more[open] summary{border-color:var(--purple);color:var(--purple)}
+.market-more-panel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end;margin-top:10px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--paper)}.market-more[open]{flex-basis:100%;order:3}
+.market-result-count{font-size:12px;color:var(--muted);margin:0 0 10px}
+.back-link{display:inline-block;margin:18px 0 6px;font-size:13px;color:var(--purple)}
+.market-member-bar{margin-top:20px}
+@media(max-width:640px){.market-search-bar{flex-wrap:wrap}.market-more-panel{grid-template-columns:1fr}.market-search-bar .market-search{flex:1 1 0}.market-search-bar>.button{display:none}.market-more summary{padding:11px 14px}.market-member-bar .segmented{width:100%;overflow-x:auto}.market-member-bar .segmented a{flex:1;text-align:center;padding:7px 8px}}
+.market-hint{font-size:12px;color:var(--muted);margin:0 0 12px}
+@media(max-width:760px){.market-member-bar>.button{display:none}}
