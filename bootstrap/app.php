@@ -16,8 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Protected pages must send logged-out visitors to the login screen.
         // Without this Laravel returns an authentication error instead of a redirect.
-        // Customer and promoter pages (/community/*, /promoter/*) use the community login, never the dashboard one.
-        $middleware->redirectGuestsTo(fn (\Illuminate\Http\Request $request) => $request->is('community', 'community/*', 'promoter', 'promoter/*')
+        // Customer, promoter and free-market pages (/community/*, /promoter/*, /free-market/*) use the community login, never the dashboard one.
+        $middleware->redirectGuestsTo(fn (\Illuminate\Http\Request $request) => $request->is('community', 'community/*', 'promoter', 'promoter/*', 'free-market/*')
             ? route('community.login')
             : '/login');
 

@@ -89,6 +89,27 @@ Route::middleware(['auth','throttle:60,1'])->prefix('community')->name('communit
     Route::post('/push', [\App\Http\Controllers\CommunityAccountController::class, 'subscribe'])->name('push.store');
     Route::delete('/push', [\App\Http\Controllers\CommunityAccountController::class, 'unsubscribe'])->name('push.destroy');
 });
+// المتجر الحر: community members sell their own products; buyers order through the site.
+Route::get('/free-market', [\App\Http\Controllers\MarketController::class, 'index'])->name('market.index');
+Route::get('/free-market/item/{listing}', [\App\Http\Controllers\MarketController::class, 'show'])->whereNumber('listing')->name('market.show');
+Route::get('/free-market/image/{image}', [\App\Http\Controllers\MarketController::class, 'image'])->whereNumber('image')->name('market.image');
+Route::middleware(['auth', 'throttle:60,1'])->prefix('free-market')->name('market.')->group(function () {
+    Route::get('/my', [\App\Http\Controllers\MarketController::class, 'mine'])->name('mine');
+    Route::get('/new', [\App\Http\Controllers\MarketController::class, 'create'])->name('create');
+    Route::post('/listings', [\App\Http\Controllers\MarketController::class, 'store'])->middleware('throttle:10,1')->name('store');
+    Route::get('/item/{listing}/edit', [\App\Http\Controllers\MarketController::class, 'edit'])->name('edit');
+    Route::put('/item/{listing}', [\App\Http\Controllers\MarketController::class, 'update'])->name('update');
+    Route::patch('/item/{listing}/visibility', [\App\Http\Controllers\MarketController::class, 'toggle'])->name('toggle');
+    Route::delete('/item/{listing}', [\App\Http\Controllers\MarketController::class, 'destroy'])->name('destroy');
+    Route::post('/item/{listing}/order', [\App\Http\Controllers\MarketOrderController::class, 'store'])->middleware('throttle:10,1')->name('order');
+    Route::get('/sales', [\App\Http\Controllers\MarketOrderController::class, 'sales'])->name('sales');
+    Route::get('/purchases', [\App\Http\Controllers\MarketOrderController::class, 'purchases'])->name('purchases');
+    Route::patch('/orders/{order}', [\App\Http\Controllers\MarketOrderController::class, 'update'])->name('orders.update');
+    Route::patch('/orders/{order}/cancel', [\App\Http\Controllers\MarketOrderController::class, 'cancel'])->name('orders.cancel');
+    Route::get('/admin', [\App\Http\Controllers\MarketAdminController::class, 'index'])->name('admin');
+    Route::patch('/admin/{listing}', [\App\Http\Controllers\MarketAdminController::class, 'moderate'])->name('admin.moderate');
+    Route::delete('/admin/{listing}', [\App\Http\Controllers\MarketAdminController::class, 'destroy'])->name('admin.destroy');
+});
 Route::get('/promoters', [\App\Http\Controllers\PromoterController::class, 'directory'])->name('promoters.index');
 Route::get('/promoters/{slug}', [\App\Http\Controllers\PromoterController::class, 'show'])->name('promoters.show');
 Route::get('/promoters/{profile}/follow/account', [\App\Http\Controllers\PromoterFollowController::class, 'account'])->name('promoters.follow.account');

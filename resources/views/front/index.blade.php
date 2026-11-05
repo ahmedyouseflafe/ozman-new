@@ -303,6 +303,11 @@
                         style="justify-content: center; text-decoration: none; width: 100%; margin-top: 8px;">
                         <i class="fas fa-star"></i> {{ __('المروّجين') }}
                     </a>
+                    {{-- المتجر الحر: products listed by community members. --}}
+                    <a href="{{ route('market.index') }}" class="location-btn market-entry-btn"
+                        style="justify-content: center; text-decoration: none; width: 100%; margin-top: 8px;">
+                        <i class="fas fa-store"></i> {{ __('المتجر الحر') }}
+                    </a>
                 </div>
                 <!-- Social icons -->
                 <div class="social-icons-vertical">

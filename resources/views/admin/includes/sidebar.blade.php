@@ -448,6 +448,10 @@
             حسابات المروّجين
             @if($pendingPromoters = \App\Models\PromoterProfile::pending()->count())<span class="badge bg-danger rounded-pill ms-auto" title="{{ __('طلبات مروّجين بانتظار الموافقة') }}">{{ $pendingPromoters }}</span>@endif
         </a>
+        <a href="{{ route('market.admin') }}" class="admin-sidebar-item nav-item">
+            <i class="ti ti-building-store" aria-hidden="true"></i>
+            المتجر الحر
+        </a>
         @endif
 
         @if($canSee(['dashboard']))
