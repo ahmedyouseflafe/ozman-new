@@ -269,8 +269,9 @@ class RestaurantController extends Controller
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_phone' => ['nullable', 'string', 'max:60', new ValidPhoneNumber()],
             'customer_address' => ['nullable', 'string', 'max:1000'],
-            'latitude' => ['required_if:order_type,delivery', 'nullable', 'numeric', 'between:-90,90'],
-            'longitude' => ['required_if:order_type,delivery', 'nullable', 'numeric', 'between:-180,180'],
+            // The written address is enough for delivery; the GPS pin is optional (in-app browsers often can't share it).
+            'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
             'registration_token' => ['nullable', 'string', 'regex:/\A[a-f0-9]{64}\z/'],
             'skip_signup_reward' => ['sometimes', 'boolean'],

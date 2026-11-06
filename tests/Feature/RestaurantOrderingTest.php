@@ -578,7 +578,7 @@ class RestaurantOrderingTest extends TestCase
             ->assertSee('data-category-key=', false);
     }
 
-    public function test_delivery_order_requires_and_stores_customer_location(): void
+    public function test_delivery_order_needs_an_address_and_stores_the_optional_location(): void
     {
         [$shop, $product] = $this->restaurant('delivery-location');
         $payload = [
@@ -589,9 +589,11 @@ class RestaurantOrderingTest extends TestCase
             'items' => [['product_id' => $product->id, 'qty' => 1]],
         ];
 
-        $this->postJson(route('restaurant.orders.store', $shop), $payload)
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['latitude', 'longitude']);
+        // In-app browsers often can't share GPS: the written address is enough.
+        $withoutPin = $this->postJson(route('restaurant.orders.store', $shop), $payload)->assertOk();
+        $this->assertNull(FrontOrder::findOrFail($withoutPin->json('order_id'))->map_link);
+        $this->postJson(route('restaurant.orders.store', $shop), [...$payload, 'customer_address' => ''])->assertStatus(422);
+        $this->postJson(route('restaurant.orders.store', $shop), $payload + ['latitude' => 32.2])->assertStatus(422)->assertJsonValidationErrors(['longitude']);
 
         $response = $this->postJson(route('restaurant.orders.store', $shop), $payload + [
             'latitude' => 32.2211000,

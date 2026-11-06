@@ -14,7 +14,7 @@
             'empty_menu' => 'لا توجد وجبات متاحة حالياً.', 'close_order' => 'إغلاق الطلب', 'order_details' => 'تفاصيل الطلب',
             'your_order' => 'طلبك', 'total' => 'المجموع', 'registered_on' => 'الطلب مسجل على', 'delivery_to_address' => 'توصيل إلى العنوان',
             'pickup' => 'استلام من المطعم', 'customer_name' => 'اسم صاحب الطلب', 'name' => 'الاسم', 'phone' => 'رقم الهاتف',
-            'address' => 'عنوان التوصيل بالتفصيل', 'locate_me' => 'حدد موقعي للتوصيل', 'location_required' => 'يجب تحديد موقعك على الخريطة لإرسال طلب التوصيل.',
+            'address' => 'عنوان التوصيل بالتفصيل', 'locate_me' => 'حدد موقعي للتوصيل', 'location_required' => 'اختياري: حدد موقعك عشان يوصلك الطلب أسرع.', 'address_required' => 'اكتب عنوان التوصيل بالتفصيل.',
             'notes' => 'ملاحظات عامة للمطعم', 'submit' => 'تأكيد وإرسال الطلب', 'track_order' => 'تتبّع طلبك', 'live_update' => 'تحديث مباشر',
             'estimated_prep' => 'مدة التجهيز المتوقعة:', 'received' => 'تم الاستلام', 'preparing' => 'قيد التحضير', 'ready' => 'جاهز',
             'completed' => 'مكتمل', 'full_tracking' => 'فتح صفحة التتبّع الكاملة', 'view_order' => 'عرض الطلب', 'choose_size' => 'اختر حجم الوجبة',
@@ -36,7 +36,7 @@
             'empty_menu' => 'אין כרגע מנות זמינות.', 'close_order' => 'סגירת ההזמנה', 'order_details' => 'פרטי ההזמנה',
             'your_order' => 'ההזמנה שלך', 'total' => 'סה״כ', 'registered_on' => 'ההזמנה נרשמה על', 'delivery_to_address' => 'משלוח לכתובת',
             'pickup' => 'איסוף מהמסעדה', 'customer_name' => 'שם המזמין', 'name' => 'שם', 'phone' => 'מספר טלפון',
-            'address' => 'כתובת מלאה למשלוח', 'locate_me' => 'איתור המיקום למשלוח', 'location_required' => 'יש לסמן את המיקום במפה כדי לשלוח את ההזמנה.',
+            'address' => 'כתובת מלאה למשלוח', 'locate_me' => 'איתור המיקום למשלוח', 'location_required' => 'אופציונלי: סמנו מיקום כדי שההזמנה תגיע מהר יותר.', 'address_required' => 'כתבו כתובת מלאה למשלוח.',
             'notes' => 'הערות כלליות למסעדה', 'submit' => 'אישור ושליחת ההזמנה', 'track_order' => 'מעקב הזמנה', 'live_update' => 'עדכון חי',
             'estimated_prep' => 'זמן הכנה משוער:', 'received' => 'התקבלה', 'preparing' => 'בהכנה', 'ready' => 'מוכנה',
             'completed' => 'הושלמה', 'full_tracking' => 'פתיחת עמוד המעקב המלא', 'view_order' => 'צפייה בהזמנה', 'choose_size' => 'בחירת גודל המנה',
@@ -58,7 +58,7 @@
             'empty_menu' => 'There are no meals available yet.', 'close_order' => 'Close order', 'order_details' => 'Order details',
             'your_order' => 'Your order', 'total' => 'Total', 'registered_on' => 'Order assigned to', 'delivery_to_address' => 'Deliver to address',
             'pickup' => 'Pickup from restaurant', 'customer_name' => 'Customer name', 'name' => 'Name', 'phone' => 'Phone number',
-            'address' => 'Full delivery address', 'locate_me' => 'Set my delivery location', 'location_required' => 'Set your location on the map to send a delivery order.',
+            'address' => 'Full delivery address', 'locate_me' => 'Set my delivery location', 'location_required' => 'Optional: share your location so the order arrives faster.', 'address_required' => 'Write the full delivery address.',
             'notes' => 'Notes for the restaurant', 'submit' => 'Confirm and send order', 'track_order' => 'Track your order', 'live_update' => 'Live update',
             'estimated_prep' => 'Estimated preparation time:', 'received' => 'Received', 'preparing' => 'Preparing', 'ready' => 'Ready',
             'completed' => 'Completed', 'full_tracking' => 'Open full tracking page', 'view_order' => 'View order', 'choose_size' => 'Choose meal size',
@@ -2529,7 +2529,7 @@
                     {transform:'translate(0,0) scale(1)',opacity:1},
                     {transform:'translate(' + (x * .35) + 'px,' + (y * .18 - 74) + 'px) scale(.82) rotate(-9deg)',opacity:1,offset:.42},
                     {transform:'translate(' + x + 'px,' + y + 'px) scale(.16) rotate(12deg)',opacity:.22}
-                ], {duration:5000,easing:'cubic-bezier(.16,.8,.24,1)',fill:'forwards'}).finished.catch(() => {}).finally(() => {
+                ], {duration:1100,easing:'cubic-bezier(.16,.8,.24,1)',fill:'forwards'}).finished.catch(() => {}).finally(() => {
                     flight.remove();
                     popRestaurantCart();
                 });
@@ -2541,7 +2541,7 @@
                 const selectedAddons = [...$('addons').querySelectorAll(':checked')];
                 const unit = selectedSize ? Number(selectedSize.dataset.price) : Number(current.price);
                 const addonTotal = selectedAddons.reduce((sum, input) => sum + Number(input.dataset.price), 0);
-                cart.push({
+                const line = {
                     product_id: current.id,
                     name: current.name,
                     qty: Math.max(1, Number($('qty').value) || 1),
@@ -2553,7 +2553,14 @@
                     choices: mealChoices.values,
                     choice_summary: mealChoices.summary,
                     preparation_time: Number(current.preparation_time) || 0
-                });
+                };
+                // The same meal with the same options adds to the existing line instead of a new row.
+                const sameOptions = item => item.product_id === line.product_id && item.size === line.size && (item.notes || '') === (line.notes || '')
+                    && JSON.stringify([...item.addons].sort()) === JSON.stringify([...line.addons].sort())
+                    && JSON.stringify([...item.excluded].sort()) === JSON.stringify([...line.excluded].sort())
+                    && JSON.stringify(item.choices || []) === JSON.stringify(line.choices || []);
+                const existing = cart.find(sameOptions);
+                if (existing) existing.qty = Math.min(100, existing.qty + line.qty); else cart.push(line);
                 closeModal();
                 render();
                 flyRestaurantMealToCart(current.id);
@@ -2701,9 +2708,10 @@
                     message.textContent = ui.add_meal_error;
                     return
                 }
-                if (type.value === 'delivery' && (!$('latitude').value || !$('longitude').value)) {
+                if (type.value === 'delivery' && !address.value.trim()) {
                     message.classList.add('error');
-                    message.textContent = ui.set_location_error;
+                    message.textContent = ui.address_required;
+                    address.focus();
                     return
                 }
                 sendingOrder = true;
