@@ -443,10 +443,14 @@
             <i class="ti ti-device-mobile" aria-hidden="true"></i>
             تثبيت تطبيق الإدارة
         </a>
+        <a href="{{ route('admin.promoter-requests') }}" class="admin-sidebar-item nav-item {{ request()->routeIs('admin.promoter-requests') ? 'active' : '' }}">
+            <i class="ti ti-user-check" aria-hidden="true"></i>
+            طلبات المروّجين
+            @if($pendingPromoters = \App\Models\PromoterProfile::pending()->count())<span class="sidebar-count" style="margin-inline-start:auto;min-width:22px;height:22px;padding:0 7px;border-radius:11px;background:#ff4d6d;color:#fff;font-size:12px;font-weight:900;display:inline-grid;place-items:center" title="{{ __('طلبات مروّجين بانتظار الموافقة') }}">{{ $pendingPromoters }}</span>@endif
+        </a>
         <a href="{{ route('promoter.accounts') }}" class="admin-sidebar-item nav-item">
             <i class="ti ti-user-star" aria-hidden="true"></i>
             حسابات المروّجين
-            @if($pendingPromoters = \App\Models\PromoterProfile::pending()->count())<span class="badge bg-danger rounded-pill ms-auto" title="{{ __('طلبات مروّجين بانتظار الموافقة') }}">{{ $pendingPromoters }}</span>@endif
         </a>
         <a href="{{ route('market.admin') }}" class="admin-sidebar-item nav-item">
             <i class="ti ti-building-store" aria-hidden="true"></i>

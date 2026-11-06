@@ -78,7 +78,12 @@ class CommunitySignupApprovalTest extends TestCase
 
         $admin = User::factory()->create(['role' => 'super_admin', 'is_active' => true]);
         $this->actingAs($admin)->get(route('promoter.accounts'))->assertOk()->assertSee('id="pendingApplications"', false)->assertSee('@lina_finds');
-        $this->actingAs($admin)->post(route('promoter.accounts.approve', $profile))->assertRedirect();
+        // The dashboard shows the request too: sidebar count, home alert and the requests page.
+        $this->actingAs($admin)->get(route('admin.promoter-requests'))->assertOk()->assertSee('@lina_finds')->assertSee('lina@example.test')
+            ->assertSee(route('promoter.accounts.approve', $profile), false)->assertSee('sidebar-count', false);
+        $this->actingAs($admin)->get(route('dashboard'))->assertOk()->assertSee(route('admin.promoter-requests'), false)->assertSee('طلب مروّج بانتظار موافقتك');
+        $this->actingAs($user)->get(route('admin.promoter-requests'))->assertForbidden();
+        $this->actingAs($admin)->from(route('admin.promoter-requests'))->post(route('promoter.accounts.approve', $profile))->assertRedirect(route('admin.promoter-requests'));
         Notification::assertSentTo($user, PromoterApplicationDecided::class, fn ($n) => $n->approved);
         $this->assertTrue($profile->fresh()->isPublished());
 

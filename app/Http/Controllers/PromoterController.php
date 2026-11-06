@@ -78,6 +78,17 @@ class PromoterController extends Controller
         return back()->with('status', 'تم تحديث الحساب.');
     }
 
+    /** Dashboard page (admin design) listing promoter applications waiting for a decision. */
+    public function requests(Request $request)
+    {
+        $this->admin($request);
+
+        return view('admin.promoter_requests', [
+            'pending' => PromoterProfile::pending()->with('user')->oldest()->get(),
+            'recent' => PromoterProfile::whereNotNull('approved_at')->with('user')->withCount(['followers', 'guestFollowers', 'posts'])->latest('approved_at')->limit(8)->get(),
+        ]);
+    }
+
     /** Accept a promoter who signed up: the page goes live and they get an email. */
     public function approveApplication(Request $request, PromoterProfile $profile)
     {

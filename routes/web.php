@@ -449,6 +449,7 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::put('/settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications.update');
     Route::put('/settings/loyalty', [SettingsController::class, 'updateLoyalty'])->name('settings.loyalty.update');
     Route::get('/customer-points', [\App\Http\Controllers\CustomerPointsController::class, 'index'])->name('customer-points.index');
+    Route::get('/promoter-requests', [\App\Http\Controllers\PromoterController::class, 'requests'])->name('admin.promoter-requests');
     Route::post('/customer-points/{customer}/adjust', [\App\Http\Controllers\CustomerPointsController::class, 'adjust'])->middleware('throttle:30,1')->name('customer-points.adjust');
 
     Route::post('/admin-notifications/read-all', function () {

@@ -567,6 +567,12 @@
                     <h1>نظرة عامة</h1>
                     <p>مرحباً بك، آخر تحديث اليوم.</p>
                 </div>
+                @if(auth()->user()?->isSuperAdmin() && ($pendingPromoterCount = \App\Models\PromoterProfile::pending()->count()))
+                    <a href="{{ route('admin.promoter-requests') }}" class="promoter-requests-alert" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 18px;padding:16px 20px;border:1px solid #e0b85a;border-radius:18px;background:rgba(224,184,90,.12);color:#ffe2a0;text-decoration:none;font-weight:800">
+                        <span><i class="ti ti-user-check" aria-hidden="true"></i> {{ __('في :count طلب مروّج بانتظار موافقتك', ['count' => $pendingPromoterCount]) }}</span>
+                        <span style="padding:6px 14px;border-radius:12px;background:#e0b85a;color:#2a1f05">{{ __('راجع الطلبات ←') }}</span>
+                    </a>
+                @endif
 
                 <div class="stats-grid">
                     <div class="stat-card" style="--accent: var(--danger)">
