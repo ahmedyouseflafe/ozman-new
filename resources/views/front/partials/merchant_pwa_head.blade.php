@@ -97,7 +97,7 @@
         $offerLabels = match (app()->getLocale()) {
             'he' => [
                 'title' => 'הפעלת התראות למבצעים',
-                'body' => 'אשרו התראות כדי לקבל כל מבצע חדש מכל החנויות ב-Ozman.',
+                'body' => 'היו הראשונים לשמוע על מבצעים והנחות מחנויות Ozman.',
                 'allow' => 'הפעלת התראות',
                 'later' => 'אחר כך',
                 'requesting' => 'מפעיל התראות…',
@@ -107,7 +107,7 @@
             ],
             'en' => [
                 'title' => 'Enable offer notifications',
-                'body' => 'Enable notifications to continue browsing and receive offers from all stores on Ozman.',
+                'body' => 'Be the first to hear about offers and discounts from Ozman stores.',
                 'allow' => 'Enable notifications',
                 'later' => 'Later',
                 'requesting' => 'Enabling notifications…',
@@ -117,7 +117,7 @@
             ],
             default => [
                 'title' => 'فعّل إشعارات العروض',
-                'body' => 'للمتابعة وتصفح المحل، فعّل الإشعارات لتصلك عروض جميع المحلات على Ozman.',
+                'body' => 'خليك أول واحد بيعرف بعروض وخصومات محلات Ozman.',
                 'allow' => 'تفعيل الإشعارات',
                 'later' => 'لاحقًا',
                 'requesting' => 'جارٍ تفعيل الإشعارات…',
@@ -160,6 +160,12 @@
             },
             'unsupportedLabel' => 'هذا المتصفح لا يدعم إشعارات الموقع. افتح الرابط في متصفح يدعم الإشعارات مثل Chrome على أندرويد. إذا كنت داخل واتساب أو إنستغرام، افتح الرابط في المتصفح الخارجي.',
             'recheckLabel' => 'تحقّق من التفعيل مجددًا',
+            'pendingHelpLabel' => match (app()->getLocale()) {
+                'en' => 'No question popped up? Tap the 🔔 or 🔒 icon next to the address bar and choose Allow.',
+                'he' => 'לא הופיעה שאלה? לחצו על סמל 🔔 או 🔒 ליד שורת הכתובת ובחרו אישור.',
+                default => 'ما طلعلك سؤال؟ اضغط أيقونة 🔔 أو 🔒 جنب عنوان الموقع فوق واختار «سماح».',
+            },
+            'promptDelayMs' => 6000,
             'stillBlockedLabel' => 'الإشعارات ما زالت محظورة من المتصفح؛ الزر لا يستطيع إلغاء الحظر تلقائيًا.',
             'blockedHelpLabel' => 'اضغط رمز إعدادات الموقع بجانب الرابط ← الأذونات ← الإشعارات ← سماح. بعدها ارجع للصفحة واضغط تحقق مجددًا. إذا فتحت الرابط داخل واتساب أو إنستغرام، افتحه في المتصفح. ويمكنك تخطي هذه الخطوة ومتابعة التصفح.',
             'title' => $offerLabels['title'],

@@ -42,97 +42,105 @@
         return subscribing;
     };
 
+    // Dismissing hides the card for a few days; browsing is never blocked by it.
+    const snoozeKey = 'ozman.offer-push.snoozed-until';
+    const snoozed = () => { try { return Number(localStorage.getItem(snoozeKey) || 0) > Date.now(); } catch (_) { return false; } };
+    const snooze = (days) => { try { localStorage.setItem(snoozeKey, String(Date.now() + days * 864e5)); sessionStorage.setItem(skipKey, '1'); } catch (_) { /* Storage may be blocked. */ } };
+
     const mountPrompt = (initialError, force = false) => {
-        if ((!config.showPrompt && !force) || (!force && iosSkipped()) || document.querySelector('[data-offer-push-prompt]')) {
+        if ((!config.showPrompt && !force) || (!force && (iosSkipped() || snoozed())) || document.querySelector('[data-offer-push-prompt]')) {
             return;
         }
 
         const style = document.createElement('style');
         style.textContent = `
-            .offer-push-backdrop{position:fixed;z-index:2147483645;inset:0;margin:0;width:100%;max-width:none;height:100%;height:100dvh;max-height:none;border:0;display:grid;place-items:center;padding:18px;background:rgba(0,5,9,.68);backdrop-filter:blur(7px);font-family:Cairo,Arial,sans-serif;direction:rtl;box-sizing:border-box;overflow:auto;overscroll-behavior:contain}
-            .offer-push-backdrop::backdrop{background:rgba(0,5,9,.6)}
-            .offer-push-card{box-sizing:border-box;position:relative;width:min(440px,100%);padding:27px 22px 21px;border:1px solid rgba(11,220,243,.38);border-radius:25px;background:linear-gradient(145deg,#0d2029,#071118);box-shadow:0 30px 90px rgba(0,0,0,.62);color:#f7fbfd;text-align:center}
-            .offer-push-icon{display:grid;place-items:center;width:67px;height:67px;margin:0 auto 14px;border-radius:21px;background:rgba(11,220,243,.12);color:#0bdcf3;font-size:31px;box-shadow:0 0 32px rgba(11,220,243,.17)}
-            .offer-push-card strong{display:block;font-size:21px;font-weight:900;line-height:1.45}
-            .offer-push-card p{margin:9px 0 20px;color:#a9bdc7;font-size:13px;font-weight:700;line-height:1.85}
-            .offer-push-actions{display:grid;grid-template-columns:1fr;gap:9px}
-            .offer-push-actions button{min-height:49px;padding:10px 17px;border:1px solid #27434f;border-radius:15px;background:#0b1720;color:#dce9ee;font:800 13px Cairo,Arial,sans-serif;cursor:pointer}
+            .offer-push-sheet{position:fixed;z-index:2147483645;inset-inline:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;pointer-events:none;font-family:Cairo,Arial,sans-serif;direction:rtl}
+            .offer-push-card{pointer-events:auto;box-sizing:border-box;width:min(460px,100%);padding:16px 16px 14px;border:1px solid rgba(11,220,243,.38);border-radius:22px;background:linear-gradient(145deg,#0d2029,#071118);box-shadow:0 24px 70px rgba(0,0,0,.55);color:#f7fbfd;transform:translateY(130%);transition:transform .35s ease}
+            .offer-push-sheet.is-open .offer-push-card{transform:none}
+            .offer-push-row{display:flex;gap:12px;align-items:flex-start}
+            .offer-push-icon{flex:0 0 46px;display:grid;place-items:center;height:46px;border-radius:15px;background:rgba(11,220,243,.12);font-size:22px}
+            .offer-push-card strong{display:block;font-size:16px;font-weight:900;line-height:1.5}
+            .offer-push-card p{margin:2px 0 0;color:#a9bdc7;font-size:12.5px;font-weight:700;line-height:1.7}
+            .offer-push-close{margin-inline-start:auto;flex:0 0 32px;height:32px;border:0;border-radius:10px;background:transparent;color:#8fa8b4;font-size:20px;cursor:pointer}
+            .offer-push-actions{display:grid;grid-template-columns:1.4fr 1fr;gap:8px;margin-top:12px}
+            .offer-push-actions button{min-height:44px;padding:8px 14px;border:1px solid #27434f;border-radius:14px;background:#0b1720;color:#dce9ee;font:800 13px Cairo,Arial,sans-serif;cursor:pointer}
             .offer-push-actions [data-offer-push-enable]{border:0;background:linear-gradient(135deg,#0bdcf3,#3eb8ff);color:#00151b;font-size:14px}
-            .offer-push-actions button:disabled{opacity:.58;cursor:wait}
+            .offer-push-actions button:disabled{opacity:.6;cursor:wait}
             .offer-push-actions button[hidden]{display:none!important}
-            .offer-push-status{min-height:20px;margin:12px 0 0!important;color:#8fa8b4!important;font-size:11px!important}
+            .offer-push-status{min-height:0;margin:10px 0 0!important;font-size:12px!important;color:#8fa8b4!important}
+            .offer-push-status:empty{display:none}
             .offer-push-status[data-state=error]{color:#ff8c98!important}
             .offer-push-status[data-state=success]{color:#35df91!important}
-            @media(max-width:520px){.offer-push-backdrop{align-items:end;padding:10px}.offer-push-card{border-radius:25px 25px 18px 18px}.offer-push-actions{grid-template-columns:1fr}.offer-push-actions [data-offer-push-enable]{grid-row:1}}
+            .offer-push-help{margin:8px 0 0!important;padding:10px 12px;border-radius:12px;background:rgba(255,209,102,.1);color:#ffd98a!important;font-size:12px!important}
+            @media(prefers-reduced-motion:reduce){.offer-push-card{transition:none}}
         `;
         document.head.appendChild(style);
 
-        const backdrop = document.createElement('dialog');
-        backdrop.className = 'offer-push-backdrop';
-        backdrop.dataset.offerPushPrompt = '';
-        backdrop.setAttribute('role', 'dialog');
-        backdrop.setAttribute('aria-modal', 'true');
-        backdrop.setAttribute('aria-label', config.title);
-        backdrop.innerHTML = `
+        const sheet = document.createElement('div');
+        sheet.className = 'offer-push-sheet';
+        sheet.dataset.offerPushPrompt = '';
+        sheet.setAttribute('role', 'region');
+        sheet.setAttribute('aria-label', config.title);
+        sheet.innerHTML = `
             <section class="offer-push-card">
-                <div class="offer-push-icon" aria-hidden="true">🔔</div>
-                <strong>${config.title}</strong>
-                <p>${ios ? config.iosBodyLabel : config.body}</p>
+                <div class="offer-push-row">
+                    <div class="offer-push-icon" aria-hidden="true">🔔</div>
+                    <div><strong>${config.title}</strong><p>${ios ? config.iosBodyLabel : config.body}</p></div>
+                    <button type="button" class="offer-push-close" data-offer-push-close aria-label="${config.laterLabel}">×</button>
+                </div>
                 <div class="offer-push-actions">
                     <button type="button" data-offer-push-enable>${config.allowLabel}</button>
-                    <button type="button" data-offer-push-skip ${ios ? '' : 'hidden'}>${config.skipLabel}</button>
+                    <button type="button" data-offer-push-skip>${config.laterLabel}</button>
                 </div>
                 <p class="offer-push-status" data-offer-push-status role="status" aria-live="polite"></p>
             </section>
         `;
-        document.body.appendChild(backdrop);
-        const previousOverflow = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
-        backdrop.showModal();
+        document.body.appendChild(sheet);
+        requestAnimationFrame(() => requestAnimationFrame(() => sheet.classList.add('is-open')));
         let finished = false;
-        let attempt = 0, attemptTimer;
+        let attempt = 0, attemptTimer, helpTimer;
         const finish = () => {
             if (finished) return;
             finished = true;
-            attempt++;clearTimeout(attemptTimer);
+            attempt++; clearTimeout(attemptTimer); clearTimeout(helpTimer);
             window.removeEventListener('focus', recheck);
             document.removeEventListener('visibilitychange', recheck);
-            backdrop.close();backdrop.remove();style.remove();document.body.style.overflow = previousOverflow;window.removeEventListener('ozman:offer-push-ready', finish);
+            window.removeEventListener('ozman:offer-push-ready', done);
+            sheet.classList.remove('is-open');
+            setTimeout(() => { sheet.remove(); style.remove(); }, 400);
         };
-        const skip = () => {
-            try { sessionStorage.setItem(skipKey, '1'); } catch (_) { /* Browsing still resumes without storage. */ }
-            finish();
-        };
-        backdrop.querySelector('[data-offer-push-skip]')?.addEventListener('click', skip);
-        backdrop.addEventListener('cancel', event => { event.preventDefault();if (!skipButton.hidden) skip(); });
-        window.addEventListener('ozman:offer-push-ready', finish, { once: true });
+        const later = () => { snooze(3); finish(); };
+        const done = () => setTimeout(finish, 1600);
+        sheet.querySelector('[data-offer-push-skip]').addEventListener('click', later);
+        sheet.querySelector('[data-offer-push-close]').addEventListener('click', later);
+        document.addEventListener('keydown', function esc(event) { if (event.key === 'Escape' && !finished) { document.removeEventListener('keydown', esc); later(); } });
+        window.addEventListener('ozman:offer-push-ready', done, { once: true });
 
-        const enableButton = backdrop.querySelector('[data-offer-push-enable]');
-        const skipButton = backdrop.querySelector('[data-offer-push-skip]');
-        const status = backdrop.querySelector('[data-offer-push-status]');
-        const blockedHelp = document.createElement('p');
-        blockedHelp.hidden = true;
-        blockedHelp.setAttribute('role', 'alert');
-        blockedHelp.textContent = config.blockedHelpLabel || config.deniedLabel;
-        status.after(blockedHelp);
+        const enableButton = sheet.querySelector('[data-offer-push-enable]');
+        const skipButton = sheet.querySelector('[data-offer-push-skip]');
+        const status = sheet.querySelector('[data-offer-push-status]');
+        const help = document.createElement('p');
+        help.className = 'offer-push-help';
+        help.hidden = true;
+        help.setAttribute('role', 'alert');
+        status.after(help);
+        const showHelp = (text) => { help.textContent = text; help.hidden = false; };
 
         const explain = () => {
             if (ios && (!standalone || !supported)) {
                 status.textContent = config.iosLabel;
                 enableButton.hidden = true;
-                skipButton.hidden = false;
                 return true;
             }
             if (!supported) {
                 status.textContent = config.unsupportedLabel;
                 enableButton.hidden = true;
-                skipButton.hidden = false;
                 return true;
             }
             if (permission() === 'denied') {
+                status.dataset.state = 'error';
                 status.textContent = config.deniedLabel;
                 enableButton.textContent = config.recheckLabel;
-                skipButton.hidden = false;
                 return true;
             }
             enableButton.textContent = config.allowLabel;
@@ -150,42 +158,40 @@
         if (initialError && supported && permission() === 'granted') {
             status.dataset.state = 'error';
             status.textContent = push.message(initialError);
-            skipButton.hidden = false;
         }
 
         enableButton.addEventListener('click', async () => {
-            if (!supported || (ios && !standalone)) { window.location.reload();return; }
+            if (!supported || (ios && !standalone)) { later(); return; }
             if (explain()) {
-                // A denied browser permission cannot be requested again by a website.
-                // Show actionable help instead of silently returning on every click.
-                blockedHelp.hidden = false;
-                status.dataset.state = 'error';
-                status.textContent = config.stillBlockedLabel || config.deniedLabel;
-                blockedHelp.scrollIntoView({ block: 'nearest' });
+                // A website can't lift a browser block; show how to do it instead.
+                showHelp(config.blockedHelpLabel || config.deniedLabel);
                 return;
             }
-            blockedHelp.hidden = true;
+            help.hidden = true;
             enableButton.disabled = true;
-            skipButton.hidden = false;
             status.dataset.state = '';
             status.textContent = config.requestingLabel;
             const currentAttempt = ++attempt;
-            // Native permission prompts can remain unresolved indefinitely.
-            // Release the UI even when the browser/provider cannot be cancelled.
+            // Chrome's "quiet" permission UI keeps the request pending without showing a dialog.
+            helpTimer = setTimeout(() => {
+                if (!finished && currentAttempt === attempt && permission() === 'default') showHelp(config.pendingHelpLabel || config.timeoutLabel);
+            }, 4000);
             attemptTimer = setTimeout(() => {
                 if (finished || currentAttempt !== attempt) return;
                 attempt++;
                 enableButton.disabled = false;
                 status.dataset.state = 'error';
                 status.textContent = config.timeoutLabel || config.errorLabel;
-            }, 20000);
+            }, 45000);
 
             try {
                 const result = permission() === 'granted' ? 'granted' : await requestPermission();
                 if (finished || currentAttempt !== attempt) return;
+                help.hidden = true;
                 if (result !== 'granted') {
                     status.dataset.state = 'error';
                     status.textContent = result === 'denied' ? config.deniedLabel : (config.dismissedLabel || config.deniedLabel);
+                    if (result === 'denied') showHelp(config.blockedHelpLabel || config.deniedLabel);
                     return;
                 }
 
@@ -193,6 +199,7 @@
                 if (finished || currentAttempt !== attempt) return;
                 status.dataset.state = 'success';
                 status.textContent = config.successLabel;
+                enableButton.hidden = true; skipButton.hidden = true;
             } catch (error) {
                 if (finished || currentAttempt !== attempt) return;
                 console.error('Unable to enable offer notifications.', error);
@@ -200,7 +207,7 @@
                 status.textContent = push.message(error);
             } finally {
                 if (currentAttempt === attempt) {
-                    clearTimeout(attemptTimer);
+                    clearTimeout(attemptTimer); clearTimeout(helpTimer);
                     enableButton.disabled = false;
                 }
             }
@@ -214,8 +221,8 @@
             return;
         }
 
-        // Open after existing welcome dialogs so the notification request is visible.
-        window.setTimeout(mountPrompt, 0);
+        // A short delay lets the visitor see the page first; browsers also trust prompts after engagement.
+        window.setTimeout(mountPrompt, Number(config.promptDelayMs ?? 6000));
     };
 
     if (document.readyState === 'loading') {
