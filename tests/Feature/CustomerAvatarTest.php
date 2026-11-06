@@ -40,7 +40,12 @@ class CustomerAvatarTest extends TestCase
         Storage::disk('public')->assertExists($path);
         [$width, $height] = getimagesizefromstring(Storage::disk('public')->get($path));
         $this->assertSame([400, 400], [$width, $height]);
-        $this->get(route('community.account'))->assertSee('storage/'.$path, false);
+        $user = User::where('email', 'lina@example.com')->first();
+        $this->get(route('community.account'))->assertSee($user->avatarUrl(), false);
+        // The photo is served by the app itself, so it works without a public/storage link.
+        $this->get($user->avatarUrl())->assertOk();
+        $user->update(['is_active' => false]);
+        $this->get($user->avatarUrl())->assertNotFound();
     }
 
     public function test_follow_registration_accepts_an_optional_photo(): void

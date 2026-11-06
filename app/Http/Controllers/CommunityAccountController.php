@@ -112,6 +112,12 @@ class CommunityAccountController extends Controller {
         $user->update($r->validate($rules,CommunityUsername::messages()));
         return back()->with('status','تم حفظ بياناتك.');
     }
+    /** Profile photo of a community member (only files the avatar service created). */
+    public function avatar(User $user) {
+        $path=(string)$user->avatar_path;
+        abort_unless($user->is_active && str_starts_with($path,CustomerAvatar::DIRECTORY.'/') && !str_contains($path,'..') && \Illuminate\Support\Facades\Storage::disk('public')->exists($path),404);
+        return response()->file(\Illuminate\Support\Facades\Storage::disk('public')->path($path),['Cache-Control'=>'public, max-age=604800','X-Content-Type-Options'=>'nosniff']);
+    }
     public function updateAvatar(Request $r, CustomerAvatar $avatars) {
         $this->active($r); abort_unless($r->user()->isCustomer(),403);
         $avatars->replace($r->user(),$r->validate(CustomerAvatar::rules(true),CustomerAvatar::messages())['avatar']);

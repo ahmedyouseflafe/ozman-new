@@ -117,7 +117,8 @@ class User extends Authenticatable
     // Community avatar: uploaded photo, or the name's first letter on a color derived from the name.
     public function avatarUrl(): ?string
     {
-        return $this->avatar_path ? asset('storage/'.$this->avatar_path) : null;
+        // Served through a route so photos work even where the public/storage link can't be created (shared hosting).
+        return $this->avatar_path ? route('community.avatar.show', ['user' => $this->id, 'v' => substr(md5($this->avatar_path), 0, 8)]) : null;
     }
 
     public function avatarInitial(): string

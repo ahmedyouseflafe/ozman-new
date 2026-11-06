@@ -67,6 +67,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAnalyticsAdmin::class])->p
 
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/community/login', [\App\Http\Controllers\CommunityAccountController::class, 'loginPage'])->name('community.login');
+Route::get('/community/avatar/{user}', [\App\Http\Controllers\CommunityAccountController::class, 'avatar'])->whereNumber('user')->name('community.avatar.show');
 Route::post('/community/login', [\App\Http\Controllers\CommunityAccountController::class, 'login'])->middleware(['guest','throttle:5,1'])->name('community.login.store');
 Route::post('/community/register', [\App\Http\Controllers\CommunityAccountController::class, 'register'])->middleware(['guest','throttle:5,1'])->name('community.register');
 // Forgot password for customers and promoters (reset link by email).
