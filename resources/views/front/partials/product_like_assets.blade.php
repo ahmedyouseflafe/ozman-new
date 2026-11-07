@@ -19,4 +19,5 @@
 <script>
 window.OZMAN_LIKES = {stateUrl: @json(route('product-likes.state')), toggleUrl: @json(route('product-likes.toggle', ['product' => '__ID__'])), csrf: @json(csrf_token())};
 </script>
-<script src="{{ asset('product-likes.js') }}?v={{ @filemtime(public_path('product-likes.js')) }}" defer></script>
+{{-- Inline so the heart works even when a separate file is cached or missing on the server. --}}
+<script>{!! file_get_contents(public_path('product-likes.js')) !!}</script>

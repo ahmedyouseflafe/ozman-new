@@ -68,13 +68,13 @@ class ProductLikesTest extends TestCase
             $product = $this->product(['catalog_type' => $type, 'is_accepting_orders' => true]);
             $this->get(route($route, $product->shop))->assertOk()
                 ->assertSee('data-like-product="'.$product->id.'"', false)
-                ->assertSee(route('product-likes.state'), false);
+                ->assertSee('window.OZMAN_LIKES', false);
         }
         $krembo = $this->product(['catalog_type' => 'krembo']);
         $this->get(route('krembo.store', $krembo->shop))->assertOk()->assertSee('data-like-product="'.$krembo->id.'"', false);
         // The general store builds its cards in JS; the page loads the like script and the card template.
         $general = $this->product();
-        $this->get(route('front.shop.slug', $general->shop))->assertOk()->assertSee('product-likes.js', false);
+        $this->get(route('front.shop.slug', $general->shop))->assertOk()->assertSee('window.OzmanLikes', false);
         $this->assertStringContainsString('data-like-product="${Number(prod.id)}"', file_get_contents(public_path('script.js')));
     }
 }

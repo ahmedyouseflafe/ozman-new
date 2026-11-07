@@ -855,6 +855,26 @@
             padding: 10px 6px 5px
         }
 
+        .meal-title-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 0 5px
+        }
+
+        .meal-title-row h3 {
+            flex: 0 1 auto;
+            width: auto !important;
+            min-width: 0;
+            margin-bottom: 0 !important
+        }
+
+        .meal-title-row .oz-like {
+            flex: none;
+            height: 32px;
+            min-width: 32px
+        }
+
         .meal h3 {
             width: 100%;
             min-height: 0;
@@ -2126,7 +2146,6 @@
                             @forelse ($category['products'] as $product)
                                 <article class="meal" data-product-id="{{ $product->id }}" role="button" tabindex="0"
                                     aria-label="{{ $copy['show_options'] }} {{ $product->localized('name') }}">
-                                    @include('front.partials.product_like', ['product' => $product])
                                     @if ($product->main_image)
                                         <img class="meal-image" src="{{ asset($product->main_image) }}"
                                         alt="{{ $product->localized('name') }}">@else<div class="meal-image"></div>
@@ -2139,7 +2158,7 @@
                                         } }}</span>
                                     @endif
                                     <div class="meal-body">
-                                        <h3>{{ $product->localized('name') }}</h3>
+                                        <div class="meal-title-row"><h3>{{ $product->localized('name') }}</h3>@include('front.partials.product_like', ['product' => $product, 'variant' => 'inline'])</div>
                                         <p class="meal-desc">
                                             {{ $product->localized('description') ?: $copy['fresh_meal'] }}</p>
                                         @if((int) data_get($product->catalog_attributes, 'preparation_time', 0) > 0)
@@ -2470,8 +2489,12 @@
             };
 
             document.querySelectorAll('.meal[data-product-id]').forEach(card => {
-                card.addEventListener('click', () => openMeal(card.dataset.productId));
+                card.addEventListener('click', event => {
+                    if (event.target.closest('[data-like-product]')) return;
+                    openMeal(card.dataset.productId);
+                });
                 card.addEventListener('keydown', event => {
+                    if (event.target.closest('[data-like-product]')) return;
                     if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
                         openMeal(card.dataset.productId);
