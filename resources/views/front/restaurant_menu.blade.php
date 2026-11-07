@@ -2490,11 +2490,11 @@
 
             document.querySelectorAll('.meal[data-product-id]').forEach(card => {
                 card.addEventListener('click', event => {
-                    if (event.target.closest('[data-like-product]')) return;
+                    if (event.target.closest('.oz-actions')) return;
                     openMeal(card.dataset.productId);
                 });
                 card.addEventListener('keydown', event => {
-                    if (event.target.closest('[data-like-product]')) return;
+                    if (event.target.closest('.oz-actions')) return;
                     if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
                         openMeal(card.dataset.productId);
@@ -2801,6 +2801,7 @@
         })();
     </script>
 @include('front.partials.shop_bottom_screens')
+@include('front.partials.page_share', ['title' => $shop->name, 'url' => $shop->publicUrl()])
 </body>
 
 </html>

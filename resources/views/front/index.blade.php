@@ -1202,7 +1202,7 @@
                 </div>
             </div>
         </div>
-    @include('front.partials.product_like_assets')
+    @include('front.partials.page_share', ['title' => $shop?->name ?: config('app.name', 'Ozman'), 'url' => $shop?->exists ? $shop->publicUrl() : url('/')])
 </body>
 
 </html>

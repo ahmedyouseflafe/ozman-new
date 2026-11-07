@@ -311,5 +311,6 @@
         })();
     </script>
 @include('front.partials.shop_bottom_screens')
+@include('front.partials.page_share', ['title' => $shop->name, 'url' => $shop->publicUrl()])
 </body>
 </html>

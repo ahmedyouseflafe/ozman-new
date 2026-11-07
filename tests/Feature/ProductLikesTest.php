@@ -68,7 +68,9 @@ class ProductLikesTest extends TestCase
             $product = $this->product(['catalog_type' => $type, 'is_accepting_orders' => true]);
             $this->get(route($route, $product->shop))->assertOk()
                 ->assertSee('data-like-product="'.$product->id.'"', false)
-                ->assertSee('window.OZMAN_LIKES', false);
+                ->assertSee('window.OZMAN_LIKES', false)
+                ->assertSee('data-share-url="'.route('share.product', $product).'"', false)
+                ->assertSee('class="oz-page-share"', false);
         }
         $krembo = $this->product(['catalog_type' => 'krembo']);
         $this->get(route('krembo.store', $krembo->shop))->assertOk()->assertSee('data-like-product="'.$krembo->id.'"', false);
@@ -76,5 +78,20 @@ class ProductLikesTest extends TestCase
         $general = $this->product();
         $this->get(route('front.shop.slug', $general->shop))->assertOk()->assertSee('window.OzmanLikes', false);
         $this->assertStringContainsString('data-like-product="${Number(prod.id)}"', file_get_contents(public_path('script.js')));
+    }
+
+    public function test_shared_product_link_previews_the_product_and_opens_it_in_the_store(): void
+    {
+        $meal = $this->product(['catalog_type' => 'restaurant', 'name' => 'Bankai'], ['name' => 'ريد دراغون رول', 'main_image' => 'products/roll.jpg', 'description' => 'تونا حمراء']);
+        $target = $meal->shop->publicUrl().'?product='.$meal->id;
+        $this->get(route('share.product', $meal))->assertOk()
+            ->assertSee('<meta property="og:title" content="ريد دراغون رول — Bankai">', false)
+            ->assertSee('<meta property="og:image" content="'.asset('storage/products/roll.jpg').'">', false)
+            ->assertSee('content="0;url='.e($target).'"', false);
+
+        $phone = $this->product(['catalog_type' => 'electronics']);
+        $this->get(route('share.product', $phone))->assertOk()->assertSee(route('electronics.product', [$phone->shop, $phone]), false);
+
+        $this->get(route('share.product', $this->product([], ['is_active' => false])))->assertNotFound();
     }
 }

@@ -187,5 +187,6 @@
 {!! file_get_contents(base_path('public/clothing-photo-tryon.js')) !!}
 </script>
 @include('front.partials.shop_bottom_screens', ['screenPlacement' => 'bottom'])
+@include('front.partials.page_share', ['title' => $shop->name, 'url' => $shop->publicUrl()])
 </body>
 </html>

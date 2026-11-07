@@ -213,6 +213,7 @@ Route::post('/stores/{shop:slug}/orders', [\App\Http\Controllers\CatalogCheckout
 Route::get('/restaurants/{shop:slug}', [RestaurantController::class, 'menu'])->name('restaurant.menu');
 Route::get('/product-likes', [\App\Http\Controllers\ProductLikeController::class, 'state'])->middleware('throttle:120,1')->name('product-likes.state');
 Route::post('/products/{product:id}/like', [\App\Http\Controllers\ProductLikeController::class, 'toggle'])->middleware('throttle:60,1')->name('product-likes.toggle');
+Route::get('/share/product/{product:id}', [\App\Http\Controllers\ProductShareController::class, 'show'])->name('share.product');
 Route::post('/restaurants/{shop:slug}/customer-registration', [\App\Http\Controllers\RestaurantCustomerRegistrationController::class, 'store'])
     ->middleware('throttle:20,1')
     ->name('restaurant.customer-registration.store');

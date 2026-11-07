@@ -84,5 +84,6 @@ const cart=[],money=v=>Number(v||0).toFixed(2)+' ₪',tabs=[...document.querySel
 })();
 </script>
 @include('front.partials.shop_bottom_screens', ['screenPlacement' => 'bottom'])
+@include('front.partials.page_share', ['title' => $shop->name, 'url' => $shop->publicUrl()])
 </body>
 </html>
