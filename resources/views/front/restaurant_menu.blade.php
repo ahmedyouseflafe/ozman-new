@@ -2126,6 +2126,7 @@
                             @forelse ($category['products'] as $product)
                                 <article class="meal" data-product-id="{{ $product->id }}" role="button" tabindex="0"
                                     aria-label="{{ $copy['show_options'] }} {{ $product->localized('name') }}">
+                                    @include('front.partials.product_like', ['product' => $product])
                                     @if ($product->main_image)
                                         <img class="meal-image" src="{{ asset($product->main_image) }}"
                                         alt="{{ $product->localized('name') }}">@else<div class="meal-image"></div>

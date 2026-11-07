@@ -7,6 +7,7 @@
     $brand = data_get($product->catalog_attributes ?? [], 'brand');
 @endphp
 <article class="card">
+    @include('front.partials.product_like', ['product' => $product])
     <button class="picture" type="button" data-image="{{ $image }}" aria-label="تكبير صورة {{ $name }}"><img src="{{ $image }}" alt="{{ $name }}" loading="lazy">@if($product->is_featured)<span class="badge"><i class="ti ti-sparkles"></i> مميز</span>@endif</button>
     <div class="body">
         <div class="small-brand">{{ $brand ?: 'صناعة '.$shop->name }}</div>

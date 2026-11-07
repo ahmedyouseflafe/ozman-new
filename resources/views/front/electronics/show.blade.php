@@ -48,7 +48,7 @@
 <div class="wrap">
     <header class="top"><a class="back" href="{{ route('electronics.store',$shop) }}">→ العودة للمتجر</a><span class="store-name">{{ $shop->name }}</span></header>
     <main class="product">
-        <section class="gallery" aria-label="صور المنتج">
+        <section class="gallery" aria-label="صور المنتج">@include('front.partials.product_like', ['product' => $product])
             <button class="media-stage" id="openGallery" type="button" aria-label="تكبير صور المنتج"><img class="main-img" id="mainImage" src="{{ $gallery->first() }}" alt="{{ $product->localized('name') }}"></button>
             <div class="thumbs">@foreach($gallery as $index=>$src)<button class="thumb {{ $index===0?'active':'' }}" type="button" data-index="{{ $index }}"><img src="{{ $src }}" alt="صورة {{ $index+1 }}"></button>@endforeach</div>
         </section>

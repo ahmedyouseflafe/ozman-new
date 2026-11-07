@@ -35,7 +35,7 @@
 .purchase-wheel-frame{position:relative;width:min(270px,100%);aspect-ratio:1;margin:20px auto}
 .purchase-wheel-frame:before{content:'▼';position:absolute;top:-16px;left:calc(50% - 12px);z-index:2;color:#fff;font-size:26px}
 #purchaseWheelDisc{width:100%;height:100%;border:4px solid #0ad9e9;box-sizing:border-box;border-radius:50%;position:relative;transition:transform 3s cubic-bezier(.12,.8,.15,1)}
-#purchaseWheelDisc span{position:absolute;left:50%;top:50%;width:42%;font-size:11px;font-weight:bold;line-height:1.2;text-shadow:0 1px 3px #000;transform-origin:0 0;text-align:center;overflow-wrap:anywhere}
+#purchaseWheelDisc span{position:absolute;left:50%;top:50%;width:42%;font-size:11px;font-weight:bold;line-height:1.2;text-shadow:0 1px 3px #000;transform-origin:0 0;text-align:center;overflow-wrap:anywhere}#purchaseWheelDisc span b{display:inline-block;font:inherit}
 body{padding-bottom:90px}
 </style>
 @if($purchaseWheels->isNotEmpty())
@@ -84,7 +84,7 @@ body{padding-bottom:90px}
      if(!wheel)throw new Error(t[5]);
      const disc=el('purchaseWheelDisc'), n=wheel.segments.length;disc.replaceChildren();disc.style.transform='rotate(0deg)';
      disc.style.background='conic-gradient('+wheel.segments.map((s,i)=>(/^#[0-9a-f]{6}$/i.test(s.color)?s.color:'#087f93')+' '+i*360/n+'deg '+(i+1)*360/n+'deg').join(',')+')';
-     wheel.segments.forEach((s,i)=>{const label=document.createElement('span');label.textContent=s.label;label.style.transform=`rotate(${(i+.5)*360/n-90}deg) translate(18px,-50%)`;disc.append(label);});
+     wheel.segments.forEach((s,i)=>{const label=document.createElement('span'),text=document.createElement('b'),angle=(i+.5)*360/n-90;text.textContent=s.label;if(angle>90&&angle<270)text.style.transform='rotate(180deg)';label.append(text);label.style.transform=`rotate(${angle}deg) translate(18px,-50%)`;disc.append(label);});
      el('purchaseWheelFrame').hidden=false;spin.hidden=false;
    }catch(e){msg.textContent=e.message;}
  }

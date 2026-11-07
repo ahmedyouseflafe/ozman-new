@@ -109,7 +109,9 @@
         if (reward.selected_index !== null) {
             disc.style.transform = `rotate(${1800 - step*(reward.selected_index+.5)}deg)`;
             const selected = segments[reward.selected_index];
-            const value = ['gift','none'].includes(selected.discount_type) ? '' : ` — ${selected.discount_value}${selected.discount_type === 'percent' ? '%' : ' ₪'}`;
+            const amount = `${selected.discount_value}`;
+            // Labels like "خصم 15%" already name the value; don't print it twice.
+            const value = ['gift','none'].includes(selected.discount_type) || String(selected.label).includes(amount) ? '' : ` — ${amount}${selected.discount_type === 'percent' ? '%' : ' ₪'}`;
             $('signupWheelResult').textContent = `${ui.result} ${selected.label}${value}. ${ui.saved}`;
             if (selected.discount_type === 'none') $('signupWheelResult').textContent = ui.noPrize;
             if (selected.discount_type === 'gift' && selected.gift_image) {

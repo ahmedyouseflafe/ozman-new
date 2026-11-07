@@ -228,6 +228,7 @@
                                             @endphp
                                             <article class="service-card">
                                                 <div class="service-image">
+                                                    @include('front.partials.product_like', ['product' => $product])
                                                     @if($product->main_image)
                                                         <img src="{{ $mediaUrl($product->main_image) }}" alt="{{ $serviceName }}" loading="lazy">
                                                     @else

@@ -1202,6 +1202,7 @@
                 </div>
             </div>
         </div>
+    @include('front.partials.product_like_assets')
 </body>
 
 </html>
