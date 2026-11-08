@@ -127,4 +127,22 @@ class ShopSocialTest extends TestCase
         $this->assertContains($this->actingAs($other)->postJson(route('social.caption'), ['product_id' => $this->product->id, 'language' => 'ar'])->status(), [403, 422]);
         $this->assertSame('scheduled', $post->fresh()->status);
     }
+
+    public function test_caption_survives_thinking_blocks_and_models_without_effort_control(): void
+    {
+        Http::fake(['api.anthropic.com/*' => Http::sequence()
+            ->push(['type' => 'error', 'error' => ['message' => 'output_config: Extra inputs are not permitted']], 400)
+            ->push(['content' => [['type' => 'thinking', 'thinking' => '...'], ['type' => 'text', 'text' => 'سوشي طازة 🍣']], 'stop_reason' => 'end_turn'])]);
+        $this->actingAs($this->owner)->postJson(route('social.caption'), ['product_id' => $this->product->id, 'language' => 'ar'])
+            ->assertOk()->assertJsonPath('caption', 'سوشي طازة 🍣');
+        Http::assertSentCount(2);
+        Http::assertSent(fn (HttpRequest $r) => $r['max_tokens'] >= 2000 && ($r['output_config']['effort'] ?? null) === 'low');
+    }
+
+    public function test_thinking_only_reply_reports_why_there_is_no_caption(): void
+    {
+        Http::fake(['api.anthropic.com/*' => Http::response(['content' => [['type' => 'thinking', 'thinking' => '...']], 'stop_reason' => 'max_tokens'])]);
+        $this->actingAs($this->owner)->postJson(route('social.caption'), ['product_id' => $this->product->id, 'language' => 'ar'])
+            ->assertStatus(503)->assertJsonFragment(['message' => 'الكاتب الذكي مش متاح هلقيت: Claude returned no text (stop reason: max_tokens).']);
+    }
 }
