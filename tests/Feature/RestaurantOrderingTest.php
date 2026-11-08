@@ -840,9 +840,18 @@ class RestaurantOrderingTest extends TestCase
         $this->actingAs($shop->user)->patchJson(route('restaurant.orders.status', $order), ['status' => 'preparing', 'estimated_preparation_minutes' => 30, 'row' => 'list'])->assertOk();
         $this->assertTrue($order->fresh()->preparationDueAt()->equalTo($order->preparation_started_at->copy()->addMinutes(30)));
 
+        // The customer's tracking gets the same ready time for their countdown.
+        $tracking = \Illuminate\Support\Facades\URL::signedRoute('restaurant.orders.track', $order);
+        $this->getJson($tracking)->assertOk()
+            ->assertJsonPath('tracking.preparation_due_at', $order->fresh()->preparationDueAt()->toIso8601String())
+            ->assertJsonPath('tracking.server_time', now()->toIso8601String());
+        $this->get($tracking)->assertOk()->assertSee('id="prepCountdown"', false);
+        $this->get(route('restaurant.menu', $shop))->assertOk()->assertSee('id="trackingCountdown"', false);
+
         $done = $this->actingAs($shop->user)->patchJson(route('restaurant.orders.status', $order), ['status' => 'ready', 'row' => 'list'])->json('html');
         $this->assertStringNotContainsString('prep-timer', $done);
         $this->assertStringContainsString('value="completed"', $done);
+        $this->getJson($tracking)->assertJsonPath('tracking.preparation_due_at', null);
     }
 
     private function restaurant(string $suffix = 'main'): array

@@ -16,7 +16,7 @@
         .head{display:flex;align-items:center;gap:15px;padding:24px 26px;border-bottom:1px solid var(--border);background:rgba(8,222,244,.04)}
         .logo{width:64px;height:64px;object-fit:cover;border:1px solid rgba(8,222,244,.45);border-radius:20px;background:#071014}.head h1{margin:0;font-size:23px}.head p{margin:3px 0 0;color:var(--muted);font-size:13px}
         .body{padding:26px}.live{display:flex;align-items:center;justify-content:space-between;gap:15px}.live strong{font-size:20px}.live span{display:inline-flex;align-items:center;gap:7px;color:var(--green);font-size:12px;font-weight:800}.live span:before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 12px currentColor}
-        .number{margin:7px 0 20px;color:var(--muted);font-size:13px}.prep{display:flex;align-items:center;gap:12px;margin-bottom:24px;padding:15px;border:1px solid rgba(8,222,244,.2);border-radius:16px;background:rgba(8,222,244,.07)}.prep i{color:var(--cyan);font-size:26px}.prep small{display:block;color:var(--muted)}.prep b{font-size:17px}
+        .number{margin:7px 0 20px;color:var(--muted);font-size:13px}.prep{display:flex;align-items:center;gap:12px;margin-bottom:24px;padding:15px;border:1px solid rgba(8,222,244,.2);border-radius:16px;background:rgba(8,222,244,.07)}.prep i{color:var(--cyan);font-size:26px}.prep small{display:block;color:var(--muted)}.prep b{font-size:17px}.prep-countdown{display:block;font-size:30px!important;font-variant-numeric:tabular-nums;letter-spacing:.04em;color:var(--cyan);text-align:start}
         .steps{display:grid;grid-template-columns:repeat(var(--steps,4),1fr);gap:6px;margin:24px 0;padding:0;list-style:none}.step{position:relative;display:grid;justify-items:center;gap:9px;color:#687680;text-align:center;font-size:11px;font-weight:800}.step:not(:last-child):after{content:"";position:absolute;z-index:0;top:18px;right:58%;width:84%;height:3px;background:#26323a}.step.done:not(:last-child):after{background:var(--cyan)}.step span{position:relative;z-index:1;display:grid;place-items:center;width:38px;height:38px;border:2px solid #26323a;border-radius:50%;background:#080d11;font-size:18px}.step.done,.step.active{color:#eaffff}.step.done span,.step.active span{border-color:var(--cyan);background:var(--cyan);color:#001114;box-shadow:0 0 18px rgba(8,222,244,.32)}.step.active span{animation:pulse 1.8s infinite}
         .status-box{padding:18px;border-radius:18px;background:#080d11;border:1px solid var(--border)}.status-box h2{margin:0;color:var(--cyan);font-size:21px}.status-box p{margin:7px 0 0;color:#d7e1e7;line-height:1.8}.card.cancelled{border-color:rgba(255,102,120,.4)}.card.cancelled .status-box h2{color:var(--red)}
         .delivery-eta{display:flex;align-items:center;gap:12px;margin-top:20px;padding:16px;border:1px solid rgba(39,221,134,.3);border-radius:18px;background:rgba(39,221,134,.07)}.delivery-eta i{color:var(--green);font-size:27px}.delivery-eta small{display:block;color:var(--muted)}.delivery-eta strong{font-size:17px}
@@ -34,7 +34,7 @@
         <div class="body">
             <div class="live"><strong>حالة الطلب</strong><span>تحديث مباشر</span></div>
             <p class="number" id="orderNumber"></p>
-            <div class="prep" id="prepBox" hidden><i class="ti ti-clock-hour-4"></i><div><small>مدة التجهيز المتوقعة</small><b><span id="prepMinutes"></span> دقيقة تقريباً</b></div></div>
+            <div class="prep" id="prepBox" hidden><i class="ti ti-clock-hour-4"></i><div><small id="prepLabel">مدة التجهيز المتوقعة</small><b id="prepFixed"><span id="prepMinutes"></span> دقيقة تقريباً</b><b id="prepCountdown" class="prep-countdown" dir="ltr" hidden></b></div></div>
             <ol class="steps" style="--steps:{{ $order->order_type === 'delivery' ? 5 : 4 }}">
                 <li class="step" data-step="1"><span><i class="ti ti-receipt"></i></span>تم الاستلام</li>
                 <li class="step" data-step="2"><span><i class="ti ti-tools-kitchen-2"></i></span>قيد التحضير</li>
@@ -53,6 +53,18 @@
         (() => {
             const initial = @json($tracking);
             const card = document.getElementById('trackingCard');
+            // Countdown to the time the kitchen chose; it never shows "late" to the customer.
+            let due = null, offset = 0;
+            const tick = () => {
+                const label = document.getElementById('prepLabel'), fixed = document.getElementById('prepFixed'), clock = document.getElementById('prepCountdown');
+                fixed.hidden = Boolean(due); clock.hidden = !due;
+                if (!due) { label.textContent = 'مدة التجهيز المتوقعة'; return; }
+                const left = Math.round((due - (Date.now() + offset)) / 1000);
+                label.textContent = left > 0 ? 'طلبك بيجهز خلال' : 'طلبك قرّب يجهز 🙏';
+                clock.textContent = left > 0 ? `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}` : '';
+                clock.hidden = left <= 0;
+            };
+            setInterval(tick, 1000);
             const render = tracking => {
                 const step = Number(tracking.step) || 0;
                 card.classList.toggle('cancelled', Boolean(tracking.is_cancelled));
@@ -62,6 +74,9 @@
                 const prep = Number(tracking.estimated_preparation_minutes) || 0;
                 document.getElementById('prepBox').hidden = !prep || tracking.is_cancelled || ['out_for_delivery', 'completed'].includes(tracking.status);
                 document.getElementById('prepMinutes').textContent = prep;
+                due = tracking.preparation_due_at && !tracking.is_cancelled ? Date.parse(tracking.preparation_due_at) : null;
+                if (tracking.server_time) offset = Date.parse(tracking.server_time) - Date.now();
+                tick();
                 const etaBox = document.getElementById('deliveryEtaBox');
                 if (etaBox) {
                     etaBox.hidden = tracking.status !== 'out_for_delivery';

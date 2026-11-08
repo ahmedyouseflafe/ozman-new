@@ -771,6 +771,9 @@ class RestaurantController extends Controller
                 ? $order->estimated_delivery_at?->toIso8601String()
                 : null,
             'estimated_preparation_minutes' => $order->estimated_preparation_minutes,
+            // Same moment the kitchen's countdown aims for; server_time lets the phone correct its clock.
+            'preparation_due_at' => $order->preparationDueAt()?->toIso8601String(),
+            'server_time' => now()->toIso8601String(),
             'created_at' => $order->created_at?->toIso8601String(),
             'updated_at' => $order->updated_at?->toIso8601String(),
         ];

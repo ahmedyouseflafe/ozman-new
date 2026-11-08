@@ -16,7 +16,7 @@
             'pickup' => 'استلام من المطعم', 'customer_name' => 'اسم صاحب الطلب', 'name' => 'الاسم', 'phone' => 'رقم الهاتف',
             'address' => 'عنوان التوصيل بالتفصيل', 'locate_me' => 'حدد موقعي للتوصيل', 'location_required' => 'اختياري: حدد موقعك عشان يوصلك الطلب أسرع.', 'address_required' => 'اكتب عنوان التوصيل بالتفصيل.',
             'notes' => 'ملاحظات عامة للمطعم', 'submit' => 'تأكيد وإرسال الطلب', 'track_order' => 'تتبّع طلبك', 'live_update' => 'تحديث مباشر',
-            'estimated_prep' => 'مدة التجهيز المتوقعة:', 'received' => 'تم الاستلام', 'preparing' => 'قيد التحضير', 'ready' => 'جاهز',
+            'estimated_prep' => 'مدة التجهيز المتوقعة:', 'ready_in' => 'طلبك بيجهز خلال', 'almost_ready' => 'طلبك قرّب يجهز 🙏', 'received' => 'تم الاستلام', 'preparing' => 'قيد التحضير', 'ready' => 'جاهز',
             'completed' => 'مكتمل', 'full_tracking' => 'فتح صفحة التتبّع الكاملة', 'view_order' => 'عرض الطلب', 'choose_size' => 'اختر حجم الوجبة',
             'addons' => 'إضافات على الوجبة', 'remove_ingredients' => 'حذف مكونات', 'quantity' => 'الكمية', 'meal_notes' => 'ملاحظات خاصة بهذه الوجبة',
             'add_to_order' => 'إضافة إلى الطلب', 'cancel' => 'إلغاء', 'empty_cart' => 'لم تضف أي وجبة بعد', 'without' => 'بدون', 'about' => 'نحو',
@@ -38,7 +38,7 @@
             'pickup' => 'איסוף מהמסעדה', 'customer_name' => 'שם המזמין', 'name' => 'שם', 'phone' => 'מספר טלפון',
             'address' => 'כתובת מלאה למשלוח', 'locate_me' => 'איתור המיקום למשלוח', 'location_required' => 'אופציונלי: סמנו מיקום כדי שההזמנה תגיע מהר יותר.', 'address_required' => 'כתבו כתובת מלאה למשלוח.',
             'notes' => 'הערות כלליות למסעדה', 'submit' => 'אישור ושליחת ההזמנה', 'track_order' => 'מעקב הזמנה', 'live_update' => 'עדכון חי',
-            'estimated_prep' => 'זמן הכנה משוער:', 'received' => 'התקבלה', 'preparing' => 'בהכנה', 'ready' => 'מוכנה',
+            'estimated_prep' => 'זמן הכנה משוער:', 'ready_in' => 'ההזמנה תהיה מוכנה בעוד', 'almost_ready' => 'ההזמנה כמעט מוכנה 🙏', 'received' => 'התקבלה', 'preparing' => 'בהכנה', 'ready' => 'מוכנה',
             'completed' => 'הושלמה', 'full_tracking' => 'פתיחת עמוד המעקב המלא', 'view_order' => 'צפייה בהזמנה', 'choose_size' => 'בחירת גודל המנה',
             'addons' => 'תוספות למנה', 'remove_ingredients' => 'הסרת מרכיבים', 'quantity' => 'כמות', 'meal_notes' => 'הערות למנה זו',
             'add_to_order' => 'הוספה להזמנה', 'cancel' => 'ביטול', 'empty_cart' => 'עדיין לא הוספתם מנה', 'without' => 'ללא', 'about' => 'כ־',
@@ -60,7 +60,7 @@
             'pickup' => 'Pickup from restaurant', 'customer_name' => 'Customer name', 'name' => 'Name', 'phone' => 'Phone number',
             'address' => 'Full delivery address', 'locate_me' => 'Set my delivery location', 'location_required' => 'Optional: share your location so the order arrives faster.', 'address_required' => 'Write the full delivery address.',
             'notes' => 'Notes for the restaurant', 'submit' => 'Confirm and send order', 'track_order' => 'Track your order', 'live_update' => 'Live update',
-            'estimated_prep' => 'Estimated preparation time:', 'received' => 'Received', 'preparing' => 'Preparing', 'ready' => 'Ready',
+            'estimated_prep' => 'Estimated preparation time:', 'ready_in' => 'Your order will be ready in', 'almost_ready' => 'Your order is almost ready 🙏', 'received' => 'Received', 'preparing' => 'Preparing', 'ready' => 'Ready',
             'completed' => 'Completed', 'full_tracking' => 'Open full tracking page', 'view_order' => 'View order', 'choose_size' => 'Choose meal size',
             'addons' => 'Meal extras', 'remove_ingredients' => 'Remove ingredients', 'quantity' => 'Quantity', 'meal_notes' => 'Notes for this meal',
             'add_to_order' => 'Add to order', 'cancel' => 'Cancel', 'empty_cart' => 'You have not added a meal yet', 'without' => 'Without', 'about' => 'about',
@@ -1268,6 +1268,12 @@
             font-size: 11px
         }
 
+.tracking-countdown strong {
+            font-size: 1.35em;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: .03em
+        }
+
         .tracking-prep {
             display: flex;
             align-items: center;
@@ -2238,7 +2244,8 @@
                     </div>
                     <div class="tracking-prep" id="trackingPrep" hidden>
                         <i class="ti ti-clock-hour-4"></i>
-                        <span>{{ $copy['estimated_prep'] }} <strong id="trackingMinutes"></strong> {{ $copy['minute'] }}</span>
+                        <span id="trackingPrepStatic">{{ $copy['estimated_prep'] }} <strong id="trackingMinutes"></strong> {{ $copy['minute'] }}</span>
+                        <span id="trackingCountdown" class="tracking-countdown" hidden><span id="trackingCountdownLabel">{{ $copy['ready_in'] }}</span> <strong id="trackingCountdownValue" dir="ltr"></strong></span>
                     </div>
                     <ol class="tracking-steps">
                         <li class="tracking-step" data-tracking-step="1"><span><i class="ti ti-receipt"></i></span>{{ $copy['received'] }}</li>
@@ -2665,6 +2672,19 @@
                 });
             });
 
+            // Live countdown to when the kitchen expects the order ready (same moment as on the restaurant's screen).
+            let trackingDue = null, clockOffset = 0, countdownTimer = null;
+            const tickTrackingCountdown = () => {
+                const box = $('trackingCountdown'), fixed = $('trackingPrepStatic');
+                if (!box || !fixed) return;
+                box.hidden = !trackingDue; fixed.hidden = Boolean(trackingDue);
+                if (!trackingDue) { clearInterval(countdownTimer); countdownTimer = null; return; }
+                if (!countdownTimer) countdownTimer = setInterval(tickTrackingCountdown, 1000);
+                const left = Math.round((trackingDue - (Date.now() + clockOffset)) / 1000);
+                $('trackingCountdownLabel').textContent = left > 0 ? ui.ready_in : ui.almost_ready;
+                $('trackingCountdownValue').textContent = left > 0 ? `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}` : '';
+            };
+
             const renderTracking = tracking => {
                 if (!tracking) return;
                 const box = $('orderTracking');
@@ -2676,6 +2696,9 @@
                 $('trackingMessage').textContent = tracking.status_message;
                 $('trackingPrep').hidden = !Number(tracking.estimated_preparation_minutes) || tracking.is_cancelled;
                 $('trackingMinutes').textContent = Number(tracking.estimated_preparation_minutes) || '';
+                trackingDue = tracking.preparation_due_at && !tracking.is_cancelled ? Date.parse(tracking.preparation_due_at) : null;
+                if (tracking.server_time) clockOffset = Date.parse(tracking.server_time) - Date.now();
+                tickTrackingCountdown();
                 document.querySelectorAll('[data-tracking-step]').forEach(item => {
                     const itemStep = Number(item.dataset.trackingStep);
                     item.classList.toggle('done', !tracking.is_cancelled && itemStep < step);
