@@ -110,7 +110,7 @@ class ShopSocialTest extends TestCase
         $this->actingAs($this->owner)->post(route('social.posts.store'), ['caption' => 'x', 'accounts' => ['acc_someone_else'], 'when' => 'now'])
             ->assertSessionHasErrors('accounts');
         $this->actingAs($this->owner)->post(route('social.posts.store'), ['caption' => 'x', 'accounts' => ['acc_ig'], 'when' => 'now'])
-            ->assertSessionHasErrors('product_id');
+            ->assertSessionHasErrors('media');
         $this->actingAs($this->owner)->post(route('social.posts.store'), ['caption' => 'x', 'accounts' => ['acc_fb'], 'when' => 'schedule', 'scheduled_at' => '2020-01-01T10:00'])
             ->assertSessionHasErrors('scheduled_at');
         $this->assertDatabaseCount('social_posts', 0);
@@ -144,5 +144,39 @@ class ShopSocialTest extends TestCase
         Http::fake(['api.anthropic.com/*' => Http::response(['content' => [['type' => 'thinking', 'thinking' => '...']], 'stop_reason' => 'max_tokens'])]);
         $this->actingAs($this->owner)->postJson(route('social.caption'), ['product_id' => $this->product->id, 'language' => 'ar'])
             ->assertStatus(503)->assertJsonFragment(['message' => 'الكاتب الذكي مش متاح هلقيت: Claude returned no text (stop reason: max_tokens).']);
+    }
+
+    public function test_own_photos_or_video_replace_the_menu_photo(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $this->fakeZernio();
+        $this->shop->forceFill(['zernio_profile_id' => 'prof_1'])->save();
+        $photos = [\Illuminate\Http\UploadedFile::fake()->image('a.jpg'), \Illuminate\Http\UploadedFile::fake()->image('b.png')];
+        $this->actingAs($this->owner)->post(route('social.posts.store'), ['caption' => 'سوشي', 'product_id' => $this->product->id,
+            'media' => $photos, 'accounts' => ['acc_ig'], 'when' => 'now'])->assertSessionHasNoErrors();
+        Http::assertSent(fn (HttpRequest $r) => str_ends_with($r->url(), '/v1/posts') && $r->method() === 'POST' && count($r['mediaItems']) === 2
+            && $r['mediaItems'][0]['type'] === 'image' && str_contains($r['mediaItems'][0]['url'], '/storage/social/'.$this->shop->id.'/')
+            && $r['publishNow'] === true);
+        $this->assertCount(2, \Illuminate\Support\Facades\Storage::disk('public')->files('social/'.$this->shop->id));
+
+        // A video goes alone; a video plus photos is refused.
+        $video = \Illuminate\Http\UploadedFile::fake()->create('clip.mp4', 500, 'video/mp4');
+        $this->actingAs($this->owner)->post(route('social.posts.store'), ['caption' => 'x', 'media' => [$video, \Illuminate\Http\UploadedFile::fake()->image('c.jpg')],
+            'accounts' => ['acc_ig'], 'when' => 'now'])->assertSessionHasErrors('media');
+        $this->actingAs($this->owner)->post(route('social.posts.store'), ['caption' => 'x', 'media' => [\Illuminate\Http\UploadedFile::fake()->create('x.pdf', 10, 'application/pdf')],
+            'accounts' => ['acc_ig'], 'when' => 'now'])->assertSessionHasErrors('media.0');
+    }
+
+    public function test_publishing_posts_pick_up_their_final_status(): void
+    {
+        Http::fake([
+            'zernio.com/api/v1/accounts*' => Http::response(['accounts' => []]),
+            'zernio.com/api/v1/analytics/best-time*' => Http::response(['slots' => []]),
+            'zernio.com/api/v1/posts/post_7' => Http::response(['post' => ['_id' => 'post_7', 'status' => 'published']]),
+        ]);
+        $this->shop->forceFill(['zernio_profile_id' => 'prof_1'])->save();
+        $post = SocialPost::create(['shop_id' => $this->shop->id, 'caption' => 'x', 'targets' => [], 'status' => 'publishing', 'zernio_post_id' => 'post_7']);
+        $this->actingAs($this->owner)->get(route('social.index'))->assertOk()->assertSee('انتشر');
+        $this->assertSame('published', $post->fresh()->status);
     }
 }

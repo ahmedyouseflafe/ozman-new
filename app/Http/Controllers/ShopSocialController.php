@@ -61,7 +61,7 @@ class ShopSocialController extends Controller
             'suggestions' => $this->suggestions($bestTimes),
             'apiError' => $apiError,
             'products' => Product::query()->where('shop_id', $shop->id)->where('is_active', true)->latest()->limit(300)->get(),
-            'posts' => SocialPost::query()->where('shop_id', $shop->id)->with('product')->latest()->limit(40)->get(),
+            'posts' => $this->refreshStatuses(SocialPost::query()->where('shop_id', $shop->id)->with('product')->latest()->limit(40)->get()),
             'timezone' => config('services.zernio.timezone'),
         ]);
     }
@@ -113,6 +113,8 @@ class ShopSocialController extends Controller
         $shop = $this->shop($request);
         $data = $request->validate([
             'caption' => ['required', 'string', 'max:2000'],
+            'media' => ['nullable', 'array', 'max:10'],
+            'media.*' => ['file', 'mimetypes:image/jpeg,image/png,image/webp,video/mp4,video/quicktime', 'max:102400'],
             'product_id' => ['nullable', 'integer', Rule::exists('products', 'id')->where('shop_id', $shop->id)],
             'add_link' => ['nullable', 'boolean'],
             'accounts' => ['required', 'array', 'min:1'],
@@ -122,6 +124,8 @@ class ShopSocialController extends Controller
         ], [
             'accounts.required' => __('اختار حساب واحد على الأقل.'),
             'scheduled_at.required_if' => __('اختار وقت النشر.'),
+            'media.*.mimetypes' => __('الملف لازم يكون صورة (JPG أو PNG أو WebP) أو فيديو MP4.'),
+            'media.*.max' => __('الملف أكبر من 100 ميغا.'),
         ]);
         abort_unless($shop->zernio_profile_id, 422);
 
@@ -133,10 +137,24 @@ class ShopSocialController extends Controller
         }
 
         $product = isset($data['product_id']) ? Product::find($data['product_id']) : null;
-        $media = $product ? $this->imageUrl($product->main_image) : null;
-        if (! $media && $targets->contains(fn ($a) => in_array($a['platform'], ['instagram', 'tiktok'], true))) {
-            throw ValidationException::withMessages(['product_id' => __('إنستغرام وتيك توك بدهم صورة: اختار منتج إله صورة.')]);
+        $uploads = collect($request->file('media', []));
+        $videos = $uploads->filter(fn ($f) => str_starts_with((string) $f->getMimeType(), 'video/'));
+        if ($videos->isNotEmpty() && $uploads->count() > 1) {
+            throw ValidationException::withMessages(['media' => __('ارفع فيديو واحد لحاله، أو لحد 10 صور.')]);
         }
+        // Your own photos or video win; otherwise the product's photo from the menu.
+        $mediaItems = $uploads->map(function ($file) use ($shop) {
+            $path = 'storage/'.$file->store('social/'.$shop->id, 'public');
+
+            return ['type' => str_starts_with((string) $file->getMimeType(), 'video/') ? 'video' : 'image', 'url' => asset($path)];
+        })->values()->all();
+        if (! $mediaItems && $product && ($image = $this->imageUrl($product->main_image))) {
+            $mediaItems = [['type' => 'image', 'url' => $image]];
+        }
+        if (! $mediaItems && $targets->contains(fn ($a) => in_array($a['platform'], ['instagram', 'tiktok'], true))) {
+            throw ValidationException::withMessages(['media' => __('إنستغرام وتيك توك بدهم صورة أو فيديو: ارفع صورة أو اختار منتج إله صورة.')]);
+        }
+        $media = $mediaItems[0]['url'] ?? null;
 
         $caption = trim($data['caption']);
         if ($product && $request->boolean('add_link')) {
@@ -159,7 +177,7 @@ class ShopSocialController extends Controller
         try {
             $result = $this->zernio->createPost(array_filter([
                 'content' => $caption,
-                'mediaItems' => $media ? [['type' => 'image', 'url' => $media]] : null,
+                'mediaItems' => $mediaItems ?: null,
                 'platforms' => $targets->map(fn ($a) => ['platform' => $a['platform'], 'accountId' => $a['id']])->all(),
                 'publishNow' => $when ? null : true,
                 'scheduledFor' => $when?->copy()->utc()->toIso8601ZuluString(),
@@ -194,6 +212,27 @@ class ShopSocialController extends Controller
         $post->update(['status' => 'cancelled']);
 
         return $this->back($shop)->with('status', __('انلغى المنشور.'));
+    }
+
+    /** Posts still publishing (or past their time) get their real status from Zernio. */
+    private function refreshStatuses($posts)
+    {
+        if (! $this->zernio->configured()) {
+            return $posts;
+        }
+        $posts->filter(fn ($p) => $p->zernio_post_id && ($p->status === 'publishing' || ($p->status === 'scheduled' && $p->scheduled_for?->isPast())))
+            ->take(10)->each(function (SocialPost $post) {
+                try {
+                    $status = (string) data_get($this->zernio->getPost($post->zernio_post_id), 'post.status', '');
+                } catch (RuntimeException) {
+                    return;
+                }
+                if ($status !== '' && $status !== $post->status) {
+                    $post->update(['status' => $status]);
+                }
+            });
+
+        return $posts;
     }
 
     /** Next dates for the shop's best hours, or sensible defaults while there is no history yet. */

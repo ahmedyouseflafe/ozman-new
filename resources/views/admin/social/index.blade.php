@@ -32,7 +32,9 @@
         .connect{display:flex;gap:8px;flex-wrap:wrap}
         .field{display:grid;gap:6px;margin-bottom:14px}.field>span{font-size:13px;font-weight:800;color:#cfe3ee}
         .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-        .picked{display:flex;gap:12px;align-items:center;padding:10px;border:1px dashed var(--line);border-radius:14px}.picked img{width:72px;height:72px;border-radius:12px;object-fit:cover}
+        .picked{display:flex;gap:12px;align-items:center;padding:10px;border:1px dashed var(--line);border-radius:14px}.picked[hidden]{display:none}.picked img{width:72px;height:72px;border-radius:12px;object-fit:cover}
+        .uploads{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.uploads img,.uploads video{width:84px;height:84px;border-radius:12px;object-fit:cover;border:1px solid var(--line);background:#000}
+        .drop{display:flex;align-items:center;gap:12px;padding:14px;border:1px dashed #6b3a5a;border-radius:14px;background:rgba(255,95,158,.06);cursor:pointer}.drop i{font-size:26px;color:#ff8fb6}.drop b{display:block;font-size:13.5px}.drop input{display:none}
         .checks{display:flex;gap:8px;flex-wrap:wrap}.check{display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:#081720;cursor:pointer;font-size:13px}
         .check input{accent-color:#ff5f9e;width:17px;height:17px;padding:0}
         .chips{display:flex;gap:8px;flex-wrap:wrap}.chip{padding:8px 12px;border:1px solid #6b3a5a;border-radius:999px;background:rgba(255,95,158,.1);color:#ffd0e2;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer}
@@ -74,7 +76,7 @@
             @if(empty($accounts))
                 <p class="empty">{{ __('اربط حساب واحد على الأقل (على اليسار) عشان تبلّش تنشر.') }}</p>
             @else
-            <form method="POST" action="{{ route('social.posts.store', ['shop_id' => $shop->id]) }}" id="composer">
+            <form method="POST" action="{{ route('social.posts.store', ['shop_id' => $shop->id]) }}" id="composer" enctype="multipart/form-data">
                 @csrf
                 <label class="field"><span>{{ __('المنتج') }}</span>
                     <select name="product_id" id="productSelect">
@@ -82,7 +84,13 @@
                         @foreach($products as $p)<option value="{{ $p->id }}" data-image="{{ $p->main_image ? (\Illuminate\Support\Str::startsWith($p->main_image, ['http://','https://']) ? $p->main_image : asset(ltrim($p->main_image, '/'))) : '' }}" @selected((string) old('product_id') === (string) $p->id)>{{ $p->localized('name') }} — {{ number_format((float) ($p->discount_price ?: $p->price), 2) }} ₪</option>@endforeach
                     </select>
                 </label>
-                <div class="picked" id="picked" hidden><img id="pickedImg" alt=""><p class="hint">{{ __('هاي الصورة اللي رح تنزل مع المنشور.') }}</p></div>
+                <div class="picked" id="picked" hidden><img id="pickedImg" alt=""><p class="hint">{{ __('صورة المنتج من المنيو. بتنزل مع المنشور إذا ما رفعت صورة خاصة.') }}</p></div>
+
+                <div class="field" style="margin-top:14px"><span>{{ __('صورك أو الفيديو تبعك (اختياري)') }}</span>
+                    <label class="drop"><i class="ti ti-photo-plus" aria-hidden="true"></i><span><b>{{ __('ارفع صور (لحد 10) أو فيديو واحد') }}</b><small class="hint">{{ __('JPG أو PNG أو WebP أو MP4. إذا رفعت، بتنزل بدل صورة المنيو.') }}</small></span>
+                        <input type="file" name="media[]" id="mediaInput" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" multiple></label>
+                    <div class="uploads" id="uploads"></div>
+                </div>
 
                 <div class="field" style="margin-top:14px"><span>{{ __('خلّي المساعد يكتب') }}</span>
                     <div class="row">
@@ -176,7 +184,16 @@
     const select = document.getElementById('productSelect');
     if (!select) return;
     const picked = document.getElementById('picked'), pickedImg = document.getElementById('pickedImg');
-    const showPicked = () => { const img = select.selectedOptions[0]?.dataset.image; picked.hidden = !img; if (img) pickedImg.src = img; };
+    const mediaInput = document.getElementById('mediaInput'), uploads = document.getElementById('uploads');
+    const showPicked = () => { const img = select.selectedOptions[0]?.dataset.image; picked.hidden = !img || (mediaInput && mediaInput.files.length > 0); if (img) pickedImg.src = img; };
+    mediaInput?.addEventListener('change', () => {
+        uploads.replaceChildren(...[...mediaInput.files].slice(0, 10).map((f) => {
+            const el = document.createElement(f.type.startsWith('video/') ? 'video' : 'img');
+            el.src = URL.createObjectURL(f); if (el.tagName === 'VIDEO') { el.muted = true; el.playsInline = true; }
+            return el;
+        }));
+        showPicked();
+    });
     select.addEventListener('change', showPicked); showPicked();
 
     const writeBtn = document.getElementById('writeBtn'), status = document.getElementById('writeStatus'), caption = document.getElementById('caption');

@@ -98,6 +98,11 @@ class Zernio
         return $this->json($this->http()->post('/v1/posts', $payload));
     }
 
+    public function getPost(string $postId): array
+    {
+        return $this->json($this->http()->get('/v1/posts/'.$postId));
+    }
+
     public function deletePost(string $postId): void
     {
         $this->json($this->http()->delete('/v1/posts/'.$postId));
