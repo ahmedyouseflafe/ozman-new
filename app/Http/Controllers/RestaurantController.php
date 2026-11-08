@@ -417,6 +417,7 @@ class RestaurantController extends Controller
         $data = $request->validate([
             'status' => ['required', 'in:new,preparing,ready,completed,cancelled'],
             'estimated_preparation_minutes' => ['nullable', 'integer', 'min:1', 'max:1440'],
+            'row' => ['nullable', 'in:list'],
         ]);
         $transitions = [
             'new' => ['new', 'preparing', 'cancelled'],
@@ -437,6 +438,10 @@ class RestaurantController extends Controller
 
         $previousStatus = $order->status;
         $previousPreparationMinutes = $order->estimated_preparation_minutes;
+        unset($data['row']);
+        if ($data['status'] === 'preparing' && ($previousStatus !== 'preparing' || ! $order->preparation_started_at)) {
+            $data['preparation_started_at'] = now(); // The countdown starts when the kitchen starts.
+        }
         $order->update($data);
         $order->refresh()->load('shop');
         $statusChanged = $previousStatus !== $order->status;
@@ -451,6 +456,18 @@ class RestaurantController extends Controller
             && ($statusChanged || $preparationTimeChanged)
         ) {
             $this->offerDeliveryOrderToDrivers($order, $firebase, $webPush);
+        }
+        if ($request->expectsJson() && $request->input('row') === 'list') {
+            // The dashboard's compact list re-renders just this row.
+            return response()->json([
+                'status' => $order->status,
+                'message' => 'تم حفظ حالة الطلب ومدة التجهيز وإبلاغ العميل.',
+                'html' => view('admin.restaurant.partials.order_list_rows', [
+                    'orders' => collect([$order->fresh()]),
+                    'shop' => $order->shop,
+                    'canManageOrders' => true,
+                ])->render(),
+            ]);
         }
         if ($request->expectsJson()) {
             return response()->json([

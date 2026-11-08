@@ -35,6 +35,7 @@ class FrontOrder extends Model
         'order_channel',
         'order_type',
         'estimated_preparation_minutes',
+        'preparation_started_at',
         'customer_push_token',
         'driver_assigned_at',
         'estimated_delivery_at',
@@ -61,6 +62,7 @@ class FrontOrder extends Model
         'reward_discount_value' => 'decimal:2',
         'reward_won_at' => 'datetime',
         'estimated_preparation_minutes' => 'integer',
+        'preparation_started_at' => 'datetime',
         'driver_assigned_at' => 'datetime',
         'estimated_delivery_at' => 'datetime',
         'picked_up_at' => 'datetime',
@@ -112,6 +114,16 @@ class FrontOrder extends Model
     public function rewardWheel(): BelongsTo
     {
         return $this->belongsTo(RewardWheel::class);
+    }
+
+    /** When the kitchen expects the order ready, for the dashboard countdown. */
+    public function preparationDueAt(): ?\Illuminate\Support\Carbon
+    {
+        if ($this->status !== 'preparing' || ! $this->estimated_preparation_minutes) {
+            return null;
+        }
+
+        return ($this->preparation_started_at ?? $this->updated_at)?->copy()->addMinutes($this->estimated_preparation_minutes);
     }
 
     public function statusLabel(): string

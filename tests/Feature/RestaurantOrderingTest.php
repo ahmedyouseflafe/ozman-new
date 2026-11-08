@@ -812,6 +812,39 @@ class RestaurantOrderingTest extends TestCase
             ->assertSee($table->name);
     }
 
+    public function test_dashboard_list_changes_status_in_place_with_a_prep_countdown(): void
+    {
+        [$shop] = $this->restaurant('quick-status');
+        $order = FrontOrder::create(['shop_id' => $shop->id, 'order_number' => 'RST-QUICK', 'customer_name' => 'Sama',
+            'order_channel' => 'restaurant', 'order_type' => 'pickup', 'status' => 'new', 'total' => 53]);
+
+        // New orders show the time choices and a cancel button right in the list.
+        $this->actingAs($shop->user)->get(route('restaurant.dashboard', $shop))->assertOk()
+            ->assertSee('اختار وقت التحضير وابدأ:')->assertSee('data-preparation-minutes="20"', false)
+            ->assertSee('name="row" value="list"', false)->assertSee('value="cancelled"', false);
+
+        // Picking a time starts cooking and returns the compact row with only the chosen time and a countdown.
+        $this->travelTo(now()->startOfMinute());
+        $html = $this->actingAs($shop->user)->patchJson(route('restaurant.orders.status', $order), ['status' => 'preparing', 'estimated_preparation_minutes' => 20, 'row' => 'list'])
+            ->assertOk()->assertJsonPath('status', 'preparing')->json('html');
+        $order->refresh();
+        $this->assertTrue($order->preparation_started_at->equalTo(now()));
+        $this->assertStringContainsString('class="prep-timer" data-due-at="'.now()->addMinutes(20)->toIso8601String().'"', $html);
+        $this->assertStringContainsString('20 د', $html);
+        $this->assertStringContainsString('class="quick-prep"  hidden', $html);
+        $this->assertStringContainsString('value="ready"', $html);
+        $this->assertStringContainsString('order-summary-row', $html);
+
+        // Changing the time keeps the start, so the countdown moves with the new time.
+        $this->travel(5)->minutes();
+        $this->actingAs($shop->user)->patchJson(route('restaurant.orders.status', $order), ['status' => 'preparing', 'estimated_preparation_minutes' => 30, 'row' => 'list'])->assertOk();
+        $this->assertTrue($order->fresh()->preparationDueAt()->equalTo($order->preparation_started_at->copy()->addMinutes(30)));
+
+        $done = $this->actingAs($shop->user)->patchJson(route('restaurant.orders.status', $order), ['status' => 'ready', 'row' => 'list'])->json('html');
+        $this->assertStringNotContainsString('prep-timer', $done);
+        $this->assertStringContainsString('value="completed"', $done);
+    }
+
     private function restaurant(string $suffix = 'main'): array
     {
         $owner = User::create(['name' => 'Owner', 'email' => "$suffix@restaurant.test", 'password' => 'password', 'role' => 'shop_owner', 'is_active' => true]);

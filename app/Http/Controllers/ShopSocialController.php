@@ -157,8 +157,16 @@ class ShopSocialController extends Controller
         $media = $mediaItems[0]['url'] ?? null;
 
         $caption = trim($data['caption']);
-        if ($product && $request->boolean('add_link')) {
-            $caption .= "\n\n".__('🛒 اطلب من هون:').' '.route('share.product', $product);
+        // Facebook makes links clickable; Instagram and TikTok show them as plain text,
+        // so there the post points to the link in the account's bio instead.
+        $custom = [];
+        if ($request->boolean('add_link')) {
+            $link = $product ? route('share.product', $product) : $shop->publicUrl();
+            $plain = $caption;
+            $caption = $plain."\n\n".__('🛒 اطلب من هون:').' '.$link;
+            foreach (['instagram', 'tiktok'] as $platform) {
+                $custom[$platform] = $plain."\n\n".__('🛒 للطلب: الرابط بالبايو 👆');
+            }
         }
 
         $timezone = config('services.zernio.timezone');
@@ -178,7 +186,7 @@ class ShopSocialController extends Controller
             $result = $this->zernio->createPost(array_filter([
                 'content' => $caption,
                 'mediaItems' => $mediaItems ?: null,
-                'platforms' => $targets->map(fn ($a) => ['platform' => $a['platform'], 'accountId' => $a['id']])->all(),
+                'platforms' => $targets->map(fn ($a) => array_filter(['platform' => $a['platform'], 'accountId' => $a['id'], 'customContent' => $custom[$a['platform']] ?? null]))->all(),
                 'publishNow' => $when ? null : true,
                 'scheduledFor' => $when?->copy()->utc()->toIso8601ZuluString(),
                 'timezone' => $timezone,

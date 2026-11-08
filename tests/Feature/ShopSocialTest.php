@@ -89,7 +89,9 @@ class ShopSocialTest extends TestCase
 
         Http::assertSent(function (HttpRequest $r) {
             if (! str_ends_with($r->url(), '/v1/posts') || $r->method() !== 'POST') return false;
-            return $r['platforms'] === [['platform' => 'instagram', 'accountId' => 'acc_ig'], ['platform' => 'facebook', 'accountId' => 'acc_fb']]
+            return $r['platforms'][1] === ['platform' => 'facebook', 'accountId' => 'acc_fb']
+                && $r['platforms'][0]['accountId'] === 'acc_ig' && str_contains($r['platforms'][0]['customContent'], 'الرابط بالبايو')
+                && ! str_contains($r['platforms'][0]['customContent'], 'http')
                 && $r['mediaItems'][0]['url'] === asset('storage/products/red.jpg')
                 && str_contains($r['content'], route('share.product', $this->product))
                 && str_ends_with($r['scheduledFor'], 'Z') && ! isset($r['publishNow']) && $r['timezone'] === 'Asia/Jerusalem';

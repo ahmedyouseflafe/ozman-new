@@ -1216,6 +1216,31 @@
                 grid-template-columns: 1fr
             }
         }
+        /* Quick order controls in the list: status buttons, prep time and countdown. */
+        .order-status-cell { min-width: 230px }
+        .quick-status { display: grid; gap: 8px; margin-top: 8px }
+        .quick-prep small { display: block; margin-bottom: 6px; color: var(--muted); font-size: 11.5px }
+        .quick-prep .preparation-options { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 260px }
+        .quick-prep .preparation-choice { aspect-ratio: auto; min-height: 38px; grid-auto-flow: column; gap: 3px; border-radius: 11px; color: #e8f6ff }
+        .quick-prep .preparation-choice b { font-size: 14px }
+        .quick-prep .preparation-choice small { font-size: 10px; color: var(--muted) }
+        .quick-prep .preparation-choice:hover { border-color: var(--yellow); color: var(--yellow) }
+        .quick-actions { display: flex; gap: 6px; flex-wrap: wrap }
+        .quick-btn { display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 14px; border-radius: 11px; border: 1px solid var(--border); background: rgba(255,255,255,.04); color: #fff; font: inherit; font-size: 12.5px; font-weight: 900; cursor: pointer }
+        .quick-ready { border: 0; background: linear-gradient(135deg, #25df87, #08dcf4); color: #03201a }
+        .quick-cancel { color: #ffb1bc; border-color: rgba(255, 98, 116, .4); background: rgba(255, 98, 116, .08) }
+        .quick-link { justify-self: start; padding: 0; border: 0; background: none; color: var(--cyan); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; text-decoration: underline }
+        .prep-timer { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 14px; border: 1px solid rgba(255, 212, 59, .35); background: rgba(255, 212, 59, .08); color: var(--yellow); width: max-content }
+        .prep-timer i { font-size: 18px }
+        .prep-timer-value { font-size: 22px; font-weight: 900; letter-spacing: .04em; font-variant-numeric: tabular-nums; direction: ltr }
+        .prep-timer-chosen { padding: 2px 8px; border-radius: 20px; background: rgba(255, 212, 59, .15); font-size: 11.5px; font-weight: 900 }
+        .prep-timer.is-soon { border-color: rgba(255, 140, 60, .6); color: #ff9b4a; background: rgba(255, 140, 60, .1) }
+        .prep-timer.is-late { border-color: rgba(255, 98, 116, .6); color: var(--red); background: rgba(255, 98, 116, .1); animation: prepLate 1.2s ease-in-out infinite }
+        @keyframes prepLate { 50% { box-shadow: 0 0 0 4px rgba(255, 98, 116, .18) } }
+        .status-tag-preparing { color: var(--yellow); background: rgba(255, 212, 59, .1); border-color: rgba(255, 212, 59, .3) }
+        .status-tag-ready, .status-tag-completed { color: var(--green); background: rgba(37, 223, 135, .1); border-color: rgba(37, 223, 135, .3) }
+        .status-tag-cancelled { color: var(--red); background: rgba(255, 98, 116, .1); border-color: rgba(255, 98, 116, .3) }
+        @media (prefers-reduced-motion: reduce) { .prep-timer.is-late { animation: none } }
     </style>
 </head>
 
@@ -1765,6 +1790,7 @@
                     const updatedRow = replacement.querySelector('tr');
                     if (!updatedRow) throw new Error('تم الحفظ، لكن تعذّر تحديث العرض. حدّث الصفحة.');
                     form.closest('tr').replaceWith(updatedRow);
+                    tickTimers();
                     const updatedFeedback = updatedRow.querySelector('.status-feedback');
                     if (updatedFeedback) updatedFeedback.textContent = 'تم الحفظ وإشعار العميل.';
                 } catch (error) {
@@ -1775,6 +1801,38 @@
                     form.classList.remove('is-saving');
                     buttons.forEach(button => button.disabled = false);
                 }
+            });
+
+            // Countdown for orders in the kitchen: counts down to the chosen time, then shows how late it is.
+            const tickTimers = () => {
+                const now = Date.now();
+                document.querySelectorAll('.prep-timer[data-due-at]').forEach(timer => {
+                    const left = Math.round((Date.parse(timer.dataset.dueAt) - now) / 1000);
+                    const abs = Math.abs(left);
+                    const text = `${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
+                    const value = timer.querySelector('.prep-timer-value');
+                    if (value) value.textContent = left >= 0 ? text : `+${text}`;
+                    timer.classList.toggle('is-late', left < 0);
+                    timer.classList.toggle('is-soon', left >= 0 && left <= 120);
+                    timer.title = left >= 0 ? 'الوقت المتبقي للتجهيز' : 'متأخر عن الوقت المحدد';
+                });
+            };
+            tickTimers();
+            window.setInterval(tickTimers, 1000);
+
+            body.addEventListener('click', event => {
+                const edit = event.target.closest('.prep-edit');
+                if (edit) {
+                    const prep = edit.closest('.quick-status')?.querySelector('.quick-prep');
+                    if (prep) {
+                        prep.hidden = !prep.hidden;
+                        edit.setAttribute('aria-expanded', prep.hidden ? 'false' : 'true');
+                        edit.textContent = prep.hidden ? 'تعديل الوقت' : 'إخفاء الأوقات';
+                    }
+                    return;
+                }
+                const cancel = event.target.closest('.quick-status button[value="cancelled"]');
+                if (cancel && !window.confirm('متأكد إنك بدك تلغي هالطلب؟ رح يوصل للزبون إشعار بالإلغاء.')) event.preventDefault();
             });
 
             async function refreshOrders() {
@@ -1802,7 +1860,7 @@
                     const data = await response.json();
                     if (requestUrl !== feedUrl) return;
                     const editingOrder = body.contains(document.activeElement);
-                    if (!editingOrder && !statusUpdating) body.innerHTML = data.html;
+                    if (!editingOrder && !statusUpdating) { body.innerHTML = data.html; tickTimers(); }
                     for (const key of ['orders', 'new', 'preparing', 'ready']) {
                         const element = document.getElementById(`stat-${key}`);
                         if (element) element.textContent = data.stats[key] ?? 0

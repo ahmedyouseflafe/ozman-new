@@ -105,7 +105,8 @@
                 <label class="field"><span>{{ __('نص المنشور') }}</span>
                     <textarea name="caption" id="caption" required maxlength="2000" placeholder="{{ __('اكتب المنشور هون، أو كبس «اكتبلي المنشور»') }}">{{ old('caption') }}</textarea>
                 </label>
-                <label class="check" style="width:max-content;margin:-4px 0 14px"><input type="checkbox" name="add_link" value="1" checked> {{ __('ضيف رابط الطلب للمنتج تحت المنشور') }}</label>
+                <label class="check" style="width:max-content;margin:-4px 0 14px"><input type="checkbox" name="add_link" value="1" checked> {{ __('ضيف رابط الطلب تحت المنشور') }}</label>
+                <p class="hint" style="margin:-8px 0 14px">{{ __('بفيسبوك الرابط بينكبس. إنستغرام وتيك توك ما بيسمحوا بروابط بالمنشور، فبنكتب «الرابط بالبايو»، وحط رابط محلك بالبايو:') }} <span dir="ltr" style="color:var(--cyan);user-select:all">{{ $shop->publicUrl() }}</span></p>
 
                 <div class="field"><span>{{ __('وين ينتشر؟') }}</span>
                     <div class="checks">
