@@ -438,6 +438,13 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
     Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 
+    Route::get('/social', [\App\Http\Controllers\ShopSocialController::class, 'index'])->name('social.index');
+    Route::get('/social/connect/{platform}', [\App\Http\Controllers\ShopSocialController::class, 'connect'])->name('social.connect');
+    Route::get('/social/callback', [\App\Http\Controllers\ShopSocialController::class, 'callback'])->name('social.callback');
+    Route::post('/social/caption', [\App\Http\Controllers\ShopSocialController::class, 'caption'])->middleware('throttle:20,1')->name('social.caption');
+    Route::post('/social/posts', [\App\Http\Controllers\ShopSocialController::class, 'store'])->middleware('throttle:20,1')->name('social.posts.store');
+    Route::delete('/social/posts/{post}', [\App\Http\Controllers\ShopSocialController::class, 'destroy'])->name('social.posts.destroy');
+
     Route::get('/screens', [ScreenController::class, 'index'])->name('screens');
     Route::get('/screens/create', [ScreenController::class, 'create'])->name('screens.create');
     Route::post('/screens/store', [ScreenController::class, 'store'])->name('screens.store');

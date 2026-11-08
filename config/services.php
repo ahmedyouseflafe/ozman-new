@@ -61,4 +61,15 @@ return [
         'key_file' => env('WEB_PUSH_KEY_FILE', storage_path('app/private/web-push-vapid.json')),
     ],
 
+    'zernio' => [
+        'key' => env('ZERNIO_API_KEY'),
+        'base_url' => env('ZERNIO_BASE_URL', 'https://zernio.com/api'),
+        'timezone' => env('SOCIAL_TIMEZONE', 'Asia/Jerusalem'),
+    ],
+
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-haiku-5-5'),
+    ],
+
 ];

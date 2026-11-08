@@ -9,7 +9,8 @@
     </button>
     <button type="button" class="oz-share" data-share-url="{{ route('share.product', $product) }}" data-share-title="{{ $product->localized('name') }}"
         aria-label="{{ $actionLabels[1] }}" title="{{ $actionLabels[1] }}">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8M5 12.5v6A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5v-6"/></svg>
+        <svg class="oz-share-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.2 3.6a.9.9 0 0 1 1.5-.66l7.4 6.9a.9.9 0 0 1 0 1.32l-7.4 6.9a.9.9 0 0 1-1.5-.66v-3.5c-4.7 0-8 1.5-10.4 5.1-.3.45-1 .2-.95-.35.75-5.9 4.3-10.5 11.35-11.4z"/></svg>
+        <span class="oz-share-label">{{ $actionLabels[1] }}</span>
     </button>
 </span>
 @once

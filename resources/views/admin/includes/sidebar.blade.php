@@ -540,6 +540,14 @@
         </a>
         @endif
 
+        @if($canSee(['social.index']))
+        <a href="{{ route('social.index', $previewShopId ? ['shop_id' => $previewShopId] : []) }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('social.*') ? 'active' : '' }}">
+             <i class="ti ti-brand-instagram" aria-hidden="true"></i>
+             {{ __('السوشال ميديا') }}
+        </a>
+        @endif
+
         @if($canSee(['products.preview']))
         <a href="{{ $previewUrl }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('products.preview') ? 'active' : '' }}">

@@ -1,9 +1,9 @@
 {{-- Floating "share this page" button for storefronts. Usage: @include('front.partials.page_share', ['title' => $shop->name]) --}}
-@php($pageShareLabel = match (app()->getLocale()) { 'he' => 'שיתוף העמוד', 'en' => 'Share this page', default => 'شارك الصفحة' })
+@php($pageShareLabel = match (app()->getLocale()) { 'he' => 'שיתוף', 'en' => 'Share', default => 'مشاركة' })
 <button type="button" class="oz-page-share" data-share-url="{{ $url ?? url()->current() }}" data-share-title="{{ $title ?? config('app.name', 'Ozman') }}"
     aria-label="{{ $pageShareLabel }}" title="{{ $pageShareLabel }}">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8M5 12.5v6A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5v-6"/></svg>
-    <span>{{ $pageShareLabel }}</span>
+    <span class="oz-page-share-icon"><svg class="oz-share-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.2 3.6a.9.9 0 0 1 1.5-.66l7.4 6.9a.9.9 0 0 1 0 1.32l-7.4 6.9a.9.9 0 0 1-1.5-.66v-3.5c-4.7 0-8 1.5-10.4 5.1-.3.45-1 .2-.95-.35.75-5.9 4.3-10.5 11.35-11.4z"/></svg></span>
+    <span class="oz-share-label">{{ $pageShareLabel }}</span>
 </button>
 @once
     @include('front.partials.product_like_assets')
