@@ -79,7 +79,7 @@
                 <label class="field"><span>{{ __('المنتج') }}</span>
                     <select name="product_id" id="productSelect">
                         <option value="">{{ __('— بدون منتج (منشور عام) —') }}</option>
-                        @foreach($products as $p)<option value="{{ $p->id }}" data-image="{{ $p->main_image ? (\Illuminate\Support\Str::startsWith($p->main_image, ['http://','https://']) ? $p->main_image : (is_file(public_path($p->main_image)) ? asset($p->main_image) : asset('storage/'.ltrim($p->main_image,'/')))) : '' }}" @selected((string) old('product_id') === (string) $p->id)>{{ $p->localized('name') }} — {{ number_format((float) ($p->discount_price ?: $p->price), 2) }} ₪</option>@endforeach
+                        @foreach($products as $p)<option value="{{ $p->id }}" data-image="{{ $p->main_image ? (\Illuminate\Support\Str::startsWith($p->main_image, ['http://','https://']) ? $p->main_image : asset(ltrim($p->main_image, '/'))) : '' }}" @selected((string) old('product_id') === (string) $p->id)>{{ $p->localized('name') }} — {{ number_format((float) ($p->discount_price ?: $p->price), 2) }} ₪</option>@endforeach
                     </select>
                 </label>
                 <div class="picked" id="picked" hidden><img id="pickedImg" alt=""><p class="hint">{{ __('هاي الصورة اللي رح تنزل مع المنشور.') }}</p></div>

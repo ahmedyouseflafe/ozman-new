@@ -28,7 +28,7 @@ class ShopSocialTest extends TestCase
         $this->shop = Shop::create(['user_id' => $this->owner->id, 'name' => 'Bankai sushi', 'slug' => 'bankai-sushi', 'catalog_type' => 'restaurant', 'is_active' => true]);
         $category = Category::create(['shop_id' => $this->shop->id, 'name' => 'رولات', 'slug' => 'rolls', 'is_active' => true]);
         $this->product = Product::create(['shop_id' => $this->shop->id, 'category_id' => $category->id, 'name' => 'ريد دراغون رول', 'slug' => 'red-dragon',
-            'description' => 'تونا حمراء وأفوكادو', 'price' => 53, 'quantity' => 10, 'is_active' => true, 'main_image' => 'products/red.jpg']);
+            'description' => 'تونا حمراء وأفوكادو', 'price' => 53, 'quantity' => 10, 'is_active' => true, 'main_image' => 'storage/products/red.jpg']);
     }
 
     private function fakeZernio(array $accounts = null): void

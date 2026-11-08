@@ -226,8 +226,8 @@ class ShopSocialController extends Controller
         if (Str::startsWith($path, ['http://', 'https://'])) {
             return $path;
         }
-        $path = ltrim($path, '/');
 
-        return is_file(public_path($path)) || Str::startsWith($path, 'storage/') ? asset($path) : asset('storage/'.$path);
+        // Same as the storefronts: uploads are saved as "storage/products/…" and served with asset().
+        return asset(ltrim($path, '/'));
     }
 }

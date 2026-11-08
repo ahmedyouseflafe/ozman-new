@@ -82,7 +82,7 @@ class ProductLikesTest extends TestCase
 
     public function test_shared_product_link_previews_the_product_and_opens_it_in_the_store(): void
     {
-        $meal = $this->product(['catalog_type' => 'restaurant', 'name' => 'Bankai'], ['name' => 'ريد دراغون رول', 'main_image' => 'products/roll.jpg', 'description' => 'تونا حمراء']);
+        $meal = $this->product(['catalog_type' => 'restaurant', 'name' => 'Bankai'], ['name' => 'ريد دراغون رول', 'main_image' => 'storage/products/roll.jpg', 'description' => 'تونا حمراء']);
         $target = $meal->shop->publicUrl().'?product='.$meal->id;
         $this->get(route('share.product', $meal))->assertOk()
             ->assertSee('<meta property="og:title" content="ريد دراغون رول — Bankai">', false)
