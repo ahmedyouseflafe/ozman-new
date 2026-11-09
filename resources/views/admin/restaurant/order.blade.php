@@ -10,6 +10,12 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <style>
         :root{--cyan:#08dcf4;--green:#25df87;--gold:#ffe29a;--panel:#0d171f;--border:rgba(139,160,179,.2);--muted:#9ba7b4}*{box-sizing:border-box}body{min-height:100vh;margin:0;background:radial-gradient(circle at 83% 8%,rgba(0,222,244,.12),transparent 31%),radial-gradient(circle at 8% 18%,rgba(118,44,255,.13),transparent 29%),linear-gradient(135deg,#080313,#02080a 65%,#071118);color:#f7f9fb;font-family:Cairo,Arial,sans-serif}.order-page{margin:0 245px 0 0;padding:26px clamp(18px,2.2vw,36px) 52px}.glass{border:1px solid var(--border);background:linear-gradient(135deg,rgba(25,23,39,.91),rgba(11,25,28,.9));box-shadow:0 20px 70px rgba(0,0,0,.25);backdrop-filter:blur(15px)}.hero{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:25px 28px;border-radius:24px}.eyebrow{color:var(--cyan);font-size:11px;font-weight:900;letter-spacing:.08em}.hero h1{margin:6px 0;font-size:clamp(24px,3vw,34px)}.hero p{margin:0;color:var(--muted);font-size:12px}.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:43px;padding:10px 14px;border:1px solid var(--border);border-radius:13px;background:#0b1720;color:#fff;font:800 12px Cairo,Arial,sans-serif;text-decoration:none}.layout{display:grid;grid-template-columns:minmax(0,1fr) 315px;gap:18px;margin-top:18px}.panel{padding:20px;border-radius:22px}.panel h2{margin:0 0 14px;font-size:19px}.item{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:14px 0;border-bottom:1px solid rgba(139,160,179,.15)}.item:last-child{border-bottom:0}.item h3{margin:0;font-size:16px}.item p{margin:4px 0 0;color:var(--muted);font-size:11px}.qty{display:grid;place-items:center;min-width:36px;height:36px;border-radius:11px;background:rgba(8,220,244,.12);color:var(--cyan);font-size:12px;font-weight:900}.price{color:var(--gold);white-space:nowrap;font-size:16px;font-weight:900}.info{display:grid;gap:11px}.info-row{padding:11px 13px;border:1px solid var(--border);border-radius:13px;background:rgba(3,8,12,.42)}.info-row span{display:block;margin-bottom:3px;color:var(--cyan);font-size:10px;font-weight:900}.info-row b{font-size:13px}.tag{display:inline-flex;padding:6px 10px;border:1px solid rgba(8,220,244,.3);border-radius:999px;background:rgba(8,220,244,.1);color:var(--cyan);font-size:11px;font-weight:900}.total{display:flex;align-items:center;justify-content:space-between;margin-top:15px;padding-top:15px;border-top:1px solid var(--border);font-size:16px;font-weight:900}.total strong{color:var(--gold);font-size:22px}.empty{color:var(--muted);font-size:13px}.order-side{display:grid;align-content:start;gap:18px}.order-status-form{display:grid;gap:12px}.order-status-form h2{margin-bottom:0}.order-status-form label,.order-status-form legend{color:var(--cyan);font-size:11px;font-weight:900}.order-status-select{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:13px;outline:0;background:rgba(3,8,12,.62);color:#fff;font:700 13px Cairo,Arial,sans-serif}.order-status-select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(8,220,244,.1)}.order-preparation-picker{margin:0;padding:13px 0 0;border:0;border-top:1px solid var(--border)}.order-preparation-options{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-top:9px}.order-preparation-choice{display:grid;place-items:center;gap:0;min-height:51px;padding:5px 2px;border:1px solid rgba(139,160,179,.2);border-radius:50%;aspect-ratio:1;background:rgba(3,8,12,.55);color:#a9b8c5;cursor:pointer;font-family:Cairo,Arial,sans-serif;transition:.2s}.order-preparation-choice b{font-size:14px;line-height:1}.order-preparation-choice small{font-size:9px;font-weight:800}.order-preparation-choice:hover,.order-preparation-choice.is-selected{border-color:var(--cyan);background:var(--cyan);box-shadow:0 7px 20px rgba(8,220,244,.26);color:#022027}.order-status-save{width:100%;border:0;border-radius:13px;min-height:45px;background:linear-gradient(90deg,#08cbe4,#21baf2);color:#03141a;cursor:pointer;font:900 14px Cairo,Arial,sans-serif}.order-status-save:disabled{opacity:.62;cursor:wait}.order-status-help,.order-status-feedback{margin:0;color:var(--muted);font-size:10px;line-height:1.7}.order-status-feedback{min-height:17px}.order-status-feedback.is-success{color:var(--green)}.order-status-feedback.is-error{color:#ff9aac}@media(max-width:900px){.order-page{margin:0;padding:18px 14px 100px}.hero{align-items:flex-start;flex-direction:column;padding:22px}.layout{grid-template-columns:1fr}}@media(max-width:520px){.hero h1{font-size:24px}.panel{padding:16px}.item{align-items:flex-start}.price{font-size:14px}.order-preparation-options{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.order-preparation-choice{min-height:45px}.order-preparation-choice b{font-size:12px}}
+        .status-panel h2{margin-bottom:6px}.status-now{display:flex;align-items:center;gap:8px;margin-bottom:12px;color:var(--muted);font-size:12px;font-weight:800}
+        .status-moves{display:grid;grid-template-columns:1fr 1fr;gap:8px}.status-moves button{min-height:44px;border:1px solid var(--border);border-radius:12px;background:rgba(3,8,12,.55);color:#e8f6ff;font:800 13px Cairo,Arial,sans-serif;cursor:pointer}
+        .status-moves button:hover{border-color:var(--cyan);color:var(--cyan)}.status-moves button.is-current{border-color:var(--cyan);background:rgba(8,220,244,.14);color:var(--cyan);cursor:default}
+        .status-moves .move-cancelled{grid-column:1/-1;color:#ff9aac;border-color:rgba(255,98,116,.35)}
+        .notice{margin-top:14px;padding:12px 16px;border-radius:14px;font-size:13px;font-weight:800}.notice-ok{border:1px solid rgba(37,223,135,.35);background:rgba(37,223,135,.08);color:var(--green)}.notice-err{border:1px solid rgba(255,98,116,.35);background:rgba(255,98,116,.08);color:#ff9aac}
+        .info-row a{color:var(--cyan);text-decoration:none}
     </style>
 </head>
 <body>
@@ -17,8 +23,10 @@
     <main class="order-page">
         <section class="hero glass">
             <div><span class="eyebrow">ORDER DETAILS</span><h1>طلب {{ $order->order_number }}</h1><p><i class="ti ti-calendar-event"></i> وصل {{ $order->created_at?->copy()->locale('ar')->translatedFormat('l، d/m/Y · h:i A') }}</p></div>
-            <a class="btn" href="{{ route('restaurant.dashboard', $shop) }}"><i class="ti ti-arrow-right"></i> رجوع للطلبات</a>
+            <a class="btn" href="{{ url()->previous() !== url()->current() && str_contains(url()->previous(), '/restaurant') ? url()->previous() : route('restaurant.dashboard', $shop) }}"><i class="ti ti-arrow-right"></i> رجوع للطلبات</a>
         </section>
+        @if (session('status'))<div class="notice notice-ok"><i class="ti ti-circle-check"></i> {{ session('status') }}</div>@endif
+        @if ($errors->any())<div class="notice notice-err">{{ $errors->first() }}</div>@endif
         <div class="layout">
             <section class="panel glass">
                 <h2><i class="ti ti-receipt-2" style="color:var(--cyan)"></i> الوجبات المطلوبة</h2>
@@ -61,6 +69,26 @@
                     @endif
                     <p class="order-status-feedback" id="order-status-feedback" aria-live="polite"></p>
                 </form>
+                @if(auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.orders.status'))
+                    @php
+                        $moves = array_filter(['new' => 'جديد', 'preparing' => 'قيد التحضير', 'ready' => 'جاهز',
+                            'out_for_delivery' => $order->order_type === 'delivery' ? 'خرج للتوصيل' : null,
+                            'completed' => $order->order_type === 'delivery' ? 'تم التوصيل' : 'تم التسليم', 'cancelled' => 'إلغاء الطلب']);
+                    @endphp
+                    <form class="panel glass status-panel" method="post" action="{{ route('restaurant.orders.status', $order) }}"
+                        onsubmit="return event.submitter?.value !== 'cancelled' || confirm('متأكد إنك بدك تلغي هالطلب؟ رح يوصل للزبون إشعار بالإلغاء.')">
+                        @csrf @method('patch')
+                        <input type="hidden" name="estimated_preparation_minutes" value="{{ $order->estimated_preparation_minutes }}">
+                        <h2><i class="ti ti-switch-horizontal" style="color:var(--cyan)"></i> تغيير الحالة</h2>
+                        <div class="status-now">الحالة الحالية: <span class="tag">{{ $order->statusLabel() }}</span></div>
+                        <div class="status-moves">
+                            @foreach($moves as $value => $label)
+                                <button type="submit" name="status" value="{{ $value }}" class="move-{{ $value }} {{ $order->status === $value ? 'is-current' : '' }}" @disabled($order->status === $value)>{{ $label }}</button>
+                            @endforeach
+                        </div>
+                        <p class="order-status-help">الزبون بيوصله إشعار بالحالة الجديدة. «قيد التحضير» بدها وقت تجهيز محدد فوق.</p>
+                    </form>
+                @endif
                 <section class="panel glass">
                 <h2>بيانات الطلب</h2>
                 @include('admin.restaurant.partials.purchase_reward')
@@ -74,7 +102,9 @@
                     <div class="info-row"><span>الحالة</span><b><span class="tag">{{ $order->statusLabel() }}</span></b></div>
                     <div class="info-row"><span>نوع الطلب</span><b>{{ ['dine_in' => 'طلب طاولة', 'delivery' => 'توصيل', 'pickup' => 'استلام'][$order->order_type] ?? $order->order_type }}</b></div>
                     <div class="info-row"><span>العميل</span><b>{{ $order->customer_name ?: '—' }}</b></div>
-                    <div class="info-row"><span>رقم الجوال</span><b dir="ltr">{{ $order->customer_phone ?: '—' }}</b></div>
+                    <div class="info-row"><span>رقم الجوال</span><b dir="ltr">@if($order->customer_phone)<a href="tel:{{ preg_replace('/[^\d+]/', '', $order->customer_phone) }}">{{ $order->customer_phone }}</a>@else — @endif</b></div>
+                    @if($order->customer_address)<div class="info-row"><span>العنوان</span><b>{{ $order->customer_address }}</b></div>@endif
+                    @if($order->customer_notes)<div class="info-row"><span>ملاحظات الزبون</span><b>{{ $order->customer_notes }}</b></div>@endif
                     @if($order->restaurantTable)<div class="info-row"><span>الطاولة</span><b>{{ $order->restaurantTable->name }}</b></div>@endif
                     @if($order->restaurantDriver)<div class="info-row"><span>مندوب التوصيل</span><b>{{ $order->restaurantDriver->user?->name }}</b></div>@endif
                 </div>

@@ -829,11 +829,17 @@ class RestaurantOrderingTest extends TestCase
         FrontOrder::create([...$base, 'order_number' => 'RST-HOME', 'customer_name' => 'Huda', 'order_type' => 'delivery', 'customer_address' => 'Al-Masyoun street', 'status' => 'ready']);
 
         $html = $this->actingAs($shop->user)->get(route('restaurant.dashboard', $shop))->assertOk()
-            ->assertSee('طاولة '.$table->name)->assertSee('Al-Masyoun street')->assertSee('tel:0599000111', false)
+            ->assertSee('طاولة '.$table->name)
             ->assertSee('data-status-filter="new"', false)->assertSee('تم التوصيل')->assertSee('تغيير الحالة')->getContent();
         // Orders that still need work come before finished ones.
         $this->assertLessThan(strpos($html, 'RST-DONE'), strpos($html, 'RST-TABLE'));
         $this->assertLessThan(strpos($html, 'RST-DONE'), strpos($html, 'RST-HOME'));
+
+        // The full details, contact and every status live on the order's own page.
+        $home = FrontOrder::where('order_number', 'RST-HOME')->first();
+        $this->actingAs($shop->user)->get(route('restaurant.orders.show', [$shop, $home]))->assertOk()
+            ->assertSee('Al-Masyoun street')->assertSee('tel:0599000111', false)
+            ->assertSee('تغيير الحالة')->assertSee('value="out_for_delivery"', false)->assertSee('value="new"', false);
     }
 
     public function test_dashboard_list_changes_status_in_place_with_a_prep_countdown(): void

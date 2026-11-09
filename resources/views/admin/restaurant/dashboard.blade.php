@@ -1365,9 +1365,9 @@
 
         /* ===== Compact order cards: summary first, details on tap ===== */
         .order-board { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px }
-        .order-card { gap: 8px; padding: 12px 14px; border-radius: 16px; cursor: default }
+        .order-card { gap: 8px; padding: 12px 14px; border-radius: 16px; cursor: pointer }
         .order-card::before { inset: 12px 0 12px auto }
-        .oc-head { display: grid; gap: 4px; cursor: pointer; border-radius: 10px; outline: none }
+        .oc-head { display: grid; gap: 4px; cursor: pointer; border-radius: 10px; outline: none; color: inherit; text-decoration: none }
         .oc-head:focus-visible { box-shadow: 0 0 0 2px var(--cyan) }
         .oc-line1 { display: flex; align-items: center; gap: 8px; min-width: 0 }
         .oc-number { font-size: 16px; font-weight: 900; letter-spacing: .03em; color: #fff }
@@ -1378,13 +1378,6 @@
         .oc-dot { opacity: .5 }
         .oc-line2 .oc-total { margin-inline-start: auto; display: block; font-size: 15px; color: var(--yellow) }
         .oc-chevron { font-size: 16px; color: var(--cyan); transition: transform .2s }
-        .order-card.is-open .oc-chevron { transform: rotate(180deg) }
-        .order-card.is-open { border-color: rgba(8, 220, 244, .45) }
-        .oc-more { display: grid; gap: 8px; padding-top: 6px; border-top: 1px dashed rgba(139, 160, 179, .2) }
-        .oc-more[hidden] { display: none }
-        .oc-more .oc-items { padding: 6px 0; border: 0 }
-        .oc-more .oc-item { font-size: 13.5px }
-        .oc-more .oc-details { justify-self: start; font-size: 12.5px }
         .order-card .quick-status { padding: 0; border: 0; background: none; gap: 8px }
         .order-card .quick-prep small { font-size: 11.5px }
         .order-card .quick-prep .preparation-options { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; margin-top: 4px; padding-bottom: 2px }
@@ -1849,14 +1842,8 @@
             });
 
             // Tapping an empty part of a card opens the order; buttons and links keep their own job.
-            // Cards stay small; tapping one opens its details in place (kept open across live refresh).
-            const openCards = new Set(), openMenus = new Set();
-            const setOpen = (card, open) => {
-                const more = card.querySelector('.oc-more'), head = card.querySelector('.oc-head');
-                if (!more || !head) return;
-                more.hidden = !open; head.setAttribute('aria-expanded', open ? 'true' : 'false'); card.classList.toggle('is-open', open);
-                open ? openCards.add(card.dataset.orderId) : openCards.delete(card.dataset.orderId);
-            };
+            // Cards stay small; the status menu stays open across the live refresh.
+            const openMenus = new Set();
             const setMenu = (card, open) => {
                 const menu = card.querySelector('.status-menu'), toggle = card.querySelector('.status-menu-toggle');
                 if (!menu || !toggle) return;
@@ -1868,15 +1855,9 @@
                 if (!card) return;
                 const toggle = event.target.closest('.status-menu-toggle');
                 if (toggle) { setMenu(card, toggle.getAttribute('aria-expanded') !== 'true'); return; }
+                // Tapping the card opens the order's own details page.
                 if (event.target.closest('a,button,input,select,label,form') || window.getSelection()?.toString()) return;
-                setOpen(card, card.querySelector('.oc-more')?.hidden);
-            });
-            body.addEventListener('keydown', event => {
-                const head = event.target.closest('.oc-head');
-                if (!head || !['Enter', ' '].includes(event.key)) return;
-                event.preventDefault();
-                const card = head.closest('.order-card');
-                setOpen(card, card.querySelector('.oc-more')?.hidden);
+                window.location.href = card.dataset.orderUrl;
             });
 
             // The summary tiles double as status filters.
@@ -1897,7 +1878,6 @@
             // Keep "edit time" panels open across the live refresh.
             const openPrep = new Set();
             const restoreOpenPrep = () => {
-                openCards.forEach(id => { const card = document.getElementById(`restaurant-order-${id}`); card ? setOpen(card, true) : openCards.delete(id); });
                 openMenus.forEach(id => { const card = document.getElementById(`restaurant-order-${id}`); card ? setMenu(card, true) : openMenus.delete(id); });
                 openPrepRestore();
             };
@@ -1979,10 +1959,8 @@
                     const updatedRow = replacement.querySelector('.order-card');
                     if (!updatedRow) throw new Error('تم الحفظ، لكن تعذّر تحديث العرض. حدّث الصفحة.');
                     const savedId = form.closest('.order-card')?.dataset.orderId;
-                    const wasOpen = openCards.has(savedId);
                     openPrep.delete(savedId); openMenus.delete(savedId);
                     form.closest('.order-card').replaceWith(updatedRow);
-                    if (wasOpen) setOpen(updatedRow, true);
                     lastHtml = '';
                     tickTimers();
                     const updatedFeedback = updatedRow.querySelector('.status-feedback');
@@ -2007,7 +1985,7 @@
                     // Over an hour: show hours and minutes instead of a huge minute count.
                     const text = hours ? `${hours}س ${mins}د` : `${String(mins).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
                     const value = timer.querySelector('.prep-timer-value');
-                    if (value) value.textContent = left >= 0 ? text : `+${text}`;
+                    if (value) { value.textContent = left >= 0 ? text : `+${text}`; value.style.direction = hours ? 'rtl' : 'ltr'; }
                     timer.classList.toggle('is-late', left < 0);
                     timer.classList.toggle('is-soon', left >= 0 && left <= 120);
                     timer.title = left >= 0 ? 'الوقت المتبقي للتجهيز' : 'متأخر عن الوقت المحدد';

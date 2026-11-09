@@ -27,7 +27,7 @@
     @endphp
     <article class="order-card order-card-{{ $order->status }} {{ $finished ? 'is-finished' : '' }}" id="restaurant-order-{{ $order->id }}"
         data-order-id="{{ $order->id }}" data-order-url="{{ route('restaurant.orders.show', [$shop, $order]) }}">
-        <header class="oc-head" role="button" tabindex="0" aria-expanded="false" aria-controls="order-more-{{ $order->id }}" title="اكبس لعرض التفاصيل">
+        <a class="oc-head" href="{{ route('restaurant.orders.show', [$shop, $order]) }}" title="فتح تفاصيل الطلب">
             <div class="oc-line1">
                 <b class="oc-number">{{ \Illuminate\Support\Str::afterLast($order->order_number, '-') }}</b>
                 <span class="oc-type oc-type-{{ $order->order_type }}"><i class="ti {{ $type[0] }}" aria-hidden="true"></i> {{ $type[1] }}</span>
@@ -40,39 +40,9 @@
                 <span class="oc-dot">·</span>
                 <span title="{{ $order->created_at?->format('Y-m-d H:i') }}">{{ $order->created_at?->format('h:i A') }}</span>
                 <b class="oc-total order-total">{{ number_format((float) $order->total, 2) }} ₪</b>
-                <i class="ti ti-chevron-down oc-chevron" aria-hidden="true"></i>
+                <i class="ti ti-chevron-left oc-chevron" aria-hidden="true"></i>
             </div>
-        </header>
-
-        <div class="oc-more" id="order-more-{{ $order->id }}" hidden>
-            <div class="oc-meta">
-                <span><i class="ti ti-clock" aria-hidden="true"></i> {{ $order->created_at?->copy()->locale('ar')->diffForHumans() }}</span>
-                <span><i class="ti ti-hash" aria-hidden="true"></i> {{ $order->order_number }}</span>
-                @if($phone)<a href="tel:{{ preg_replace('/[^\d+]/', '', $phone) }}" dir="ltr"><i class="ti ti-phone" aria-hidden="true"></i> {{ $phone }}</a>@endif
-                @if($driver)<span><i class="ti ti-motorbike" aria-hidden="true"></i> المندوب: {{ $driver->name }}</span>@endif
-            </div>
-            @if($order->order_type === 'delivery' && $order->customer_address)
-                <div class="oc-address"><i class="ti ti-map-pin" aria-hidden="true"></i> {{ $order->customer_address }}</div>
-            @endif
-            <div class="oc-items order-meals">
-                @include('admin.restaurant.partials.purchase_reward')
-                @forelse($items as $item)
-                    <div class="oc-item"><b>{{ $item['qty'] ?? 1 }}×</b> <span>{{ $item['name'] ?? 'وجبة' }}@if(!empty($item['choices']))<small>{{ \App\Services\MealChoiceService::summary($item['choices']) }}</small>@endif</span></div>
-                @empty
-                    <span class="oc-muted">لا توجد وجبات مسجلة</span>
-                @endforelse
-                @if($order->reward_discount_type === 'gift')<div class="oc-gift">🎁 {{ $order->reward_label }} — هدية مع الطلب</div>@endif
-                @if($order->customer_notes)<div class="oc-note"><i class="ti ti-message-2" aria-hidden="true"></i> {{ $order->customer_notes }}</div>@endif
-            </div>
-            @if($order->status !== 'cancelled')
-                <ol class="oc-steps" aria-label="مراحل الطلب">
-                    @foreach($steps as $i => $label)
-                        <li class="{{ $i < $stepIndex || ($i === $stepIndex && $order->status === 'completed') ? 'done' : ($i === $stepIndex ? 'current' : '') }}">{{ $label }}</li>
-                    @endforeach
-                </ol>
-            @endif
-            <a class="oc-details" href="{{ route('restaurant.orders.show', [$shop, $order]) }}">صفحة الطلب كاملة <i class="ti ti-chevron-left" aria-hidden="true"></i></a>
-        </div>
+        </a>
 
         @if($canManageOrders)
             <form class="status-form quick-status" method="post" action="{{ route('restaurant.orders.status', $order) }}">
