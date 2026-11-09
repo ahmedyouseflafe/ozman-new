@@ -323,18 +323,26 @@ class RestaurantOrderingTest extends TestCase
             ->assertJsonPath('stats.sales_total', 166.25);
     }
 
-    public function test_restaurant_status_cannot_move_backwards_or_use_generic_status_route(): void
+    public function test_restaurant_can_move_an_order_to_any_status_but_not_through_the_generic_route(): void
     {
         [$shop, , $table] = $this->restaurant('status');
         $order = FrontOrder::create([
             'shop_id' => $shop->id, 'restaurant_table_id' => $table->id,
-            'order_number' => 'RST-STATUS', 'customer_name' => 'Table',
+            'order_number' => 'RST-STATUS', 'customer_name' => 'Table', 'estimated_preparation_minutes' => 15,
             'order_channel' => 'restaurant', 'order_type' => 'dine_in', 'status' => 'ready',
         ]);
 
-        $this->actingAs($shop->user)
-            ->patch(route('restaurant.orders.status', $order), ['status' => 'preparing'])
-            ->assertStatus(422);
+        // The owner fixes mistakes: back to cooking, back to new, completed and reopened.
+        $this->actingAs($shop->user)->patchJson(route('restaurant.orders.status', $order), ['status' => 'preparing'])->assertOk();
+        $this->assertNotNull($order->fresh()->preparation_started_at);
+        $this->actingAs($shop->user)->patchJson(route('restaurant.orders.status', $order), ['status' => 'new'])->assertOk();
+        $this->assertNull($order->fresh()->preparation_started_at);
+        $this->actingAs($shop->user)->patchJson(route('restaurant.orders.status', $order), ['status' => 'completed'])->assertOk();
+        $this->actingAs($shop->user)->patchJson(route('restaurant.orders.status', $order), ['status' => 'ready'])->assertOk();
+        $this->assertSame('ready', $order->fresh()->status);
+        // "Out for delivery" only makes sense for delivery orders.
+        $this->actingAs($shop->user)->patchJson(route('restaurant.orders.status', $order), ['status' => 'out_for_delivery'])->assertStatus(422);
+
         $this->actingAs($shop->user)
             ->patch(route('front-orders.status', $order), ['status' => 'completed'])
             ->assertStatus(422);
@@ -821,8 +829,8 @@ class RestaurantOrderingTest extends TestCase
         FrontOrder::create([...$base, 'order_number' => 'RST-HOME', 'customer_name' => 'Huda', 'order_type' => 'delivery', 'customer_address' => 'Al-Masyoun street', 'status' => 'ready']);
 
         $html = $this->actingAs($shop->user)->get(route('restaurant.dashboard', $shop))->assertOk()
-            ->assertSee('طلب طاولة · '.$table->name)->assertSee('Al-Masyoun street')->assertSee('tel:0599000111', false)
-            ->assertSee('data-status-filter="new"', false)->assertSee('تم التوصيل')->getContent();
+            ->assertSee('طاولة '.$table->name)->assertSee('Al-Masyoun street')->assertSee('tel:0599000111', false)
+            ->assertSee('data-status-filter="new"', false)->assertSee('تم التوصيل')->assertSee('تغيير الحالة')->getContent();
         // Orders that still need work come before finished ones.
         $this->assertLessThan(strpos($html, 'RST-DONE'), strpos($html, 'RST-TABLE'));
         $this->assertLessThan(strpos($html, 'RST-DONE'), strpos($html, 'RST-HOME'));

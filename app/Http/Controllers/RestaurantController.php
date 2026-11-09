@@ -419,21 +419,13 @@ class RestaurantController extends Controller
         abort_unless($order->shop && $order->order_type, 404);
         $this->authorizeShop($request, $order->shop);
         $data = $request->validate([
-            'status' => ['required', 'in:new,preparing,ready,completed,cancelled'],
+            'status' => ['required', 'in:new,preparing,ready,out_for_delivery,completed,cancelled'],
             'estimated_preparation_minutes' => ['nullable', 'integer', 'min:1', 'max:1440'],
             'row' => ['nullable', 'in:list'],
         ]);
-        $transitions = [
-            'new' => ['new', 'preparing', 'cancelled'],
-            'preparing' => ['preparing', 'ready', 'cancelled'],
-            'ready' => $order->order_type === 'delivery' && $order->restaurant_driver_id
-                ? ['ready', 'cancelled']
-                : ['ready', 'completed', 'cancelled'],
-            'completed' => ['completed'],
-            'cancelled' => ['cancelled'],
-            'out_for_delivery' => ['out_for_delivery'],
-        ];
-        abort_unless(in_array($data['status'], $transitions[$order->status] ?? [], true), 422, 'لا يمكن إعادة الطلب إلى حالة سابقة.');
+        // The restaurant owns its orders: it may move an order to any status, including back
+        // (a mistaken "ready", a cancelled order that was revived). Only "out for delivery" needs a delivery order.
+        abort_if($data['status'] === 'out_for_delivery' && $order->order_type !== 'delivery', 422, 'حالة «خرج للتوصيل» لطلبات التوصيل فقط.');
         if ($data['status'] === 'preparing' && empty($data['estimated_preparation_minutes']) && ! $order->estimated_preparation_minutes) {
             throw ValidationException::withMessages([
                 'estimated_preparation_minutes' => 'حدد مدة التجهيز المتوقعة قبل نقل الطلب إلى قيد التحضير.',
@@ -448,6 +440,11 @@ class RestaurantController extends Controller
         }
         if ($data['status'] === 'ready' && $previousStatus !== 'ready') {
             $data['ready_at'] = now(); // For the real prep time in the analytics.
+        }
+        if ($data['status'] === 'new') {
+            // Back to "new": the kitchen hasn't started, so the countdown and timings restart later.
+            $data['preparation_started_at'] = null;
+            $data['ready_at'] = null;
         }
         $order->update($data);
         $order->refresh()->load('shop');

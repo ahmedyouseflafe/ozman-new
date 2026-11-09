@@ -1362,6 +1362,53 @@
             .order-card { padding: 14px; border-radius: 18px }
         }
         @media (max-width: 380px) { .rd-stat > span { font-size: 10px } .rd-stat strong { font-size: 19px } }
+
+        /* ===== Compact order cards: summary first, details on tap ===== */
+        .order-board { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px }
+        .order-card { gap: 8px; padding: 12px 14px; border-radius: 16px; cursor: default }
+        .order-card::before { inset: 12px 0 12px auto }
+        .oc-head { display: grid; gap: 4px; cursor: pointer; border-radius: 10px; outline: none }
+        .oc-head:focus-visible { box-shadow: 0 0 0 2px var(--cyan) }
+        .oc-line1 { display: flex; align-items: center; gap: 8px; min-width: 0 }
+        .oc-number { font-size: 16px; font-weight: 900; letter-spacing: .03em; color: #fff }
+        .oc-line1 .oc-type { padding: 1px 8px; font-size: 11.5px }
+        .oc-line1 .oc-status { margin-inline-start: auto; padding: 3px 9px; font-size: 12px; border-radius: 8px }
+        .oc-line2 { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12.5px; font-weight: 700; min-width: 0 }
+        .oc-who { color: #dce7ee; max-width: 38%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+        .oc-dot { opacity: .5 }
+        .oc-line2 .oc-total { margin-inline-start: auto; display: block; font-size: 15px; color: var(--yellow) }
+        .oc-chevron { font-size: 16px; color: var(--cyan); transition: transform .2s }
+        .order-card.is-open .oc-chevron { transform: rotate(180deg) }
+        .order-card.is-open { border-color: rgba(8, 220, 244, .45) }
+        .oc-more { display: grid; gap: 8px; padding-top: 6px; border-top: 1px dashed rgba(139, 160, 179, .2) }
+        .oc-more[hidden] { display: none }
+        .oc-more .oc-items { padding: 6px 0; border: 0 }
+        .oc-more .oc-item { font-size: 13.5px }
+        .oc-more .oc-details { justify-self: start; font-size: 12.5px }
+        .order-card .quick-status { padding: 0; border: 0; background: none; gap: 8px }
+        .order-card .quick-prep small { font-size: 11.5px }
+        .order-card .quick-prep .preparation-options { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; margin-top: 4px; padding-bottom: 2px }
+        .order-card .quick-prep .preparation-options::-webkit-scrollbar { display: none }
+        .order-card .quick-prep .preparation-choice { flex: 0 0 auto; min-width: 46px; min-height: 38px; padding: 0 8px }
+        .order-card .prep-timer { width: 100%; padding: 6px 10px; border-radius: 12px }
+        .order-card .prep-timer-value { font-size: 19px }
+        .order-card .prep-timer .prep-edit { margin-inline-start: auto; padding: 4px 9px; font-size: 12px }
+        .order-card .quick-actions { gap: 8px; flex-wrap: nowrap }
+        .order-card .quick-ready { flex: 1 1 auto; min-height: 40px; font-size: 13.5px; border-radius: 11px }
+        .order-card .oc-wait { flex: 1 1 auto; padding: 8px 10px; font-size: 12.5px; border-radius: 11px; min-width: 0 }
+        .order-card .oc-wait span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+        .status-menu-toggle { flex: 0 0 auto; min-height: 40px !important; padding: 0 12px !important; font-size: 12.5px !important; color: var(--cyan) !important; border-color: rgba(8, 220, 244, .35) !important; background: rgba(8, 220, 244, .06) !important; margin-inline-start: auto }
+        .status-menu-toggle[aria-expanded="true"] { background: rgba(8, 220, 244, .16) !important }
+        .status-menu { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border-radius: 12px; background: rgba(255, 255, 255, .03); border: 1px solid rgba(139, 160, 179, .16) }
+        .status-menu[hidden] { display: none }
+        .status-move { min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255, 255, 255, .04); color: #e8f6ff; font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer }
+        .status-move:hover { border-color: var(--cyan); color: var(--cyan) }
+        .status-move-new { color: var(--green) } .status-move-preparing { color: var(--yellow) } .status-move-ready { color: #c9a8ff }
+        .status-move-completed { color: var(--green) } .status-move-cancelled { color: #ff8d9b; border-color: rgba(255, 98, 116, .35); margin-inline-start: auto }
+        .order-card .status-feedback { font-size: 12px; color: var(--green) }
+        .order-card .status-feedback.is-error { color: var(--red) }
+        .order-card.is-finished { opacity: .7 }
+        @media (max-width: 900px) { .order-board { grid-template-columns: 1fr; gap: 10px } .order-card { padding: 12px } }
     </style>
 </head>
 
@@ -1802,11 +1849,34 @@
             });
 
             // Tapping an empty part of a card opens the order; buttons and links keep their own job.
+            // Cards stay small; tapping one opens its details in place (kept open across live refresh).
+            const openCards = new Set(), openMenus = new Set();
+            const setOpen = (card, open) => {
+                const more = card.querySelector('.oc-more'), head = card.querySelector('.oc-head');
+                if (!more || !head) return;
+                more.hidden = !open; head.setAttribute('aria-expanded', open ? 'true' : 'false'); card.classList.toggle('is-open', open);
+                open ? openCards.add(card.dataset.orderId) : openCards.delete(card.dataset.orderId);
+            };
+            const setMenu = (card, open) => {
+                const menu = card.querySelector('.status-menu'), toggle = card.querySelector('.status-menu-toggle');
+                if (!menu || !toggle) return;
+                menu.hidden = !open; toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                open ? openMenus.add(card.dataset.orderId) : openMenus.delete(card.dataset.orderId);
+            };
             body.addEventListener('click', event => {
-                const card = event.target.closest('.order-card[data-order-url]');
-                if (!card || event.target.closest('a,button,input,select,label,form,.oc-wait')) return;
-                if (window.getSelection()?.toString()) return;
-                window.location.href = card.dataset.orderUrl;
+                const card = event.target.closest('.order-card[data-order-id]');
+                if (!card) return;
+                const toggle = event.target.closest('.status-menu-toggle');
+                if (toggle) { setMenu(card, toggle.getAttribute('aria-expanded') !== 'true'); return; }
+                if (event.target.closest('a,button,input,select,label,form') || window.getSelection()?.toString()) return;
+                setOpen(card, card.querySelector('.oc-more')?.hidden);
+            });
+            body.addEventListener('keydown', event => {
+                const head = event.target.closest('.oc-head');
+                if (!head || !['Enter', ' '].includes(event.key)) return;
+                event.preventDefault();
+                const card = head.closest('.order-card');
+                setOpen(card, card.querySelector('.oc-more')?.hidden);
             });
 
             // The summary tiles double as status filters.
@@ -1826,11 +1896,16 @@
 
             // Keep "edit time" panels open across the live refresh.
             const openPrep = new Set();
-            const restoreOpenPrep = () => openPrep.forEach(id => {
+            const restoreOpenPrep = () => {
+                openCards.forEach(id => { const card = document.getElementById(`restaurant-order-${id}`); card ? setOpen(card, true) : openCards.delete(id); });
+                openMenus.forEach(id => { const card = document.getElementById(`restaurant-order-${id}`); card ? setMenu(card, true) : openMenus.delete(id); });
+                openPrepRestore();
+            };
+            const openPrepRestore = () => openPrep.forEach(id => {
                 const card = document.getElementById(`restaurant-order-${id}`);
                 const prep = card?.querySelector('.quick-prep'), edit = card?.querySelector('.prep-edit');
                 if (!prep || !edit) { openPrep.delete(id); return; }
-                prep.hidden = false; edit.setAttribute('aria-expanded', 'true'); edit.innerHTML = '<i class="ti ti-x" aria-hidden="true"></i> إخفاء الأوقات';
+                prep.hidden = false; edit.setAttribute('aria-expanded', 'true'); edit.innerHTML = '<i class="ti ti-x" aria-hidden="true"></i> إخفاء';
             });
             let lastHtml = '';
 
@@ -1861,6 +1936,14 @@
                 if (statusUpdating) return;
 
                 const submitter = event.submitter || form.querySelector('.status-save');
+                if (submitter.value === 'preparing' && !form.querySelector('input[name="estimated_preparation_minutes"]').value) {
+                    // Cooking needs a time first: show the time choices; picking one saves.
+                    const prep = form.querySelector('.quick-prep');
+                    if (prep) prep.hidden = false;
+                    const feedbackBox = form.querySelector('.status-feedback');
+                    if (feedbackBox) feedbackBox.textContent = 'اختار وقت التحضير.';
+                    return;
+                }
                 const payload = new FormData(form);
                 payload.set('status', submitter.value);
                 const feedback = form.querySelector('.status-feedback');
@@ -1895,8 +1978,11 @@
                     replacement.innerHTML = data.html || '';
                     const updatedRow = replacement.querySelector('.order-card');
                     if (!updatedRow) throw new Error('تم الحفظ، لكن تعذّر تحديث العرض. حدّث الصفحة.');
-                    openPrep.delete(form.closest('.order-card')?.dataset.orderId);
+                    const savedId = form.closest('.order-card')?.dataset.orderId;
+                    const wasOpen = openCards.has(savedId);
+                    openPrep.delete(savedId); openMenus.delete(savedId);
                     form.closest('.order-card').replaceWith(updatedRow);
+                    if (wasOpen) setOpen(updatedRow, true);
                     lastHtml = '';
                     tickTimers();
                     const updatedFeedback = updatedRow.querySelector('.status-feedback');
@@ -1917,7 +2003,9 @@
                 document.querySelectorAll('.prep-timer[data-due-at]').forEach(timer => {
                     const left = Math.round((Date.parse(timer.dataset.dueAt) - now) / 1000);
                     const abs = Math.abs(left);
-                    const text = `${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
+                    const hours = Math.floor(abs / 3600), mins = Math.floor(abs % 3600 / 60);
+                    // Over an hour: show hours and minutes instead of a huge minute count.
+                    const text = hours ? `${hours}س ${mins}د` : `${String(mins).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
                     const value = timer.querySelector('.prep-timer-value');
                     if (value) value.textContent = left >= 0 ? text : `+${text}`;
                     timer.classList.toggle('is-late', left < 0);
@@ -1936,7 +2024,7 @@
                     if (prep) {
                         prep.hidden = !prep.hidden;
                         edit.setAttribute('aria-expanded', prep.hidden ? 'false' : 'true');
-                        edit.innerHTML = prep.hidden ? '<i class="ti ti-pencil" aria-hidden="true"></i> تعديل الوقت' : '<i class="ti ti-x" aria-hidden="true"></i> إخفاء الأوقات';
+                        edit.innerHTML = prep.hidden ? '<i class="ti ti-pencil" aria-hidden="true"></i> الوقت' : '<i class="ti ti-x" aria-hidden="true"></i> إخفاء';
                         if (id) prep.hidden ? openPrep.delete(id) : openPrep.add(id);
                     }
                     return;
