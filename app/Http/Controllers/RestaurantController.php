@@ -442,6 +442,9 @@ class RestaurantController extends Controller
         if ($data['status'] === 'preparing' && ($previousStatus !== 'preparing' || ! $order->preparation_started_at)) {
             $data['preparation_started_at'] = now(); // The countdown starts when the kitchen starts.
         }
+        if ($data['status'] === 'ready' && $previousStatus !== 'ready') {
+            $data['ready_at'] = now(); // For the real prep time in the analytics.
+        }
         $order->update($data);
         $order->refresh()->load('shop');
         $statusChanged = $previousStatus !== $order->status;

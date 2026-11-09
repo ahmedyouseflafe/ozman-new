@@ -95,6 +95,7 @@ class ShopAnalytics
                 'unassigned_orders' => (clone $placed)->whereNull('shop_id')->count(),
             ],
             'shops' => $rows, 'chart' => $chart, 'top_products' => $top,
+            'insights' => app(AnalyticsInsights::class)->build($from, $to, $shopId, $rows),
             'statuses' => (clone $placed)->selectRaw('status, COUNT(*) AS count')->groupBy('status')->get()
                 ->map(fn ($o) => ['name' => $o->statusLabel(), 'count' => $o->count]),
             'orders' => (clone $placed)->with('shop:id,name')->latest()->limit(20)->get()->map(fn ($o) => [

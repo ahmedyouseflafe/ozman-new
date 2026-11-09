@@ -18,3 +18,4 @@ Artisan::command('promoters:prune-stories', function () {
     $this->info('Deleted: '.app(\App\Services\PromoterStoryCleanup::class)->run());
 })->purpose('Delete promoter stories that expired more than 3 days ago, with their files');
 Schedule::command('promoters:prune-stories')->dailyAt('03:30')->withoutOverlapping(30);
+Schedule::command('analytics:weekly-report')->weeklyOn(0, '08:10')->timezone('Asia/Jerusalem')->withoutOverlapping(30)->onOneServer();

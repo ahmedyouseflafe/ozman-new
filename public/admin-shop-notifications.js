@@ -17,6 +17,19 @@
         try {const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)throw new Error();audio ||= new Audio();await audio.resume();sound=!sound;$('ozActivitySound').textContent=sound?'إيقاف الصوت':'تفعيل الصوت';$('ozActivitySound').setAttribute('aria-pressed',String(sound));}
         catch {$('ozActivityStatus').textContent='الصوت غير متاح في هذا المتصفح.';}
     };
+    let toastEvent=null;
+    function target(event){
+        if(event.order_id)return config.base+'?order='+encodeURIComponent(event.order_id);
+        const day=String(event.created_at||'').slice(0,10), p=new URLSearchParams();
+        if(event.shop_id)p.set('shop_id',event.shop_id);
+        if(day){p.set('from',day);p.set('to',day);}
+        return config.base+'?'+p+'#activity';
+    }
+    function go(event,e){
+        if(event.order_id&&window.OzmanAnalyticsOpenOrder){e?.preventDefault();panel(false);$('ozActivityToast').hidden=true;window.OzmanAnalyticsOpenOrder(event.order_id);return;}
+        if(!e)location.assign(target(event));
+    }
+    $('ozActivityToast').onclick=()=>{if(toastEvent)go(toastEvent);};
     function ping(){if(!sound||!audio)return;const o=audio.createOscillator(),gain=audio.createGain();o.connect(gain);gain.connect(audio.destination);o.frequency.value=720;gain.gain.setValueAtTime(.08,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.3);o.start();o.stop(audio.currentTime+.3);}
     async function poll(){
         if(busy||stopped||document.hidden)return;busy=true;
@@ -30,15 +43,16 @@
             $('ozActivityStatus').classList.remove('oz-activity-error');
             if(initialized&&data.latest>latest){
                 const fresh=data.events.filter(e=>e.id>latest), sale=fresh.find(e=>e.kind==='sale_confirmed'), event=sale||fresh[0];
-                if(event){$('ozActivityToast').textContent=event.title+' — '+event.shop;$('ozActivityToast').hidden=!$('ozActivityPanel').hidden;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('ozActivityToast').hidden=true,6500);ping();}
+                if(event){toastEvent=event;$('ozActivityToast').textContent=event.title+' — '+event.shop+' • اضغط للفتح';$('ozActivityToast').hidden=!$('ozActivityPanel').hidden;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('ozActivityToast').hidden=true,6500);ping();}
                 document.dispatchEvent(new CustomEvent('ozman:shop-event'));
             }
             latest=data.latest;initialized=true;try{sessionStorage.setItem(seenKey,String(latest));}catch{}
             const list=$('ozActivityItems');list.replaceChildren();
             for(const event of data.events){
-                const row=el('div','');row.className='oz-activity-item'+(event.id>data.read_through?' unread':'');
-                row.append(el('strong',event.title),el('p',event.shop+(event.data?.total!=null?' • '+Number(event.data.total).toFixed(2)+' ₪':'')),el('p',new Date(event.created_at).toLocaleString('ar')));
-                if(event.order_id){const button=el('a','تفاصيل الطلب');button.href=config.base+'?order='+event.order_id;button.onclick=e=>{if(window.OzmanAnalyticsOpenOrder){e.preventDefault();panel(false);window.OzmanAnalyticsOpenOrder(event.order_id);}};row.append(button);}
+                // The whole notification opens its subject: the order, or the shop's activity for that day.
+                const row=el('a','');row.className='oz-activity-item'+(event.id>data.read_through?' unread':'');row.href=target(event);
+                row.append(el('strong',event.title),el('p',event.shop+(event.data?.total!=null?' • '+Number(event.data.total).toFixed(2)+' ₪':'')),el('p',new Date(event.created_at).toLocaleString('ar')),el('span',event.order_id?'فتح الطلب ←':'عرض النشاط ←'));
+                row.onclick=e=>go(event,e);
                 list.append(row);
             }
             if(!data.events.length)list.append(el('p','لا توجد إشعارات جديدة بعد.'));

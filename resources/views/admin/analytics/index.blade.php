@@ -9,7 +9,8 @@
     <link rel="apple-touch-icon" href="/admin/analytics/icon/180.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="إدارة أوزمان">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#071118">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     @include('admin.analytics.styles')
 </head>
 <body>
@@ -21,6 +22,10 @@
             <a class="selected" href="#overview"><span>◈</span>نظرة عامة</a>
             <a href="#shops"><span>▦</span>أداء المحلات</a>
             <a href="#orders"><span>▤</span>الطلبات والمبيعات</a>
+            <a href="#alerts"><span>⚑</span>تنبيهات</a>
+            <a href="#funnel"><span>⇣</span>التحويل والمطبخ</a>
+            <a href="#heatmap"><span>▩</span>أوقات الذروة</a>
+            <a href="#engagement"><span>♥</span>التفاعل والنمو</a>
             <a href="#activity"><span>◷</span>سجل النشاط</a>
             <a href="{{ route('dashboard') }}"><span>↗</span>لوحة الإدارة العادية</a>
         </nav>
@@ -40,15 +45,29 @@
             <div class="presets"><button type="button" data-days="1">اليوم</button><button type="button" data-days="7">7 أيام</button><button type="button" data-days="30">30 يومًا</button></div>
         </form>
         <div id="analyticsError" class="notice error" role="alert" hidden></div>
+        <section class="panel alerts-panel" id="alerts"><div class="section-head"><div><h2>تنبيهات بحاجة لانتباهك</h2><p>طلبات ما انرد عليها، محلات وقّفت الطلبات، أصحاب محلات غايبين، ومبيعات نازلة</p></div><span class="pill" id="alertsCount">0</span></div><div id="alertsList" class="alerts-list"></div></section>
         <section id="metrics" class="metrics" aria-label="ملخص الإحصائيات" aria-live="polite"></section>
         <div class="overview-grid">
             <section class="panel revenue-panel"><div class="section-head"><div><h2>حركة المبيعات</h2><p>قيمة المبيعات المؤكدة حسب تاريخ إتمام البيع</p></div><span class="pill">₪ شيكل</span></div><div id="salesChart" class="sales-chart"></div><div id="comparison" class="comparison"></div></section>
             <section class="panel"><div class="section-head"><div><h2>حالة الطلبات</h2><p>الطلبات المنشأة خلال الفترة المحددة</p></div></div><div id="orderStatuses" class="status-list"></div><div class="note">فتح محادثة واتساب لا يعني إتمام البيع. المبيعات تشمل «مكتمل» و«تم التسليم» فقط.</div></section>
         </div>
+        <div class="overview-grid" id="funnel">
+            <section class="panel"><div class="section-head"><div><h2>قمع التحويل</h2><p>زوار ← طلبات ← بيع مؤكد. وين الزباين بيوقفوا؟</p></div></div><div id="funnelTotal" class="funnel"></div><div class="table-scroll"><table><thead><tr><th>المتجر</th><th>زوار</th><th>طلبات</th><th>بيع</th><th>زائر→طلب</th><th>طلب→بيع</th></tr></thead><tbody id="funnelBody"></tbody></table></div><div class="note">نسبة «زائر→طلب» القليلة مع زوار كثير معناها: الأسعار أو الصور أو إنه المحل مسكّر كثير.</div></section>
+            <section class="panel"><div class="section-head"><div><h2>أداء المطبخ</h2><p>وقت التحضير الفعلي مقابل الوقت الموعود للزبون</p></div></div><div id="kitchenTotal" class="detail-stats"></div><div class="table-scroll"><table><thead><tr><th>المتجر</th><th>فعلي</th><th>موعود</th><th>متأخر</th><th>ملغي</th></tr></thead><tbody id="kitchenBody"></tbody></table></div><div class="note">بينحسب من لحظة «ابدأ التحضير» للحظة «جاهز» بلوحة المطعم، للطلبات الجديدة بعد هالتحديث.</div></section>
+        </div>
         <section class="panel" id="shops"><div class="section-head"><div><h2>أداء المحلات</h2><p>مرتبة حسب قيمة المبيعات • اضغط اسم المحل لتفاصيله</p></div><label class="search-label">بحث<input id="shopSearch" type="search" placeholder="اسم المحل…"></label></div><div class="table-scroll"><table><thead><tr><th>المتجر</th><th>المشاهدات</th><th>المتصفحات</th><th>تسجيلات العملاء</th><th>دخول الإدارة</th><th>الطلبات</th><th>المبيعات</th><th>قيمة المبيعات</th></tr></thead><tbody id="shopsBody"></tbody></table></div></section>
         <div class="overview-grid">
             <section class="panel"><div class="section-head"><div><h2>الأكثر مبيعًا</h2><p>حسب الكمية في الطلبات المكتملة</p></div></div><div id="topProducts" class="rank-list"></div></section>
             <section class="panel"><div class="section-head"><div><h2>العملاء والكتالوج</h2><p>تفاصيل تساعدك على قراءة الأداء</p></div></div><div id="customerStats" class="detail-stats"></div><div class="note">العملاء المشترون يُقدّرون برقم التواصل لكل متجر. «عائد» يعني لديه شراء مؤكد قبل بداية الفترة؛ التسجيل ليس تسجيل دخول.</div></section>
+        </div>
+        <div class="overview-grid">
+            <section class="panel" id="heatmap"><div class="section-head"><div><h2>أوقات الذروة</h2><p>عدد الطلبات حسب اليوم والساعة • أغمق = طلبات أكثر</p></div><span class="pill" id="heatmapTz"></span></div><div id="heatmapGrid" class="heatmap"></div><div id="heatmapPeak" class="note"></div></section>
+            <section class="panel"><div class="section-head"><div><h2>صاعد ونازل</h2><p>مقارنة المبيعات مع الفترة السابقة بنفس الطول</p></div></div><h3 class="mini-title up">⬆ الأكثر صعوداً</h3><div id="risingList" class="rank-list"></div><h3 class="mini-title down">⬇ الأكثر نزولاً</h3><div id="fallingList" class="rank-list"></div></section>
+        </div>
+        <div class="overview-grid three" id="engagement">
+            <section class="panel"><div class="section-head"><div><h2>اللايكات والمشاركة</h2><p>أكثر منتجات حبّوها الزباين وشاركوها</p></div></div><div id="engagementStats" class="detail-stats"></div><h3 class="mini-title">❤️ الأكثر لايكات</h3><div id="topLiked" class="rank-list"></div><h3 class="mini-title">↗ الأكثر مشاركة</h3><div id="topShared" class="rank-list"></div></section>
+            <section class="panel"><div class="section-head"><div><h2>السوشال والعجلات والمروّجين</h2><p>منشورات، لفّات، نقاط، مروّجين والمتجر الحر</p></div></div><div id="growthStats" class="detail-stats"></div><h3 class="mini-title">🎬 أكثر مروّجين جابوا زيارات</h3><div id="topPromoters" class="rank-list"></div></section>
+            <section class="panel"><div class="section-head"><div><h2>أفضل الزباين</h2><p>حسب قيمة المشتريات المؤكدة بالفترة</p></div></div><div id="topCustomers" class="rank-list"></div></section>
         </div>
         <section class="panel" id="orders"><div class="section-head"><div><h2>آخر الطلبات</h2><p>آخر 20 طلبًا في الفترة المحددة، مع تفاصيل كل طلب</p></div><a href="{{ route('front-orders.index') }}" class="text-link">إدارة الطلبات ↗</a></div><div class="table-scroll"><table><thead><tr><th>الطلب</th><th>المتجر</th><th>العميل</th><th>القيمة</th><th>الحالة</th><th>التاريخ</th></tr></thead><tbody id="ordersBody"></tbody></table></div></section>
         <section class="panel" id="activity"><div class="section-head"><div><h2>سجل النشاط</h2><p>تغييرات المحلات والمنتجات والطلبات وعمليات الدخول</p></div><label>نوع النشاط<select id="activityKind"><option value="">كل الأنشطة</option><option value="sale_confirmed">بيع مؤكد</option><option value="order_created">طلب جديد</option><option value="order_cancelled">طلب ملغي</option><option value="sale_reversed">تراجع عن بيع</option><option value="order_status">تغيير حالة الطلب</option><option value="owner_login">دخول صاحب المتجر</option><option value="customer_registered">تسجيل عميل</option><option value="product_created">منتج جديد</option><option value="product_updated">تعديل منتج</option><option value="product_deleted">حذف منتج</option><option value="content_updated">تعديل محتوى</option></select></label></div><div id="activityList" class="activity-list"></div><button id="moreActivity" class="button secondary" type="button" hidden>عرض أنشطة أقدم</button></section>

@@ -16,6 +16,7 @@ class ProductShareController extends Controller
     {
         $shop = $product->shop;
         abort_unless($product->is_active && $shop?->is_active, 404);
+        Product::whereKey($product->id)->increment('share_opens'); // Counted in the analytics.
 
         $target = $shop->catalog_type === 'electronics'
             ? route('electronics.product', [$shop, $product])

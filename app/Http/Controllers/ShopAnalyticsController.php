@@ -105,7 +105,7 @@ class ShopAnalyticsController extends Controller
     private function event(ShopActivityEvent $event): array
     {
         return ['id' => $event->id, 'kind' => $event->kind, 'title' => $event->title,
-            'shop' => $event->shop?->name ?? 'عام / متجر محذوف', 'actor' => $event->actor?->name,
+            'shop' => $event->shop?->name ?? 'عام / متجر محذوف', 'shop_id' => $event->shop_id, 'actor' => $event->actor?->name,
             'data' => $event->data, 'created_at' => $event->created_at->toIso8601String(),
             'order_id' => $event->subject_type === 'FrontOrder' ? $event->subject_id : null];
     }

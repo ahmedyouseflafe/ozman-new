@@ -59,7 +59,75 @@
         }
         if (!data.orders.length) tableEmpty($('ordersBody'), 6);
         $('trackingSince').textContent = 'بدأ تسجيل الزيارات والدخول وسجل النشاط بتاريخ ' + date(data.tracked_since.replace(' ', 'T')) + '. لا توجد بيانات لهذه المؤشرات قبل هذا التاريخ.';
+        renderInsights(data.insights || {});
         $('historyNotice').textContent = (s.estimated_sales_dates ? 'هناك ' + num(s.estimated_sales_dates) + ' عملية بيع قديمة بتاريخ إتمام تقديري مأخوذ من آخر تحديث للطلب. ' : '') + (s.unassigned_orders ? num(s.unassigned_orders) + ' طلب غير مربوط بمتجر، يظهر في الإجمالي فقط. ' : '');
+    }
+    const pct = v => v === null || v === undefined ? '—' : num(v) + '%';
+    const mins = v => v === null || v === undefined ? '—' : v + ' د';
+    function rank(target, items, value, emptyText) {
+        target.replaceChildren();
+        items.forEach((item, i) => { const row = el('div', null, 'rank-item'), name = el('div', item.name, 'rank-name'); if (item.shop) name.append(el('small', item.shop)); row.append(el('span', i + 1, 'rank-number'), name, el('b', value(item))); target.append(row); });
+        if (!items.length) empty(target, emptyText);
+    }
+    function stats(target, pairs) { target.replaceChildren(); for (const [label, value] of pairs) { const row = el('div'); row.append(el('span', label), el('b', value)); target.append(row); } }
+    function renderInsights(x) {
+        // Alerts
+        const alerts = x.alerts || [];
+        $('alertsCount').textContent = num(alerts.length);
+        $('alertsList').replaceChildren();
+        for (const a of alerts) {
+            const row = el('div', null, 'alert-item alert-' + a.level); row.append(el('span', a.icon, 'alert-icon'), el('p', a.text));
+            // The whole alert is clickable, not only its button.
+            const open = a.order_id ? () => showOrder(a.order_id) : a.shop_id ? () => { form.elements.shop_id.value = a.shop_id; refresh(); scrollTo({top: 0, behavior: 'smooth'}); } : null;
+            if (open) { const b = el('button', a.order_id ? 'فتح الطلب' : 'عرض المحل'); b.type = 'button'; row.append(b);
+                row.classList.add('clickable'); row.tabIndex = 0; row.onclick = open; row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }; }
+            $('alertsList').append(row);
+        }
+        if (!alerts.length) empty($('alertsList'), '✓ كل إشي تمام، ما في تنبيهات هلقيت.');
+        // Funnel
+        const f = x.funnel;
+        $('funnelTotal').replaceChildren(); $('funnelBody').replaceChildren();
+        if (f) {
+            const steps = [['زوار', f.total.visitors], ['طلبات', f.total.orders], ['بيع مؤكد', f.total.sales]], top = Math.max(1, f.total.visitors, f.total.orders);
+            steps.forEach(([label, v], i) => { const step = el('div', null, 'funnel-step'), bar = el('i'); bar.style.width = Math.max(4, v / top * 100) + '%'; step.append(el('span', label), el('b', num(v)), bar);
+                if (i === 1) step.append(el('small', pct(f.total.visit_to_order) + ' من الزوار')); if (i === 2) step.append(el('small', pct(f.total.order_to_sale) + ' من الطلبات')); $('funnelTotal').append(step); });
+            for (const r of f.shops) { const tr = el('tr'); for (const t of [r.name, num(r.visitors), num(r.orders), num(r.sales), pct(r.visit_to_order), pct(r.order_to_sale)]) tr.append(el('td', t)); $('funnelBody').append(tr); }
+        }
+        if (!f || !f.shops.length) tableEmpty($('funnelBody'), 6);
+        // Kitchen
+        const k = x.kitchen; $('kitchenBody').replaceChildren();
+        stats($('kitchenTotal'), k ? [['طلبات بوقت مسجّل', num(k.total.timed)], ['متوسط التحضير الفعلي', mins(k.total.avg_actual)], ['متوسط الوقت الموعود', mins(k.total.avg_promised)], ['نسبة المتأخر', pct(k.total.late_pct)], ['طلبات ملغية', num(k.total.cancelled)]] : []);
+        if (k) for (const r of k.shops) { const tr = el('tr'); for (const t of [r.name, mins(r.avg_actual), mins(r.avg_promised), pct(r.late_pct), num(r.cancelled) + (r.cancel_pct ? ' (' + r.cancel_pct + '%)' : '')]) tr.append(el('td', t)); if (r.late_pct >= 30) tr.className = 'row-warn'; $('kitchenBody').append(tr); }
+        if (!k || !k.shops.length) tableEmpty($('kitchenBody'), 5);
+        // Heatmap
+        const h = x.heatmap, grid = $('heatmapGrid'); grid.replaceChildren(); $('heatmapPeak').textContent = '';
+        if (h) {
+            const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            $('heatmapTz').textContent = h.timezone;
+            grid.append(el('span', '', 'hm-corner')); for (let hr = 0; hr < 24; hr++) grid.append(el('span', hr % 3 === 0 ? String(hr) : '', 'hm-hour'));
+            h.grid.forEach((hours, d) => { grid.append(el('span', days[d], 'hm-day')); hours.forEach((c, hr) => { const cell = el('span', null, 'hm-cell'); cell.style.setProperty('--a', h.max ? (0.08 + c / h.max * 0.92).toFixed(2) : 0.05); if (!c) cell.classList.add('zero'); cell.title = days[d] + ' ' + hr + ':00 — ' + c + ' طلب'; grid.append(cell); }); });
+            $('heatmapPeak').textContent = h.peak.length ? '🔥 أكثر أوقات فيها طلبات: ' + h.peak.map(p => days[p.day] + ' الساعة ' + p.hour + ':00 (' + p.count + ')').join(' • ') + '. انصح المحلات تنشر بالسوشال قبلها بساعة.' : 'لسا ما في طلبات كافية بالفترة.';
+        }
+        // Trends
+        const t = x.trends || {rising: [], falling: []};
+        const change = r => r.change === null ? 'جديد' : (r.change > 0 ? '+' : '') + r.change + '%';
+        rank($('risingList'), t.rising, r => money(r.revenue) + ' • ' + change(r), 'ما في محلات صاعدة بالفترة.');
+        rank($('fallingList'), t.falling, r => money(r.revenue) + ' • ' + change(r), 'ما في محلات نازلة 👍');
+        // Engagement
+        const e = x.engagement;
+        stats($('engagementStats'), e ? [['مجموع اللايكات', num(e.likes_total)], ['فتحات روابط المشاركة', num(e.shares_total)]].concat(e.social ? [['منشورات سوشال بالفترة', num(e.social.total)], ['انتشرت', num(e.social.published)], ['مجدولة', num(e.social.scheduled)], ['فشلت', num(e.social.failed)]] : []) : []);
+        rank($('topLiked'), e ? e.top_liked : [], p => num(p.value) + ' ❤', 'لسا ما في لايكات.');
+        rank($('topShared'), e ? e.top_shared : [], p => num(p.value) + ' فتحة', 'لسا ما حدا فتح رابط مشاركة.');
+        // Growth
+        const g = x.growth || {};
+        const gs = [['لفّات عجلة الترحيب', num(g.wheel_spins)], ['هدايا ترحيب انستخدمت', num(g.wheel_redeemed)], ['جوائز عجلة الشراء', num(g.purchase_prizes)]];
+        if ('points_earned' in g) gs.push(['نقاط انكسبت', num(g.points_earned)], ['نقاط انصرفت', num(g.points_spent)]);
+        if ('promoters' in g) gs.push(['مروّجين فعّالين', num(g.promoters)], ['منشورات مروّجين بالفترة', num(g.promoter_posts)]);
+        if ('market_listings' in g) gs.push(['منتجات جديدة بالمتجر الحر', num(g.market_listings)], ['طلبات المتجر الحر', num(g.market_orders)], ['مبيعات المتجر الحر', money(g.market_sales)]);
+        stats($('growthStats'), gs);
+        rank($('topPromoters'), g.top_promoters || [], p => num(p.value) + ' زيارة', 'لسا ما في زيارات من المروّجين.');
+        // Customers
+        rank($('topCustomers'), (x.customers || []).map(c => ({...c, name: c.name + ' • ' + c.phone.slice(-4).padStart(c.phone.length, '•')})), c => money(c.spent) + ' • ' + num(c.orders) + ' طلب', 'بتبين هون بعد أول بيع مؤكد.');
     }
     function tableEmpty(target, columns) { const row = el('tr'), cell = el('td', 'لا توجد نتائج.', 'empty'); cell.colSpan = columns; row.append(cell); target.append(row); }
     function renderShops() {
@@ -80,12 +148,12 @@
         const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg'); svg.setAttribute('viewBox', '0 0 800 200'); svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'المبيعات اليومية بالشيكل');
         const make = (tag, attrs) => { const n = document.createElementNS(ns, tag); for (const [k,v] of Object.entries(attrs)) n.setAttribute(k,v); return n; };
         const max = Math.max(1, ...points.map(p => p.revenue));
-        for (let i = 0; i < 4; i++) { const y = 15 + i * 55; svg.append(make('line', {x1:65, x2:785, y1:y, y2:y, stroke:'#e9eef5', 'stroke-dasharray':'4 5'})); const label = make('text', {x:0,y:y+4, fill:'#8b98aa','font-size':11}); label.textContent = num(max * (1 - i / 3)); svg.append(label); }
+        for (let i = 0; i < 4; i++) { const y = 15 + i * 55; svg.append(make('line', {x1:65, x2:785, y1:y, y2:y, stroke:'#1d3b49', 'stroke-dasharray':'4 5'})); const label = make('text', {x:0,y:y+4, fill:'#8fa6b5','font-size':11}); label.textContent = num(max * (1 - i / 3)); svg.append(label); }
         const coords = points.map((p,i) => [65 + i / Math.max(1, points.length-1) * 720, 180 - p.revenue / max * 165]);
         if (coords.length) {
-            svg.append(make('polygon', {points:[[65,180],...coords,[coords.at(-1)[0],180]].map(p=>p.join(',')).join(' '),fill:'#eef3ff'}));
-            svg.append(make('polyline', {points:coords.map(p=>p.join(',')).join(' '),fill:'none',stroke:'#3269ec','stroke-width':3,'stroke-linejoin':'round'}));
-            coords.forEach(([x,y],i) => { const dot=make('circle',{cx:x,cy:y,r:points.length>60?2:4,fill:'#3269ec'}), title=make('title',{}); title.textContent=points[i].day+': '+money(points[i].revenue)+' • '+points[i].sales+' مبيعات'; dot.append(title); svg.append(dot); });
+            svg.append(make('polygon', {points:[[65,180],...coords,[coords.at(-1)[0],180]].map(p=>p.join(',')).join(' '),fill:'rgba(22,211,238,.12)'}));
+            svg.append(make('polyline', {points:coords.map(p=>p.join(',')).join(' '),fill:'none',stroke:'#16d3ee','stroke-width':3,'stroke-linejoin':'round'}));
+            coords.forEach(([x,y],i) => { const dot=make('circle',{cx:x,cy:y,r:points.length>60?2:4,fill:'#16d3ee'}), title=make('title',{}); title.textContent=points[i].day+': '+money(points[i].revenue)+' • '+points[i].sales+' مبيعات'; dot.append(title); svg.append(dot); });
         }
         root.append(svg); const labels=el('div',null,'chart-labels'); labels.append(el('span',points[0]?.day || ''),el('span',points.at(-1)?.day || '')); root.append(labels);
     }
@@ -99,6 +167,7 @@
             for (const event of data.events) {
                 const row=el('article',null,'activity-entry'), body=el('div'); body.append(el('h3',event.title),el('p',event.shop+' • '+(event.actor || 'عميل / النظام')));
                 if (event.order_id) {const b=el('button','فتح تفاصيل الطلب'); b.type='button'; b.onclick=()=>showOrder(event.order_id); body.append(b);}
+                if (event.order_id) {row.classList.add('clickable'); row.onclick=e=>{if(!e.target.closest('details,button'))showOrder(event.order_id);};}
                 if (event.data && Object.keys(event.data).length) {const details=el('details'); details.append(el('summary','التفاصيل المسجلة'),el('pre',JSON.stringify(event.data,null,2))); body.append(details);}
                 row.append(el('span',event.kind==='sale_confirmed'?'✓':'•','activity-dot'),body,el('time',date(event.created_at))); $('activityList').append(row);
             }
