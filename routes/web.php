@@ -59,6 +59,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAnalyticsAdmin::class])->p
     Route::get('/', [\App\Http\Controllers\ShopAnalyticsController::class, 'index'])->name('index');
     Route::get('/data', [\App\Http\Controllers\ShopAnalyticsController::class, 'data'])->name('data');
     Route::get('/activity', [\App\Http\Controllers\ShopAnalyticsController::class, 'activity'])->name('activity');
+    Route::post('/assistant', [\App\Http\Controllers\ShopAnalyticsController::class, 'assistant'])->name('assistant')->middleware('throttle:20,1');
     Route::get('/notifications', [\App\Http\Controllers\ShopAnalyticsController::class, 'notifications'])->name('notifications');
     Route::post('/read', [\App\Http\Controllers\ShopAnalyticsController::class, 'read'])->name('read');
     Route::get('/export', [\App\Http\Controllers\ShopAnalyticsController::class, 'export'])->name('export');

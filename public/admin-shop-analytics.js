@@ -195,6 +195,68 @@
             const link=el('a','فتح إدارة الطلبات','button primary');link.href=order.manage_url;body.append(link);
         } catch(e) {if(version===detailGeneration)empty($('orderDetailBody'),e.message);}
     }
+    // ---- Analysis assistant: Claude reads the same report and answers in the page. ----
+    let chat = [], chatKey = '', asking = false;
+    function inline(text, parent) {
+        // Safe rendering: text nodes only, with **bold** turned into <b>.
+        String(text).split(/(\*\*[^*]+\*\*)/).forEach(part => {
+            if (/^\*\*[^*]+\*\*$/.test(part)) parent.append(el('b', part.slice(2, -2))); else if (part) parent.append(document.createTextNode(part));
+        });
+    }
+    function rich(text) {
+        const box = el('div'); let list = null;
+        for (const raw of String(text).split('\n')) {
+            const line = raw.trim();
+            if (!line) { list = null; continue; }
+            const heading = line.match(/^#{1,4}\s+(.*)$/), bullet = line.match(/^[-*•]\s+(.*)$/), numbered = line.match(/^(\d+)[.)]\s+(.*)$/);
+            if (heading) { list = null; const h = el('h4'); inline(heading[1], h); box.append(h); continue; }
+            if (bullet || numbered) {
+                const tag = numbered ? 'OL' : 'UL';
+                if (!list || list.tagName !== tag) { list = document.createElement(tag); box.append(list); }
+                const li = el('li'); inline(bullet ? bullet[1] : numbered[2], li); list.append(li); continue;
+            }
+            list = null; const p = el('p'); inline(line, p); box.append(p);
+        }
+        return box;
+    }
+    function bubble(kind, content) {
+        const log = $('assistantLog'); log.querySelector('.assistant-empty')?.remove();
+        const node = el('div', null, 'assistant-msg ' + kind);
+        if (kind === 'bot') {
+            node.append(rich(content));
+            const tools = el('div', null, 'assistant-tools'), copy = el('button', 'نسخ');
+            copy.type = 'button'; copy.onclick = async () => { try { await navigator.clipboard.writeText(content); copy.textContent = 'انسخ ✓'; } catch { copy.textContent = 'ما زبط النسخ'; } };
+            tools.append(copy); node.append(tools);
+        } else node.textContent = content;
+        log.append(node); node.scrollIntoView({block: 'nearest', behavior: 'smooth'}); return node;
+    }
+    async function ask(question) {
+        if (asking || !config.ready) return;
+        const key = params().toString();
+        if (key !== chatKey) { chat = []; chatKey = key; $('assistantLog').replaceChildren(); }
+        asking = true; $('assistantSend').disabled = $('assistantAnalyze').disabled = true;
+        bubble('user', question || 'حلّل الفترة');
+        const wait = bubble('wait', 'عم بحلّل الأرقام');
+        try {
+            const response = await fetch(config.base + '/assistant?' + key, {method: 'POST', credentials: 'same-origin', cache: 'no-store',
+                headers: {'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''},
+                body: JSON.stringify({question: question || null, history: chat}), signal: AbortSignal.timeout(120000)});
+            const data = await response.json().catch(() => ({}));
+            if (response.status === 429) throw new Error('سألت كثير بدقيقة وحدة، استنى شوي وجرّب.');
+            if (response.status === 419) throw new Error('انتهت الجلسة، حدّث الصفحة.');
+            if (!response.ok || !data.answer) throw new Error(data.message || 'المساعد ما قدر يرد هلقيت.');
+            wait.remove(); bubble('bot', data.answer);
+            chat.push({role: 'user', content: question || 'حلّل الفترة'}, {role: 'assistant', content: data.answer});
+            chat = chat.slice(-12);
+        } catch (e) {
+            wait.remove(); const err = bubble('bot error', e.name === 'TimeoutError' ? 'أخد وقت كثير، جرّب كمان مرة.' : e.message);
+            err.querySelector('.assistant-tools')?.remove();
+        } finally { asking = false; $('assistantSend').disabled = $('assistantAnalyze').disabled = false; }
+    }
+    $('assistantAnalyze').onclick = () => ask(null);
+    $('assistantChips').querySelectorAll('button').forEach(b => b.onclick = () => ask(b.textContent.trim()));
+    $('assistantForm').addEventListener('submit', e => { e.preventDefault(); const q = $('assistantInput').value.trim(); if (!q) return; $('assistantInput').value = ''; ask(q); });
+    $('assistantInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('assistantForm').requestSubmit(); } });
     window.OzmanAnalyticsOpenOrder = showOrder;
     $('closeOrder').onclick=()=>{$('orderDetail').close();++detailGeneration;};
     $('orderDetail').addEventListener('click',e=>{if(e.target===$('orderDetail')){$('orderDetail').close();++detailGeneration;}});

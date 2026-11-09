@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FrontOrder;
 use App\Models\Shop;
 use App\Models\ShopActivityEvent;
+use App\Services\AnalyticsAssistant;
 use App\Services\ShopActivityRecorder;
 use App\Services\ShopAnalytics;
 use Carbon\Carbon;
@@ -35,6 +36,28 @@ class ShopAnalyticsController extends Controller
     public function data(Request $request, ShopAnalytics $analytics)
     {
         return response()->json($analytics->report(...$this->period($request)));
+    }
+
+    /** The analysis assistant: Claude reads the same report the page shows and answers questions about it. */
+    public function assistant(Request $request, ShopAnalytics $analytics, AnalyticsAssistant $assistant)
+    {
+        $input = $request->validate([
+            'question' => ['nullable', 'string', 'max:1000'],
+            'history' => ['nullable', 'array', 'max:12'],
+            'history.*.role' => ['required', 'in:user,assistant'],
+            'history.*.content' => ['required', 'string', 'max:12000'],
+        ]);
+        if (! $assistant->configured()) {
+            return response()->json(['message' => 'المساعد مش مفعّل: لازم مفتاح ANTHROPIC_API_KEY بملف ‎.env.'], 503);
+        }
+        $report = $analytics->report(...$this->period($request));
+        try {
+            $answer = $assistant->ask($report, $input['history'] ?? [], $input['question'] ?? null);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'المساعد ما قدر يرد هلقيت، جرّب كمان شوي.'], 502);
+        }
+        return response()->json(['answer' => $answer], 200, ['Cache-Control' => 'no-store, private']);
     }
 
     public function activity(Request $request)

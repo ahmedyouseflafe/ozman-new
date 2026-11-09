@@ -22,6 +22,7 @@
             <a class="selected" href="#overview"><span>◈</span>نظرة عامة</a>
             <a href="#shops"><span>▦</span>أداء المحلات</a>
             <a href="#orders"><span>▤</span>الطلبات والمبيعات</a>
+            <a href="#assistant"><span>✦</span>مساعد التحليل</a>
             <a href="#alerts"><span>⚑</span>تنبيهات</a>
             <a href="#funnel"><span>⇣</span>التحويل والمطبخ</a>
             <a href="#heatmap"><span>▩</span>أوقات الذروة</a>
@@ -45,6 +46,19 @@
             <div class="presets"><button type="button" data-days="1">اليوم</button><button type="button" data-days="7">7 أيام</button><button type="button" data-days="30">30 يومًا</button></div>
         </form>
         <div id="analyticsError" class="notice error" role="alert" hidden></div>
+        <section class="panel assistant-panel" id="assistant">
+            <div class="section-head"><div><h2>✦ مساعد التحليل</h2><p>بيقرأ أرقام الفترة والمحل المختارين، وبيعطيك الخلاصة والمشاكل وشو تعمل. واسأله اللي بدك.</p></div><button type="button" class="button primary" id="assistantAnalyze">حلّل الفترة</button></div>
+            <div class="assistant-chips" id="assistantChips">
+                <button type="button">ليش المبيعات طلعت أو نزلت؟</button>
+                <button type="button">أي محلات لازم أتواصل معها اليوم؟ وشو أحكيلهم؟</button>
+                <button type="button">وين الزباين بيوقفوا وما بيطلبوا؟</button>
+                <button type="button">شو أفضل أوقات للعروض والبوستات؟</button>
+                <button type="button">اقترحلي خطة للأسبوع الجاي</button>
+            </div>
+            <div class="assistant-log" id="assistantLog" aria-live="polite"><div class="assistant-empty">اكبس «حلّل الفترة» أو اختار سؤال جاهز أو اكتب سؤالك تحت.</div></div>
+            <form class="assistant-form" id="assistantForm"><textarea id="assistantInput" rows="2" maxlength="1000" placeholder="اسأل عن أي إشي بالأرقام… مثلاً: ليش بانكاي فيه زوار كثير وطلبات قليلة؟"></textarea><button type="submit" class="button primary" id="assistantSend">إرسال</button></form>
+            <div class="note">المساعد بيشوف نفس الأرقام اللي بالصفحة بس (بدون أرقام تلفونات الزباين). إذا غيّرت الفترة أو المحل، بتبلّش محادثة جديدة.</div>
+        </section>
         <section class="panel alerts-panel" id="alerts"><div class="section-head"><div><h2>تنبيهات بحاجة لانتباهك</h2><p>طلبات ما انرد عليها، محلات وقّفت الطلبات، أصحاب محلات غايبين، ومبيعات نازلة</p></div><span class="pill" id="alertsCount">0</span></div><div id="alertsList" class="alerts-list"></div></section>
         <section id="metrics" class="metrics" aria-label="ملخص الإحصائيات" aria-live="polite"></section>
         <div class="overview-grid">
