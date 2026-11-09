@@ -812,6 +812,22 @@ class RestaurantOrderingTest extends TestCase
             ->assertSee($table->name);
     }
 
+    public function test_dashboard_cards_show_type_customer_and_put_active_orders_first(): void
+    {
+        [$shop, , $table] = $this->restaurant('cards');
+        $base = ['shop_id' => $shop->id, 'order_channel' => 'restaurant', 'total' => 40, 'customer_phone' => '0599000111'];
+        FrontOrder::create([...$base, 'order_number' => 'RST-DONE', 'customer_name' => 'Done', 'order_type' => 'pickup', 'status' => 'completed']);
+        FrontOrder::create([...$base, 'order_number' => 'RST-TABLE', 'customer_name' => 'Tamer', 'order_type' => 'dine_in', 'restaurant_table_id' => $table->id, 'status' => 'new']);
+        FrontOrder::create([...$base, 'order_number' => 'RST-HOME', 'customer_name' => 'Huda', 'order_type' => 'delivery', 'customer_address' => 'Al-Masyoun street', 'status' => 'ready']);
+
+        $html = $this->actingAs($shop->user)->get(route('restaurant.dashboard', $shop))->assertOk()
+            ->assertSee('طلب طاولة · '.$table->name)->assertSee('Al-Masyoun street')->assertSee('tel:0599000111', false)
+            ->assertSee('data-status-filter="new"', false)->assertSee('تم التوصيل')->getContent();
+        // Orders that still need work come before finished ones.
+        $this->assertLessThan(strpos($html, 'RST-DONE'), strpos($html, 'RST-TABLE'));
+        $this->assertLessThan(strpos($html, 'RST-DONE'), strpos($html, 'RST-HOME'));
+    }
+
     public function test_dashboard_list_changes_status_in_place_with_a_prep_countdown(): void
     {
         [$shop] = $this->restaurant('quick-status');
@@ -833,7 +849,7 @@ class RestaurantOrderingTest extends TestCase
         $this->assertStringContainsString('20 د', $html);
         $this->assertStringContainsString('class="quick-prep"  hidden', $html);
         $this->assertStringContainsString('value="ready"', $html);
-        $this->assertStringContainsString('order-summary-row', $html);
+        $this->assertStringContainsString('order-card', $html);
 
         // Changing the time keeps the start, so the countdown moves with the new time.
         $this->travel(5)->minutes();

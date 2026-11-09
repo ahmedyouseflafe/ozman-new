@@ -30,6 +30,9 @@ use Throwable;
 
 class RestaurantController extends Controller
 {
+    /** Kitchen order: orders that still need work come first (new, cooking, ready), finished ones after. */
+    private const ACTIVE_FIRST = "CASE status WHEN 'new' THEN 0 WHEN 'preparing' THEN 1 WHEN 'ready' THEN 2 WHEN 'out_for_delivery' THEN 3 ELSE 4 END";
+
     public function dashboard(Request $request, Shop $shop): View
     {
         $this->authorizeShop($request, $shop);
@@ -60,7 +63,7 @@ class RestaurantController extends Controller
             'orders' => $this->filterOrdersByPeriod($ordersQuery, $period)
                 ->when(in_array($status, $allowedStatuses, true), fn($query) => $query->where('status', $status))
                 ->when(in_array($type, $allowedTypes, true), fn($query) => $query->where('order_type', $type))
-                ->latest()->paginate(50)->withQueryString(),
+                ->orderByRaw(self::ACTIVE_FIRST)->latest()->paginate(50)->withQueryString(),
             'stats' => $stats,
             'selectedStatus' => $status,
             'selectedType' => $type,
@@ -140,6 +143,7 @@ class RestaurantController extends Controller
         $orders = $this->filterOrdersByPeriod($ordersQuery, $period)
             ->when(in_array($status, $allowedStatuses, true), fn($query) => $query->where('status', $status))
             ->when(in_array($type, $allowedTypes, true), fn($query) => $query->where('order_type', $type))
+            ->orderByRaw(self::ACTIVE_FIRST)
             ->latest()
             ->limit(50)
             ->get();

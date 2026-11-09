@@ -1241,6 +1241,127 @@
         .status-tag-ready, .status-tag-completed { color: var(--green); background: rgba(37, 223, 135, .1); border-color: rgba(37, 223, 135, .3) }
         .status-tag-cancelled { color: var(--red); background: rgba(255, 98, 116, .1); border-color: rgba(255, 98, 116, .3) }
         @media (prefers-reduced-motion: reduce) { .prep-timer.is-late { animation: none } }
+
+        /* ===== Restaurant dashboard v2: compact header, filter tiles, order cards ===== */
+        .rd-hero { padding: 18px 22px; display: grid; gap: 14px }
+        .rd-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; position: relative }
+        .rd-title { min-width: 0 }
+        .rd-title h1 { margin: 2px 0 0; font-size: clamp(22px, 2.2vw, 32px); line-height: 1.3 }
+        .rd-main-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch }
+        .rd-main-actions .availability-form { margin: 0 }
+        .rd-main-actions .availability-toggle { min-height: 52px; padding: 6px 16px; text-align: start }
+        .rd-main-actions .availability-toggle > span:last-child { display: grid; line-height: 1.25 }
+        .rd-main-actions .availability-toggle b { font-size: 14px }
+        .rd-main-actions .availability-toggle small { font-size: 11px; opacity: .75; font-weight: 700 }
+        .rd-main-actions .btn-primary { min-height: 52px }
+        .rd-links { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; position: relative; padding-bottom: 2px }
+        .rd-links::-webkit-scrollbar { display: none }
+        .rd-links a { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 999px; border: 1px solid var(--border); background: rgba(255,255,255,.03); color: #dbe7ef; text-decoration: none; font-size: 13px; font-weight: 800; white-space: nowrap }
+        .rd-links a:hover { border-color: var(--cyan); color: var(--cyan) }
+        .rd-links i { font-size: 16px; color: var(--cyan) }
+
+        .rd-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px }
+        .rd-stat { display: grid; gap: 4px; text-align: start; padding: 14px 16px; border-radius: 18px; border: 1px solid var(--border); background: linear-gradient(135deg, rgba(25, 23, 39, .91), rgba(11, 25, 28, .9)); color: #fff; font: inherit; cursor: pointer; position: relative; overflow: hidden; transition: border-color .15s, transform .15s }
+        .rd-stat::before { content: ""; position: absolute; inset: 0 0 auto auto; width: 4px; height: 100%; background: var(--accent) }
+        .rd-stat > span { color: var(--muted); font-size: 12.5px; font-weight: 800; display: flex; align-items: center; gap: 6px }
+        .rd-stat > span i { color: var(--accent); font-size: 17px }
+        .rd-stat strong { font-size: 28px; line-height: 1.1; color: var(--accent); font-variant-numeric: tabular-nums }
+        button.rd-stat:hover { border-color: var(--accent); transform: translateY(-1px) }
+        .rd-stat.is-active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset, 0 10px 30px rgba(0,0,0,.25) }
+        .rd-stat-sales { cursor: default }
+        .rd-stat-sales strong { font-size: 22px; direction: rtl }
+
+        .rd-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 16px 0 }
+        .rd-filters .field { min-height: 44px }
+        .rd-filters .btn { display: none }
+        .live-tools .sound-toggle { min-height: 40px; font-size: 13px }
+
+        .order-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; align-items: start }
+        .order-card { position: relative; display: grid; gap: 10px; padding: 16px; border-radius: 20px; border: 1px solid var(--border); background: rgba(8, 12, 18, .75); cursor: pointer; transition: border-color .15s, background .15s; scroll-margin: 90px }
+        .order-card:hover { border-color: rgba(8, 220, 244, .45) }
+        .order-card::before { content: ""; position: absolute; inset: 14px 0 14px auto; width: 4px; border-radius: 4px 0 0 4px; background: var(--muted) }
+        .order-card-new::before { background: var(--green) } .order-card-preparing::before { background: var(--yellow) }
+        .order-card-ready::before { background: #b388ff } .order-card-out_for_delivery::before { background: var(--cyan) } .order-card-cancelled::before { background: var(--red) }
+        .order-card-new { border-color: rgba(37, 223, 135, .45); background: linear-gradient(160deg, rgba(37, 223, 135, .08), rgba(8, 12, 18, .8) 45%) }
+        .order-card.is-finished { opacity: .62 }
+        .order-card.is-finished:hover { opacity: 1 }
+        .order-card.is-flash { animation: ocFlash 1.6s ease 2 }
+        @keyframes ocFlash { 50% { box-shadow: 0 0 0 4px rgba(255, 212, 59, .45) } }
+        .oc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px }
+        .oc-id { display: grid; gap: 4px; min-width: 0 }
+        .oc-id .order-number-link { color: #fff; font-size: 16px; font-weight: 900; text-decoration: none; letter-spacing: .02em }
+        .oc-type { display: inline-flex; align-items: center; gap: 5px; width: max-content; max-width: 100%; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 900; background: rgba(8, 220, 244, .1); color: var(--cyan) }
+        .oc-type-delivery { background: rgba(255, 159, 67, .12); color: #ffb26b } .oc-type-dine_in { background: rgba(179, 136, 255, .14); color: #c9a8ff }
+        .oc-status { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 10px; font-size: 13px; font-weight: 900; color: var(--green); background: rgba(37, 223, 135, .1); pointer-events: none; user-select: none }
+        .oc-status i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 25%, transparent) }
+        .oc-status.status-tag-preparing { color: var(--yellow); background: rgba(255, 212, 59, .1) }
+        .oc-status.status-tag-cancelled { color: var(--red); background: rgba(255, 98, 116, .1) }
+        .oc-status.status-tag-ready { color: #c9a8ff; background: rgba(179, 136, 255, .12) }
+        .oc-status.status-tag-out_for_delivery { color: var(--cyan); background: rgba(8, 220, 244, .1) }
+        .oc-status.status-tag-completed { color: #9fb3c2; background: rgba(255,255,255,.06) }
+        .oc-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--muted); font-size: 12.5px; font-weight: 700 }
+        .oc-meta span, .oc-meta a { display: inline-flex; align-items: center; gap: 4px }
+        .oc-meta a { color: var(--cyan); text-decoration: none }
+        .oc-address { display: flex; gap: 6px; align-items: flex-start; padding: 8px 10px; border-radius: 12px; background: rgba(255, 159, 67, .07); color: #ffd5ae; font-size: 13px; font-weight: 700 }
+        .oc-address i { margin-top: 3px }
+        .oc-items { display: grid; gap: 5px; padding: 10px 0; border-block: 1px dashed rgba(139, 160, 179, .2) }
+        .oc-item { display: flex; gap: 7px; font-size: 14.5px; font-weight: 800; line-height: 1.5 }
+        .oc-item b { color: var(--cyan); min-width: 24px }
+        .oc-item small { display: block; color: var(--muted); font-size: 11.5px; font-weight: 600 }
+        .oc-items .more-items { color: var(--cyan); font-size: 12px; font-weight: 800; text-decoration: none }
+        .oc-gift { color: #51e4b0; font-size: 13px; font-weight: 800 }
+        .oc-note { color: #ffe29a; font-size: 12.5px; font-weight: 700 }
+        .oc-muted { color: var(--muted); font-size: 13px }
+        .oc-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 0; padding: 0; list-style: none; counter-reset: s }
+        .oc-steps li { position: relative; padding-top: 10px; text-align: center; font-size: 11px; font-weight: 800; color: rgba(155, 167, 180, .6) }
+        .oc-steps li::before { content: ""; position: absolute; top: 0; inset-inline: 0; height: 5px; border-radius: 5px; background: rgba(139, 160, 179, .18) }
+        .oc-steps li.done { color: var(--green) } .oc-steps li.done::before { background: var(--green) }
+        .oc-steps li.current { color: #fff } .oc-steps li.current::before { background: linear-gradient(90deg, var(--yellow), var(--green)) }
+        .oc-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px }
+        .oc-total { display: grid; font-size: 19px; font-weight: 900; color: var(--yellow); line-height: 1.2 }
+        .oc-total small { color: var(--muted); font-size: 11px; font-weight: 700 }
+        .oc-details { color: var(--cyan); text-decoration: none; font-size: 13px; font-weight: 800; display: inline-flex; align-items: center; gap: 2px }
+        .order-card .quick-status { margin: 0; padding: 12px; border-radius: 16px; background: rgba(255, 255, 255, .03); border: 1px solid rgba(139, 160, 179, .14); cursor: default }
+        .order-card .quick-prep small { color: var(--muted); font-weight: 800 }
+        .order-card .quick-prep .preparation-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 6px }
+        .order-card .quick-prep .preparation-choice { min-height: 42px }
+        .order-card .quick-prep .preparation-choice.is-selected { border-color: var(--yellow); color: var(--yellow); background: rgba(255, 212, 59, .1) }
+        .oc-timer-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap }
+        .order-card .quick-link { text-decoration: none; display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(8, 220, 244, .3) }
+        .order-card .quick-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap }
+        .order-card .quick-ready { flex: 1 1 auto; min-height: 46px; justify-content: center; font-size: 14.5px; border-radius: 13px }
+        .order-card .quick-cancel { margin-inline-start: auto; display: inline-flex; align-items: center; gap: 4px; padding: 6px 4px; border: 0; background: none; color: #ff8d9b; font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer }
+        .order-card .quick-cancel:hover { text-decoration: underline }
+        .oc-wait { flex: 1 1 auto; display: flex; align-items: center; gap: 7px; padding: 10px 12px; border-radius: 12px; background: rgba(8, 220, 244, .07); color: #bdf6ff; font-size: 13px; font-weight: 700; cursor: default }
+        .oc-wait i { font-size: 19px; color: var(--cyan) }
+        .oc-hint { color: var(--muted); font-size: 11.5px }
+        .order-card .status-feedback:empty { display: none }
+        .orders-empty { grid-column: 1 / -1; display: grid; justify-items: center; gap: 4px; padding: 40px 16px; border: 1px dashed var(--border); border-radius: 20px; color: var(--muted); text-align: center }
+        .orders-empty i { font-size: 34px; color: var(--cyan) }
+        .orders-empty b { color: #fff; font-size: 16px }
+
+        @media (max-width: 1100px) { .rd-stats { grid-template-columns: repeat(4, minmax(0, 1fr)) } .rd-stat-sales { grid-column: 1 / -1 } }
+        @media (max-width: 900px) {
+            .rd-hero { padding: 16px; border-radius: 20px }
+            .rd-hero-top { display: grid; grid-template-columns: 1fr; gap: 12px }
+            .rd-main-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
+            .rd-main-actions .availability-toggle, .rd-main-actions .btn-primary { width: 100%; min-height: 50px; padding: 6px 10px; font-size: 13px }
+            .rd-links { margin-inline: -16px; padding-inline: 16px }
+            .rd-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px }
+            .rd-stat { padding: 10px 8px 10px 10px; border-radius: 14px; gap: 2px }
+            .rd-stat > span { font-size: 11px; gap: 3px }
+            .rd-stat > span i { font-size: 14px }
+            .rd-stat strong { font-size: 22px }
+            .rd-stat-sales { display: flex; align-items: center; justify-content: space-between }
+            .rd-stat-sales strong { font-size: 18px }
+            .live-heading { display: grid !important; gap: 10px }
+            .live-tools { display: flex !important; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center }
+            .rd-filters { grid-template-columns: 1fr 1fr; margin: 12px 0 }
+            .rd-filters select[name="status"] { grid-column: 1 / -1 }
+            .order-board { grid-template-columns: 1fr; gap: 12px }
+            .order-card { padding: 14px; border-radius: 18px }
+        }
+        @media (max-width: 380px) { .rd-stat > span { font-size: 10px } .rd-stat strong { font-size: 19px } }
     </style>
 </head>
 
@@ -1256,57 +1377,51 @@
         <span class="alarm-action">فتح وإيقاف الصوت</span>
     </button>
     <main class="restaurant-page">
-        <section class="hero glass">
-            <div class="hero-top">
-                <div>
-                    <span class="eyebrow">OZMAN RESTAURANT CONTROL</span>
-                    <h1>إدارة مطعم {{ $shop->name }}</h1>
-                    <p>لوحة موحّدة لإدارة الطاولات، طلبات الصالة، الطلبات الأونلاين، المطبخ والكاشير.</p>
+        <section class="hero glass rd-hero">
+            <div class="rd-hero-top">
+                <div class="rd-title">
+                    <span class="eyebrow">لوحة المطعم</span>
+                    <h1>{{ $shop->name }}</h1>
                 </div>
-                <div class="hero-actions">
+                <div class="rd-main-actions">
                     @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.availability'))
-                        <form class="availability-form" method="post"
-                            action="{{ route('restaurant.availability', $shop) }}">
+                        <form class="availability-form" method="post" action="{{ route('restaurant.availability', $shop) }}">
                             @csrf
                             @method('patch')
-                            <input type="hidden" name="is_accepting_orders"
-                                value="{{ $shop->is_accepting_orders ? 0 : 1 }}">
-                            <button
-                                class="btn availability-toggle {{ $shop->is_accepting_orders ? 'is-open' : 'is-closed' }}"
-                                type="submit">
+                            <input type="hidden" name="is_accepting_orders" value="{{ $shop->is_accepting_orders ? 0 : 1 }}">
+                            <button class="btn availability-toggle {{ $shop->is_accepting_orders ? 'is-open' : 'is-closed' }}" type="submit"
+                                title="{{ $shop->is_accepting_orders ? 'اكبس لإغلاق المطعم وإيقاف الطلبات' : 'اكبس لفتح المطعم واستقبال الطلبات' }}">
                                 <span class="availability-dot" aria-hidden="true"></span>
-                                {{ $shop->is_accepting_orders ? 'المطعم مفتوح — إغلاق المطعم' : 'المطعم مغلق — فتح المطعم' }}
+                                <span><b>{{ $shop->is_accepting_orders ? 'المطعم مفتوح' : 'المطعم مغلق' }}</b><small>{{ $shop->is_accepting_orders ? 'اكبس للإغلاق' : 'اكبس للفتح' }}</small></span>
                             </button>
                         </form>
                     @else
-                        <span
-                            class="btn availability-toggle {{ $shop->is_accepting_orders ? 'is-open' : 'is-closed' }}">
+                        <span class="btn availability-toggle {{ $shop->is_accepting_orders ? 'is-open' : 'is-closed' }}">
                             <span class="availability-dot" aria-hidden="true"></span>
-                            {{ $shop->is_accepting_orders ? 'المطعم مفتوح' : 'المطعم مغلق' }}
+                            <span><b>{{ $shop->is_accepting_orders ? 'المطعم مفتوح' : 'المطعم مغلق' }}</b></span>
                         </span>
                     @endif
-                    <a class="btn" href="{{ route('shops.show', $shop) }}"><i class="ti ti-arrow-right"></i> لوحة
-                        المتجر</a>
-                    @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('products'))
-                        <a class="btn" href="{{ route('products', ['shop_id' => $shop->id]) }}"><i
-                                class="ti ti-tools-kitchen-2"></i> إدارة الوجبات</a>
-                    @endif
-                    @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.tables.index'))
-                        <a class="btn" href="{{ route('restaurant.tables.index', $shop) }}"><i class="ti ti-qrcode"></i> طاولات المطعم</a>
-                    @endif
-                    @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.drivers.index'))
-                        <a class="btn" href="{{ route('restaurant.drivers.index', $shop) }}"><i class="ti ti-motorbike"></i> مندوبي التوصيل</a>
-                    @endif
-                    @if (auth()->user()->canAccessRouteName('restaurant.customers.index'))
-                        <a class="btn" href="{{ route('restaurant.customers.index', $shop) }}"><i class="ti ti-users"></i> العملاء المسجّلون</a>
-                    @endif
-                    @if (auth()->user()->canAccessRouteName('reward-wheels.shop-signup.edit'))
-                        <a class="btn" href="{{ route('reward-wheels.shop-signup.edit', $shop) }}"><i class="ti ti-discount"></i> عجلة التسجيل</a>
-                    @endif
-                    <a class="btn btn-primary" href="{{ route('restaurant.menu', $shop) }}" target="_blank"><i
-                            class="ti ti-external-link"></i> فتح منيو المطعم</a>
+                    <a class="btn btn-primary" href="{{ route('restaurant.menu', $shop) }}" target="_blank"><i class="ti ti-external-link"></i> فتح المنيو</a>
                 </div>
             </div>
+            <nav class="rd-links" aria-label="أقسام المطعم">
+                @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('products'))
+                    <a href="{{ route('products', ['shop_id' => $shop->id]) }}"><i class="ti ti-tools-kitchen-2"></i> الوجبات</a>
+                @endif
+                @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.tables.index'))
+                    <a href="{{ route('restaurant.tables.index', $shop) }}"><i class="ti ti-qrcode"></i> الطاولات</a>
+                @endif
+                @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('restaurant.drivers.index'))
+                    <a href="{{ route('restaurant.drivers.index', $shop) }}"><i class="ti ti-motorbike"></i> المندوبين</a>
+                @endif
+                @if (auth()->user()->canAccessRouteName('restaurant.customers.index'))
+                    <a href="{{ route('restaurant.customers.index', $shop) }}"><i class="ti ti-users"></i> العملاء</a>
+                @endif
+                @if (auth()->user()->canAccessRouteName('reward-wheels.shop-signup.edit'))
+                    <a href="{{ route('reward-wheels.shop-signup.edit', $shop) }}"><i class="ti ti-discount"></i> عجلة التسجيل</a>
+                @endif
+                <a href="{{ route('shops.show', $shop) }}"><i class="ti ti-building-store"></i> لوحة المتجر</a>
+            </nav>
         </section>
 
         @if (session('status'))
@@ -1322,28 +1437,12 @@
             </div>
         @endif
 
-        <section class="stats-grid">
-            <article class="stat glass" style="--accent:var(--cyan)">
-                <div class="stat-icon"><i class="ti ti-receipt"></i></div><span class="stat-label">طلبات
-                    <span id="stat-period-label">{{ $selectedPeriodLabel }}</span></span><strong id="stat-orders">{{ $stats['orders'] }}</strong>
-            </article>
-            <article class="stat glass" style="--accent:var(--green)">
-                <div class="stat-icon"><i class="ti ti-sparkles"></i></div><span class="stat-label">طلبات
-                    جديدة</span><strong id="stat-new">{{ $stats['new'] }}</strong>
-            </article>
-            <article class="stat glass" style="--accent:var(--yellow)">
-                <div class="stat-icon"><i class="ti ti-chef-hat"></i></div><span class="stat-label">قيد
-                    التحضير</span><strong id="stat-preparing">{{ $stats['preparing'] }}</strong>
-            </article>
-            <article class="stat glass" style="--accent:var(--purple)">
-                <div class="stat-icon"><i class="ti ti-bell-check"></i></div><span class="stat-label">جاهزة
-                    للتسليم</span><strong id="stat-ready">{{ $stats['ready'] }}</strong>
-            </article>
-            <article class="stat glass" style="--accent:#ff9f43" title="يُحسب من الطلبات المكتملة فقط">
-                <div class="stat-icon"><i class="ti ti-cash"></i></div><span class="stat-label">إجمالي مبيعات
-                    المطعم</span><strong id="stat-sales-total">{{ number_format((float) $stats['sales_total'], 2) }}
-                    ₪</strong>
-            </article>
+        <section class="rd-stats" aria-label="ملخص الطلبات — اكبس للفلترة">
+            <button type="button" class="rd-stat" data-status-filter="" style="--accent:var(--cyan)"><span><i class="ti ti-receipt"></i> <span id="stat-period-label">{{ $selectedPeriodLabel }}</span></span><strong id="stat-orders">{{ $stats['orders'] }}</strong></button>
+            <button type="button" class="rd-stat" data-status-filter="new" style="--accent:var(--green)"><span><i class="ti ti-sparkles"></i> جديدة</span><strong id="stat-new">{{ $stats['new'] }}</strong></button>
+            <button type="button" class="rd-stat" data-status-filter="preparing" style="--accent:var(--yellow)"><span><i class="ti ti-chef-hat"></i> بالتحضير</span><strong id="stat-preparing">{{ $stats['preparing'] }}</strong></button>
+            <button type="button" class="rd-stat" data-status-filter="ready" style="--accent:#b388ff"><span><i class="ti ti-bell-check"></i> جاهزة</span><strong id="stat-ready">{{ $stats['ready'] }}</strong></button>
+            <div class="rd-stat rd-stat-sales" style="--accent:#ff9f43" title="يُحسب من الطلبات المكتملة فقط"><span><i class="ti ti-cash"></i> إجمالي مبيعات المطعم</span><strong id="stat-sales-total">{{ number_format((float) $stats['sales_total'], 2) }} ₪</strong></div>
         </section>
 
         {{-- نُقلت إدارة المندوبين إلى صفحة مستقلة. --}}
@@ -1402,31 +1501,30 @@
 
         <section class="section glass">
             <div class="live-heading">
-                <div class="section-title"><span class="section-icon"><i class="ti ti-chef-hat"></i></span>
+                <div class="section-title">
                     <div>
-                        <h2>شاشة المطبخ والكاشير</h2>
-                        <div class="section-subtitle">طلبات الصالة والتوصيل والاستلام في مكان واحد.</div>
+                        <h2>الطلبات</h2>
+                        <div class="section-subtitle">الطلبات اللي بدها شغل بتطلع أول: جديد ← تحضير ← جاهز.</div>
                     </div>
                 </div>
                 <div class="live-tools">
-                    <button type="button" class="btn sound-toggle" id="restaurant-sound-toggle"><i
-                            class="ti ti-bell-ringing"></i> تفعيل صوت وإشعارات الطلبات</button>
                     <span class="live" id="live-status"><i class="live-dot"></i> متصل وتحديث مباشر</span>
+                    <button type="button" class="btn sound-toggle" id="restaurant-sound-toggle"><i class="ti ti-bell-ringing"></i> تفعيل صوت الطلبات والإشعارات</button>
                 </div>
             </div>
-            <form class="filters" id="restaurant-orders-filter" method="get" style="margin:22px 0 16px">
-                <select class="field" name="period">
-                    @foreach (['today' => 'طلبات اليوم', 'week' => 'طلبات هذا الأسبوع', 'month' => 'طلبات هذا الشهر', 'all' => 'كل الطلبات'] as $key => $label)
+            <form class="filters rd-filters" id="restaurant-orders-filter" method="get">
+                <select class="field" name="period" aria-label="الفترة">
+                    @foreach (['today' => 'اليوم', 'week' => 'هذا الأسبوع', 'month' => 'هذا الشهر', 'all' => 'كل الطلبات'] as $key => $label)
                         <option value="{{ $key }}" @selected($selectedPeriod === $key)>{{ $label }}</option>
                     @endforeach
                 </select>
-                <select class="field" name="type">
-                    <option value="">كل أنواع الطلب</option>
-                    @foreach (['dine_in' => 'طلبات الطاولات', 'delivery' => 'توصيل', 'pickup' => 'استلام'] as $key => $label)
+                <select class="field" name="type" aria-label="نوع الطلب">
+                    <option value="">كل الأنواع</option>
+                    @foreach (['dine_in' => 'طاولات', 'delivery' => 'توصيل', 'pickup' => 'استلام'] as $key => $label)
                         <option value="{{ $key }}" @selected($selectedType === $key)>{{ $label }}</option>
                     @endforeach
                 </select>
-                <select class="field" name="status">
+                <select class="field" name="status" aria-label="الحالة">
                     <option value="">كل الحالات</option>
                     @foreach (['new' => 'جديد', 'preparing' => 'قيد التحضير', 'ready' => 'جاهز', 'out_for_delivery' => 'خرج للتوصيل', 'completed' => 'مكتمل', 'cancelled' => 'ملغي'] as $key => $label)
                         <option value="{{ $key }}" @selected($selectedStatus === $key)>{{ $label }}</option>
@@ -1434,23 +1532,11 @@
                 </select>
                 <button class="btn btn-primary" id="restaurant-orders-filter-submit"><i class="ti ti-filter"></i> فلترة</button>
             </form>
-            <div class="orders-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>الطلب</th>
-                            <th>الوجبات</th>
-                            <th>المجموع</th>
-                            <th>الحالة</th>
-                        </tr>
-                    </thead>
-                    <tbody id="restaurant-orders-body">
-                        @include('admin.restaurant.partials.order_list_rows', [
-                            'orders' => $orders,
-                            'shop' => $shop,
-                        ])
-                    </tbody>
-                </table>
+            <div class="order-board" id="restaurant-orders-body" aria-live="polite">
+                @include('admin.restaurant.partials.order_list_rows', [
+                    'orders' => $orders,
+                    'shop' => $shop,
+                ])
             </div>
             <div>{{ $orders->links() }}</div>
         </section>
@@ -1711,22 +1797,42 @@
                         behavior: 'smooth',
                         block: 'center'
                     });
-                    row.style.background = 'rgba(255,212,59,.12)';
+                    row.classList.add('is-flash');
                 } else if (orderId) window.location.href = `${dashboardUrl}#restaurant-order-${orderId}`;
             });
 
+            // Tapping an empty part of a card opens the order; buttons and links keep their own job.
             body.addEventListener('click', event => {
-                const row = event.target.closest('.order-summary-row[data-order-url]');
-                if (!row || event.target.closest('a,button,input,select,label')) return;
-                window.location.href = row.dataset.orderUrl;
+                const card = event.target.closest('.order-card[data-order-url]');
+                if (!card || event.target.closest('a,button,input,select,label,form,.oc-wait')) return;
+                if (window.getSelection()?.toString()) return;
+                window.location.href = card.dataset.orderUrl;
             });
 
-            body.addEventListener('keydown', event => {
-                const row = event.target.closest('.order-summary-row[data-order-url]');
-                if (!row || !['Enter', ' '].includes(event.key)) return;
-                event.preventDefault();
-                window.location.href = row.dataset.orderUrl;
+            // The summary tiles double as status filters.
+            const statusSelect = filterForm.querySelector('select[name="status"]');
+            const markStatusTile = () => document.querySelectorAll('[data-status-filter]').forEach(tile => {
+                tile.classList.toggle('is-active', tile.dataset.statusFilter === (statusSelect?.value || ''));
+                tile.setAttribute('aria-pressed', tile.classList.contains('is-active') ? 'true' : 'false');
             });
+            document.querySelectorAll('[data-status-filter]').forEach(tile => tile.addEventListener('click', () => {
+                if (!statusSelect) return;
+                statusSelect.value = statusSelect.value === tile.dataset.statusFilter ? '' : tile.dataset.statusFilter;
+                markStatusTile();
+                applyFilters();
+            }));
+            statusSelect?.addEventListener('change', markStatusTile);
+            markStatusTile();
+
+            // Keep "edit time" panels open across the live refresh.
+            const openPrep = new Set();
+            const restoreOpenPrep = () => openPrep.forEach(id => {
+                const card = document.getElementById(`restaurant-order-${id}`);
+                const prep = card?.querySelector('.quick-prep'), edit = card?.querySelector('.prep-edit');
+                if (!prep || !edit) { openPrep.delete(id); return; }
+                prep.hidden = false; edit.setAttribute('aria-expanded', 'true'); edit.innerHTML = '<i class="ti ti-x" aria-hidden="true"></i> إخفاء الأوقات';
+            });
+            let lastHtml = '';
 
             body.addEventListener('click', event => {
                 const choice = event.target.closest('.preparation-choice');
@@ -1785,11 +1891,13 @@
                             'انتهت الجلسة؛ حدّث الصفحة وحاول مجددًا.' : data.message ||
                             'تعذّر حفظ حالة الطلب. حاول مجددًا.'));
                     }
-                    const replacement = document.createElement('tbody');
+                    const replacement = document.createElement('div');
                     replacement.innerHTML = data.html || '';
-                    const updatedRow = replacement.querySelector('tr');
+                    const updatedRow = replacement.querySelector('.order-card');
                     if (!updatedRow) throw new Error('تم الحفظ، لكن تعذّر تحديث العرض. حدّث الصفحة.');
-                    form.closest('tr').replaceWith(updatedRow);
+                    openPrep.delete(form.closest('.order-card')?.dataset.orderId);
+                    form.closest('.order-card').replaceWith(updatedRow);
+                    lastHtml = '';
                     tickTimers();
                     const updatedFeedback = updatedRow.querySelector('.status-feedback');
                     if (updatedFeedback) updatedFeedback.textContent = 'تم الحفظ وإشعار العميل.';
@@ -1824,10 +1932,12 @@
                 const edit = event.target.closest('.prep-edit');
                 if (edit) {
                     const prep = edit.closest('.quick-status')?.querySelector('.quick-prep');
+                    const id = edit.closest('.order-card')?.dataset.orderId;
                     if (prep) {
                         prep.hidden = !prep.hidden;
                         edit.setAttribute('aria-expanded', prep.hidden ? 'false' : 'true');
-                        edit.textContent = prep.hidden ? 'تعديل الوقت' : 'إخفاء الأوقات';
+                        edit.innerHTML = prep.hidden ? '<i class="ti ti-pencil" aria-hidden="true"></i> تعديل الوقت' : '<i class="ti ti-x" aria-hidden="true"></i> إخفاء الأوقات';
+                        if (id) prep.hidden ? openPrep.delete(id) : openPrep.add(id);
                     }
                     return;
                 }
@@ -1856,11 +1966,14 @@
                         liveStatus.style.color = 'var(--red)';
                         return
                     }
-                    if (!response.ok) throw new Error('feed');
+                    if (!response.ok) throw new Error('خطأ من السيرفر (' + response.status + ')');
                     const data = await response.json();
                     if (requestUrl !== feedUrl) return;
-                    const editingOrder = body.contains(document.activeElement);
-                    if (!editingOrder && !statusUpdating) { body.innerHTML = data.html; tickTimers(); }
+                    const editingOrder = body.contains(document.activeElement) && document.activeElement.matches('input,select,textarea');
+                    // Re-render only when something changed, so the page doesn't jump every 3 seconds.
+                    if (!editingOrder && !statusUpdating && data.html !== lastHtml) {
+                        lastHtml = data.html; body.innerHTML = data.html; restoreOpenPrep(); tickTimers();
+                    }
                     for (const key of ['orders', 'new', 'preparing', 'ready']) {
                         const element = document.getElementById(`stat-${key}`);
                         if (element) element.textContent = data.stats[key] ?? 0
@@ -1873,8 +1986,10 @@
                         liveStatus.innerHTML = '<i class="live-dot"></i> متصل وتحديث مباشر';
                         liveStatus.style.color = 'var(--green)';
                     }
-                } catch (_) {
-                    liveStatus.innerHTML = '<i class="live-dot"></i> جاري إعادة الاتصال';
+                } catch (error) {
+                    if (error.name === 'AbortError') return;
+                    liveStatus.innerHTML = '<i class="live-dot"></i> جاري إعادة الاتصال' + (String(error.message).startsWith('خطأ') ? ' · ' + error.message : '');
+                    liveStatus.title = navigator.onLine ? 'تعذّر تحديث الطلبات، رح نحاول كل 3 ثواني.' : 'الجهاز مش متصل بالإنترنت.';
                     liveStatus.style.color = 'var(--yellow)'
                 } finally {
                     if (feedController === controller) {
