@@ -213,7 +213,8 @@ class WebPushService
             ];
         }
 
-        $keyFile = (string) config('services.web_push.key_file', storage_path('app/private/web-push-vapid.json'));
+        // A blank WEB_PUSH_KEY_FILE in .env falls back to the default file instead of an empty path.
+        $keyFile = (string) (config('services.web_push.key_file') ?: storage_path('app/private/web-push-vapid.json'));
         File::ensureDirectoryExists(dirname($keyFile));
         $lock = fopen($keyFile.'.lock', 'c+');
         if ($lock === false) {
