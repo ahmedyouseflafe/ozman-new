@@ -9,6 +9,7 @@ use App\Console\Commands\ImportSalemKhatibMenu;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -31,6 +32,9 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\AddSiteIcon::class,
             \App\Http\Middleware\RecordShopVisit::class,
         ]);
+
+        // Mobile app API: JSON only, language from the app, Bearer-token login.
+        $middleware->api(prepend: [\App\Http\Middleware\ApiRequest::class]);
 
         $middleware->alias([
             'admin.access' => \App\Http\Middleware\EnsureAdminAccess::class,
