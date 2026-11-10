@@ -77,7 +77,8 @@ class Presenter
             'price' => $price,
             'discount_price' => $discount && $price && $discount < $price ? $discount : null,
             'final_price' => $discount && $price && $discount < $price ? $discount : $price,
-            'in_stock' => $product->quantity === null || (int) $product->quantity > 0,
+            // The website does not track stock (quantity is 0 by default), so products are always orderable.
+            'in_stock' => true,
             'is_featured' => (bool) $product->is_featured,
             'likes_count' => (int) ($product->likes_count ?? 0),
         ];
@@ -95,7 +96,7 @@ class Presenter
                     'storage' => $variant->storage,
                     'ram' => $variant->ram,
                     'price' => self::price($variant->price),
-                    'in_stock' => $variant->quantity === null || (int) $variant->quantity > 0,
+                    'in_stock' => true,
                 ]),
                 'share_url' => route('share.product', $product),
             ];
