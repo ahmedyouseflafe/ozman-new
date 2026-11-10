@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CatalogController;
+use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Middleware\ApiAuthenticated;
 use Illuminate\Support\Facades\Route;
 
@@ -23,5 +24,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::middleware([ApiAuthenticated::class, 'throttle:120,1'])->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me'])->name('auth.me');
         Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
+        Route::post('/devices', [OrderController::class, 'registerDevice'])->name('devices.store');
+        Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/orders/{order:id}', [OrderController::class, 'show'])->name('orders.show');
+    });
+
+    // Placing an order reuses the website's checkout, which keeps a little state in a session.
+    Route::middleware([ApiAuthenticated::class, \Illuminate\Session\Middleware\StartSession::class, 'throttle:20,1'])->group(function () {
+        Route::post('/shops/{shop:id}/restaurant-orders', [OrderController::class, 'storeRestaurant'])->name('orders.restaurant');
     });
 });

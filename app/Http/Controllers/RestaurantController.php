@@ -304,10 +304,10 @@ class RestaurantController extends Controller
             $data['order_type'] = 'dine_in';
         } elseif ($data['order_type'] === 'dine_in') {
             return response()->json(['message' => 'امسح QR الطاولة لإرسال طلب من داخل المطعم.'], 422);
-        } elseif (!filled($data['customer_phone'])) {
+        } elseif (!filled($data['customer_phone'] ?? null)) {
             return response()->json(['message' => 'رقم الهاتف مطلوب لطلبات التوصيل والاستلام.'], 422);
         }
-        if ($data['order_type'] === 'delivery' && !filled($data['customer_address'])) {
+        if ($data['order_type'] === 'delivery' && !filled($data['customer_address'] ?? null)) {
             return response()->json(['message' => 'عنوان التوصيل مطلوب.'], 422);
         }
 
