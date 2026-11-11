@@ -72,6 +72,8 @@ class SeedDemoData extends Command
                             'category_id' => $category->id, 'slug' => $slug.'-'.substr(md5($productName), 0, 8),
                             'description' => 'منتج تجريبي: '.$productName.'.', 'price' => $price, 'discount_price' => $discount,
                             'is_active' => true, 'is_featured' => $position === 0,
+                            // Clothes come in sizes and colours, so the app's option picker can be tried.
+                            'catalog_attributes' => $type === 'clothing' ? ['sizes' => ['S', 'M', 'L', 'XL'], 'colors' => ['أسود', 'أبيض', 'كحلي']] : null,
                         ]);
                     }
                 }

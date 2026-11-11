@@ -158,6 +158,10 @@ class FrontOrder extends Model
 
     public function channelLabel(): string
     {
-        return $this->order_channel === 'instant_payment' ? 'دفع فوري' : 'طلب واتساب';
+        return match ($this->order_channel) {
+            'instant_payment' => 'دفع فوري',
+            'app' => 'طلب من التطبيق',
+            default => 'طلب واتساب',
+        };
     }
 }

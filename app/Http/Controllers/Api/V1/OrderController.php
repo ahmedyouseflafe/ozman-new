@@ -7,6 +7,8 @@ use App\Http\Controllers\RestaurantController;
 use App\Models\FrontOrder;
 use App\Models\PushDevice;
 use App\Models\Shop;
+use App\Rules\ValidPhoneNumber;
+use App\Services\AppShopOrderService;
 use App\Services\FirebaseMessagingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,6 +42,44 @@ class OrderController extends Controller
         }
 
         return $response;
+    }
+
+    /** Every shop type except restaurants (they have their own kitchen flow above). */
+    public function storeShop(Request $request, Shop $shop, AppShopOrderService $orders): JsonResponse
+    {
+        abort_unless($shop->is_active, 404);
+        abort_if($shop->catalog_type === 'restaurant', 422, 'طلبات المطاعم لها مسار خاص.');
+        abort_unless($shop->is_accepting_orders, 422, 'المحل لا يستقبل طلبات حاليًا.');
+        $user = $request->user();
+        $request->merge([
+            'customer_name' => $request->input('customer_name') ?: $user->name,
+            'customer_phone' => $request->input('customer_phone') ?: $user->phone,
+        ]);
+        $data = $request->validate([
+            'customer_name' => ['required', 'string', 'max:120'],
+            'customer_phone' => ['required', 'string', 'max:30', new ValidPhoneNumber()],
+            'order_type' => ['required', 'in:pickup,delivery'],
+            'customer_address' => ['nullable', 'required_if:order_type,delivery', 'string', 'max:500'],
+            'customer_notes' => ['nullable', 'string', 'max:1000'],
+            'device_token' => ['nullable', 'string', 'max:512'],
+            'items' => ['required', 'array', 'min:1', 'max:50'],
+            'items.*.product_id' => ['required', 'integer'],
+            'items.*.qty' => ['required', 'integer', 'min:1', 'max:100'],
+            'items.*.variant_id' => ['nullable', 'integer'],
+            'items.*.size' => ['nullable', 'string', 'max:100'],
+            'items.*.color' => ['nullable', 'string', 'max:100'],
+        ]);
+        $token = $data['device_token'] ?? null;
+        $token = $token && PushDevice::where('token', $token)->exists() ? $token : null;
+
+        $order = $orders->place($shop, $user, $data, $token);
+
+        return response()->json([
+            'ok' => true,
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+            'total' => Presenter::price($order->total),
+        ], 201);
     }
 
     public function index(Request $request): JsonResponse

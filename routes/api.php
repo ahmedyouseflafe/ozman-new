@@ -27,6 +27,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/devices', [OrderController::class, 'registerDevice'])->name('devices.store');
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
         Route::get('/orders/{order:id}', [OrderController::class, 'show'])->name('orders.show');
+        Route::post('/shops/{shop:id}/orders', [OrderController::class, 'storeShop'])->middleware('throttle:20,1')->name('orders.shop');
     });
 
     // Placing an order reuses the website's checkout, which keeps a little state in a session.

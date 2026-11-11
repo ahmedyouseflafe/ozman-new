@@ -81,6 +81,8 @@ class Presenter
             'in_stock' => true,
             'is_featured' => (bool) $product->is_featured,
             'likes_count' => (int) ($product->likes_count ?? 0),
+            // True when the customer must pick a size, colour or option before adding to the basket.
+            'has_options' => self::hasOptions($product),
         ];
         if ($full) {
             $data += [
@@ -88,6 +90,8 @@ class Presenter
                 'images' => $product->images->map(fn ($image) => self::media($image->image))->filter()->values(),
                 'video' => self::media($product->video),
                 'attributes' => $product->catalog_attributes ?: (object) [],
+                'sizes' => self::optionList($product, 'sizes'),
+                'colors' => self::optionList($product, 'colors'),
                 'variants' => $product->variants->where('is_active', true)->values()->map(fn ($variant) => [
                     'id' => $variant->id,
                     'size' => $variant->size,
@@ -103,6 +107,24 @@ class Presenter
         }
 
         return $data;
+    }
+
+    public static function hasOptions(Product $product): bool
+    {
+        $variants = $product->relationLoaded('variants')
+            ? $product->variants->where('is_active', true)->count()
+            : (int) ($product->active_variants_count ?? 0);
+
+        return $variants > 0 || ! empty(self::optionList($product, 'sizes')) || ! empty(self::optionList($product, 'colors'));
+    }
+
+    /** Sizes or colours a shop typed for a product (an array, or text separated by commas). */
+    public static function optionList(Product $product, string $key): array
+    {
+        $value = data_get($product->catalog_attributes, $key, []);
+        $list = is_array($value) ? $value : explode(',', (string) $value);
+
+        return array_values(array_filter(array_map(fn ($item) => trim((string) $item), $list), fn ($item) => $item !== ''));
     }
 
     public static function user(User $user): array

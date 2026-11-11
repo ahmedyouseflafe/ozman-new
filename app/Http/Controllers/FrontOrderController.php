@@ -241,7 +241,12 @@ class FrontOrderController extends Controller
             'status' => ['required', 'string', 'in:' . implode(',', array_keys(FrontOrder::statusOptions()))],
         ]);
 
+        $previousStatus = $order->status;
         $order->update(['status' => $validated['status']]);
+        if ($previousStatus !== $order->status) {
+            // Orders placed from the app tell the customer's phone about the change.
+            app(\App\Services\AppShopOrderService::class)->notifyCustomer($order->loadMissing('shop'));
+        }
 
         if ($request->expectsJson()) {
             return response()->json([

@@ -107,6 +107,7 @@ class CatalogController extends Controller
     private function activeProducts()
     {
         return Product::query()->select('products.*')->where('products.is_active', true)
-            ->whereHas('shop', fn ($q) => $q->where('is_active', true));
+            ->whereHas('shop', fn ($q) => $q->where('is_active', true))
+            ->withCount(['variants as active_variants_count' => fn ($q) => $q->where('is_active', true)]);
     }
 }

@@ -717,7 +717,7 @@
                                         </td>
                                         <td>
                                             <span class="badge {{ $order->order_channel === 'whatsapp' ? 'green' : 'yellow' }}">
-                                                <i class="ti {{ $order->order_channel === 'whatsapp' ? 'ti-brand-whatsapp' : 'ti-bolt' }}"></i>
+                                                <i class="ti {{ match ($order->order_channel) { 'whatsapp' => 'ti-brand-whatsapp', 'app' => 'ti-device-mobile', default => 'ti-bolt' } }}"></i>
                                                 {{ $order->channelLabel() }}
                                             </span>
                                             @if($order->payment_method)
@@ -770,6 +770,9 @@
                                             @endif
                                             @if($order->customer_address)
                                                 <div class="dim">{{ $order->customer_address }}</div>
+                                            @endif
+                                            @if($order->customer_notes)
+                                                <div class="dim" style="white-space: pre-line;">{{ $order->customer_notes }}</div>
                                             @endif
                                         </td>
                                         <td>
