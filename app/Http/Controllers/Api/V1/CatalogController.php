@@ -93,13 +93,16 @@ class CatalogController extends Controller
         ]);
     }
 
-    public function product(Product $product): JsonResponse
+    public function product(Request $request, Product $product): JsonResponse
     {
         abort_unless($product->is_active && $product->shop?->is_active, 404);
         $product->load(['images', 'variants', 'shop']);
+        $liked = $request->user()
+            ? \App\Models\ProductLike::where('product_id', $product->id)->where('user_id', $request->user()->id)->exists()
+            : false;
 
         return response()->json([
-            'product' => Presenter::product($product, true),
+            'product' => Presenter::product($product, true) + ['liked' => $liked],
             'shop' => Presenter::shop($product->shop),
         ]);
     }

@@ -145,6 +145,9 @@ Route::middleware(['auth', \App\Http\Middleware\EnsurePromoterAccess::class])->p
 Route::get('/restaurant-purchase-wheel/{order}', [\App\Http\Controllers\RestaurantPurchaseWheelController::class, 'show'])->middleware('signed')->name('restaurant.purchase-wheel.show');
 Route::post('/restaurant-purchase-wheel/{order}/spin', [\App\Http\Controllers\RestaurantPurchaseWheelController::class, 'spin'])->middleware(['signed', 'throttle:20,1'])->name('restaurant.purchase-wheel.spin');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
+Route::get('/privacy', [\App\Http\Controllers\PolicyController::class, 'privacy'])->name('policies.privacy');
+Route::get('/delete-account', [\App\Http\Controllers\PolicyController::class, 'deleteAccount'])->name('policies.delete-account');
+Route::get('/business', [\App\Http\Controllers\PolicyController::class, 'business'])->name('business');
 Route::get('/', [FrontController::class, 'index'])->name('home');
 Route::get('/cars', [\App\Http\Controllers\CarMarketPreviewController::class, 'index'])->name('cars.preview');
 Route::get('/cars/media/{file}', [\App\Http\Controllers\CarMarketPreviewController::class, 'media'])->name('cars.media');

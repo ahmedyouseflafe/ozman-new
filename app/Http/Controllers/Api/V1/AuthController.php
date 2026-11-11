@@ -67,6 +67,37 @@ class AuthController extends Controller
         return response()->json(['logged_out' => true]);
     }
 
+    /**
+     * Deletes a customer account from the app (Google Play requires this). Orders stay for the
+     * shops' records, but the person's name, contact details, sign-ins and devices are removed.
+     */
+    public function deleteAccount(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $request->validate(['password' => ['required', 'string']]);
+        if (! \Illuminate\Support\Facades\Hash::check($request->input('password'), $user->password)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['password' => 'كلمة السر مش صحيحة.']);
+        }
+        abort_unless(in_array($user->role, ['customer', 'promoter'], true), 422, 'حسابات أصحاب المحلات والإدارة بتنحذف من خلال فريق أوزمان.');
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($user) {
+            ApiToken::where('user_id', $user->id)->delete();
+            \App\Models\PushDevice::where('user_id', $user->id)->delete();
+            \App\Models\FrontOrder::where('user_id', $user->id)->update(['customer_push_token' => null]);
+            $user->forceFill([
+                'name' => 'حساب محذوف',
+                'email' => 'deleted-'.$user->id.'-'.\Illuminate\Support\Str::random(8).'@deleted.ozman.online',
+                'username' => null,
+                'phone' => null,
+                'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(40)),
+                'is_active' => false,
+                'remember_token' => null,
+            ])->save();
+        });
+
+        return response()->json(['deleted' => true]);
+    }
+
     private function tokenResponse(User $user, string $device, int $status = 200): JsonResponse
     {
         [$token, $plain] = ApiToken::issue($user, $device);

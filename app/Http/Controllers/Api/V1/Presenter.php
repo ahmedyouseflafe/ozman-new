@@ -138,6 +138,8 @@ class Presenter
             'role' => $user->role,
             'avatar' => $user->avatarUrl(),
             'shop_ids' => $user->isShopOwner() ? $user->shops()->pluck('id') : [],
+            // Shows the "my shop" section in the app (owners, their staff, admins).
+            'is_merchant' => $user->isSuperAdmin() || $user->accessibleShopIds() !== [],
         ];
     }
 }

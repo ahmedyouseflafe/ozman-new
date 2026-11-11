@@ -111,6 +111,8 @@
                 @empty
                     <p class="empty">لا توجد منتجات مسجلة لهذا الطلب.</p>
                 @endforelse
+                {{-- The prize the customer won on the shop's purchase wheel. --}}
+                @include('admin.restaurant.partials.purchase_reward')
                 @if((float) $order->discount > 0)
                     <div class="total small"><span>قبل الخصم</span><span>{{ number_format((float) $order->subtotal, 2) }} ₪</span></div>
                     <div class="total small"><span>الخصم</span><span>−{{ number_format((float) $order->discount, 2) }} ₪</span></div>

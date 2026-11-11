@@ -17,9 +17,16 @@ class RestaurantPurchaseWheelController extends Controller
             ->orderByDesc('min_order_total')->orderBy('id')->first();
     }
 
+    /** Orders that may spin: restaurant orders, app orders from any shop, and Elegance's WhatsApp orders. */
+    public static function channelAllowed(FrontOrder $order): bool
+    {
+        return in_array($order->order_channel, ['restaurant', 'app'], true)
+            || ($order->order_channel === 'whatsapp' && $order->shop?->catalog_type === 'cosmetics' && $order->shop?->slug === 'elegance-perfumes');
+    }
+
     public function show(FrontOrder $order): JsonResponse
     {
-        abort_unless(($order->order_channel === 'restaurant' || ($order->order_channel === 'whatsapp' && $order->shop?->catalog_type === 'cosmetics' && $order->shop?->slug === 'elegance-perfumes')) && $order->status !== 'cancelled', 404);
+        abort_unless(self::channelAllowed($order) && $order->status !== 'cancelled', 404);
         $wheel = self::eligible($order);
         return response()->json(['shop_id' => $order->shop_id, 'shop_name' => $order->shop->name,
             'order_share_url' => CosmeticsCheckoutController::shareUrl($order),
@@ -33,7 +40,7 @@ class RestaurantPurchaseWheelController extends Controller
     {
         return DB::transaction(function () use ($order) {
             $order = FrontOrder::whereKey($order->id)->lockForUpdate()->firstOrFail();
-            abort_unless(($order->order_channel === 'restaurant' || ($order->order_channel === 'whatsapp' && $order->shop?->catalog_type === 'cosmetics' && $order->shop?->slug === 'elegance-perfumes')) && $order->status !== 'cancelled', 422);
+            abort_unless(self::channelAllowed($order) && $order->status !== 'cancelled', 422);
             if ($order->purchase_reward) return $this->spinResponse($order);
             $eligible = self::eligible($order);
             abort_unless($eligible, 422, 'لا توجد عجلة مناسبة لمبلغ الطلب.');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\RestaurantController;
+use App\Http\Controllers\RestaurantPurchaseWheelController;
 use App\Models\FrontOrder;
 use App\Models\PushDevice;
 use App\Models\Shop;
@@ -116,7 +117,27 @@ class OrderController extends Controller
             'tracking_url' => $order->shop?->catalog_type === 'restaurant' ? URL::signedRoute('restaurant.orders.track', $order) : null,
             'shop_phone' => $order->shop?->phone,
             'shop_whatsapp' => $order->shop?->whatsapp,
+            // The shop's purchase wheel: can this order still spin, and what did it win.
+            'wheel_available' => ! $order->purchase_reward && $order->status !== 'cancelled'
+                && RestaurantPurchaseWheelController::channelAllowed($order) && RestaurantPurchaseWheelController::eligible($order) !== null,
+            'reward' => $order->purchase_reward ? json_decode($order->purchase_reward, true) : null,
         ]]);
+    }
+
+    /** The wheel's segments for the customer's own order. */
+    public function wheel(Request $request, FrontOrder $order, RestaurantPurchaseWheelController $wheels): JsonResponse
+    {
+        abort_unless((int) $order->user_id === (int) $request->user()->id, 404);
+
+        return $wheels->show($order);
+    }
+
+    /** Spins once; asking again returns the same prize. */
+    public function spin(Request $request, FrontOrder $order, RestaurantPurchaseWheelController $wheels): JsonResponse
+    {
+        abort_unless((int) $order->user_id === (int) $request->user()->id, 404);
+
+        return $wheels->spin($order);
     }
 
     /** Saves the app's push token for this user, so order updates and offers reach the phone. */
