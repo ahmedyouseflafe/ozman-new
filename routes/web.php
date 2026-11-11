@@ -357,6 +357,12 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::get('/shops/{shop}/real-estate/properties/{property}/facebook-images', [RealEstateDashboardController::class, 'facebookImages'])->name('real-estate.dashboard.facebook-images');
     Route::patch('/shops/{shop}/real-estate/leads/{lead}', [RealEstateDashboardController::class, 'updateLead'])->name('real-estate.dashboard.leads.update');
     Route::get('/shops/{shop}/restaurant', [RestaurantController::class, 'dashboard'])->name('restaurant.dashboard');
+    // Orders board for every other shop type, in the restaurant dashboard's style.
+    Route::get('/shops/{shop}/orders-board', [\App\Http\Controllers\ShopOrdersController::class, 'dashboard'])->name('shop-orders.dashboard');
+    Route::get('/shops/{shop}/orders-board/feed', [\App\Http\Controllers\ShopOrdersController::class, 'feed'])->name('shop-orders.feed');
+    Route::get('/shops/{shop}/orders-board/{order}', [\App\Http\Controllers\ShopOrdersController::class, 'show'])->whereNumber('order')->name('shop-orders.show');
+    Route::patch('/shops/{shop}/orders-board/availability', [\App\Http\Controllers\ShopOrdersController::class, 'availability'])->name('shop-orders.availability');
+    Route::patch('/shop-orders/{order}/status', [\App\Http\Controllers\ShopOrdersController::class, 'status'])->name('shop-orders.status');
     Route::get('/shops/{shop}/restaurant/customers', [RestaurantController::class, 'customers'])->name('restaurant.customers.index');
     Route::get('/shops/{shop}/restaurant/tables', [RestaurantController::class, 'tables'])->name('restaurant.tables.index');
     Route::get('/shops/{shop}/restaurant/orders/{order}', [RestaurantController::class, 'showOrder'])->name('restaurant.orders.show');

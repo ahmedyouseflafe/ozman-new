@@ -339,6 +339,16 @@ class FrontOrderController extends Controller
             if ($restaurant) {
                 return redirect()->route('restaurant.dashboard', $restaurant);
             }
+            // Other shops get the live orders board. A link with a search or filter (or "?all=1")
+            // still opens this full table.
+            $shop = $request->query() ? null : Shop::query()
+                ->whereIn('id', $accessibleShopIds)
+                ->where('catalog_type', '!=', 'restaurant')
+                ->when($currentShopId > 0, fn($query) => $query->whereKey($currentShopId))
+                ->first();
+            if ($shop && $user->canAccessRouteName('shop-orders.dashboard')) {
+                return redirect()->route('shop-orders.dashboard', $shop);
+            }
         }
         $marketerIds = $user?->isMarketer()
             ? $user->distributorMarketerProfiles()

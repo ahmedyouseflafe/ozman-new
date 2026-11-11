@@ -143,7 +143,7 @@ class AppShopOrderService
     {
         $title = 'طلب جديد من التطبيق · '.$shop->name;
         $body = "الطلب {$order->order_number} من {$order->customer_name} بقيمة {$order->total} شيكل";
-        $url = route('front-orders.index', ['search' => $order->order_number]);
+        $url = route('shop-orders.show', [$shop, $order]);
         $data = ['type' => 'shop_order', 'shop_id' => $shop->id, 'order_id' => $order->id, 'order_number' => $order->order_number];
 
         try {

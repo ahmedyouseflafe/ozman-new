@@ -430,7 +430,10 @@ class RestaurantOrderingTest extends TestCase
         FrontOrder::create(['shop_id' => $ownShop->id, 'order_number' => 'OWN-ORDER', 'customer_name' => 'Own Customer', 'order_channel' => 'whatsapp']);
         FrontOrder::create(['shop_id' => $otherShop->id, 'order_number' => 'SECRET-FOREIGN-ORDER', 'customer_name' => 'Other Customer', 'order_channel' => 'whatsapp']);
 
-        $this->actingAs($owner)->get(route('front-orders.index'))
+        // The plain orders link opens the shop's live board; the full table stays one click away.
+        $this->actingAs($owner)->get(route('front-orders.index'))->assertRedirect(route('shop-orders.dashboard', $ownShop));
+        $this->get(route('shop-orders.dashboard', $ownShop))->assertOk()->assertDontSee('SECRET-FOREIGN-ORDER');
+        $this->get(route('front-orders.index', ['all' => 1]))
             ->assertOk()->assertSee('OWN-ORDER')->assertDontSee('SECRET-FOREIGN-ORDER');
     }
 
