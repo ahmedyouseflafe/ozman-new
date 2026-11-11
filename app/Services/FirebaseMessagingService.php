@@ -108,7 +108,11 @@ class FirebaseMessagingService
     private function credentials(): array
     {
         $path = config('services.firebase.credentials');
+        // A blank or wrong FIREBASE_CREDENTIALS in .env falls back to the usual file.
         if (! is_string($path) || ! is_file($path)) {
+            $path = storage_path('app/private/firebase-service-account.json');
+        }
+        if (! is_file($path)) {
             throw new RuntimeException('حمّل مفتاح حساب خدمة Firebase وضع مساره في FIREBASE_CREDENTIALS.');
         }
 
