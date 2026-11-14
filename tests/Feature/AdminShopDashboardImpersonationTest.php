@@ -24,7 +24,7 @@ class AdminShopDashboardImpersonationTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('shops.enter-dashboard', $shop))
-            ->assertRedirect(route('shops.show', $shop))
+            ->assertRedirect(route($shop->dashboardRouteName(), $shop))
             ->assertSessionHas('impersonator_admin_id', $admin->id)
             ->assertSessionHas('impersonated_shop_id', $shop->id);
 
@@ -67,7 +67,7 @@ class AdminShopDashboardImpersonationTest extends TestCase
 
         $this->get(route('restaurant.dashboard', $shop))
             ->assertOk()
-            ->assertSee('بيانات متجري')
+            ->assertSee('بيانات المطعم')
             ->assertDontSee('href="'.route('shops').'"', false);
     }
 
@@ -89,7 +89,7 @@ class AdminShopDashboardImpersonationTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('shops.enter-dashboard', $shop))
-            ->assertRedirect(route('shops.show', $shop));
+            ->assertRedirect(route($shop->dashboardRouteName(), $shop));
 
         $shop->refresh();
         $this->assertNotSame($admin->id, $shop->user_id);
@@ -116,7 +116,7 @@ class AdminShopDashboardImpersonationTest extends TestCase
             ->assertRedirect(route('shops'));
 
         $this->post(route('shops.enter-dashboard', $shop))
-            ->assertRedirect(route('shops.show', $shop));
+            ->assertRedirect(route($shop->dashboardRouteName(), $shop));
         $this->assertAuthenticatedAs($owner);
 
         $this->get(route('products'))->assertOk();

@@ -608,16 +608,18 @@
                     </a>
                 </header>
 
-                <form method="GET" action="{{ route('screens') }}" style="margin-bottom:20px">
-                    <label for="screenShopFilter">شاشات المحل</label>
-                    <select name="shop_id" id="screenShopFilter">
+                {{-- Only owners of several shops need to pick one. --}}
+                @if($shops->count() > 1)
+                <form method="GET" action="{{ route('screens') }}" style="margin-bottom:20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                    <label for="screenShopFilter" style="font-weight:800">شاشات المحل</label>
+                    <select name="shop_id" id="screenShopFilter" class="filter-select" onchange="this.form.submit()">
                         <option value="" @selected(! $selectedShopId)>كل الشاشات المتاحة لحسابي</option>
                         @foreach($shops as $screenShop)
                             <option value="{{ $screenShop->id }}" @selected($selectedShopId === $screenShop->id)>{{ $screenShop->name }}</option>
                         @endforeach
                     </select>
-                    <button type="submit" class="btn-primary">عرض</button>
                 </form>
+                @endif
 
                 @if (session('status'))
                     <div class="status-alert">{{ session('status') }}</div>
@@ -644,7 +646,7 @@
 
                     <article class="stat-card" style="--card-color: var(--accent)">
                         <div class="stat-label">متوسط المدة</div>
-                        <div class="stat-val">{{ $averageDuration }}ث</div>
+                        <div class="stat-val">{{ $averageDuration ? $averageDuration.' ث' : '—' }}</div>
                         <i class="ti ti-clock stat-icon" aria-hidden="true"></i>
                     </article>
                 </section>

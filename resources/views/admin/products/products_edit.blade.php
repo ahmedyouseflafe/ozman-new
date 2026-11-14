@@ -104,7 +104,7 @@
                 <header class="page-head">
                     <div>
                         <h1>تعديل {{ $itemLabel }}</h1>
-                        <p>حدّث بيانات {{ $itemLabel }} والسعر والمخزون والصور وحالة الظهور في {{ $placeLabel }}.</p>
+                        <p>حدّث بيانات {{ $itemLabel }} والسعر والصور وحالة الظهور في {{ $placeLabel }}.</p>
                     </div>
                     <a href="{{ route('products') }}" class="btn"><i class="ti ti-arrow-right"></i>رجوع لـ{{ $itemsLabel }}</a>
                 </header>

@@ -16,7 +16,7 @@
     @include('admin.includes.sidebar')
     <main class="drivers-page">
         <section class="hero glass">
-            <div><span class="eyebrow">DELIVERY TEAM</span><h1>مندوبي توصيل {{ $shop->name }}</h1><p>أضف حساب المندوب، فعّله أو أوقفه، ثم عيّنه لطلبات التوصيل من تفاصيل كل طلب.</p></div>
+            <div><span class="eyebrow">فريق التوصيل</span><h1>مندوبي توصيل {{ $shop->name }}</h1><p>أضف حساب المندوب، فعّله أو أوقفه، ثم عيّنه لطلبات التوصيل من تفاصيل كل طلب.</p></div>
             <a class="btn btn-primary" href="{{ route('restaurant.dashboard', $shop) }}"><i class="ti ti-arrow-right"></i> رجوع للطلبات</a>
         </section>
         @if(session('status'))<div class="notice notice-success"><i class="ti ti-circle-check"></i> {{ session('status') }}</div>@endif

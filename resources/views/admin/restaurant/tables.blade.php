@@ -17,7 +17,7 @@
     <main class="tables-page">
         <section class="hero glass">
             <div>
-                <span class="eyebrow">RESTAURANT TABLES</span>
+                <span class="eyebrow">الطاولات</span>
                 <h1>طاولات {{ $shop->name }} ورموز QR</h1>
                 <p>أنشئ طاولة، حمّل رمزها، وضعه عليها ليصل الزبون إلى منيو المطعم ويطلب مباشرة من مكانه.</p>
             </div>

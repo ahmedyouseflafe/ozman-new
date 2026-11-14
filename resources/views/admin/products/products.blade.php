@@ -803,7 +803,7 @@
                     <div>
                         <div class="page-kicker">{{ $currentShop ? ($catalogTerms['dashboard_label'].' · '.$currentShop->name) : $placeLabel }}</div>
                         <h1>إدارة {{ $itemsLabel }}</h1>
-                        <p>{{ $productsTotal }} من {{ $itemsLabel }} مع متابعة الأسعار والمخزون وحالة الظهور.</p>
+                        <p>{{ $productsTotal }} من {{ $itemsLabel }}، مع الأسعار وحالة الظهور للزبائن.</p>
                     </div>
                     @if($canCreateProducts)
                         <a href="{{ route('products.create', $currentShop ? ['shop_id' => $currentShop->id] : []) }}" class="btn-primary">
@@ -830,13 +830,19 @@
                         <i class="ti ti-star stat-icon" aria-hidden="true"></i>
                     </article>
 
-                    @unless($isRestaurantContext)
+                    @if(! $isRestaurantContext && ($tracksStock ?? false))
                         <article class="stat-card" style="--card-color: var(--danger)">
-                            <div class="stat-label">نفد المخزون</div>
+                            <div class="stat-label">نفدت الكمية</div>
                             <div class="stat-val">{{ $outOfStockTotal }}</div>
                             <i class="ti ti-alert-triangle stat-icon" aria-hidden="true"></i>
                         </article>
-                    @endunless
+                    @elseif(! $isRestaurantContext)
+                        <article class="stat-card" style="--card-color: var(--danger)">
+                            <div class="stat-label">مخفية عن الزبائن</div>
+                            <div class="stat-val">{{ $hiddenProductsCount ?? 0 }}</div>
+                            <i class="ti ti-eye-off stat-icon" aria-hidden="true"></i>
+                        </article>
+                    @endif
 
                     <article class="stat-card" style="--card-color: var(--accent)">
                         <div class="stat-label">متوسط السعر</div>
@@ -945,9 +951,9 @@
                                     @endif
                                     <div class="product-card-footer">
                                         @unless($product->shop?->catalog_type === 'restaurant')
-                                            <details><summary>تفاصيل الأسعار والمخزون</summary>
+                                            <details><summary>تفاصيل الأسعار</summary>
                                                 <dl class="product-card-details">
-                                                    <dt>الكمية</dt><dd>{{ $product->quantity }}</dd>
+                                                    @if((int) $product->quantity > 0)<dt>الكمية</dt><dd>{{ $product->quantity }}</dd>@endif
                                                     @foreach(['discount_price' => 'سعر الخصم', 'merchant_price' => 'سعر التاجر', 'package_price' => 'سعر العبوة', 'pallet_price' => 'سعر المشطاح', 'carton_price' => 'سعر الكرتونة'] as $field => $label)
                                                         @if($product->$field !== null)<dt>{{ $label }}</dt><dd>{{ $product->$field }} ₪</dd>@endif
                                                     @endforeach

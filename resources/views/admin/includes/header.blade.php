@@ -1,6 +1,8 @@
 @include('admin.analytics.notifications')
 @once
     <style>
+        /* The scrolling slogan banners repeated what the page title already says. */
+        .hero-strip, .hero-panel:has(.story-slider) { display: none !important; }
         .topbar.admin-neon-header {
             background: rgba(0, 0, 0, .78);
             backdrop-filter: blur(15px);
@@ -431,7 +433,7 @@
             <div class="topbar-title">
                 {{ $title ?? trim($__env->yieldContent('title')) ?: 'لوحة التحكم' }}
             </div>
-            <span class="admin-header-subtitle">Ozman admin panel</span>
+            <span class="admin-header-subtitle">لوحة تحكم أوزمان</span>
         </div>
     </div>
 
@@ -450,7 +452,27 @@
 
         <div class="admin-header-search">
             <i class="ti ti-search" aria-hidden="true"></i>
-            <input type="search" placeholder="بحث سريع...">
+            <input type="search" placeholder="ابحث عن صفحة…" list="adminPageSearchList" data-admin-page-search aria-label="ابحث عن صفحة في لوحة التحكم">
+            <datalist id="adminPageSearchList"></datalist>
+            <script>
+                // Quick jump: type part of a menu name and press Enter to open that page.
+                (() => {
+                    const input = document.currentScript.parentElement.querySelector('[data-admin-page-search]');
+                    const list = document.getElementById('adminPageSearchList');
+                    const pages = () => [...document.querySelectorAll('.admin-sidebar-nav a.admin-sidebar-item')]
+                        .map((link) => ({ label: link.textContent.trim().replace(/\s+/g, ' '), href: link.href }));
+                    const fill = () => { list.innerHTML = ''; pages().forEach((p) => list.append(new Option(p.label))); };
+                    const go = () => {
+                        const q = input.value.trim();
+                        if (!q) return;
+                        const hit = pages().find((p) => p.label === q) || pages().find((p) => p.label.includes(q));
+                        if (hit) window.location.href = hit.href;
+                    };
+                    input.addEventListener('focus', fill, { once: true });
+                    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+                    input.addEventListener('change', () => { if (pages().some((p) => p.label === input.value.trim())) go(); });
+                })();
+            </script>
         </div>
 
         <a href="{{ route('lang.switch', app()->getLocale() === 'ar' ? 'he' : 'ar') }}"

@@ -578,7 +578,7 @@
                 <div class="page-header-row">
                     <div>
                         <h1>{{ $categoriesPageTitle }}</h1>
-                        <p>أنشئ {{ $categoriesPageTitle }} ورتّب {{ $itemsLabel }} بطريقة واضحة للزبائن.</p>
+                        <p>رتّب {{ $itemsLabel }} في أقسام عشان يلاقي الزبون اللي بده بسرعة.</p>
                     </div>
                     @if($canCreateCategories)
                     <a href="{{ route('categories.create', $currentShop ? ['shop_id' => $currentShop->id] : []) }}" class="btn-primary">
@@ -594,22 +594,22 @@
 
                 <div class="stats-grid">
                     <div class="stat-card" style="--accent: var(--primary-color)">
-                        <div class="stat-label">إجمالي {{ $categoriesPageTitle }}</div>
+                        <div class="stat-label">كل الأقسام</div>
                         <div class="stat-val">{{ $categoriesCount }}</div>
                         <i class="ti ti-category stat-icon" aria-hidden="true"></i>
                     </div>
                     <div class="stat-card" style="--accent: var(--green)">
-                        <div class="stat-label">{{ $categoriesPageTitle }} النشطة</div>
+                        <div class="stat-label">ظاهرة للزبائن</div>
                         <div class="stat-val">{{ $activeCategoriesCount }}</div>
                         <i class="ti ti-circle-check stat-icon" aria-hidden="true"></i>
                     </div>
                     <div class="stat-card" style="--accent: var(--accent-color)">
-                        <div class="stat-label">{{ $isRestaurantCategories ? 'الوجبات داخل الأقسام' : $itemsLabel.' داخل '.$categoriesPageTitle }}</div>
+                        <div class="stat-label">{{ $isRestaurantCategories ? 'الوجبات' : $itemsLabel }}</div>
                         <div class="stat-val">{{ $productsInCategoriesCount }}</div>
                         <i class="ti ti-package stat-icon" aria-hidden="true"></i>
                     </div>
                     <div class="stat-card" style="--accent: var(--yellow)">
-                        <div class="stat-label">{{ $categoriesPageTitle }} الفارغة</div>
+                        <div class="stat-label">أقسام فاضية</div>
                         <div class="stat-val">{{ $emptyCategoriesCount }}</div>
                         <i class="ti ti-folder-off stat-icon" aria-hidden="true"></i>
                     </div>

@@ -370,7 +370,7 @@
                     <div>
                         <div class="page-kicker">الإدارة</div>
                         <h1>الإعدادات</h1>
-                        <p>إدارة بيانات الحساب، كلمة المرور، تفضيلات التنبيهات، وإعدادات النظام.</p>
+                        <p>{{ auth()->user()?->isSuperAdmin() ? 'إدارة بيانات الحساب، كلمة المرور، تفضيلات التنبيهات، وإعدادات النظام.' : 'اسمك وإيميلك ورقمك، وكلمة المرور.' }}</p>
                     </div>
                 </header>
 
@@ -398,7 +398,7 @@
                             <div class="panel-icon"><i class="ti ti-user" aria-hidden="true"></i></div>
                             <div>
                                 <h2 class="panel-title">الملف الشخصي</h2>
-                                <p class="panel-subtitle">بيانات حساب المسؤول الظاهرة داخل لوحة التحكم</p>
+                                <p class="panel-subtitle">الاسم والإيميل والرقم اللي بتدخل فيهم على لوحة التحكم</p>
                             </div>
                         </div>
 
@@ -429,7 +429,7 @@
                             <div class="panel-icon"><i class="ti ti-lock" aria-hidden="true"></i></div>
                             <div>
                                 <h2 class="panel-title">تغيير كلمة المرور</h2>
-                                <p class="panel-subtitle">تحديث كلمة المرور الخاصة بحساب الإدارة</p>
+                                <p class="panel-subtitle">غيّر كلمة المرور اللي بتدخل فيها</p>
                             </div>
                         </div>
 
@@ -453,6 +453,7 @@
                         </div>
                     </form>
 
+                    @if(auth()->user()?->canAccessRouteName('settings.notifications.update'))
                     <form class="panel" action="{{ route('settings.notifications.update') }}" method="post">
                         @csrf
                         @method('PUT')
@@ -503,7 +504,9 @@
                             حفظ الإشعارات
                         </button>
                     </form>
+                    @endif
 
+                    @if(auth()->user()?->canAccessRouteName('settings.system.update'))
                     <form class="panel" action="{{ route('settings.system.update') }}" method="post">
                         @csrf
                         @method('PUT')
@@ -535,7 +538,9 @@
                             </button>
                         </div>
                     </form>
+                    @endif
 
+                    @if(auth()->user()?->canAccessRouteName('settings.loyalty.update'))
                     <form class="panel" action="{{ route('settings.loyalty.update') }}" method="post" id="loyalty">
                         @csrf
                         @method('PUT')
@@ -576,6 +581,7 @@
                             </button>
                         </div>
                     </form>
+                    @endif
                 </section>
             </div>
         </main>

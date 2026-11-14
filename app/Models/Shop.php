@@ -102,7 +102,8 @@ class Shop extends Model
         return match ($this->catalog_type) {
             'real_estate' => 'real-estate.dashboard',
             'restaurant' => 'restaurant.dashboard',
-            default => 'shops.show',
+            // Everyone else starts on their orders board: that is what they check all day.
+            default => 'shop-orders.dashboard',
         };
     }
 

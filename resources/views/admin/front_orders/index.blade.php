@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 
 <head>
-    <title>طلبات الواجهة - Ozman</title>
+    <title>الطلبات - Ozman</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -521,12 +521,12 @@
     <div class="shell">
         @include('admin.includes.sidebar')
         <main class="main">
-            @include('admin.includes.header', ['title' => 'طلبات الواجهة'])
+            @include('admin.includes.header', ['title' => 'الطلبات'])
             <div class="content">
                 <div class="page-head">
                     <div>
                         <div class="page-kicker">Ozman Orders</div>
-                        <h1>طلبات الواجهة</h1>
+                        <h1>الطلبات</h1>
                         <p>كل طلب من السلة أو الدفع الفوري مع الهدية التي ظهرت للعميل من عجلة الشراء.</p>
                     </div>
                 </div>

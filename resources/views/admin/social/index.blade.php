@@ -56,7 +56,7 @@
 
     <section class="hero">
         <div>
-            <span class="eyebrow">SOCIAL MEDIA MANAGER</span>
+            <span class="eyebrow">التسويق</span>
             <h1>{{ __('السوشال ميديا') }} · {{ $shop->name }}</h1>
             <p>{{ __('اربط إنستغرام وفيسبوك وتيك توك، وخلّي المساعد الذكي يكتب منشوراتك عن منتجاتك وينشرها بأفضل وقت. كل منشور فيه رابط بيفتح المنتج على أوزمان عشان الزبون يطلب فوراً.') }}</p>
         </div>
@@ -66,9 +66,9 @@
     </section>
 
     @if(! $configured)
-        <div class="warn" style="margin-top:16px">{{ __('خدمة النشر لسا مش مفعّلة على السيرفر. لازم يكون ZERNIO_API_KEY بملف .env.') }}</div>
+        <div class="warn" style="margin-top:16px">@if(auth()->user()?->isSuperAdmin()){{ __('خدمة النشر لسا مش مفعّلة على السيرفر. لازم يكون ZERNIO_API_KEY بملف .env.') }}@else{{ __('النشر التلقائي على السوشال ميديا مش متاح حالياً. إدارة أوزمان رح تفعّله قريباً.') }}@endif</div>
     @endif
-    @if($apiError)<div class="errors" style="margin-top:16px">{{ __('ما قدرنا نجيب الحسابات: :error', ['error' => $apiError]) }}</div>@endif
+    @if($apiError)<div class="errors" style="margin-top:16px">@if(auth()->user()?->isSuperAdmin()){{ __('ما قدرنا نجيب الحسابات: :error', ['error' => $apiError]) }}@else{{ __('ما قدرنا نجيب حساباتك هلق. جرّب كمان شوي.') }}@endif</div>@endif
 
     <div class="grid">
         <section class="panel">

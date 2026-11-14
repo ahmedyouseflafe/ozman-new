@@ -417,6 +417,8 @@
         ? route('front.distributor', $previewDistributor)
         : ($catalogNavShop?->publicUrl()
             ?? route('products.preview', $previewShopId ? ['shop_id' => $previewShopId] : []));
+    // Shop owners get a menu built around their day: orders first, then products, rewards, marketing.
+    $useShopOwnerMenu = $isShopOwner && ! $isSuperAdmin && $catalogNavShop !== null;
 @endphp
 
 <div class="sidebar admin-neon-sidebar" id="admin-dashboard-sidebar">
@@ -432,6 +434,9 @@
     </div>
 
     <nav class="admin-sidebar-nav">
+        @if($useShopOwnerMenu)
+            @include('admin.includes.sidebar_shop_owner')
+        @else
         <div class="admin-sidebar-section">عام</div>
 
         @if($isSuperAdmin)
@@ -658,7 +663,7 @@
         <a href="{{ route('front-orders.index') }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('front-orders.index') ? 'active' : '' }}">
              <i class="ti ti-receipt-2" aria-hidden="true"></i>
-             طلبات الواجهة
+             الطلبات
         </a>
         @endif
 
@@ -771,6 +776,7 @@
         </a>
         @endif
         @endif
+            @endif
     </nav>
 
     <form method="POST" action="{{ route('logout') }}" style="margin:0 12px 12px;">
@@ -790,13 +796,40 @@
 <button type="button" class="admin-mobile-menu-overlay" data-admin-menu-close aria-label="إغلاق قائمة لوحة التحكم"></button>
 
 @php
-    $mobileNavCount = 1
+    $mobileNavCount = $useShopOwnerMenu ? ($catalogNavShop->catalog_type === 'real_estate' ? 3 : 4) : 1
         + ($canSee(['dashboard']) ? 1 : 0)
         + ((($restaurantNavShop && $canSee(['restaurant.dashboard'])) || ($realEstateNavShop && $canSee(['real-estate.dashboard'])) || $canSeeSalonAppointments || $canSee(['front-orders.index'])) ? 1 : 0)
         + ($canSee(['products']) ? 1 : 0)
         + ($canSee(['products.preview']) ? 1 : 0);
 @endphp
 <nav class="admin-mobile-nav" aria-label="تنقل لوحة التحكم للجوال" style="--admin-mobile-nav-count: {{ min($mobileNavCount, 5) }}">
+    @if($useShopOwnerMenu)
+        @php
+            $mobileOrders = match ($catalogNavShop->catalog_type) {
+                'restaurant' => [route('restaurant.dashboard', $catalogNavShop), request()->routeIs('restaurant.dashboard', 'restaurant.orders.*'), 'الطلبات', 'ti-receipt-2'],
+                'real_estate' => [route('real-estate.dashboard', $catalogNavShop), request()->routeIs('real-estate.dashboard*'), 'الطلبات', 'ti-building-community'],
+                default => [route('shop-orders.dashboard', $catalogNavShop), request()->routeIs('shop-orders.*'), 'الطلبات', 'ti-receipt-2'],
+            };
+        @endphp
+        <a href="{{ $mobileOrders[0] }}" class="admin-mobile-nav-item {{ $mobileOrders[1] ? 'active' : '' }}">
+            <i class="ti {{ $mobileOrders[3] }}" aria-hidden="true"></i>
+            {{ $mobileOrders[2] }}
+        </a>
+        @if($catalogNavShop->catalog_type !== 'real_estate')
+            <a href="{{ route('products', ['shop_id' => $catalogNavShop->id]) }}" class="admin-mobile-nav-item {{ request()->routeIs('products*') ? 'active' : '' }}">
+                <i class="ti ti-package" aria-hidden="true"></i>
+                {{ $catalogItemsLabel }}
+            </a>
+        @endif
+        <a href="{{ route('shops.show', $catalogNavShop) }}" class="admin-mobile-nav-item {{ request()->routeIs('shops.show', 'shops.edit') ? 'active' : '' }}">
+            <i class="ti ti-building-store" aria-hidden="true"></i>
+            {{ match ($catalogNavShop->catalog_type) { 'restaurant' => 'المطعم', 'dental' => 'العيادة', 'krembo', 'advertising_services', 'real_estate' => 'الشركة', default => 'المحل' } }}
+        </a>
+        <button type="button" class="admin-mobile-nav-item" data-admin-menu-open aria-controls="admin-dashboard-sidebar" aria-expanded="false">
+            <i class="ti ti-menu-2" aria-hidden="true"></i>
+            كل الأقسام
+        </button>
+    @else
     @if($canSee(['dashboard']))
         <a href="{{ route('dashboard') }}" class="admin-mobile-nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <i class="ti ti-layout-dashboard" aria-hidden="true"></i>
@@ -845,6 +878,7 @@
         </a>
     @endif
 
+    @endif
 </nav>
 
 @include('admin.analytics.notifications')

@@ -363,7 +363,7 @@
                         <div class="badges">
                             <span class="tag {{ $product->is_active ? 'tag-g' : 'tag-r' }}">{{ $product->is_active ? 'نشط' : 'غير نشط' }}</span>
                             <span class="tag {{ $product->is_featured ? 'tag-y' : 'tag-r' }}">{{ $product->is_featured ? 'مميز' : 'غير مميز' }}</span>
-                            <span class="tag {{ $product->quantity > 0 ? 'tag-c' : 'tag-r' }}">{{ $product->quantity > 0 ? 'متوفر' : 'نفد المخزون' }}</span>
+                            @if($product->quantity > 0)<span class="tag tag-c">الكمية: {{ $product->quantity }}</span>@endif
                         </div>
                     </aside>
 

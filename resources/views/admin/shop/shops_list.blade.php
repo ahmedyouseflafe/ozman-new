@@ -95,6 +95,8 @@
             color: var(--primary);
             font-size: 64px;
         }
+        /* On phones the text sits on top of the hero, so the big placeholder icon only gets in the way. */
+        @media (max-width: 900px) { .hero-fallback i { display: none; } }
 
         .hero::after {
             content: '';
@@ -891,6 +893,8 @@
                             @endif
                         </section>
 
+                        {{-- Agents and distributors only exist for krembo; other shops never saw a use for these panels. --}}
+                        @if($shop->catalog_type === 'krembo' || $shop->agents->isNotEmpty() || $shop->distributors->isNotEmpty())
                         <section class="panel">
                             <div class="panel-head">
                                 <h2 class="panel-title">
@@ -958,6 +962,7 @@
                                 <div class="empty">لا يوجد موزعون لهذا المتجر بعد.</div>
                             @endif
                         </section>
+                        @endif
 
                         <section class="panel">
                             <div class="panel-head">

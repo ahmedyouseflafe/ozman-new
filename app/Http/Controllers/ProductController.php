@@ -51,7 +51,11 @@ class ProductController extends Controller
             'currentShop' => $currentShop,
             'productsCount' => $products->count(),
             'featuredProductsCount' => $products->where('is_featured', true)->count(),
+            // Most shops never fill in a quantity (it defaults to 0), so "out of stock" only means
+            // something once the shop actually counts stock on at least one item.
+            'tracksStock' => $products->contains(fn ($product) => (int) $product->quantity > 0),
             'outOfStockProductsCount' => $products->where('quantity', '<=', 0)->count(),
+            'hiddenProductsCount' => $products->where('is_active', false)->count(),
             'averageProductPrice' => round($products->avg('price') ?: 0),
         ]);
     }

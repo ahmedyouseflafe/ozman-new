@@ -16,7 +16,7 @@
     @if(session('status'))<div class="notice" role="status">{{ session('status') }}</div>@endif
     <section class="hero">
         <div>
-            <span class="eyebrow">LOYALTY POINTS</span>
+            <span class="eyebrow">نقاط الولاء</span>
             <h1>{{ __('نقاط العملاء') }}</h1>
             <p>
                 <span class="state {{ $settings['enabled'] ? 'on' : 'off' }}">{{ $settings['enabled'] ? __('البرنامج مفعّل') : __('البرنامج موقوف') }}</span>

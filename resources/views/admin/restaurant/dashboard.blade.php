@@ -71,7 +71,7 @@
                 @if (auth()->user()->canAccessRouteName('reward-wheels.shop-signup.edit'))
                     <a href="{{ route('reward-wheels.shop-signup.edit', $shop) }}"><i class="ti ti-discount"></i> عجلة التسجيل</a>
                 @endif
-                <a href="{{ route('shops.show', $shop) }}"><i class="ti ti-building-store"></i> لوحة المتجر</a>
+                <a href="{{ route('shops.show', $shop) }}"><i class="ti ti-building-store"></i> بيانات المطعم</a>
             </nav>
         </section>
 

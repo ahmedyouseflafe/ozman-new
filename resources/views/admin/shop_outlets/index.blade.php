@@ -15,7 +15,7 @@
 <main class="outlets-page">
     @if(session('status'))<div class="notice">{{ session('status') }}</div>@endif
     <section class="hero">
-        <div><span class="eyebrow">POINTS OF SALE</span><h1>نقاط بيع {{ $shop->name }}</h1><p>المحلات اللي بتبيع منتجاتك. بتظهر بصفحة الشركة مجمّعة حسب المنطقة، مع زر يفتحها على الخريطة.</p></div>
+        <div><span class="eyebrow">نقاط البيع</span><h1>نقاط بيع {{ $shop->name }}</h1><p>المحلات اللي بتبيع منتجاتك. بتظهر بصفحة الشركة مجمّعة حسب المنطقة، مع زر يفتحها على الخريطة.</p></div>
         <div class="hero-actions"><a class="btn btn-primary" target="_blank" href="{{ route('krembo.store', $shop) }}#outlets"><i class="ti ti-eye"></i> معاينة الصفحة</a></div>
     </section>
 

@@ -323,7 +323,7 @@
             <div class="notice">{{ session('status') }}</div>
         @endif
         <section class="hero">
-            <div><span class="eyebrow">SALON APPOINTMENTS</span>
+            <div><span class="eyebrow">الحجوزات</span>
                 <h1>حجوزات {{ $shop->name }}</h1>
                 <p>كل حجز محفوظ هنا، والموعد المحجوز لا يظهر متاحًا للعملاء الآخرين.</p>
             </div>

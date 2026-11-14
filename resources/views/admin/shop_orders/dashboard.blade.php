@@ -60,7 +60,7 @@
                 @if (auth()->user()->isSuperAdmin() || auth()->user()->canAccessRouteName('front-orders.index'))
                     <a href="{{ route('front-orders.index', ['all' => 1]) }}"><i class="ti ti-list-details"></i> جدول كل الطلبات</a>
                 @endif
-                <a href="{{ route('shops.show', $shop) }}"><i class="ti ti-building-store"></i> لوحة المتجر</a>
+                <a href="{{ route('shops.show', $shop) }}"><i class="ti ti-building-store"></i> بيانات المحل</a>
             </nav>
         </section>
 

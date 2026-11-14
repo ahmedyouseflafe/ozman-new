@@ -338,7 +338,7 @@ class CatalogTypeCustomizationTest extends TestCase
         $this->get(route('categories'))
             ->assertOk()
             ->assertSee('أقسام المنيو')
-            ->assertSee('الوجبات داخل الأقسام')
+            ->assertSee('أقسام فاضية')
             ->assertSee('Current Menu Section')
             ->assertDontSee('Other Menu Section');
 
