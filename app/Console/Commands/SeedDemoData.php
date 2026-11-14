@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\{Category, Product, Shop, User};
+use App\Models\{Category, Product, RewardWheel, Shop, User};
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -91,6 +91,16 @@ class SeedDemoData extends Command
                             },
                         ]);
                     }
+                }
+            }
+
+            // The demo restaurant gets a welcome wheel, so "sign up and spin" can be tried in the app.
+            $restaurant = Shop::where('slug', 'demo-restaurant')->first();
+            if ($restaurant && ! RewardWheel::where('key', 'shop_signup_'.$restaurant->id)->exists()) {
+                $wheel = RewardWheel::create(['shop_id' => $restaurant->id, 'key' => 'shop_signup_'.$restaurant->id,
+                    'wheel_type' => RewardWheel::TYPE_CUSTOMER_SIGNUP, 'title' => 'سجّل واربح على أول طلب', 'is_active' => true]);
+                foreach ([['خصم 10%', 'percent', 10, '#08DEF4'], ['خصم 5 ₪', 'amount', 5, '#7C4DFF'], ['حظ أوفر', 'none', 0, '#27DD86'], ['خصم 15%', 'percent', 15, '#FF9F43']] as [$label, $type, $value, $color]) {
+                    $wheel->segments()->create(['label' => $label, 'discount_type' => $type, 'discount_value' => $value, 'color' => $color, 'is_active' => true, 'win_quota' => 1]);
                 }
             }
 

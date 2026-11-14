@@ -36,6 +36,10 @@ class OrderController extends Controller
             $request->session()->put('app_push_token', $token);
         }
 
+        // A welcome-wheel prize won in the app is taken off this order by the website's own checkout.
+        if ($signupToken = SignupRewardController::pendingToken($user, $shop)) {
+            $request->merge(['registration_token' => $signupToken]);
+        }
         $response = $restaurant->storeOrder($request, $shop, $firebase);
         $orderId = $response->getData(true)['order_id'] ?? null;
         if ($orderId) {
@@ -171,6 +175,9 @@ class OrderController extends Controller
             'status_label' => $order->statusLabel(),
             'type' => $order->order_type,
             'total' => Presenter::price($order->total),
+            'discount' => Presenter::price($order->discount),
+            // What was taken off this order (the welcome-wheel prize), if anything.
+            'discount_label' => (float) $order->discount > 0 ? ($order->reward_label ?: 'خصم') : null,
             'items_count' => (int) collect($order->items ?? [])->sum(fn ($item) => (int) ($item['qty'] ?? 1)),
             'created_at' => $order->created_at?->toIso8601String(),
             'shop' => $order->shop ? ['id' => $order->shop->id, 'name' => $order->shop->name, 'type' => $order->shop->catalog_type, 'logo' => Presenter::media($order->shop->logo)] : null,

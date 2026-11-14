@@ -107,6 +107,37 @@ class CatalogController extends Controller
         ]);
     }
 
+    /** One box for everything: shops by name, and products by name across all open shops. */
+    public function search(Request $request): JsonResponse
+    {
+        $data = $request->validate(['q' => ['required', 'string', 'min:2', 'max:100']]);
+        $like = '%'.addcslashes(trim($data['q']), '%_\\').'%';
+        $shops = Shop::where('is_active', true)->where('name', 'like', $like)
+            ->orderByDesc('is_accepting_orders')->limit(10)->get();
+        $products = $this->activeProducts()->with('shop:id,name,catalog_type')
+            ->where(fn ($q) => $q->where('products.name', 'like', $like)->orWhere('products.description', 'like', $like))
+            // Name matches first, then featured items.
+            ->orderByRaw('CASE WHEN products.name LIKE ? THEN 0 ELSE 1 END', [$like])
+            ->orderByDesc('products.is_featured')->limit(40)->get();
+
+        return response()->json([
+            'shops' => $shops->map(fn ($shop) => Presenter::shop($shop)),
+            'products' => $products->map(fn ($product) => Presenter::product($product) + ['shop_name' => $product->shop?->name]),
+        ]);
+    }
+
+    /** The products this account has liked, newest first: the app's favourites list. */
+    public function liked(Request $request): JsonResponse
+    {
+        $ids = \App\Models\ProductLike::where('user_id', $request->user()->id)->latest('id')->limit(200)->pluck('product_id');
+        $products = $this->activeProducts()->with('shop:id,name,catalog_type')->whereIn('products.id', $ids)->get()
+            ->sortBy(fn ($product) => $ids->search($product->id))->values();
+
+        return response()->json([
+            'data' => $products->map(fn ($product) => Presenter::product($product) + ['shop_name' => $product->shop?->name, 'liked' => true]),
+        ]);
+    }
+
     private function activeProducts()
     {
         return Product::query()->select('products.*')->where('products.is_active', true)
