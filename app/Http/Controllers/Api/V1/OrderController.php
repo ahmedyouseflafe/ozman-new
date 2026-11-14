@@ -106,6 +106,12 @@ class OrderController extends Controller
                 'price' => Presenter::price($item['price'] ?? 0),
                 'size' => $item['size'] ?? null,
                 'notes' => $item['notes'] ?? null,
+                // What was picked for a meal, in one readable line.
+                'details' => collect([
+                    ! empty($item['choices']) ? \App\Services\MealChoiceService::summary($item['choices']) : null,
+                    ! empty($item['addons']) ? 'إضافات: '.implode('، ', (array) $item['addons']) : null,
+                    ! empty($item['excluded']) ? 'بدون: '.implode('، ', (array) $item['excluded']) : null,
+                ])->filter()->implode(' · ') ?: null,
             ])->values(),
             'subtotal' => Presenter::price($order->subtotal),
             'discount' => Presenter::price($order->discount),

@@ -1,0 +1,42 @@
+# Updates the staging copy (staging.ozman.online) after every push to main.
+# Needs one repository secret: STAGING_SSH_KEY (a private key whose public half is in the
+# server's ~/.ssh/authorized_keys). Production is never touched by this workflow.
+name: Deploy staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Update staging over SSH
+        env:
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          HOST: 82.198.227.221
+          PORT: 65002
+          USER_NAME: u379351114
+        run: |
+          if [ -z "$SSH_KEY" ]; then
+            echo "::warning::STAGING_SSH_KEY is not set yet, so staging was not updated."
+            exit 0
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/staging_key
+          chmod 600 ~/.ssh/staging_key
+          ssh-keyscan -p "$PORT" "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh -i ~/.ssh/staging_key -p "$PORT" "$USER_NAME@$HOST" '
+            set -e
+            cd ~/staging-app
+            git pull --ff-only origin main
+            php artisan migrate --force
+            php artisan optimize:clear
+            echo "Staging is on $(git log -1 --format="%h %s")"
+          '

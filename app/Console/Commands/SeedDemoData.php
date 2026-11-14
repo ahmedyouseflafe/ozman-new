@@ -73,7 +73,22 @@ class SeedDemoData extends Command
                             'description' => 'منتج تجريبي: '.$productName.'.', 'price' => $price, 'discount_price' => $discount,
                             'is_active' => true, 'is_featured' => $position === 0,
                             // Clothes come in sizes and colours, so the app's option picker can be tried.
-                            'catalog_attributes' => $type === 'clothing' ? ['sizes' => ['S', 'M', 'L', 'XL'], 'colors' => ['أسود', 'أبيض', 'كحلي']] : null,
+                            'catalog_attributes' => match (true) {
+                                $type === 'clothing' => ['sizes' => ['S', 'M', 'L', 'XL'], 'colors' => ['أسود', 'أبيض', 'كحلي']],
+                                // Burgers get every kind of meal choice, so the app's meal sheet can be tried.
+                                $type === 'restaurant' && $categoryName === 'برغر' => [
+                                    'meal_size_prices' => ['عادي:'.($discount ?: $price), 'دبل:'.(($discount ?: $price) + 12)],
+                                    'addon_prices' => ['جبنة زيادة:3', 'بيض:4', 'هالبينو:2'],
+                                    'removable_ingredients' => ['بصل', 'مخلل', 'صوص'],
+                                    'meal_choice_groups' => [
+                                        ['id' => 'drink', 'name' => 'المشروب', 'min' => 1, 'max' => 1, 'allow_repeat' => false, 'source' => 'manual',
+                                            'options' => [['id' => 'cola', 'name' => 'كولا', 'price' => 0], ['id' => 'orange', 'name' => 'عصير برتقال', 'price' => 4]]],
+                                        ['id' => 'sauce', 'name' => 'صوصات', 'min' => 0, 'max' => 2, 'allow_repeat' => false, 'source' => 'manual',
+                                            'options' => [['id' => 'garlic', 'name' => 'ثوم', 'price' => 0], ['id' => 'bbq', 'name' => 'باربكيو', 'price' => 1], ['id' => 'spicy', 'name' => 'حار', 'price' => 1]]],
+                                    ],
+                                ],
+                                default => null,
+                            },
                         ]);
                     }
                 }

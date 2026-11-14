@@ -151,6 +151,7 @@ class MerchantController extends Controller
                 'qty' => (int) ($item['qty'] ?? 1),
                 'price' => Presenter::price($item['price'] ?? 0),
                 'notes' => collect([
+                    ! empty($item['choices']) ? \App\Services\MealChoiceService::summary($item['choices']) : null,
                     ! empty($item['addons']) ? 'إضافات: '.implode('، ', (array) $item['addons']) : null,
                     ! empty($item['excluded']) ? 'بدون: '.implode('، ', (array) $item['excluded']) : null,
                     $item['notes'] ?? null,

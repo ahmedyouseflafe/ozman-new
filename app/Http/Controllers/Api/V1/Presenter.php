@@ -92,6 +92,8 @@ class Presenter
                 'attributes' => $product->catalog_attributes ?: (object) [],
                 'sizes' => self::optionList($product, 'sizes'),
                 'colors' => self::optionList($product, 'colors'),
+                // Restaurant meals: sizes, extras, "without…" and choice groups, as the menu page offers them.
+                'meal' => self::mealOptions($product),
                 'variants' => $product->variants->where('is_active', true)->values()->map(fn ($variant) => [
                     'id' => $variant->id,
                     'size' => $variant->size,
@@ -115,7 +117,37 @@ class Presenter
             ? $product->variants->where('is_active', true)->count()
             : (int) ($product->active_variants_count ?? 0);
 
-        return $variants > 0 || ! empty(self::optionList($product, 'sizes')) || ! empty(self::optionList($product, 'colors'));
+        return $variants > 0 || ! empty(self::optionList($product, 'sizes')) || ! empty(self::optionList($product, 'colors'))
+            // Cheap check for lists (no menu lookups): does the meal have any choices at all?
+            || collect(['meal_size_prices', 'addon_prices', 'removable_ingredients', 'meal_choice_groups'])
+                ->contains(fn ($key) => ! empty(($product->catalog_attributes ?? [])[$key] ?? null));
+    }
+
+    /**
+     * A meal's choices in the website's own format ("name:price" lists and choice groups), or null.
+     * The checkout re-checks every pick and price on the server.
+     */
+    public static function mealOptions(Product $product): ?array
+    {
+        $attributes = $product->catalog_attributes ?? [];
+        $priced = fn ($values) => collect(is_array($values) ? $values : [])->map(function ($value) {
+            [$name, $price] = array_pad(explode(':', (string) $value, 2), 2, null);
+            return trim((string) $name) !== '' && is_numeric($price) ? ['name' => trim($name), 'price' => max(0, (float) $price)] : null;
+        })->filter()->values()->all();
+        $sizes = $priced($attributes['meal_size_prices'] ?? []);
+        $addons = $priced($attributes['addon_prices'] ?? []);
+        $removable = array_values(array_filter(array_map('strval', (array) ($attributes['removable_ingredients'] ?? [])), fn ($name) => trim($name) !== ''));
+        $groups = ! empty($attributes['meal_choice_groups'])
+            ? collect(app(\App\Services\MealChoiceService::class)->forProduct($product))->map(fn ($group) => [
+                'id' => $group['id'], 'name' => $group['name'], 'min' => (int) $group['min'], 'max' => (int) $group['max'],
+                'allow_repeat' => (bool) ($group['allow_repeat'] ?? false),
+                'options' => collect($group['options'] ?? [])->map(fn ($option) => ['id' => $option['id'], 'name' => $option['name'], 'price' => (float) $option['price']])->values()->all(),
+            ])->filter(fn ($group) => $group['options'] !== [])->values()->all()
+            : [];
+
+        return ($sizes || $addons || $removable || $groups)
+            ? ['sizes' => $sizes, 'addons' => $addons, 'removable' => $removable, 'groups' => $groups]
+            : null;
     }
 
     /** Sizes or colours a shop typed for a product (an array, or text separated by commas). */
