@@ -114,6 +114,28 @@ class MobileShopOrdersApiTest extends TestCase
         $this->assertSame(0, ProductVariant::find($variant->id)->quantity);
     }
 
+    public function test_a_delivery_order_keeps_the_map_pin_for_the_shop(): void
+    {
+        [$shop, $category] = $this->shop('sweets');
+        $cake = Product::create(['shop_id' => $shop->id, 'category_id' => $category->id, 'name' => 'Cake', 'slug' => 'cake-'.uniqid(), 'price' => 50, 'is_active' => true]);
+        $headers = $this->auth($this->customer());
+        $item = [['product_id' => $cake->id, 'qty' => 1]];
+
+        $this->postJson("/api/v1/shops/{$shop->id}/orders", ['order_type' => 'delivery', 'customer_address' => 'Ramallah', 'latitude' => 31.9, 'items' => $item], $headers)
+            ->assertStatus(422)->assertJsonValidationErrors('longitude');
+        $orderId = $this->postJson("/api/v1/shops/{$shop->id}/orders", [
+            'order_type' => 'delivery', 'customer_address' => 'Ramallah, near the clock', 'latitude' => 31.9038, 'longitude' => 35.2034, 'items' => $item,
+        ], $headers)->assertCreated()->json('order_id');
+        $order = FrontOrder::findOrFail($orderId);
+        $this->assertEqualsWithDelta(31.9038, (float) $order->latitude, 0.0001);
+        $this->assertSame('https://www.google.com/maps?q=31.9038,35.2034', $order->map_link);
+
+        // A pickup order never keeps a location, even if the app sent one.
+        $pickupId = $this->postJson("/api/v1/shops/{$shop->id}/orders", ['order_type' => 'pickup', 'latitude' => 31.9, 'longitude' => 35.2, 'items' => $item], $headers)
+            ->assertCreated()->json('order_id');
+        $this->assertNull(FrontOrder::findOrFail($pickupId)->map_link);
+    }
+
     public function test_restaurants_closed_shops_and_guests_are_refused(): void
     {
         [$restaurant, $category] = $this->shop('restaurant');

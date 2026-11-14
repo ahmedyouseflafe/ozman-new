@@ -61,6 +61,9 @@ class OrderController extends Controller
             'customer_phone' => ['required', 'string', 'max:30', new ValidPhoneNumber()],
             'order_type' => ['required', 'in:pickup,delivery'],
             'customer_address' => ['nullable', 'required_if:order_type,delivery', 'string', 'max:500'],
+            // The pin the customer dropped on the map (optional; the written address is enough).
+            'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
             'customer_notes' => ['nullable', 'string', 'max:1000'],
             'device_token' => ['nullable', 'string', 'max:512'],
             'items' => ['required', 'array', 'min:1', 'max:50'],

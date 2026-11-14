@@ -68,6 +68,7 @@ class AppShopOrderService
             ])));
             $subtotal = $subtotalCents / 100;
 
+            $pin = $data['order_type'] === 'delivery' && isset($data['latitude'], $data['longitude']);
             return FrontOrder::create([
                 'shop_id' => $shop->id,
                 'user_id' => $user->id,
@@ -76,6 +77,9 @@ class AppShopOrderService
                 'customer_phone' => $data['customer_phone'],
                 'customer_whatsapp' => $data['customer_phone'],
                 'customer_address' => $data['order_type'] === 'delivery' ? ($data['customer_address'] ?? null) : null,
+                'latitude' => $pin ? $data['latitude'] : null,
+                'longitude' => $pin ? $data['longitude'] : null,
+                'map_link' => $pin ? 'https://www.google.com/maps?q='.$data['latitude'].','.$data['longitude'] : null,
                 'customer_notes' => $notes,
                 'items' => $items,
                 'subtotal' => $subtotal,
