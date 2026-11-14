@@ -21,6 +21,12 @@ class PromoterGiftSend extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /** Same as sender(); the promoter's page loads gifts with "user". */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     public function gift(): BelongsTo
     {
         return $this->belongsTo(PromoterGift::class, 'promoter_gift_id');

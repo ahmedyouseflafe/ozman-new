@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\V1\MerchantController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PointsController;
 use App\Http\Controllers\Api\V1\SignupRewardController;
+use App\Http\Controllers\Api\V1\MarketController;
+use App\Http\Controllers\Api\V1\PromoterController;
 use App\Http\Middleware\ApiAuthenticated;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +34,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/products/{product:id}', [CatalogController::class, 'product'])->name('products.show');
         Route::get('/search', [CatalogController::class, 'search'])->name('search');
         Route::get('/stories', [StoryController::class, 'feed'])->name('stories.feed');
+
+        // Free market and creators: anyone can browse; a login is only needed to act.
+        Route::get('/market/meta', [MarketController::class, 'meta'])->name('market.meta');
+        Route::get('/market', [MarketController::class, 'index'])->name('market.index');
+        Route::get('/market/{listing}', [MarketController::class, 'show'])->name('market.show');
+        Route::get('/promoters', [PromoterController::class, 'index'])->name('promoters.index');
+        Route::get('/promoters/{slug}', [PromoterController::class, 'show'])->name('promoters.show');
+        Route::post('/promoter-posts/{post}/visit-shop', [PromoterController::class, 'visitShop'])->name('promoters.visit-shop');
     });
 
     Route::middleware([ApiAuthenticated::class, 'throttle:120,1,api'])->group(function () {
@@ -74,6 +84,28 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/merchant/shops/{shop:id}/categories', [MerchantCatalogController::class, 'storeCategory'])->name('merchant.categories.store');
         Route::patch('/merchant/categories/{category}', [MerchantCatalogController::class, 'updateCategory'])->name('merchant.categories.update');
         Route::delete('/merchant/categories/{category}', [MerchantCatalogController::class, 'destroyCategory'])->name('merchant.categories.destroy');
+
+        // Free market: selling and buying.
+        Route::post('/market/{listing}/order', [MarketController::class, 'order'])->middleware('throttle:10,1,market.order')->name('market.order');
+        Route::get('/me/market/listings', [MarketController::class, 'mine'])->name('market.mine');
+        Route::post('/me/market/listings', [MarketController::class, 'store'])->middleware('throttle:20,1,market.store')->name('market.store');
+        Route::post('/me/market/listings/{listing}', [MarketController::class, 'update'])->middleware('throttle:30,1,market.update')->name('market.update');
+        Route::patch('/me/market/listings/{listing}/toggle', [MarketController::class, 'toggle'])->name('market.toggle');
+        Route::delete('/me/market/listings/{listing}', [MarketController::class, 'destroy'])->name('market.destroy');
+        Route::get('/me/market/purchases', [MarketController::class, 'purchases'])->name('market.purchases');
+        Route::get('/me/market/sales', [MarketController::class, 'sales'])->name('market.sales');
+        Route::patch('/me/market/orders/{order}', [MarketController::class, 'updateOrder'])->middleware('throttle:30,1,market.orders')->name('market.orders.update');
+
+        // Creators: following and gifts, applying, and the creator's own page.
+        Route::put('/promoters/{profile}/follow', [PromoterController::class, 'follow'])->middleware('throttle:20,1,promoters.follow')->name('promoters.follow');
+        Route::delete('/promoters/{profile}/follow', [PromoterController::class, 'unfollow'])->middleware('throttle:20,1,promoters.unfollow')->name('promoters.unfollow');
+        Route::post('/promoters/{profile}/gifts', [PromoterController::class, 'gift'])->middleware('throttle:20,1,promoters.gift')->name('promoters.gift');
+        Route::post('/me/promoter/apply', [PromoterController::class, 'apply'])->middleware('throttle:5,1,promoters.apply')->name('promoters.apply');
+        Route::get('/me/promoter', [PromoterController::class, 'mine'])->name('promoters.mine');
+        Route::post('/me/promoter/profile', [PromoterController::class, 'updateProfile'])->middleware('throttle:20,1,promoters.profile')->name('promoters.profile');
+        Route::post('/me/promoter/posts', [PromoterController::class, 'storePost'])->middleware('throttle:20,1,promoters.posts.store')->name('promoters.posts.store');
+        Route::patch('/me/promoter/posts/{post}', [PromoterController::class, 'updatePost'])->name('promoters.posts.update');
+        Route::delete('/me/promoter/posts/{post}', [PromoterController::class, 'destroyPost'])->name('promoters.posts.destroy');
 
         // Delivery drivers.
         Route::get('/driver', [DriverController::class, 'index'])->name('driver.index');

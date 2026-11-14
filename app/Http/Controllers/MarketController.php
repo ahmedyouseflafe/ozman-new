@@ -4,11 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\MarketListing;
 use App\Models\MarketListingImage;
+use App\Services\FreeMarket;
 use App\Services\MarketImage;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 
 /** "المتجر الحر": browsing, and members managing their own listings. */
 class MarketController extends Controller
@@ -78,28 +77,10 @@ class MarketController extends Controller
         return response()->view('market.form', ['listing' => new MarketListing(['quantity' => 1, 'condition' => 'new', 'city' => ''])])->header('Cache-Control', 'private, no-store');
     }
 
-    public function store(Request $request, MarketImage $images)
+    public function store(Request $request, FreeMarket $market)
     {
         $this->member($request);
-        $active = MarketListing::where('user_id', $request->user()->id)->where('status', MarketListing::ACTIVE)->count();
-        if ($active >= config('market.max_active_listings', 50)) {
-            return back()->withInput()->withErrors(['title' => __('وصلت للحد الأقصى من المنتجات المعروضة. اخفي أو احذف منتج قبل ما تضيف جديد.')]);
-        }
-        $data = $this->validated($request, true);
-        $paths = $this->storeImages($request, $images);
-        try {
-            $listing = DB::transaction(function () use ($request, $data, $paths) {
-                $listing = MarketListing::create([...$data, 'user_id' => $request->user()->id, 'status' => MarketListing::ACTIVE]);
-                foreach ($paths as $i => $path) {
-                    $listing->images()->create(['path' => $path, 'sort_order' => $i]);
-                }
-
-                return $listing;
-            });
-        } catch (\Throwable $e) {
-            $images->delete($paths);
-            throw $e;
-        }
+        $listing = $market->createListing($request->user(), $market->validateListing($request->all(), true), $request->file('images', []));
 
         return redirect()->to($listing->url())->with('status', __('تم نشر منتجك بالمتجر الحر 🎉'));
     }
@@ -111,105 +92,29 @@ class MarketController extends Controller
         return response()->view('market.form', ['listing' => $listing->load('images')])->header('Cache-Control', 'private, no-store');
     }
 
-    public function update(Request $request, MarketListing $listing, MarketImage $images)
+    public function update(Request $request, MarketListing $listing, FreeMarket $market)
     {
         $this->owner($request, $listing);
-        $data = $this->validated($request, false);
-        $listing->load('images');
-        $remove = $listing->images->whereIn('id', array_map('intval', (array) $request->input('remove_images', [])));
-        $keep = $listing->images->count() - $remove->count();
-        $max = config('market.max_images', 6);
-        if ($keep + count($request->file('images', [])) > $max) {
-            return back()->withInput()->withErrors(['images' => __('بتقدر تضيف لحد :max صور.', ['max' => $max])]);
-        }
-        if ($keep + count($request->file('images', [])) < 1) {
-            return back()->withInput()->withErrors(['images' => __('خلّي صورة وحدة على الأقل للمنتج.')]);
-        }
-        $paths = $this->storeImages($request, $images);
-        try {
-            DB::transaction(function () use ($listing, $data, $paths, $remove) {
-                // A sold-out listing comes back when the seller adds stock; the admin's removal stays.
-                $status = match (true) {
-                    $listing->status === MarketListing::SOLD && (int) $data['quantity'] > 0 => MarketListing::ACTIVE,
-                    $listing->status === MarketListing::ACTIVE && (int) $data['quantity'] === 0 => MarketListing::SOLD,
-                    default => $listing->status,
-                };
-                $listing->update([...$data, 'status' => $status]);
-                MarketListingImage::query()->whereIn('id', $remove->pluck('id'))->delete();
-                $next = (int) $listing->images()->max('sort_order') + 1;
-                foreach ($paths as $i => $path) {
-                    $listing->images()->create(['path' => $path, 'sort_order' => $next + $i]);
-                }
-            });
-        } catch (\Throwable $e) {
-            $images->delete($paths);
-            throw $e;
-        }
-        $images->delete($remove->pluck('path')->all());
+        $data = $market->validateListing($request->all(), false);
+        $market->updateListing($listing, $data, $request->file('images', []), (array) $request->input('remove_images', []));
 
         return redirect()->to($listing->url())->with('status', __('تم حفظ التعديلات.'));
     }
 
-    public function toggle(Request $request, MarketListing $listing)
+    public function toggle(Request $request, MarketListing $listing, FreeMarket $market)
     {
         $this->owner($request, $listing);
-        abort_if($listing->status === MarketListing::REMOVED, 403, __('الإدارة أوقفت هذا المنتج.'));
-        $listing->update(['status' => $listing->status === MarketListing::ACTIVE ? MarketListing::HIDDEN : MarketListing::ACTIVE]);
+        $market->toggleListing($listing);
 
         return back()->with('status', $listing->status === MarketListing::ACTIVE ? __('المنتج رجع معروض.') : __('تم إخفاء المنتج.'));
     }
 
-    public function destroy(Request $request, MarketListing $listing, MarketImage $images)
+    public function destroy(Request $request, MarketListing $listing, FreeMarket $market)
     {
         $this->owner($request, $listing);
-        abort_if($listing->orders()->where('status', 'accepted')->exists(), 422, __('في طلب مقبول على هالمنتج. سلّمه أو ألغيه أول.'));
-        $paths = $listing->images()->pluck('path')->all();
-        DB::transaction(function () use ($listing) {
-            // Pending orders can't be fulfilled any more.
-            $listing->orders()->where('status', 'pending')->update(['status' => 'cancelled']);
-            $listing->delete();
-        });
-        $images->delete($paths);
+        $market->deleteListing($listing);
 
         return redirect()->route('market.mine')->with('status', __('تم حذف المنتج.'));
-    }
-
-    private function validated(Request $request, bool $creating): array
-    {
-        $data = $request->validate([
-            'title' => ['required', 'string', 'min:3', 'max:120'],
-            'description' => ['nullable', 'string', 'max:3000'],
-            'price' => ['required', 'numeric', 'min:0.5', 'max:1000000'],
-            'category' => ['required', Rule::in(array_keys(config('market.categories')))],
-            'condition' => ['required', Rule::in(array_keys(config('market.conditions')))],
-            'city' => ['required', 'string', 'min:2', 'max:60'],
-            'quantity' => ['required', 'integer', 'min:'.($creating ? 1 : 0), 'max:999'],
-            ...MarketImage::rules(),
-            'images' => [$creating ? 'required' : 'nullable', 'array', 'max:'.config('market.max_images', 6)],
-            'remove_images' => ['nullable', 'array'],
-            'remove_images.*' => ['integer'],
-        ], [...MarketImage::messages(), 'images.required' => __('أضف صورة وحدة على الأقل للمنتج.'),
-            'price.min' => __('السعر لازم يكون نص شيكل أو أكثر.'), 'quantity.min' => __('الكمية لازم تكون 1 أو أكثر.')]);
-        unset($data['images'], $data['remove_images']);
-        $data['title'] = trim($data['title']);
-        $data['city'] = trim($data['city']);
-
-        return $data;
-    }
-
-    private function storeImages(Request $request, MarketImage $images): array
-    {
-        $paths = [];
-        try {
-            foreach ($request->file('images', []) as $file) {
-                $paths[] = $images->store($file);
-            }
-        } catch (\Throwable $e) {
-            $images->delete($paths);
-            throw $e;
-        }
-
-        return $paths;
     }
 
     private function member(Request $request): void
