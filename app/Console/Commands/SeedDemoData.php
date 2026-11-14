@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\{Category, MarketListing, Product, PromoterPost, PromoterProfile, RewardWheel, Shop, User};
+use App\Models\{Category, MarketListing, RealEstateProperty, Product, PromoterPost, PromoterProfile, RewardWheel, Shop, User};
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -137,6 +137,24 @@ class SeedDemoData extends Command
                         $listing->images()->create(['path' => $this->demoImage('market/listings', ['#08DEF4', '#FFC94D', '#27DD86'][$k], $k), 'sort_order' => 0]);
                     }
                 }
+            }
+
+            // A table QR for the demo restaurant, and a service company with two properties.
+            if ($restaurant && ! $restaurant->restaurantTables()->exists()) {
+                $restaurant->restaurantTables()->create(['name' => 'طاولة 1', 'code' => 'demotable1'.Str::lower(Str::random(22)), 'capacity' => 4, 'is_active' => true]);
+            }
+            $companyEmail = 'demo-owner-real_estate@staging.ozman.test';
+            $companyOwner = User::where('email', $companyEmail)->first();
+            if (! $companyOwner) {
+                $passwords[$companyEmail] = Str::password(14, symbols: false);
+                $companyOwner = User::create(['name' => 'صاحب شركة الديمو', 'email' => $companyEmail, 'password' => Hash::make($passwords[$companyEmail]), 'role' => 'shop_owner', 'is_active' => true]);
+            }
+            $company = Shop::updateOrCreate(['slug' => 'demo-company'], ['user_id' => $companyOwner->id, 'name' => 'شركة البيت (ديمو)', 'catalog_type' => 'real_estate',
+                'city' => 'رام الله', 'description' => 'شركة تجريبية: خدمات وعقارات.', 'phone' => '0590000900', 'whatsapp' => '0590000900', 'is_active' => true, 'is_accepting_orders' => true]);
+            foreach ([['شقة 3 غرف بالماصيون', 'rent', 2800, 3, 140, 'flat'], ['بيت مستقل مع حديقة', 'sale', 950000, 5, 260, 'house']] as $k => [$title, $purpose, $price, $rooms, $area, $slug]) {
+                RealEstateProperty::firstOrCreate(['shop_id' => $company->id, 'slug' => 'demo-'.$slug], ['purpose' => $purpose, 'property_type' => $k ? 'house' : 'apartment',
+                    'title' => $title, 'description' => 'عقار تجريبي لتجربة التطبيق.', 'price' => $price, 'currency' => 'ILS', 'city' => 'رام الله', 'neighborhood' => 'الماصيون',
+                    'rooms' => $rooms, 'bathrooms' => 2, 'area' => $area, 'has_balcony' => true, 'has_elevator' => ! $k, 'status' => 'published', 'published_at' => now()]);
             }
 
             $customerEmail = 'demo-customer@staging.ozman.test';
