@@ -115,7 +115,9 @@ class CatalogController extends Controller
         $shops = Shop::where('is_active', true)->where('name', 'like', $like)
             ->orderByDesc('is_accepting_orders')->limit(10)->get();
         $products = $this->activeProducts()->with('shop:id,name,catalog_type')
-            ->where(fn ($q) => $q->where('products.name', 'like', $like)->orWhere('products.description', 'like', $like))
+            ->where(fn ($q) => $q->where('products.name', 'like', $like)->orWhere('products.description', 'like', $like)
+                // English names typed by the shop (Hebrew is stored escaped, so it can't be matched this way).
+                ->orWhere('products.name_translations', 'like', $like))
             // Name matches first, then featured items.
             ->orderByRaw('CASE WHEN products.name LIKE ? THEN 0 ELSE 1 END', [$like])
             ->orderByDesc('products.is_featured')->limit(40)->get();
