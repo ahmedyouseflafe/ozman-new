@@ -24,12 +24,20 @@ class KremboStoreController extends Controller
             $url=$shop->social?->{$key};
             return filter_var($url,FILTER_VALIDATE_URL) && in_array(strtolower(parse_url($url,PHP_URL_SCHEME)),['https','http'],true) ? ['label'=>$label,'url'=>$url] : null;
         })->filter();
+        $outletGroups=$this->outletGroups($shop,$distributors);
+        return view('front.krembo_store',compact('shop','products','agents','distributors','phone','video','tiktokVideoId','productVideo','socialLinks','outletGroups'));
+    }
+    /** Where to buy, grouped by region: the shop's own outlets plus shops served by its distributors (website and app). */
+    public function outletGroups(Shop $shop,$distributors=null)
+    {
+        $distributors??=$shop->distributors()->where('is_active',true)
+            ->where(fn($q)=>$q->whereNull('agent_id')->orWhereHas('agent',fn($a)=>$a->where('shop_id',$shop->id)->where('is_active',true)))->get();
         $outlets=Shop::query()->where('is_active',true)->where('id','!=',$shop->id)
             ->where(fn($q)=>$q->whereIn('distributor_id',$distributors->pluck('id'))
                 ->orWhereHas('distributorMarketer',fn($m)=>$m->where('is_active',true)->whereIn('distributor_id',$distributors->pluck('id'))))
             ->orderBy('name')->get();
         $otherRegion='مناطق أخرى';
-        $outletGroups=$outlets->map(fn(Shop $outlet)=>[
+        return $outlets->map(fn(Shop $outlet)=>[
                 'name'=>$outlet->name,'region'=>trim((string)$outlet->city) ?: $otherRegion,'address'=>$outlet->address,
                 'latitude'=>$outlet->latitude,'longitude'=>$outlet->longitude,'phone'=>null,'sort'=>0,
                 'map'=>$this->mapUrl($outlet->latitude,$outlet->longitude,$outlet->address),
@@ -42,7 +50,6 @@ class KremboStoreController extends Controller
             ->sortBy([['sort','asc'],['name','asc']])
             ->groupBy('region')
             ->sortKeysUsing(fn($a,$b)=>[$a===$otherRegion,$a]<=>[$b===$otherRegion,$b]);
-        return view('front.krembo_store',compact('shop','products','agents','distributors','phone','video','tiktokVideoId','productVideo','socialLinks','outletGroups'));
     }
     private function mapUrl($latitude,$longitude,?string $address): ?string
     {

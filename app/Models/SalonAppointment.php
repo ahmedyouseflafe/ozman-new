@@ -16,7 +16,7 @@ class SalonAppointment extends Model
     public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
-        'shop_id', 'service', 'appointment_at', 'slot_key', 'customer_name',
+        'shop_id', 'user_id', 'service', 'appointment_at', 'slot_key', 'customer_name',
         'customer_phone', 'notes', 'status', 'locale', 'whatsapp_opened_at',
     ];
 

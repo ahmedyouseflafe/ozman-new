@@ -12,6 +12,9 @@ use App\Http\Controllers\Api\V1\PointsController;
 use App\Http\Controllers\Api\V1\SignupRewardController;
 use App\Http\Controllers\Api\V1\MarketController;
 use App\Http\Controllers\Api\V1\PromoterController;
+use App\Http\Controllers\Api\V1\RealEstateController;
+use App\Http\Controllers\Api\V1\RestaurantManageController;
+use App\Http\Controllers\Api\V1\SalonController;
 use App\Http\Middleware\ApiAuthenticated;
 use Illuminate\Support\Facades\Route;
 
@@ -41,6 +44,16 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/market/{listing}', [MarketController::class, 'show'])->name('market.show');
         Route::get('/promoters', [PromoterController::class, 'index'])->name('promoters.index');
         Route::get('/promoters/{slug}', [PromoterController::class, 'show'])->name('promoters.show');
+        // Electronics compare, krembo outlets, restaurant table QR, service companies, salon booking form.
+        Route::get('/shops/{shop:id}/compare', [CatalogController::class, 'compare'])->name('electronics.compare');
+        Route::get('/shops/{shop:id}/network', [CatalogController::class, 'network'])->name('krembo.network');
+        Route::get('/restaurants/{slug}/tables/{code}', [RestaurantManageController::class, 'table'])->name('restaurant.table');
+        Route::get('/real-estate/companies/{shop:id}', [RealEstateController::class, 'company'])->name('real-estate.company');
+        Route::get('/real-estate/services/{service}', [RealEstateController::class, 'service'])->name('real-estate.service');
+        Route::get('/real-estate/properties', [RealEstateController::class, 'properties'])->name('real-estate.properties');
+        Route::get('/real-estate/properties/{property}', [RealEstateController::class, 'property'])->name('real-estate.property');
+        Route::get('/shops/{shop:id}/booking', [SalonController::class, 'form'])->name('salon.form');
+        Route::get('/shops/{shop:id}/booking/availability', [SalonController::class, 'availability'])->name('salon.availability');
         Route::post('/promoter-posts/{post}/visit-shop', [PromoterController::class, 'visitShop'])->name('promoters.visit-shop');
     });
 
@@ -106,6 +119,26 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/me/promoter/posts', [PromoterController::class, 'storePost'])->middleware('throttle:20,1,promoters.posts.store')->name('promoters.posts.store');
         Route::patch('/me/promoter/posts/{post}', [PromoterController::class, 'updatePost'])->name('promoters.posts.update');
         Route::delete('/me/promoter/posts/{post}', [PromoterController::class, 'destroyPost'])->name('promoters.posts.destroy');
+
+        // Salon bookings, service requests and property inquiries.
+        Route::post('/shops/{shop:id}/booking', [SalonController::class, 'store'])->middleware('throttle:10,1,salon.book')->name('salon.book');
+        Route::get('/me/appointments', [SalonController::class, 'mine'])->name('salon.mine');
+        Route::post('/real-estate/services/{service}/request', [RealEstateController::class, 'requestService'])->middleware('throttle:10,1,real-estate.request')->name('real-estate.request');
+        Route::post('/real-estate/properties/{property}/inquiry', [RealEstateController::class, 'inquiry'])->middleware('throttle:10,1,real-estate.inquiry')->name('real-estate.inquiry');
+
+        // Owners: salon bookings, restaurant tables and drivers, service-company inbox.
+        Route::get('/merchant/shops/{shop:id}/appointments', [SalonController::class, 'index'])->name('merchant.appointments');
+        Route::patch('/merchant/appointments/{appointment}', [SalonController::class, 'status'])->name('merchant.appointments.status');
+        Route::get('/merchant/shops/{shop:id}/tables', [RestaurantManageController::class, 'tables'])->name('merchant.tables');
+        Route::post('/merchant/shops/{shop:id}/tables', [RestaurantManageController::class, 'storeTable'])->name('merchant.tables.store');
+        Route::delete('/merchant/tables/{table}', [RestaurantManageController::class, 'destroyTable'])->name('merchant.tables.destroy');
+        Route::get('/merchant/shops/{shop:id}/drivers', [RestaurantManageController::class, 'drivers'])->name('merchant.drivers');
+        Route::post('/merchant/shops/{shop:id}/drivers', [RestaurantManageController::class, 'storeDriver'])->middleware('throttle:10,1,merchant.drivers.store')->name('merchant.drivers.store');
+        Route::patch('/merchant/drivers/{driver}', [RestaurantManageController::class, 'toggleDriver'])->name('merchant.drivers.toggle');
+        Route::patch('/merchant/orders/{order:id}/driver', [RestaurantManageController::class, 'assign'])->name('merchant.orders.driver');
+        Route::get('/merchant/shops/{shop:id}/inbox', [RealEstateController::class, 'inbox'])->name('merchant.inbox');
+        Route::patch('/merchant/service-requests/{serviceRequest}', [RealEstateController::class, 'updateRequest'])->name('merchant.service-requests.update');
+        Route::patch('/merchant/leads/{lead}', [RealEstateController::class, 'updateLead'])->name('merchant.leads.update');
 
         // Delivery drivers.
         Route::get('/driver', [DriverController::class, 'index'])->name('driver.index');

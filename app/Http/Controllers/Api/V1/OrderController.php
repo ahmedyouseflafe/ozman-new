@@ -102,7 +102,7 @@ class OrderController extends Controller
     public function show(Request $request, FrontOrder $order): JsonResponse
     {
         abort_unless((int) $order->user_id === (int) $request->user()->id, 404);
-        $order->load('shop:id,name,slug,catalog_type,logo,phone,whatsapp');
+        $order->load('shop:id,name,slug,catalog_type,logo,phone,whatsapp', 'restaurantTable', 'restaurantDriver.user');
         $due = $order->preparationDueAt();
 
         return response()->json(['order' => $this->summary($order) + [
@@ -134,6 +134,13 @@ class OrderController extends Controller
             'wheel_available' => ! $order->purchase_reward && $order->status !== 'cancelled'
                 && RestaurantPurchaseWheelController::channelAllowed($order) && RestaurantPurchaseWheelController::eligible($order) !== null,
             'reward' => $order->purchase_reward ? json_decode($order->purchase_reward, true) : null,
+            // Restaurant tracking, as on the website's tracking page: the table, the driver and the delivery time.
+            'table' => $order->restaurantTable?->name,
+            'estimated_delivery_at' => $order->order_type === 'delivery' && $order->status === 'out_for_delivery'
+                ? $order->estimated_delivery_at?->toIso8601String() : null,
+            'driver' => $order->order_type === 'delivery' && in_array($order->status, ['ready', 'out_for_delivery'], true) && $order->restaurantDriver?->user
+                ? ['name' => $order->restaurantDriver->user->name, 'phone' => $order->status === 'out_for_delivery' ? $order->restaurantDriver->user->phone : null]
+                : null,
         ]]);
     }
 

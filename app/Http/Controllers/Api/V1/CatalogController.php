@@ -102,9 +102,47 @@ class CatalogController extends Controller
             : false;
 
         return response()->json([
-            'product' => Presenter::product($product, true) + ['liked' => $liked],
+            'product' => Presenter::product($product, true) + ['liked' => $liked]
+                + ($product->shop->catalog_type === 'electronics' ? ['specs' => \App\Services\ElectronicsSpecs::list($product), 'comparable' => true] : []),
             'shop' => Presenter::shop($product->shop),
         ]);
+    }
+
+    /** Krembo-type companies: where to buy (by region), and their agents and distributors. */
+    public function network(Shop $shop, \App\Http\Controllers\KremboStoreController $krembo): JsonResponse
+    {
+        abort_unless($shop->is_active && $shop->catalog_type === 'krembo', 404);
+        $person = fn ($p) => ['id' => $p->id, 'name' => $p->name, 'address' => $p->address, 'phone' => preg_replace('/[^+0-9]/', '', (string) $p->phone) ?: null,
+            'image' => $p->image ? asset($p->image) : null];
+        $distributors = $shop->distributors()->where('is_active', true)
+            ->where(fn ($q) => $q->whereNull('agent_id')->orWhereHas('agent', fn ($a) => $a->where('shop_id', $shop->id)->where('is_active', true)))->orderBy('name')->get();
+
+        return response()->json([
+            'regions' => $krembo->outletGroups($shop, $distributors)->map(fn ($outlets, $region) => ['region' => $region,
+                'outlets' => $outlets->map(fn ($o) => \Illuminate\Support\Arr::except($o, ['sort']))->values()])->values(),
+            'agents' => $shop->agents()->where('is_active', true)->orderBy('name')->get()->map($person),
+            'distributors' => $distributors->map($person),
+        ]);
+    }
+
+    /** Electronics: 2–3 devices side by side, marking the rows that differ (like the website's compare page). */
+    public function compare(Request $request, Shop $shop): JsonResponse
+    {
+        abort_unless($shop->is_active && $shop->catalog_type === 'electronics', 404);
+        $ids = collect(explode(',', (string) $request->query('ids')))->map(fn ($id) => (int) $id)->filter()->unique()->take(3)->values();
+        $products = Product::with(['images', 'variants'])->where('shop_id', $shop->id)->where('is_active', true)->whereIn('id', $ids)->get()
+            ->sortBy(fn ($product) => $ids->search($product->id))->values();
+        abort_if($products->count() < 2, 422, 'اختر جهازين على الأقل للمقارنة.');
+        $rows = collect(['price' => 'السعر'] + \App\Services\ElectronicsSpecs::ROWS)->map(function ($label, $key) use ($products) {
+            $values = $products->map(fn ($product) => $key === 'price'
+                ? number_format((float) ($product->variants->where('is_active', true)->where('quantity', '>', 0)->min(fn ($v) => (float) ($v->price ?? $product->discount_price ?? $product->price))
+                    ?? $product->discount_price ?? $product->price), 2).' ₪'
+                : \App\Services\ElectronicsSpecs::value($product, $key))->values();
+
+            return ['key' => $key, 'label' => $label, 'values' => $values, 'different' => $values->map(fn ($v) => mb_strtolower(trim($v)))->unique()->count() > 1];
+        })->values();
+
+        return response()->json(['products' => $products->map(fn ($product) => Presenter::product($product)), 'rows' => $rows]);
     }
 
     /** One box for everything: shops by name, and products by name across all open shops. */

@@ -15,7 +15,10 @@ use Illuminate\View\View;
 
 class SalonAppointmentController extends Controller
 {
-    private const TIMES = ['10:00', '12:00', '14:00', '16:00', '18:00'];
+    public const TIMES = ['10:00', '12:00', '14:00', '16:00', '18:00'];
+
+    /** The services on the booking form (website and app). */
+    public const SERVICES = ['تسريحة شعر', 'مكياج', 'عناية بالبشرة', 'رموش وحواجب', 'استشارة عناية وجمال', 'خدمة أخرى'];
 
     public function availability(Request $request, Shop $shop): JsonResponse
     {
@@ -53,6 +56,7 @@ class SalonAppointmentController extends Controller
         try {
             $appointment = SalonAppointment::create([
                 'shop_id' => $shop->id,
+                'user_id' => $request->user()?->id,
                 'service' => $data['service'],
                 'appointment_at' => $appointmentAt,
                 'slot_key' => $appointmentAt->format('Y-m-d H:i'),

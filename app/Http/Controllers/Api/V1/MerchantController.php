@@ -159,7 +159,15 @@ class MerchantController extends Controller
             ])->values(),
             'statuses' => collect($statuses)->map(fn ($label, $key) => ['key' => $key, 'label' => $label])->values(),
             'server_time' => now()->toIso8601String(),
-        ];
+        ] + ($order->order_type === 'delivery' ? [
+            // Who's delivering, and the restaurant's active drivers to pick from.
+            'driver' => $order->restaurantDriver ? ['id' => $order->restaurantDriver->id, 'name' => $order->restaurantDriver->user?->name,
+                'phone' => $order->restaurantDriver->user?->phone] : null,
+            'estimated_delivery_at' => $order->estimated_delivery_at?->toIso8601String(),
+            'drivers' => $shop->restaurantDrivers()->where('is_active', true)->whereHas('user', fn ($q) => $q->where('is_active', true))->with('user')->get()
+                ->map(fn ($driver) => ['id' => $driver->id, 'name' => $driver->user->name])->values(),
+            'can_assign_driver' => ! in_array($order->status, ['completed', 'cancelled'], true),
+        ] : []);
     }
 
     private function statuses(FrontOrder $order, Shop $shop): array
