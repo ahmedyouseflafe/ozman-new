@@ -1,0 +1,63 @@
+# Updates the live site (ozman.online). Manual only: run it from the Actions tab (or `gh workflow run`)
+# after the owner approves a release. Takes a database backup first and refuses to run over
+# files that were edited directly on the server.
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy" to update ozman.online'
+        required: true
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ inputs.confirm == 'deploy' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Back up and update ozman.online
+        env:
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          HOST: 82.198.227.221
+          PORT: 65002
+          USER_NAME: u379351114
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' | sed '/^[[:space:]]*$/d' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$PORT" "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -p "$PORT" "$USER_NAME@$HOST" 'bash -s' <<'REMOTE'
+            set -euo pipefail
+            cd ~/domains/ozman.online
+
+            # Never overwrite edits made directly on the server.
+            if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+              echo "::error::Files on the live server were changed by hand. Nothing was deployed:"
+              git status --short --untracked-files=no
+              exit 1
+            fi
+
+            # Database backup (credentials are read from .env and never printed).
+            env_value() { grep -E "^$1=" .env | tail -1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//"; }
+            mkdir -p ~/backups
+            stamp=$(date +%Y%m%d-%H%M%S)
+            before=$(git rev-parse --short HEAD)
+            db_host=$(env_value DB_HOST || true); db_port=$(env_value DB_PORT || true)
+            MYSQL_PWD="$(env_value DB_PASSWORD || true)" mysqldump --single-transaction --no-tablespaces \
+              -h "${db_host:-127.0.0.1}" -P "${db_port:-3306}" -u "$(env_value DB_USERNAME)" "$(env_value DB_DATABASE)" \
+              | gzip > ~/backups/ozman-$stamp-$before.sql.gz
+            echo "Backup: ~/backups/ozman-$stamp-$before.sql.gz ($(du -h ~/backups/ozman-$stamp-$before.sql.gz | cut -f1))"
+            # Keep the 15 newest backups.
+            ls -1t ~/backups/ozman-*.sql.gz | tail -n +16 | xargs -r rm --
+
+            git pull --ff-only origin main
+            php artisan migrate --force
+            php artisan optimize:clear
+            echo "Live site moved from $before to $(git log -1 --format='%h %s')"
+            echo "To go back: cd ~/domains/ozman.online && git reset --hard $before && php artisan optimize:clear"
+          REMOTE
