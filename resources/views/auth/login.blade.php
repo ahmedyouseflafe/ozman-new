@@ -149,6 +149,9 @@
             </div>
         </div>
 
+        @if(session('status'))
+            <div class="error" style="color:#7dffb0;border-color:rgba(39,221,134,.35);background:rgba(39,221,134,.1)">{{ session('status') }}</div>
+        @endif
         @if($errors->any())
             <div class="error">{{ $errors->first() }}</div>
         @endif
@@ -177,6 +180,7 @@
                     <input id="remember" type="checkbox" name="remember" value="1">
                     تذكرني
                 </label>
+                <a href="{{ route('community.password.request') }}" style="color:inherit;font-weight:700">نسيت كلمة المرور؟</a>
             </div>
 
             <button type="submit">دخول</button>

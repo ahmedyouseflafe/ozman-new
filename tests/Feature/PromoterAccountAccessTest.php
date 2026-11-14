@@ -68,7 +68,7 @@ class PromoterAccountAccessTest extends TestCase
         ])->assertForbidden();
     }
 
-    public function test_forgot_password_sends_a_link_only_to_community_accounts_and_resets(): void
+    public function test_forgot_password_sends_a_link_and_resets(): void
     {
         Notification::fake();
         $profile = $this->profile();
@@ -81,7 +81,7 @@ class PromoterAccountAccessTest extends TestCase
         $this->post(route('community.password.email'), ['email' => $owner->email])->assertSessionHas('status');
         $this->post(route('community.password.email'), ['email' => 'nobody@example.com'])->assertSessionHas('status');
         Notification::assertSentTo($profile->user, ResetPassword::class);
-        Notification::assertNotSentTo($owner, ResetPassword::class);
+        Notification::assertSentTo($owner, ResetPassword::class);
 
         $token = null;
         Notification::assertSentTo($profile->user, ResetPassword::class, function (ResetPassword $n) use (&$token, $profile) {
@@ -99,6 +99,28 @@ class PromoterAccountAccessTest extends TestCase
         $this->post(route('community.password.store'), ['token' => $token, 'email' => $profile->user->email, 'password' => 'brand-new-9', 'password_confirmation' => 'brand-new-9'])
             ->assertRedirect(route('community.login'));
         $this->assertTrue(Hash::check('brand-new-9', $profile->user->fresh()->password));
+    }
+
+    public function test_shop_owners_reset_by_email_and_return_to_the_dashboard_login_but_admins_cannot(): void
+    {
+        Notification::fake();
+        $owner = User::factory()->create(['role' => 'shop_owner', 'is_active' => true]);
+        $admin = User::factory()->create(['role' => 'super_admin', 'is_active' => true]);
+
+        $this->get(route('login'))->assertOk()->assertSee(route('community.password.request'), false);
+        $this->post(route('community.password.email'), ['email' => $owner->email])->assertSessionHas('status');
+        $this->post(route('community.password.email'), ['email' => $admin->email])->assertSessionHas('status');
+        Notification::assertNotSentTo($admin, ResetPassword::class);
+
+        $token = null;
+        Notification::assertSentTo($owner, ResetPassword::class, function (ResetPassword $n) use (&$token) {
+            $token = $n->token;
+
+            return true;
+        });
+        $this->post(route('community.password.store'), ['token' => $token, 'email' => $owner->email, 'password' => 'owner-new-9', 'password_confirmation' => 'owner-new-9'])
+            ->assertRedirect(route('login'));
+        $this->assertTrue(Hash::check('owner-new-9', $owner->fresh()->password));
     }
 
     public function test_admin_can_change_a_promoter_login_email(): void
