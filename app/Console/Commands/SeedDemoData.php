@@ -2,7 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Models\{Category, Product, RewardWheel, Shop, User};
+use App\Models\{Category, MarketListing, Product, PromoterPost, PromoterProfile, RewardWheel, Shop, User};
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -104,6 +105,40 @@ class SeedDemoData extends Command
                 }
             }
 
+            // Two creators with photo posts about the demo shops, and a few free-market items, so those app screens have something in them.
+            foreach ([['demo-creator-1', 'لينا تجرّب (ديمو)', 'بجرّب أكل وحلويات بلدنا وبحكيلكم رأيي 😋', ['demo-restaurant', 'demo-sweets'], '#FF6678'],
+                ['demo-creator-2', 'سامي تك (ديمو)', 'مراجعات سماعات وشواحن بسعر حلو 🎧', ['demo-electronics', 'demo-clothing'], '#7C4DFF']] as $i => [$slug, $name, $bio, $shops, $color]) {
+                $email = "{$slug}@staging.ozman.test";
+                $user = User::where('email', $email)->first();
+                if (! $user) {
+                    $passwords[$email] = Str::password(14, symbols: false);
+                    $user = User::create(['name' => $name, 'email' => $email, 'username' => str_replace('-', '', $slug), 'password' => Hash::make($passwords[$email]), 'role' => 'promoter', 'is_active' => true]);
+                }
+                $profile = PromoterProfile::where('slug', $slug)->first() ?? PromoterProfile::create(['user_id' => $user->id, 'slug' => $slug, 'display_name' => $name, 'bio' => $bio, 'is_active' => true, 'approved_at' => now()]);
+                if (! DB::table('promoter_profile_slugs')->where('slug', $slug)->exists()) {
+                    DB::table('promoter_profile_slugs')->insert(['slug' => $slug, 'promoter_profile_id' => $profile->id]);
+                }
+                if (! $profile->posts()->exists()) {
+                    foreach ($shops as $n => $shopSlug) {
+                        $shop = Shop::where('slug', $shopSlug)->first();
+                        $profile->posts()->create(['kind' => 'post', 'type' => 'image', 'shop_id' => $shop?->id, 'is_active' => true,
+                            'caption' => 'جرّبت '.($shop?->name ?? 'محل جديد').' — بنصحكم فيه 👌', 'media' => $this->demoImage('promoters/posts', $color, $n)]);
+                    }
+                    $profile->posts()->create(['kind' => 'story', 'type' => 'image', 'is_active' => true, 'expires_at' => now()->addDays(30),
+                        'caption' => 'ستوري تجريبية ✨', 'media' => $this->demoImage('promoters/posts', $color, 9)]);
+                }
+
+                if ($i === 0 && ! MarketListing::where('user_id', $user->id)->exists()) {
+                    foreach ([['جاكيت جلد شبه جديد', 120, 'clothing', 'used', 'نابلس'], ['سماعات بلوتوث بالكرتونة', 85, 'electronics', 'new', 'رام الله'], ['كرسي مكتب مريح', 150, 'home', 'used', 'الخليل']] as $k => [$title, $price, $category, $condition, $city]) {
+                        $category = array_key_exists($category, config('market.categories')) ? $category : array_key_first(config('market.categories'));
+                        $condition = array_key_exists($condition, config('market.conditions')) ? $condition : array_key_first(config('market.conditions'));
+                        $listing = MarketListing::create(['user_id' => $user->id, 'title' => $title, 'description' => 'منتج تجريبي بالمتجر الحر.', 'price' => $price,
+                            'category' => $category, 'condition' => $condition, 'city' => $city, 'quantity' => 2, 'status' => MarketListing::ACTIVE]);
+                        $listing->images()->create(['path' => $this->demoImage('market/listings', ['#08DEF4', '#FFC94D', '#27DD86'][$k], $k), 'sort_order' => 0]);
+                    }
+                }
+            }
+
             $customerEmail = 'demo-customer@staging.ozman.test';
             if (! User::where('email', $customerEmail)->exists()) {
                 $passwords[$customerEmail] = Str::password(14, symbols: false);
@@ -122,5 +157,25 @@ class SeedDemoData extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /** A plain coloured picture for demo posts and listings (the GD extension draws it). */
+    private function demoImage(string $dir, string $hex, int $n): string
+    {
+        $path = $dir.'/demo-'.substr(md5($hex.$n.$dir), 0, 10).'.png';
+        if (! Storage::disk('local')->exists($path)) {
+            [$r, $g, $b] = sscanf($hex, '#%02x%02x%02x');
+            $image = imagecreatetruecolor(720, 960);
+            imagefill($image, 0, 0, imagecolorallocate($image, $r, $g, $b));
+            $light = imagecolorallocatealpha($image, 255, 255, 255, 80);
+            imagefilledellipse($image, 200 + 60 * $n, 320, 420, 420, $light);
+            imagefilledellipse($image, 560, 760 - 40 * $n, 300, 300, $light);
+            ob_start();
+            imagepng($image);
+            Storage::disk('local')->put($path, (string) ob_get_clean());
+            imagedestroy($image);
+        }
+
+        return $path;
     }
 }
