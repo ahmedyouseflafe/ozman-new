@@ -172,6 +172,9 @@ class Presenter
             'shop_ids' => $user->isShopOwner() ? $user->shops()->pluck('id') : [],
             // Shows the "my shop" section in the app (owners, their staff, admins).
             'is_merchant' => $user->isSuperAdmin() || $user->accessibleShopIds() !== [],
+            'is_driver' => $user->isRestaurantDriver(),
+            // Publishing stories is the owner's (or admin's) job on the website too.
+            'can_post_stories' => $user->isSuperAdmin() || $user->isShopOwner(),
         ];
     }
 }
