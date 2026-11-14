@@ -136,4 +136,19 @@ class MobileDiscoveryApiTest extends TestCase
         $this->getJson("/api/v1/shops/{$shop->id}/signup-reward", $headers)->assertOk()->assertJsonPath('available', false);
         $this->postJson("/api/v1/shops/{$shop->id}/signup-reward/register", ['name' => 'A', 'phone' => '0599123456', 'address' => 'x'], $headers)->assertNotFound();
     }
+
+    public function test_forgot_password_emails_customers_only_and_never_reveals_accounts(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $customer = User::factory()->create(['role' => 'customer', 'is_active' => true, 'email' => 'lina@example.com']);
+        $owner = User::factory()->create(['role' => 'shop_owner', 'is_active' => true, 'email' => 'owner@example.com']);
+
+        $answers = [];
+        foreach (['lina@example.com', 'owner@example.com', 'nobody@example.com'] as $email) {
+            $answers[] = $this->postJson('/api/v1/auth/forgot-password', ['email' => $email])->assertOk()->json('message');
+        }
+        $this->assertCount(1, array_unique($answers));
+        \Illuminate\Support\Facades\Notification::assertSentTo($customer, \Illuminate\Auth\Notifications\ResetPassword::class);
+        \Illuminate\Support\Facades\Notification::assertNotSentTo($owner, \Illuminate\Auth\Notifications\ResetPassword::class);
+    }
 }

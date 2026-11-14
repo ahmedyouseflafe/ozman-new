@@ -34,6 +34,22 @@ class AuthController extends Controller
         return $this->tokenResponse($user, $data['device_name'] ?? 'mobile');
     }
 
+    /**
+     * Emails the website's reset link, with the website's rules: customers and promoters only, and the
+     * same answer whether or not the account exists. The new password is then chosen on the website.
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate(['email' => ['required', 'email', 'max:255']]);
+        $user = User::query()->where('email', mb_strtolower(trim($data['email'])))->where('is_active', true)
+            ->whereIn('role', ['customer', 'promoter'])->first();
+        if ($user) {
+            \Illuminate\Support\Facades\Password::broker()->sendResetLink(['email' => $user->email]);
+        }
+
+        return response()->json(['message' => __('إذا كان البريد مسجّل عندنا، رح يوصلك رابط لتعيين كلمة مرور جديدة خلال دقائق. افحص كمان مجلد الرسائل غير المرغوبة.')]);
+    }
+
     public function register(Request $request): JsonResponse
     {
         $data = $request->validate([
