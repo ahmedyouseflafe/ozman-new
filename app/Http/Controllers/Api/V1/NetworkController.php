@@ -5,7 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\RaffleCardController;
 use App\Http\Controllers\RewardWheelController;
-use App\Models\{Agent, Distributor, DistributorMarketer, Shop, User};
+use App\Models\{Agent, Distributor, DistributorMarketer, FrontOrder, Shop, User};
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\{JsonResponse, Request};
 
 /**
@@ -43,6 +44,48 @@ class NetworkController extends Controller
         };
 
         return response()->json(['role' => $role] + $data, 200, ['Cache-Control' => 'no-store']);
+    }
+
+    /** Orders that came through the marketer (or the distributor's network), like the website's orders page. */
+    public function orders(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $role = self::roleOf($user);
+        abort_unless(in_array($role, ['marketer', 'distributor'], true), 403);
+        $data = $request->validate(['status' => ['nullable', 'string', 'max:30'], 'search' => ['nullable', 'string', 'max:100']]);
+        $scope = function ($query) use ($user, $role) {
+            if ($role === 'marketer') {
+                return $query->whereIn('front_orders.distributor_marketer_id', $user->distributorMarketerProfiles()->where('is_active', true)->pluck('id'));
+            }
+            $ids = $user->distributorProfiles()->pluck('id');
+
+            return $query->where(fn ($q) => $q->whereIn('front_orders.distributor_id', $ids)
+                ->orWhereHas('distributorMarketer', fn ($m) => $m->whereIn('distributor_id', $ids)));
+        };
+        $search = trim((string) ($data['search'] ?? ''));
+        $orders = $scope(FrontOrder::query())->with(['shop:id,name', 'distributorMarketer:id,name,commission_rate'])
+            ->when(array_key_exists((string) ($data['status'] ?? ''), FrontOrder::statusOptions()), fn ($q) => $q->where('status', $data['status']))
+            ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q->where('order_number', 'like', "%{$search}%")
+                ->orWhere('customer_name', 'like', "%{$search}%")
+                ->orWhereHas('distributorMarketer', fn ($m) => $m->where('name', 'like', "%{$search}%"))))
+            ->latest()->limit(100)->get();
+        $commission = (float) $scope(FrontOrder::query())
+            ->leftJoin('distributor_marketers', 'front_orders.distributor_marketer_id', '=', 'distributor_marketers.id')
+            ->sum(DB::raw('COALESCE(front_orders.marketer_commission_amount, front_orders.total * distributor_marketers.commission_rate / 100, 0)'));
+
+        return response()->json([
+            'data' => $orders->map(fn (FrontOrder $order) => [
+                'id' => $order->id, 'number' => $order->order_number, 'shop' => $order->shop?->name,
+                'customer' => $order->customer_name, 'status' => $order->status, 'status_label' => $order->statusLabel(),
+                'total' => Presenter::price($order->total), 'marketer' => $order->distributorMarketer?->name,
+                'commission' => Presenter::price($order->marketer_commission_amount
+                    ?? ($order->distributorMarketer?->commission_rate !== null ? (float) $order->total * (float) $order->distributorMarketer->commission_rate / 100 : null)),
+                'created_at' => $order->created_at?->toIso8601String(),
+            ]),
+            'statuses' => collect(FrontOrder::statusOptions())->map(fn ($label, $key) => ['key' => $key, 'label' => $label])->values(),
+            'count' => $scope(FrontOrder::query())->count(),
+            'commission_total' => round($commission, 2),
+        ], 200, ['Cache-Control' => 'no-store']);
     }
 
     public static function roleOf(User $user): ?string

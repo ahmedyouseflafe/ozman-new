@@ -125,6 +125,11 @@ class MobileGroupFourApiTest extends TestCase
             ->assertJsonPath('marketers.0.code', 'sara-2')->assertJsonPath('marketers.0.shops.0.name', 'محل جديد')->assertJsonPath('marketers.0.commission_rate', 5);
         $this->getJson('/api/v1/me/network', $this->auth($distributorUser))->assertOk()->assertJsonPath('role', 'distributor')
             ->assertJsonPath('distributors.0.marketers.0.name', 'سارة')->assertJsonPath('distributors.0.shops.0.name', 'محل جديد');
+        \App\Models\FrontOrder::create(['shop_id' => $company->id, 'order_number' => 'ORD-77', 'customer_name' => 'Lina', 'total' => 200, 'items' => [],
+            'status' => 'new', 'distributor_id' => $distributor->id, 'distributor_marketer_id' => $marketer->id]);
+        $this->getJson('/api/v1/me/network/orders', $this->auth($marketerUser))->assertOk()->assertJsonPath('data.0.number', 'ORD-77')
+            ->assertJsonPath('data.0.commission', 10)->assertJsonPath('commission_total', 10);
+        $this->getJson('/api/v1/me/network/orders?search=Lina', $this->auth($distributorUser))->assertOk()->assertJsonPath('count', 1)->assertJsonPath('data.0.marketer', 'سارة');
         $customer = User::factory()->create(['role' => 'customer', 'is_active' => true]);
         $this->getJson('/api/v1/me/network', $this->auth($customer))->assertForbidden();
     }

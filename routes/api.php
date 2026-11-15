@@ -56,6 +56,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/real-estate/services/{service}', [RealEstateController::class, 'service'])->name('real-estate.service');
         Route::get('/real-estate/properties', [RealEstateController::class, 'properties'])->name('real-estate.properties');
         Route::get('/real-estate/properties/{property}', [RealEstateController::class, 'property'])->name('real-estate.property');
+        Route::get('/real-estate/compare', [RealEstateController::class, 'compare'])->name('real-estate.compare');
+        Route::post('/real-estate/alerts', [RealEstateController::class, 'alert'])->middleware('throttle:5,1,real-estate.alert')->name('real-estate.alert');
         Route::get('/shops/{shop:id}/booking', [SalonController::class, 'form'])->name('salon.form');
         Route::get('/shops/{shop:id}/booking/availability', [SalonController::class, 'availability'])->name('salon.availability');
         // Website links opened in the app, the raffle card check and the marketer's wheel.
@@ -154,6 +156,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/merchant/shops/{shop:id}/settings', [ShopSettingsController::class, 'show'])->name('merchant.settings');
         Route::post('/merchant/shops/{shop:id}/settings', [ShopSettingsController::class, 'update'])->middleware('throttle:20,1,merchant.settings')->name('merchant.settings.update');
         Route::get('/me/network', [NetworkController::class, 'mine'])->name('network.mine');
+        Route::get('/me/network/orders', [NetworkController::class, 'orders'])->name('network.orders');
 
         // Delivery drivers.
         Route::get('/driver', [DriverController::class, 'index'])->name('driver.index');

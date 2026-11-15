@@ -144,6 +144,16 @@ class MobileGroupThreeApiTest extends TestCase
 
         $this->getJson('/api/v1/real-estate/properties?purpose=rent')->assertOk()->assertJsonPath('data.0.id', $property->id);
         $this->getJson("/api/v1/real-estate/properties/{$property->id}")->assertOk()->assertJsonPath('property.purpose_label', 'للإيجار');
+        $other = RealEstateProperty::create(['shop_id' => $company->id, 'slug' => 'house-1', 'purpose' => 'sale', 'property_type' => 'house',
+            'title' => 'بيت مستقل', 'price' => 900000, 'city' => 'رام الله', 'has_garden' => true, 'status' => 'published', 'published_at' => now()]);
+        $rows = collect($this->getJson("/api/v1/real-estate/compare?ids={$property->id},{$other->id}")->assertOk()->assertJsonCount(2, 'properties')->json('rows'))->keyBy('key');
+        $this->assertTrue($rows['purpose']['different']);
+        $this->assertFalse($rows['city']['different']);
+        $this->assertSame(['—', '✓'], $rows['has_garden']['values']);
+        $this->getJson("/api/v1/real-estate/compare?ids={$property->id}")->assertStatus(422);
+        $this->postJson('/api/v1/real-estate/alerts', ['channel' => 'whatsapp', 'phone' => '0599123456', 'filters' => ['purpose' => 'rent', 'city' => 'رام الله']], $h)->assertCreated();
+        $this->assertSame('rent', \App\Models\RealEstateAlert::sole()->filters['purpose']);
+        $this->assertStringContainsString('#caravan-demo', $json['caravan_demo_url']);
         $this->postJson("/api/v1/real-estate/properties/{$property->id}/inquiry", ['name' => 'Lina', 'phone' => '0599123456', 'message' => 'متاحة؟'], $h)->assertCreated();
         $this->assertSame(1, RealEstateLead::count());
 

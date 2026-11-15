@@ -34,6 +34,8 @@ class RealEstateController extends Controller
                 'services' => $category->services->map(fn ($service) => $this->serviceCard($service))->values(),
             ])->values(),
             'properties' => $properties->map(fn ($property) => $this->propertyCard($property)),
+            // Every company page has the interactive caravan demo (3D + place it on your land with the camera).
+            'caravan_demo_url' => route('real-estate.company', $shop).'#caravan-demo',
         ]);
     }
 
@@ -145,6 +147,46 @@ class RealEstateController extends Controller
             ['type' => 'real_estate_lead', 'shop_id' => $property->shop_id, 'property_id' => $property->id], $firebase);
 
         return response()->json(['message' => 'تم إرسال طلبك للشركة بنجاح، وسيتم التواصل معك قريبًا.'], 201);
+    }
+
+    /** Up to 4 properties side by side, the same rows as the website's compare page. */
+    public function compare(Request $request): JsonResponse
+    {
+        $ids = collect(explode(',', (string) $request->query('ids')))->filter(fn ($id) => ctype_digit($id))->map(fn ($id) => (int) $id)->unique()->take(4)->values();
+        $properties = RealEstateProperty::published()->whereIn('id', $ids)
+            ->whereHas('shop', fn ($q) => $q->where('is_active', true)->where('catalog_type', 'real_estate'))
+            ->with(['images', 'shop'])->get()->sortBy(fn ($p) => $ids->search($p->id))->values();
+        abort_if($properties->count() < 2, 422, 'اختر عقارين على الأقل للمقارنة.');
+        $flags = ['furnished', 'has_elevator', 'has_balcony', 'has_garden', 'has_storage', 'has_air_conditioning'];
+        $rows = collect(['price' => 'السعر', 'purpose' => 'بيع / إيجار', 'property_type' => 'النوع', 'city' => 'المدينة', 'neighborhood' => 'المنطقة',
+            'area' => 'المساحة م²', 'rooms' => 'الغرف', 'bathrooms' => 'الحمامات', 'floor' => 'الطابق', 'parking_spaces' => 'المواقف',
+            'furnished' => 'مفروش', 'has_elevator' => 'مصعد', 'has_balcony' => 'شرفة', 'has_garden' => 'حديقة', 'has_storage' => 'مخزن', 'has_air_conditioning' => 'تكييف'])
+            ->map(function ($label, $field) use ($properties, $flags) {
+                $values = $properties->map(fn ($p) => match (true) {
+                    $field === 'price' => number_format((float) $p->price).' '.($p->currency ?: 'ILS'),
+                    in_array($field, $flags, true) => $p->{$field} ? '✓' : '—',
+                    $field === 'purpose' => $p->purpose === 'rent' ? 'إيجار' : 'بيع',
+                    default => filled($p->{$field}) ? (string) $p->{$field} : '—',
+                })->values();
+
+                return ['key' => $field, 'label' => $label, 'values' => $values, 'different' => $values->unique()->count() > 1];
+            })->values();
+
+        return response()->json(['properties' => $properties->map(fn ($p) => $this->propertyCard($p)), 'rows' => $rows]);
+    }
+
+    /** "Tell me when a matching property appears" — saved like the website's search alert. */
+    public function alert(Request $request, SiteRealEstate $site): JsonResponse
+    {
+        $user = $request->user();
+        $request->merge([
+            'name' => $request->input('name') ?: $user?->name,
+            'email' => $request->input('email') ?: ($request->input('channel') === 'email' ? $user?->email : null),
+            'phone' => $request->input('phone') ?: ($request->input('channel') === 'whatsapp' ? $user?->phone : null),
+        ]);
+        $site->alert($request);
+
+        return response()->json(['message' => 'تم حفظ تنبيه البحث. سنبلغك عند توفر عقار مطابق.'], 201);
     }
 
     // ── Owner ──────────────────────────────────────────────────────────────
