@@ -40,7 +40,8 @@ class RealEstateFoundationTest extends TestCase
         $this->property($beta, 'beta-home', 'Beta Home');
         $this->property($alpha, 'draft-home', 'Draft Home', 'draft');
 
-        $this->get(route('real-estate.company', $alpha))
+        // An English visitor sees the English category names.
+        $this->withHeader('Accept-Language', 'en')->get(route('real-estate.company', $alpha))
             ->assertOk()
             ->assertSee($alpha->name)
             ->assertSee('public-language-switcher', false)

@@ -220,8 +220,8 @@ class PromoterController extends Controller
             'avatar' => $profile->avatar ? route('promoters.avatar', $profile) : null,
             'followers' => $profile->followerTotal(),
             'posts_count' => isset($profile->posts_count) ? (int) $profile->posts_count : null,
-            'level' => ['key' => $level['key'], 'name' => $level['name'], 'icon' => $level['icon'], 'progress' => $level['progress'],
-                'next' => $level['next'] ? ['name' => $level['next']['name'], 'icon' => $level['next']['icon']] : null],
+            'level' => ['key' => $level['key'], 'name' => __($level['name']), 'icon' => $level['icon'], 'progress' => $level['progress'],
+                'next' => $level['next'] ? ['name' => __($level['next']['name']), 'icon' => $level['next']['icon']] : null],
         ];
     }
 

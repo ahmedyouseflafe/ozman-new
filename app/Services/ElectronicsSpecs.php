@@ -22,7 +22,7 @@ class ElectronicsSpecs
             'ram' => $variants->pluck('ram')->filter()->unique()->implode('، '),
             'colors' => $variants->pluck('color_name')->filter()->unique()->implode('، '),
             'battery_health' => filled($attribute) ? $attribute.'%' : '',
-            'warranty_months' => filled($attribute) ? $attribute.' شهر' : '',
+            'warranty_months' => filled($attribute) ? __(':count شهر', ['count' => $attribute]) : '',
             default => is_array($attribute) ? implode('، ', $attribute) : (string) $attribute,
         };
 
@@ -32,7 +32,7 @@ class ElectronicsSpecs
     /** Only the filled rows, for a product page. */
     public static function list(Product $product): array
     {
-        return collect(self::ROWS)->map(fn ($label, $key) => ['key' => $key, 'label' => $label, 'value' => self::value($product, $key)])
+        return collect(self::ROWS)->map(fn ($label, $key) => ['key' => $key, 'label' => __($label), 'value' => self::value($product, $key)])
             ->reject(fn ($row) => $row['value'] === '—')->values()->all();
     }
 }

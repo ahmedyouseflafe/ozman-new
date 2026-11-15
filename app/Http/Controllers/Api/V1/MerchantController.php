@@ -172,7 +172,7 @@ class MerchantController extends Controller
 
     private function statuses(FrontOrder $order, Shop $shop): array
     {
-        return filled($order->order_type) ? self::RESTAURANT_STATUSES : ShopOrdersController::STATUSES;
+        return array_map('__', filled($order->order_type) ? self::RESTAURANT_STATUSES : ShopOrdersController::STATUSES);
     }
 
     private function inPeriod($query, string $period)

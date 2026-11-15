@@ -28,10 +28,10 @@ class SalonAppointment extends Model
     public static function statusLabels(): array
     {
         return [
-            self::STATUS_NEW => 'جديد',
-            self::STATUS_CONFIRMED => 'مؤكد',
-            self::STATUS_COMPLETED => 'مكتمل',
-            self::STATUS_CANCELLED => 'ملغي',
+            self::STATUS_NEW => __('جديد'),
+            self::STATUS_CONFIRMED => __('مؤكد'),
+            self::STATUS_COMPLETED => __('مكتمل'),
+            self::STATUS_CANCELLED => __('ملغي'),
         ];
     }
 

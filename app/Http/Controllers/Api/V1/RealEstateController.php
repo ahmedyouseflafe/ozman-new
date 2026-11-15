@@ -120,9 +120,9 @@ class RealEstateController extends Controller
         $features = collect([
             'furnished' => 'مفروش', 'is_new_project' => 'مشروع جديد', 'has_elevator' => 'مصعد', 'has_balcony' => 'بلكونة',
             'has_garden' => 'حديقة', 'has_storage' => 'مخزن', 'has_air_conditioning' => 'تكييف',
-        ])->filter(fn ($label, $key) => (bool) $property->{$key})->values();
+        ])->filter(fn ($label, $key) => (bool) $property->{$key})->map(fn ($label) => __($label))->values();
         if ((int) $property->parking_spaces > 0) {
-            $features->push('موقف سيارات ('.$property->parking_spaces.')');
+            $features->push(__('موقف سيارات (:count)', ['count' => $property->parking_spaces]));
         }
 
         return response()->json(['property' => $this->propertyCard($property) + [
@@ -165,11 +165,11 @@ class RealEstateController extends Controller
                 $values = $properties->map(fn ($p) => match (true) {
                     $field === 'price' => number_format((float) $p->price).' '.($p->currency ?: 'ILS'),
                     in_array($field, $flags, true) => $p->{$field} ? '✓' : '—',
-                    $field === 'purpose' => $p->purpose === 'rent' ? 'إيجار' : 'بيع',
+                    $field === 'purpose' => $p->purpose === 'rent' ? __('إيجار') : __('بيع'),
                     default => filled($p->{$field}) ? (string) $p->{$field} : '—',
                 })->values();
 
-                return ['key' => $field, 'label' => $label, 'values' => $values, 'different' => $values->unique()->count() > 1];
+                return ['key' => $field, 'label' => __($label), 'values' => $values, 'different' => $values->unique()->count() > 1];
             })->values();
 
         return response()->json(['properties' => $properties->map(fn ($p) => $this->propertyCard($p)), 'rows' => $rows]);
@@ -209,8 +209,8 @@ class RealEstateController extends Controller
                 'message' => $lead->message, 'status' => $lead->status ?: 'new', 'viewing_at' => $lead->viewing_at?->toIso8601String(),
                 'created_at' => $lead->created_at?->toIso8601String(),
             ]),
-            'request_statuses' => ['new' => 'جديد', 'contacted' => 'تم التواصل', 'completed' => 'مكتمل', 'cancelled' => 'ملغي'],
-            'lead_statuses' => ['new' => 'جديد', 'contacted' => 'تم التواصل', 'viewing' => 'معاينة', 'won' => 'تم الاتفاق', 'lost' => 'لم يتم'],
+            'request_statuses' => array_map('__', ['new' => 'جديد', 'contacted' => 'تم التواصل', 'completed' => 'مكتمل', 'cancelled' => 'ملغي']),
+            'lead_statuses' => array_map('__', ['new' => 'جديد', 'contacted' => 'تم التواصل', 'viewing' => 'معاينة', 'won' => 'تم الاتفاق', 'lost' => 'لم يتم']),
         ], 200, ['Cache-Control' => 'no-store']);
     }
 
@@ -245,7 +245,7 @@ class RealEstateController extends Controller
 
         return [
             'id' => $property->id, 'title' => $property->localized('title'), 'purpose' => $property->purpose,
-            'purpose_label' => $property->purpose === 'rent' ? 'للإيجار' : 'للبيع', 'type' => $property->property_type,
+            'purpose_label' => $property->purpose === 'rent' ? __('للإيجار') : __('للبيع'), 'type' => $property->property_type,
             'price' => Presenter::price($property->price), 'currency' => $property->currency ?: 'ILS', 'city' => $property->city,
             'rooms' => $property->rooms, 'area' => $property->area, 'image' => $this->image($cover?->path), 'featured' => (bool) $property->is_featured,
             'shop' => $property->relationLoaded('shop') && $property->shop ? ['id' => $property->shop->id, 'name' => $property->shop->name] : null,

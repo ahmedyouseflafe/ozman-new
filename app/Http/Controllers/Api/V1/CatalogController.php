@@ -143,7 +143,7 @@ class CatalogController extends Controller
                     ?? $product->discount_price ?? $product->price), 2).' ₪'
                 : \App\Services\ElectronicsSpecs::value($product, $key))->values();
 
-            return ['key' => $key, 'label' => $label, 'values' => $values, 'different' => $values->map(fn ($v) => mb_strtolower(trim($v)))->unique()->count() > 1];
+            return ['key' => $key, 'label' => __($label), 'values' => $values, 'different' => $values->map(fn ($v) => mb_strtolower(trim($v)))->unique()->count() > 1];
         })->values();
 
         return response()->json(['products' => $products->map(fn ($product) => Presenter::product($product)), 'rows' => $rows]);

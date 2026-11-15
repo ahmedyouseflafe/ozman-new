@@ -145,14 +145,14 @@ class FrontOrder extends Model
     public static function statusOptions(): array
     {
         return [
-            'new' => 'جديد',
-            'preparing' => 'قيد التحضير',
-            'ready' => 'جاهز',
-            'completed' => 'مكتمل',
-            'out_for_delivery' => 'خرج للتوصيل',
-            'cancelled' => 'ملغي',
-            'not_delivered' => 'لم يتم التسليم',
-            'delivered' => 'تم التسليم',
+            'new' => __('جديد'),
+            'preparing' => __('قيد التحضير'),
+            'ready' => __('جاهز'),
+            'completed' => __('مكتمل'),
+            'out_for_delivery' => __('خرج للتوصيل'),
+            'cancelled' => __('ملغي'),
+            'not_delivered' => __('لم يتم التسليم'),
+            'delivered' => __('تم التسليم'),
         ];
     }
 
