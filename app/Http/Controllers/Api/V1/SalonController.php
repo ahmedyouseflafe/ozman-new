@@ -118,7 +118,7 @@ class SalonController extends Controller
     private function timeLabel(string $time): string
     {
         $hour = (int) substr($time, 0, 2);
-        $part = $hour < 12 ? 'صباحًا' : ($hour === 12 ? 'ظهرًا' : 'مساءً');
+        $part = __($hour < 12 ? 'صباحًا' : ($hour === 12 ? 'ظهرًا' : 'مساءً'));
 
         return ($hour > 12 ? $hour - 12 : $hour).':'.substr($time, 3, 2).' '.$part;
     }
