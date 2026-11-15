@@ -66,6 +66,14 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAnalyticsAdmin::class])->p
     Route::get('/orders/{order}', [\App\Http\Controllers\ShopAnalyticsController::class, 'order'])->name('order');
 });
 
+Route::get('/.well-known/assetlinks.json', function () {
+    $fingerprints = config('services.android_app.sha256', []);
+
+    return response()->json($fingerprints ? [[
+        'relation' => ['delegate_permission/common.handle_all_urls'],
+        'target' => ['namespace' => 'android_app', 'package_name' => config('services.android_app.package'), 'sha256_cert_fingerprints' => $fingerprints],
+    ]] : [])->header('Cache-Control', 'public, max-age=3600');
+})->name('android.assetlinks');
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/community/login', [\App\Http\Controllers\CommunityAccountController::class, 'loginPage'])->name('community.login');
 Route::get('/community/avatar/{user}', [\App\Http\Controllers\CommunityAccountController::class, 'avatar'])->whereNumber('user')->name('community.avatar.show');

@@ -14,9 +14,9 @@ class ClothingPhotoTryOnController extends Controller
         return filled(config('services.fashn.key')) && in_array($shop->slug, config('services.fashn.shops', []), true);
     }
 
-    public function create(Request $request, Shop $shop)
+    public function create(Request $request, Shop $shop, ?bool $watch=null)
     {
-        $watch=$request->routeIs('watch.photo-tryon');
+        $watch??=$request->routeIs('watch.photo-tryon');
         abort_unless($shop->is_active && $shop->catalog_type === ($watch?'cosmetics':'clothing'),404);
         abort_unless(self::enabled($shop),503,'تجربة الصور غير مفعلة لهذا المحل بعد.');
         $data=$request->validate([
@@ -62,9 +62,7 @@ class ClothingPhotoTryOnController extends Controller
             if (!$response->successful() || !is_string($providerId) || !preg_match('/^[a-zA-Z0-9_-]{1,150}$/',$providerId)) return $this->unavailable();
         } catch (\Illuminate\Http\Client\ConnectionException $e) { return $this->unavailable(); }
         $job=(string)Str::uuid();
-        $owner=$request->session()->get('photo_tryon_owner') ?: Str::random(64);
-        $request->session()->put('photo_tryon_owner',$owner);
-        Cache::put('photo-tryon:'.$job,['provider_id'=>$providerId,'shop_id'=>$shop->id,'session'=>hash('sha256',$owner)],now()->addMinutes(10));
+        Cache::put('photo-tryon:'.$job,['provider_id'=>$providerId,'shop_id'=>$shop->id,'session'=>hash('sha256',$this->owner($request))],now()->addMinutes(10));
         return response()->json(['job'=>$job],202)->header('Cache-Control','no-store');
     }
 
@@ -72,7 +70,7 @@ class ClothingPhotoTryOnController extends Controller
     {
         abort_unless($shop->is_active && self::enabled($shop),404);
         $record=Cache::get('photo-tryon:'.$job);
-        abort_unless($record && $record['shop_id']===$shop->id && hash_equals($record['session'],hash('sha256',(string)$request->session()->get('photo_tryon_owner'))),404);
+        abort_unless($record && $record['shop_id']===$shop->id && hash_equals($record['session'],hash('sha256',$this->owner($request,false))),404);
         try {
             $response=Http::withToken(config('services.fashn.key'))->connectTimeout(10)->timeout(20)->get('https://api.fashn.ai/v1/status/'.$record['provider_id']);
             if (!$response->successful()) return $this->unavailable();
@@ -86,6 +84,16 @@ class ClothingPhotoTryOnController extends Controller
         }
         if ($state==='failed') return $this->unavailable();
         return response()->json(['status'=>'processing'])->header('Cache-Control','no-store');
+    }
+
+    /** Who may read the result: the browser session, or the signed-in app user (the app keeps no cookies). */
+    private function owner(Request $request, bool $create=true): string
+    {
+        if ($request->attributes->get('api_token') && $request->user()) return 'app-user:'.$request->user()->id;
+        if (!$request->hasSession()) return '';
+        $owner=$request->session()->get('photo_tryon_owner') ?: ($create ? Str::random(64) : '');
+        if ($create) $request->session()->put('photo_tryon_owner',$owner);
+        return (string)$owner;
     }
 
     private function unavailable()

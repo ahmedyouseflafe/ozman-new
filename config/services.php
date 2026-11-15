@@ -19,6 +19,13 @@ return [
     |
     */
 
+    // The Android app: website links open in it once Android checks /.well-known/assetlinks.json.
+    // ANDROID_APP_SHA256 = the signing certificates' SHA-256 fingerprints, comma separated (public values).
+    'android_app' => [
+        'package' => env('ANDROID_APP_PACKAGE', 'com.ozman.ozman_app'),
+        'sha256' => array_values(array_filter(array_map('trim', explode(',', (string) env('ANDROID_APP_SHA256', ''))))),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

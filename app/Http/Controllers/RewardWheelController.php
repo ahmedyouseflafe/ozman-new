@@ -723,7 +723,7 @@ class RewardWheelController extends Controller
         return $wheel;
     }
 
-    private function marketerDirectWheel(): RewardWheel
+    public function marketerDirectWheel(): RewardWheel
     {
         $wheel = RewardWheel::query()->firstOrCreate(
             ['key' => RewardWheel::MARKETER_DIRECT_WHEEL],

@@ -103,7 +103,11 @@ class CatalogController extends Controller
 
         return response()->json([
             'product' => Presenter::product($product, true) + ['liked' => $liked]
-                + ($product->shop->catalog_type === 'electronics' ? ['specs' => \App\Services\ElectronicsSpecs::list($product), 'comparable' => true] : []),
+                + ($product->shop->catalog_type === 'electronics' ? ['specs' => \App\Services\ElectronicsSpecs::list($product), 'comparable' => true] : [])
+                + ['try_on' => TryOnController::modeFor($product->loadMissing('category')),
+                    // Furniture: see a sample piece in your room (the website's AR demo model).
+                    'ar_model' => $product->shop->catalog_type === 'furniture_appliances' || $product->shop->home_section === 'home_furniture'
+                        ? 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/SheenChair/glTF-Binary/SheenChair.glb' : null],
             'shop' => Presenter::shop($product->shop),
         ]);
     }

@@ -15,6 +15,10 @@ use App\Http\Controllers\Api\V1\PromoterController;
 use App\Http\Controllers\Api\V1\RealEstateController;
 use App\Http\Controllers\Api\V1\RestaurantManageController;
 use App\Http\Controllers\Api\V1\SalonController;
+use App\Http\Controllers\Api\V1\LinkController;
+use App\Http\Controllers\Api\V1\NetworkController;
+use App\Http\Controllers\Api\V1\ShopSettingsController;
+use App\Http\Controllers\Api\V1\TryOnController;
 use App\Http\Middleware\ApiAuthenticated;
 use Illuminate\Support\Facades\Route;
 
@@ -54,6 +58,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/real-estate/properties/{property}', [RealEstateController::class, 'property'])->name('real-estate.property');
         Route::get('/shops/{shop:id}/booking', [SalonController::class, 'form'])->name('salon.form');
         Route::get('/shops/{shop:id}/booking/availability', [SalonController::class, 'availability'])->name('salon.availability');
+        // Website links opened in the app, the raffle card check and the marketer's wheel.
+        Route::get('/links/resolve', [LinkController::class, 'resolve'])->name('links.resolve');
+        Route::post('/raffle/check', [NetworkController::class, 'raffle'])->middleware('throttle:10,1,raffle.check')->name('raffle.check');
+        Route::get('/marketer-wheel/{code}', [NetworkController::class, 'wheel'])->name('marketer-wheel');
         Route::post('/promoter-posts/{post}/visit-shop', [PromoterController::class, 'visitShop'])->name('promoters.visit-shop');
     });
 
@@ -140,6 +148,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::patch('/merchant/service-requests/{serviceRequest}', [RealEstateController::class, 'updateRequest'])->name('merchant.service-requests.update');
         Route::patch('/merchant/leads/{lead}', [RealEstateController::class, 'updateLead'])->name('merchant.leads.update');
 
+        // Photo try-on, the owner's shop details, and agents/distributors/marketers.
+        Route::post('/products/{product:id}/try-on', [TryOnController::class, 'create'])->middleware('throttle:6,60,try-on')->name('try-on.create');
+        Route::get('/shops/{shop:id}/try-on/{job}', [TryOnController::class, 'status'])->whereUuid('job')->middleware('throttle:60,1,try-on.status')->name('try-on.status');
+        Route::get('/merchant/shops/{shop:id}/settings', [ShopSettingsController::class, 'show'])->name('merchant.settings');
+        Route::post('/merchant/shops/{shop:id}/settings', [ShopSettingsController::class, 'update'])->middleware('throttle:20,1,merchant.settings')->name('merchant.settings.update');
+        Route::get('/me/network', [NetworkController::class, 'mine'])->name('network.mine');
+
         // Delivery drivers.
         Route::get('/driver', [DriverController::class, 'index'])->name('driver.index');
         Route::patch('/driver/offers/{offer}/accept', [DriverController::class, 'accept'])->name('driver.offers.accept');
@@ -153,5 +168,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/shops/{shop:id}/restaurant-orders', [OrderController::class, 'storeRestaurant'])->name('orders.restaurant');
         // Runs the website dashboards' status code, which renders a card and keeps a little session state.
         Route::patch('/merchant/orders/{order:id}/status', [MerchantController::class, 'status'])->name('merchant.orders.status');
+        // The marketer's wheel keeps its fair draw in a session, like the website.
+        Route::post('/marketer-wheel/{code}/spin', [NetworkController::class, 'spin'])->withoutMiddleware([ApiAuthenticated::class])->name('marketer-wheel.spin');
     });
 });

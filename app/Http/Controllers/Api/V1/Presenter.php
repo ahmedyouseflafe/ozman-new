@@ -175,6 +175,8 @@ class Presenter
             'is_driver' => $user->isRestaurantDriver(),
             // Publishing stories is the owner's (or admin's) job on the website too.
             'can_post_stories' => $user->isSuperAdmin() || $user->isShopOwner(),
+            // Agents, distributors and marketers get a "my network" page.
+            'network_role' => NetworkController::roleOf($user),
         ];
     }
 }
