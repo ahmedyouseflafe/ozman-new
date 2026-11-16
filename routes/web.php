@@ -88,6 +88,12 @@ Route::middleware('guest')->group(function () {
 });
 Route::get('/creator-invitation/{token}', [\App\Http\Controllers\PromoterInvitationController::class, 'show'])->middleware('throttle:30,1')->name('promoter.invitation');
 Route::post('/creator-invitation/{token}', [\App\Http\Controllers\PromoterInvitationController::class, 'accept'])->middleware('throttle:5,1')->name('promoter.invitation.accept');
+// The customers' shopping assistant (the chat bubble on the website).
+Route::middleware(['auth', 'throttle:60,1'])->prefix('assistant')->name('customer-assistant.')->group(function () {
+    Route::get('/state', [\App\Http\Controllers\CustomerAssistantController::class, 'show'])->name('state');
+    Route::post('/messages', [\App\Http\Controllers\CustomerAssistantController::class, 'send'])->middleware('throttle:10,1')->name('send');
+    Route::post('/reset', [\App\Http\Controllers\CustomerAssistantController::class, 'reset'])->name('reset');
+});
 Route::middleware(['auth','throttle:60,1'])->prefix('community')->name('community.')->group(function () {
     Route::get('/account', [\App\Http\Controllers\CommunityAccountController::class, 'account'])->name('account');
     Route::put('/account', [\App\Http\Controllers\CommunityAccountController::class, 'update'])->name('update');

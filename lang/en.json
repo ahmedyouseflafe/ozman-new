@@ -331,5 +331,16 @@
   "أهلاً! أنا مساعد :shop": "Hi! I'm the assistant for :shop",
   "بقدر أحكيلك كيف ماشي البيع، مين أحسن زباينك، شو المنتجات اللي واقفة، وأكتبلك منشورات ووصف منتجات. جرّب:": "I can tell you how sales are going, who your best customers are, which products are stuck, and write posts and product descriptions. Try:",
   "أسئلة هالشهر": "Questions this month",
-  "صار خطأ، جرّب كمان مرة.": "Something went wrong, try again."
+  "صار خطأ، جرّب كمان مرة.": "Something went wrong, try again.",
+  "وصلت حد أسئلة المساعد لليوم. بترجع بكرة 🙏": "You've reached today's assistant limit. See you tomorrow 🙏",
+  "المساعد مشغول كثير اليوم، جرّب بكرة.": "The assistant is very busy today, try tomorrow.",
+  "شو بتنصحني من هالمحل؟": "What do you recommend from this shop?",
+  "في عروض هلقيت؟": "Any offers right now?",
+  "هل المحل مفتوح هلقيت؟": "Is the shop open now?",
+  "شو أكثر وجبة بيطلبوها الناس؟": "What do people order the most?",
+  "بدي إشي آكله سريع وتحت 40 شيكل": "I want something quick to eat under 40 shekels",
+  "هدية لأختي تحت 150 شيكل": "A gift for my sister under 150 shekels",
+  "وين طلبي؟": "Where is my order?",
+  "كم نقطة عندي؟": "How many points do I have?",
+  "شو العروض اليوم؟": "What are today's offers?"
 }

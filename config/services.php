@@ -83,6 +83,13 @@ return [
             'model' => env('SHOP_ASSISTANT_MODEL'),
             'monthly_limit' => (int) env('SHOP_ASSISTANT_MONTHLY_LIMIT', 300),
         ],
+        // The customers' shopping assistant on the website and in the app.
+        'customer_assistant' => [
+            'enabled' => env('CUSTOMER_ASSISTANT_ENABLED', true),
+            'model' => env('CUSTOMER_ASSISTANT_MODEL'),
+            'daily_limit' => (int) env('CUSTOMER_ASSISTANT_DAILY_LIMIT', 40),
+            'site_daily_limit' => (int) env('CUSTOMER_ASSISTANT_SITE_DAILY_LIMIT', 3000),
+        ],
     ],
 
 ];

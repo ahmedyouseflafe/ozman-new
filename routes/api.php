@@ -95,6 +95,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::patch('/merchant/shops/{shop:id}/availability', [MerchantController::class, 'availability'])->name('merchant.availability');
         Route::get('/merchant/orders/{order:id}', [MerchantController::class, 'show'])->name('merchant.orders.show');
 
+        // The customers' shopping assistant.
+        Route::get('/assistant', [\App\Http\Controllers\CustomerAssistantController::class, 'show'])->name('assistant');
+        Route::post('/assistant', [\App\Http\Controllers\CustomerAssistantController::class, 'send'])->middleware('throttle:10,1,assistant.send')->name('assistant.send');
+        Route::post('/assistant/reset', [\App\Http\Controllers\CustomerAssistantController::class, 'reset'])->name('assistant.reset');
+
         // The shop owner's AI assistant (confirming a change is in the session group below).
         Route::get('/merchant/shops/{shop:id}/assistant', [\App\Http\Controllers\ShopAssistantController::class, 'show'])->name('merchant.assistant');
         Route::post('/merchant/shops/{shop:id}/assistant', [\App\Http\Controllers\ShopAssistantController::class, 'send'])->middleware('throttle:15,1,merchant.assistant.send')->name('merchant.assistant.send');

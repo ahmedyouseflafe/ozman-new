@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 
 class AssistantMessage extends Model
 {
-    protected $fillable = ['assistant_conversation_id', 'role', 'content', 'has_image', 'tools', 'input_tokens', 'output_tokens'];
+    protected $fillable = ['assistant_conversation_id', 'role', 'content', 'has_image', 'tools', 'attachments', 'input_tokens', 'output_tokens'];
 
-    protected $casts = ['has_image' => 'boolean', 'tools' => 'array'];
+    protected $casts = ['has_image' => 'boolean', 'tools' => 'array', 'attachments' => 'array'];
 
     public function conversation(): BelongsTo
     {

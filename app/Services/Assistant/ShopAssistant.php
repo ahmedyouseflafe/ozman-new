@@ -4,7 +4,7 @@ namespace App\Services\Assistant;
 
 use App\Models\{AssistantAction, AssistantConversation, AssistantMessage, Shop, User};
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\{DB, Http, Route};
+use Illuminate\Support\Facades\{DB, Route};
 use RuntimeException;
 
 /**
@@ -13,10 +13,9 @@ use RuntimeException;
  */
 class ShopAssistant
 {
-    private const MAX_STEPS = 6;
     private const HISTORY = 12;
 
-    public function __construct(private ShopAssistantTools $tools) {}
+    public function __construct(private ShopAssistantTools $tools, private AssistantEngine $engine) {}
 
     public function enabled(): bool
     {
@@ -53,69 +52,20 @@ class ShopAssistant
         }
         $text = trim($text) !== '' ? trim($text) : __('شو رأيك بهالصورة؟ اكتبلي وصف منتج إلها.');
 
-        $messages = [];
-        $history = $conversation->messages()->latest('id')->limit(self::HISTORY)->get()->reverse()->values();
-        foreach ($history as $turn) {
-            // Keep strict user/assistant alternation even if an earlier turn was lost.
-            if ($messages && end($messages)['role'] === $turn->role) {
-                array_pop($messages);
-            }
-            $messages[] = ['role' => $turn->role, 'content' => mb_substr($turn->content, 0, 6000)];
-        }
-        if ($messages && $messages[0]['role'] === 'assistant') {
-            array_shift($messages);
-        }
-        if ($messages && end($messages)['role'] === 'user') {
-            array_pop($messages);
-        }
-        $content = [];
-        if ($image) {
-            $content[] = ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $image->getMimeType(), 'data' => base64_encode((string) file_get_contents($image->getRealPath()))]];
-        }
-        $content[] = ['type' => 'text', 'text' => mb_substr($text, 0, 2000)];
-        $messages[] = ['role' => 'user', 'content' => $content];
-
+        $messages = [...$this->engine->history($conversation, self::HISTORY), $this->engine->userTurn($text, $image)];
         $proposed = [];
-        $used = [];
-        $usage = ['in' => 0, 'out' => 0];
-        $response = null;
-        for ($step = 0; $step < self::MAX_STEPS; $step++) {
-            $payload = [
-                'model' => config('services.anthropic.shop_assistant.model') ?: config('services.anthropic.model'),
-                'max_tokens' => 2500,
-                'system' => $this->system($shop, $user),
-                'tools' => $this->tools->definitions($shop),
-                'messages' => $messages,
-            ];
-            if ($step === self::MAX_STEPS - 1) {
-                $payload['tool_choice'] = ['type' => 'none'];
-            }
-            $response = $this->send($payload);
-            $usage['in'] += (int) ($response['usage']['input_tokens'] ?? 0);
-            $usage['out'] += (int) ($response['usage']['output_tokens'] ?? 0);
-            if (($response['stop_reason'] ?? null) !== 'tool_use') {
-                break;
-            }
-            // PHP decodes an empty JSON object as []; tool inputs must go back as objects.
-            $messages[] = ['role' => 'assistant', 'content' => array_map(
-                fn ($block) => ($block['type'] ?? null) === 'tool_use' ? ['input' => (object) ($block['input'] ?? [])] + $block : $block,
-                $response['content'],
-            )];
-            $results = [];
-            foreach ($response['content'] as $block) {
-                if (($block['type'] ?? null) !== 'tool_use') {
-                    continue;
-                }
-                $used[] = $block['name'];
-                $result = $this->tools->run($block['name'], (array) ($block['input'] ?? []), $shop, $user, $conversation, $proposed);
-                $json = json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PARTIAL_OUTPUT_ON_ERROR);
-                $results[] = ['type' => 'tool_result', 'tool_use_id' => $block['id'], 'content' => mb_substr((string) $json, 0, 30000),
-                    'is_error' => isset($result['error'])];
-            }
-            $messages[] = ['role' => 'user', 'content' => $results];
-        }
-
-        $answer = trim((string) collect($response['content'] ?? [])->where('type', 'text')->pluck('text')->implode("\n"));
+        $result = $this->engine->run(
+            config('services.anthropic.shop_assistant.model') ?: config('services.anthropic.model'),
+            $this->system($shop, $user),
+            $this->tools->definitions($shop),
+            $messages,
+            function (string $name, array $input) use ($shop, $user, $conversation, &$proposed) {
+                return $this->tools->run($name, $input, $shop, $user, $conversation, $proposed);
+            },
+        );
+        $answer = $result['text'];
+        $used = $result['tools'];
+        $usage = ['in' => $result['input_tokens'], 'out' => $result['output_tokens']];
         if ($answer === '') {
             $answer = $proposed ? __('جهّزتلك التغيير، اكبس «أكّد» تحت إذا موافق.') : __('ما قدرت أجاوب هلقيت، جرّب تسأل بطريقة ثانية.');
         }
@@ -123,7 +73,7 @@ class ShopAssistant
         return DB::transaction(function () use ($conversation, $text, $image, $answer, $used, $usage, $proposed) {
             $conversation->messages()->create(['role' => 'user', 'content' => $text, 'has_image' => (bool) $image]);
             $message = $conversation->messages()->create(['role' => 'assistant', 'content' => $answer,
-                'tools' => array_values(array_unique($used)) ?: null, 'input_tokens' => $usage['in'], 'output_tokens' => $usage['out']]);
+                'tools' => $used ?: null, 'input_tokens' => $usage['in'], 'output_tokens' => $usage['out']]);
             if ($proposed) {
                 AssistantAction::whereIn('id', $proposed)->update(['assistant_message_id' => $message->id]);
             }
@@ -210,18 +160,5 @@ TXT;
         }
 
         return $links;
-    }
-
-    private function send(array $payload): array
-    {
-        $response = Http::withHeaders([
-            'x-api-key' => config('services.anthropic.key'),
-            'anthropic-version' => '2023-06-01',
-        ])->acceptJson()->timeout(90)->post('https://api.anthropic.com/v1/messages', $payload);
-        if ($response->failed()) {
-            throw new RuntimeException((string) ($response->json('error.message') ?: 'Claude request failed ('.$response->status().')'));
-        }
-
-        return (array) $response->json();
     }
 }
