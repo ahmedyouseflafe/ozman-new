@@ -251,4 +251,18 @@ class ShopAssistantTest extends TestCase
         $this->assertArrayHasKey('error', $run('sales_report', ['from' => 'yesterday']));
         $this->assertArrayHasKey('error', $run('propose_accepting_orders', ['open' => true]));
     }
+
+    public function test_a_tool_called_without_arguments_goes_back_as_an_object(): void
+    {
+        $owner = User::factory()->create(['role' => 'shop_owner', 'is_active' => true]);
+        $shop = $this->shop('sweets', $owner);
+        Http::fake(['api.anthropic.com/*' => Http::sequence()
+            ->push($this->toolUse('sales_report', []))
+            ->push($this->text('ما في مبيعات هالشهر.'))]);
+
+        $this->postJson("/api/v1/merchant/shops/{$shop->id}/assistant", ['message' => 'كم بعت هالشهر؟'], $this->auth($owner))->assertOk();
+        $second = Http::recorded()[1][0];
+        $this->assertStringContainsString('"input":{}', $second->body());
+        $this->assertStringNotContainsString('"input":[]', $second->body());
+    }
 }

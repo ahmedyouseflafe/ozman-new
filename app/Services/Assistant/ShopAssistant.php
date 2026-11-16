@@ -96,7 +96,11 @@ class ShopAssistant
             if (($response['stop_reason'] ?? null) !== 'tool_use') {
                 break;
             }
-            $messages[] = ['role' => 'assistant', 'content' => $response['content']];
+            // PHP decodes an empty JSON object as []; tool inputs must go back as objects.
+            $messages[] = ['role' => 'assistant', 'content' => array_map(
+                fn ($block) => ($block['type'] ?? null) === 'tool_use' ? ['input' => (object) ($block['input'] ?? [])] + $block : $block,
+                $response['content'],
+            )];
             $results = [];
             foreach ($response['content'] as $block) {
                 if (($block['type'] ?? null) !== 'tool_use') {
