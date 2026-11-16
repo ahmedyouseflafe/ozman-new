@@ -184,4 +184,21 @@ class CustomerAssistantTest extends TestCase
         config(['services.anthropic.customer_assistant.enabled' => false]);
         $this->get(route('sweets.store', $shop))->assertOk()->assertDontSee('id="ozSaFab"', false);
     }
+
+    public function test_a_reply_is_written_even_when_the_model_stops_after_showing_cards(): void
+    {
+        $shop = $this->shop('sweets');
+        $kunafa = $this->product($shop, 'كنافة', 30);
+        $customer = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+        Http::fake(['api.anthropic.com/*' => Http::sequence()
+            ->push($this->toolUse('show_products', ['product_ids' => [$kunafa->id]]))
+            ->push(['content' => [], 'stop_reason' => 'end_turn', 'usage' => ['input_tokens' => 10, 'output_tokens' => 1]])
+            ->push($this->text('لقيتلك كنافة بـ30 ₪ 👇'))]);
+
+        $this->postJson('/api/v1/assistant', ['message' => 'حلويات'], $this->auth($customer))->assertOk()
+            ->assertJsonPath('message.content', 'لقيتلك كنافة بـ30 ₪ 👇')->assertJsonPath('message.products.0.id', $kunafa->id);
+        $retry = Http::recorded()[2][0]->data();
+        $this->assertSame(['type' => 'none'], $retry['tool_choice']);
+        $this->assertSame('text', end($retry['messages'])['content'][1]['type']);
+    }
 }

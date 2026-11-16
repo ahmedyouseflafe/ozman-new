@@ -86,8 +86,22 @@ class AssistantEngine
             $messages[] = ['role' => 'user', 'content' => $results];
         }
 
+        $text = trim((string) collect($response['content'] ?? [])->where('type', 'text')->pluck('text')->implode("\n"));
+        if ($text === '' && $used && ($response['stop_reason'] ?? null) !== 'tool_use') {
+            // Claude sometimes ends right after a tool (e.g. showing cards) without writing; ask once for the reply itself.
+            $last = array_key_last($messages);
+            if (($messages[$last]['role'] ?? null) === 'user' && is_array($messages[$last]['content'])) {
+                $messages[$last]['content'][] = ['type' => 'text', 'text' => 'Now write your reply to the user, based on the results above.'];
+                $retry = $this->send(['model' => $model, 'max_tokens' => $maxTokens, 'system' => $system, 'tools' => $tools,
+                    'tool_choice' => ['type' => 'none'], 'messages' => $messages]);
+                $usage['in'] += (int) ($retry['usage']['input_tokens'] ?? 0);
+                $usage['out'] += (int) ($retry['usage']['output_tokens'] ?? 0);
+                $text = trim((string) collect($retry['content'] ?? [])->where('type', 'text')->pluck('text')->implode("\n"));
+            }
+        }
+
         return [
-            'text' => trim((string) collect($response['content'] ?? [])->where('type', 'text')->pluck('text')->implode("\n")),
+            'text' => $text,
             'tools' => array_values(array_unique($used)),
             'input_tokens' => $usage['in'],
             'output_tokens' => $usage['out'],
