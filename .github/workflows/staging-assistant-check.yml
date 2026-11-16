@@ -10,6 +10,10 @@ on:
       shop:
         description: "Shop slug"
         default: "demo-clothing"
+      keep:
+        description: "Keep the conversation (it shows in the shop owner's app)"
+        type: boolean
+        default: false
 
 jobs:
   check:
@@ -21,6 +25,7 @@ jobs:
           SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
           QUESTION: ${{ inputs.question }}
           SHOP: ${{ inputs.shop }}
+          KEEP: ${{ inputs.keep && '--keep' || '' }}
           HOST: 82.198.227.221
           PORT: 65002
           USER_NAME: u379351114
@@ -32,4 +37,4 @@ jobs:
           ssh-keyscan -p "$PORT" "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
           Q64=$(printf '%s' "$QUESTION" | base64 -w0)
           S64=$(printf '%s' "$SHOP" | base64 -w0)
-          ssh -i ~/.ssh/staging_key -o IdentitiesOnly=yes -p "$PORT" "$USER_NAME@$HOST" "cd ~/staging-app && php artisan ozman:assistant-check \"\$(echo $Q64 | base64 -d)\" --shop=\"\$(echo $S64 | base64 -d)\""
+          ssh -i ~/.ssh/staging_key -o IdentitiesOnly=yes -p "$PORT" "$USER_NAME@$HOST" "cd ~/staging-app && php artisan ozman:assistant-check \"\$(echo $Q64 | base64 -d)\" --shop=\"\$(echo $S64 | base64 -d)\" $KEEP"

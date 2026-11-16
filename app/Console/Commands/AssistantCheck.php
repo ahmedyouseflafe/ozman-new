@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 /** Asks the shop owner's assistant one question against the real Claude API, to check it works on a server. */
 class AssistantCheck extends Command
 {
-    protected $signature = 'ozman:assistant-check {question=شو أكثر 3 منتجات عندي وأسعارها؟} {--shop=demo-clothing} {--force : run outside staging/local}';
+    protected $signature = 'ozman:assistant-check {question=شو أكثر 3 منتجات عندي وأسعارها؟} {--shop=demo-clothing} {--force : run outside staging/local} {--keep : keep the conversation, so it shows in the owner\'s app}';
 
     protected $description = 'Ask the shop assistant one question and print the answer (the conversation is deleted afterwards).';
 
@@ -48,7 +48,9 @@ class AssistantCheck extends Command
 
             return self::FAILURE;
         } finally {
-            $conversation->delete();
+            if (! $this->option('keep')) {
+                $conversation->delete();
+            }
         }
     }
 }
