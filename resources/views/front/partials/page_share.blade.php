@@ -7,4 +7,5 @@
 </button>
 @once
     @include('front.partials.product_like_assets')
+    @include('front.partials.shopping_assistant')
 @endonce

@@ -342,5 +342,21 @@
   "هدية لأختي تحت 150 شيكل": "A gift for my sister under 150 shekels",
   "وين طلبي؟": "Where is my order?",
   "كم نقطة عندي؟": "How many points do I have?",
-  "شو العروض اليوم؟": "What are today's offers?"
+  "شو العروض اليوم؟": "What are today's offers?",
+  "اسأل": "Ask",
+  "مساعد": "Assistant",
+  "اسأل عن :shop": "Ask about :shop",
+  "إغلاق": "Close",
+  "إرسال": "Send",
+  "سجّل دخول عشان تحكي مع المساعد": "Sign in to chat with the assistant",
+  "تسجيل الدخول": "Sign in",
+  "عم بدوّرلك…": "Looking for you…",
+  "حدّث الصفحة وجرّب كمان مرة.": "Refresh the page and try again.",
+  "المساعد مش متاح هلقيت.": "The assistant isn't available right now.",
+  "أسئلة اليوم": "Today's questions",
+  "شو بتدوّر عليه؟": "What are you looking for?",
+  "أهلاً! اسألني أي إشي عن :shop": "Hi! Ask me anything about :shop",
+  "أهلاً! شو بتدوّر عليه اليوم؟": "Hi! What are you looking for today?",
+  "احكيلي شو بدك بكلامك، وأنا بلاقيلك من محلات أوزمان. وبقدر أحكيلك وين طلبك وكم نقطة عندك.": "Tell me what you want in your own words and I'll find it in Ozman's shops. I can also tell you where your order is and how many points you have.",
+  "مساعد التسوّق": "Shopping assistant"
 }

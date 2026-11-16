@@ -173,4 +173,15 @@ class CustomerAssistantTest extends TestCase
         $this->actingAs($customer)->getJson('/assistant/state')->assertOk()->assertJsonPath('enabled', true);
         $this->actingAs($customer)->postJson('/assistant/messages', ['message' => 'هلا'])->assertOk()->assertJsonPath('message.content', 'أهلاً!');
     }
+
+    public function test_storefronts_show_the_assistant_button_and_guests_are_asked_to_sign_in(): void
+    {
+        $shop = $this->shop('sweets');
+        $this->product($shop, 'كنافة', 30);
+
+        $this->get(route('sweets.store', $shop))->assertOk()->assertSee('id="ozSaFab"', false)->assertSee('const shopId = '.$shop->id.';', false)
+            ->assertSee(json_encode(route('customer-assistant.state')), false);
+        config(['services.anthropic.customer_assistant.enabled' => false]);
+        $this->get(route('sweets.store', $shop))->assertOk()->assertDontSee('id="ozSaFab"', false);
+    }
 }

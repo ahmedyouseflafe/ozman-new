@@ -24,6 +24,8 @@ class CustomerAssistantController extends Controller
             'messages' => $messages->map(fn ($m) => $this->present($m))->all(),
             'usage' => $this->usage($request),
             'suggestions' => $this->suggestions($shop),
+            // The website widget posts with this; storefront pages may be cached, so it isn't baked into them.
+            'csrf' => $request->hasSession() ? csrf_token() : null,
         ], 200, ['Cache-Control' => 'no-store, private']);
     }
 
