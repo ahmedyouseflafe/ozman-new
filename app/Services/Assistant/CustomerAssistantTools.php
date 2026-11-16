@@ -271,7 +271,7 @@ class CustomerAssistantTools
         $cards[$kind] = array_values(array_unique([...($cards[$kind] ?? []), ...array_values(array_intersect($ids, $valid))]));
         $cards[$kind] = array_slice($cards[$kind], 0, 6);
 
-        return ['shown' => count($cards[$kind]), 'note' => 'The cards appear under your answer; don\'t repeat links to them.'];
+        return ['shown' => count($cards[$kind]), 'note' => 'The cards will appear under your reply. Now write the reply itself: a short friendly line, then each suggestion with its price and shop (one bullet each). Don\'t talk about the cards, buttons or links.'];
     }
 
     /** Cards for the client, in the order the assistant chose. */

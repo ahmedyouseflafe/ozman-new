@@ -91,7 +91,7 @@ class AssistantEngine
             // Claude sometimes ends right after a tool (e.g. showing cards) without writing; ask once for the reply itself.
             $last = array_key_last($messages);
             if (($messages[$last]['role'] ?? null) === 'user' && is_array($messages[$last]['content'])) {
-                $messages[$last]['content'][] = ['type' => 'text', 'text' => 'Now write your reply to the user, based on the results above.'];
+                $messages[$last]['content'][] = ['type' => 'text', 'text' => 'Now write your reply to the user, based on the results above. If you suggested products or shops, name each with its price; don\'t talk about cards or buttons.'];
                 $retry = $this->send(['model' => $model, 'max_tokens' => $maxTokens, 'system' => $system, 'tools' => $tools,
                     'tool_choice' => ['type' => 'none'], 'messages' => $messages]);
                 $usage['in'] += (int) ($retry['usage']['input_tokens'] ?? 0);
