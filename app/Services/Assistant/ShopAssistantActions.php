@@ -69,9 +69,6 @@ class ShopAssistantActions
         if (array_key_exists('discount_price', $data)) {
             $changes['discount_price'] = (float) $data['discount_price'] > 0 ? round((float) $data['discount_price'], 2) : null;
         }
-        if (array_key_exists('quantity', $data)) {
-            $changes['quantity'] = max(0, (int) $data['quantity']);
-        }
         if (array_key_exists('is_active', $data)) {
             $changes['is_active'] = (bool) $data['is_active'];
         }

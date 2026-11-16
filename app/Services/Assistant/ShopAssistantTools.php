@@ -37,12 +37,12 @@ class ShopAssistantTools
                     'search' => ['type' => 'string'],
                     'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 30],
                 ]]],
-            ['name' => 'search_products', 'description' => 'Products of the shop with id, price, discount price, stock, active flag, category and views. Search by name, filter by category or active flag.',
+            ['name' => 'search_products', 'description' => 'Products of the shop with id, price, discount price, active flag, category and views. Search by name, filter by category or active flag.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'query' => ['type' => 'string'],
                     'category_id' => ['type' => 'integer'],
                     'active' => ['type' => 'boolean'],
-                    'sort' => ['type' => 'string', 'enum' => ['newest', 'price_asc', 'price_desc', 'views', 'stock_asc']],
+                    'sort' => ['type' => 'string', 'enum' => ['newest', 'price_asc', 'price_desc', 'views']],
                     'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 40],
                 ]]],
             ['name' => 'product_sales', 'description' => 'Units and revenue per product over a period, from confirmed sales. order=best for best sellers, order=worst for active products that sold least (including zero). Defaults to the last 30 days.',
@@ -59,12 +59,11 @@ class ShopAssistantTools
                     'days' => ['type' => 'integer', 'minimum' => 7, 'maximum' => 365],
                     'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 30],
                 ]]],
-            ['name' => 'propose_product_change', 'description' => 'Propose changing a product: price, discount price (0 removes the discount), stock quantity or whether it is shown. Only records a proposal; the owner must press confirm. Look the product up first.',
+            ['name' => 'propose_product_change', 'description' => 'Propose changing a product: price, discount price (0 removes the discount) or whether it is shown (hide a product that is unavailable). Only records a proposal; the owner must press confirm. Look the product up first.',
                 'input_schema' => ['type' => 'object', 'required' => ['product_id'], 'properties' => [
                     'product_id' => ['type' => 'integer'],
                     'price' => ['type' => 'number', 'minimum' => 0],
                     'discount_price' => ['type' => 'number', 'minimum' => 0],
-                    'quantity' => ['type' => 'integer', 'minimum' => 0],
                     'is_active' => ['type' => 'boolean'],
                 ]]],
             ['name' => 'propose_order_status', 'description' => 'Propose moving an order to another status. The customer is notified when it is confirmed. For restaurant orders moving to preparing, give estimated_preparation_minutes. Only records a proposal; the owner must press confirm.',
@@ -195,7 +194,6 @@ class ShopAssistantTools
             'price_asc' => $query->orderBy('price'),
             'price_desc' => $query->orderByDesc('price'),
             'views' => $query->orderByDesc('views'),
-            'stock_asc' => $query->orderByRaw('quantity IS NULL')->orderBy('quantity'),
             default => $query->latest('id'),
         };
         $total = (clone $query)->count();
@@ -300,7 +298,7 @@ class ShopAssistantTools
         if (! $product) {
             throw new \InvalidArgumentException('No product with this id in this shop. Use search_products first.');
         }
-        $changes = Arr::only($input, ['price', 'discount_price', 'quantity', 'is_active']);
+        $changes = Arr::only($input, ['price', 'discount_price', 'is_active']);
         if ($changes === []) {
             throw new \InvalidArgumentException('Nothing to change.');
         }
@@ -316,9 +314,6 @@ class ShopAssistantTools
             $parts[] = (float) $changes['discount_price'] > 0
                 ? __('سعر الخصم: :price ₪', ['price' => $this->money($changes['discount_price'])])
                 : __('إلغاء الخصم');
-        }
-        if (isset($changes['quantity'])) {
-            $parts[] = __('الكمية: :qty', ['qty' => (int) $changes['quantity']]);
         }
         if (isset($changes['is_active'])) {
             $parts[] = $changes['is_active'] ? __('إظهار المنتج') : __('إخفاء المنتج');
@@ -389,7 +384,7 @@ class ShopAssistantTools
         return [
             'id' => $p->id, 'name' => $p->name, 'price' => (float) $p->price,
             'discount_price' => $p->discount_price !== null && (float) $p->discount_price > 0 ? (float) $p->discount_price : null,
-            'quantity' => $p->quantity, 'active' => (bool) $p->is_active, 'category' => $p->category?->name,
+            'active' => (bool) $p->is_active, 'category' => $p->category?->name,
             'views' => (int) $p->views, 'has_image' => filled($p->main_image),
             'description' => Str::limit(strip_tags((string) $p->description), 200),
         ];
