@@ -95,6 +95,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::patch('/merchant/shops/{shop:id}/availability', [MerchantController::class, 'availability'])->name('merchant.availability');
         Route::get('/merchant/orders/{order:id}', [MerchantController::class, 'show'])->name('merchant.orders.show');
 
+        // The shop owner's AI assistant (confirming a change is in the session group below).
+        Route::get('/merchant/shops/{shop:id}/assistant', [\App\Http\Controllers\ShopAssistantController::class, 'show'])->name('merchant.assistant');
+        Route::post('/merchant/shops/{shop:id}/assistant', [\App\Http\Controllers\ShopAssistantController::class, 'send'])->middleware('throttle:15,1,merchant.assistant.send')->name('merchant.assistant.send');
+        Route::post('/merchant/shops/{shop:id}/assistant/reset', [\App\Http\Controllers\ShopAssistantController::class, 'reset'])->name('merchant.assistant.reset');
+        Route::post('/merchant/assistant-actions/{action}/cancel', [\App\Http\Controllers\ShopAssistantController::class, 'cancel'])->name('merchant.assistant.cancel');
+
         // The shop's stories, products and sections.
         Route::get('/merchant/shops/{shop:id}/stories', [StoryController::class, 'mine'])->name('merchant.stories');
         Route::post('/merchant/shops/{shop:id}/stories', [StoryController::class, 'store'])->middleware('throttle:20,1,merchant.stories.store')->name('merchant.stories.store');
@@ -171,6 +177,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/shops/{shop:id}/restaurant-orders', [OrderController::class, 'storeRestaurant'])->name('orders.restaurant');
         // Runs the website dashboards' status code, which renders a card and keeps a little session state.
         Route::patch('/merchant/orders/{order:id}/status', [MerchantController::class, 'status'])->name('merchant.orders.status');
+        Route::post('/merchant/assistant-actions/{action}/confirm', [\App\Http\Controllers\ShopAssistantController::class, 'confirm'])->name('merchant.assistant.confirm');
         // The marketer's wheel keeps its fair draw in a session, like the website.
         Route::post('/marketer-wheel/{code}/spin', [NetworkController::class, 'spin'])->withoutMiddleware([ApiAuthenticated::class])->name('marketer-wheel.spin');
     });

@@ -336,6 +336,13 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::get('/push-notifications', [PushNotificationController::class, 'index'])->name('push-notifications.index');
     Route::post('/push-notifications', [PushNotificationController::class, 'send'])->name('push-notifications.send');
     Route::get('/shops/{shop}/salon-appointments', [SalonAppointmentController::class, 'index'])->name('salon-appointments.index');
+    // The shop owner's AI assistant.
+    Route::get('/shops/{shop}/assistant', [\App\Http\Controllers\ShopAssistantController::class, 'page'])->name('shop-assistant.index');
+    Route::get('/shops/{shop}/assistant/state', [\App\Http\Controllers\ShopAssistantController::class, 'show'])->name('shop-assistant.state');
+    Route::post('/shops/{shop}/assistant/messages', [\App\Http\Controllers\ShopAssistantController::class, 'send'])->middleware('throttle:15,1')->name('shop-assistant.send');
+    Route::post('/shops/{shop}/assistant/reset', [\App\Http\Controllers\ShopAssistantController::class, 'reset'])->name('shop-assistant.reset');
+    Route::post('/assistant-actions/{action}/confirm', [\App\Http\Controllers\ShopAssistantController::class, 'confirm'])->middleware('throttle:30,1')->name('shop-assistant.confirm');
+    Route::post('/assistant-actions/{action}/cancel', [\App\Http\Controllers\ShopAssistantController::class, 'cancel'])->name('shop-assistant.cancel');
     Route::patch('/shops/{shop}/salon-appointments/{appointment}/status', [SalonAppointmentController::class, 'status'])->name('salon-appointments.status');
     Route::scopeBindings()->group(function () {
         Route::get('/shops/{shop}/outlets', [\App\Http\Controllers\ShopOutletController::class, 'index'])->name('shop-outlets.index');

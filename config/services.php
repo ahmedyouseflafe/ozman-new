@@ -77,6 +77,12 @@ return [
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
         'model' => env('ANTHROPIC_MODEL', 'claude-haiku-5-5'),
+        // The shop owner's assistant in the dashboard and the app.
+        'shop_assistant' => [
+            'enabled' => env('SHOP_ASSISTANT_ENABLED', true),
+            'model' => env('SHOP_ASSISTANT_MODEL'),
+            'monthly_limit' => (int) env('SHOP_ASSISTANT_MONTHLY_LIMIT', 300),
+        ],
     ],
 
 ];

@@ -14,8 +14,8 @@
     // Each link names the routes it needs, so an owner whose account was limited only sees what they may open.
     $item = fn (string $href, string $icon, string $label, bool $active, array $needs = []) => ($needs === [] || $canSee($needs)) ? ['href' => $href, 'icon' => $icon, 'label' => $label, 'active' => $active] : null;
 
-    // 1) Daily work: orders, bookings or requests, depending on the kind of shop.
-    $daily = [];
+    // 1) Daily work: orders, bookings or requests, depending on the kind of shop. The assistant comes first.
+    $daily = [$item(route('shop-assistant.index', $shop), 'ti-sparkles', 'المساعد الذكي', request()->routeIs('shop-assistant.*'))];
     if ($type === 'restaurant') {
         $daily[] = $item(route('restaurant.dashboard', $shop), 'ti-receipt-2', 'الطلبات', request()->routeIs('restaurant.dashboard', 'restaurant.orders.*'), ['restaurant.dashboard']);
         $daily[] = $item(route('restaurant.tables.index', $shop), 'ti-qrcode', 'الطاولات وQR', request()->routeIs('restaurant.tables.*'), ['restaurant.tables.index']);

@@ -77,7 +77,9 @@ class EnsureAdminAccess
             // Same for a Krembo company's own points of sale; the controller
             // still limits each request to the owner's shop.
             $isShopOutletRoute = str_starts_with((string) $request->route()?->getName(), 'shop-outlets.');
-            abort_unless($isSalonAppointmentRoute || $isShopOutletRoute || $user->canAccessRouteName($request->route()?->getName()), 403);
+            // The assistant only reads the owner's own shop and proposes changes that run through the same permission checks.
+            $isAssistantRoute = str_starts_with((string) $request->route()?->getName(), 'shop-assistant.');
+            abort_unless($isSalonAppointmentRoute || $isShopOutletRoute || $isAssistantRoute || $user->canAccessRouteName($request->route()?->getName()), 403);
             $activeOwnedShopIds = $activeOwnedShops->pluck('id')->map(fn ($id) => (int) $id)->all();
         }
 
