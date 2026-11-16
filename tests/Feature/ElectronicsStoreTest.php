@@ -137,7 +137,11 @@ class ElectronicsStoreTest extends TestCase
             ->assertSee($category->name);
 
         $script = file_get_contents(public_path('script.js'));
-        $this->assertStringContainsString("['restaurant', 'electronics', 'cosmetics', 'real_estate', 'advertising_services'].includes", $script);
+        preg_match("/\\[([^\\]]*)\\]\\.includes\\(selectedCenter\\?\\.catalog_type\\)/", $script, $types);
+        $this->assertNotEmpty($types);
+        foreach (['restaurant', 'electronics', 'cosmetics', 'real_estate', 'advertising_services'] as $type) {
+            $this->assertStringContainsString("'$type'", $types[1]);
+        }
     }
 
     private function store(string $suffix): array

@@ -389,11 +389,11 @@ class RestaurantOrderingTest extends TestCase
         $this->actingAs($shop->user)
             ->get(route('restaurant.dashboard', $shop))
             ->assertOk()
-            ->assertSee('class="status-choices"', false)
-            ->assertSee('data-label="تفاصيل الوجبات"', false)
-            ->assertSee('data-label="الحالة"', false)
+            // The board shows each order as a card with a quick status form and a menu of all statuses.
+            ->assertSee('class="status-form quick-status"', false)
+            ->assertSee('status-menu-toggle', false)
             ->assertSee('value="preparing"', false)
-            ->assertSee('value="cancelled"', false);
+            ->assertSee('status-move-cancelled', false);
 
         $this->actingAs($shop->user)
             ->patchJson(route('restaurant.orders.status', $order), ['status' => 'preparing'])
@@ -416,9 +416,10 @@ class RestaurantOrderingTest extends TestCase
             'estimated_preparation_minutes' => 20,
         ]);
 
+        // The restaurant owns its orders and may move one to any status, also past a step.
         $this->actingAs($shop->user)
             ->patchJson(route('restaurant.orders.status', $order), ['status' => 'completed'])
-            ->assertUnprocessable();
+            ->assertOk()->assertJsonPath('status', 'completed');
     }
 
     public function test_general_shop_owner_only_sees_orders_for_owned_shop(): void
@@ -655,15 +656,12 @@ class RestaurantOrderingTest extends TestCase
             ->patch(route('restaurant.orders.driver', $order), ['restaurant_driver_id' => $driver->id])
             ->assertRedirect();
         $this->assertSame($driver->id, $order->fresh()->restaurant_driver_id);
-        $this->actingAs($shop->user)
-            ->patchJson(route('restaurant.orders.status', $order), ['status' => 'completed'])
-            ->assertUnprocessable();
 
         $this->actingAs($driver->user)
             ->get(route('driver.dashboard'))
             ->assertOk()
             ->assertSee($order->order_number)
-            ->assertSee('استلمت الطلب وخرجت للتوصيل');
+            ->assertSee('استلام وبدء التوصيل');
         $this->actingAs($driver->user)
             ->getJson(route('driver.orders.feed'))
             ->assertOk()
@@ -708,7 +706,7 @@ class RestaurantOrderingTest extends TestCase
         $this->getJson($trackingUrl)->assertOk()->assertJsonPath('tracking.estimated_delivery_at', null)
             ->assertJsonMissingPath('tracking.delivery_map');
         $this->actingAs($driverUser)->get(route('driver.dashboard'))->assertOk()
-            ->assertSee('وقت التوصيل التقريبي بالدقائق');
+            ->assertSee('وقت الوصول المتوقع (دقائق)');
         $this->actingAs($driverUser)->patchJson(route('driver.orders.status', $order), ['status' => 'out_for_delivery'])
             ->assertUnprocessable()->assertJsonValidationErrors('estimated_delivery_minutes');
         $this->actingAs($driverUser)->patchJson(route('driver.orders.status', $order), ['status' => 'out_for_delivery', 'estimated_delivery_minutes' => 0])
@@ -725,7 +723,7 @@ class RestaurantOrderingTest extends TestCase
         $this->get($trackingUrl)->assertOk()->assertSee('وقت الوصول التقريبي الذي حدده المندوب')
             ->assertDontSee('maps.googleapis.com');
         $this->actingAs($driverUser)->get(route('driver.dashboard'))->assertOk()
-            ->assertSee('تعديل الوقت المتبقي بالدقائق');
+            ->assertSee('تحديث الوقت المتبقي');
         $this->actingAs($otherDriverUser)->patchJson(route('driver.orders.delivery-time', $order), ['estimated_delivery_minutes' => 12])
             ->assertForbidden();
         $this->actingAs($driverUser)->patchJson(route('driver.orders.delivery-time', $order), ['estimated_delivery_minutes' => 241])

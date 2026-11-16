@@ -91,10 +91,8 @@ class AdvertisingStoreTest extends TestCase
     {
         $script = file_get_contents(public_path('script.js'));
 
-        $this->assertStringContainsString(
-            "'advertising_services'].includes(selectedCenter?.catalog_type)",
-            $script
-        );
+        // The list of shop types that open their own store page from the marketplace includes advertising.
+        $this->assertMatchesRegularExpression("/\\[[^\\]]*'advertising_services'[^\\]]*\\]\\.includes\\(selectedCenter\\?\\.catalog_type\\)/", $script);
         $this->assertStringContainsString(
             "advertising_services: { title: 'خدمات دعائية وطباعة'",
             $script

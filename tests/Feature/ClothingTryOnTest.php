@@ -16,6 +16,9 @@ class ClothingTryOnTest extends TestCase
         $owner = User::factory()->create();
         $shop = Shop::create(['user_id' => $owner->id, 'name' => 'Try-on shop',
             'slug' => 'try-on-shop', 'catalog_type' => 'clothing', 'is_active' => true]);
+        // The try-on buttons sit with the collection, so the shop needs something to show.
+        $category = \App\Models\Category::create(['shop_id' => $shop->id, 'name' => 'Shirts', 'slug' => 'shirts-try', 'is_active' => true]);
+        \App\Models\Product::create(['shop_id' => $shop->id, 'category_id' => $category->id, 'name' => 'Shirt', 'slug' => 'shirt-try', 'price' => 90, 'is_active' => true]);
 
         $this->get(route('clothing.store', $shop))->assertOk()
             ->assertSee('id="demoTryOn"', false)
