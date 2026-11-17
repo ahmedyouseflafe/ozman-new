@@ -44,4 +44,4 @@ jobs:
           ssh-keyscan -p "$PORT" "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
           b() { printf '%s' "$1" | base64 -w0; }
           M=$(b "$METHOD"); P=$(b "$APIPATH"); S=$(b "$SHOP"); U=$(b "$APIUSER"); D=$(b "$DATA")
-          ssh -i ~/.ssh/staging_key -o IdentitiesOnly=yes -p "$PORT" "$USER_NAME@$HOST" "cd ~/staging-app && d() { echo \$1 | base64 -d; }; php artisan ozman:api-check \"\$(d $M)\" \"\$(d $P)\" --shop=\"\$(d $S)\" --user=\"\$(d $U)\" --data=\"\$(d $D)\"; echo '--- log ---'; tail -n 40 storage/logs/laravel.log | cut -c1-400"
+          ssh -i ~/.ssh/staging_key -o IdentitiesOnly=yes -p "$PORT" "$USER_NAME@$HOST" "cd ~/staging-app && d() { echo \$1 | base64 -d; }; php artisan ozman:api-check \"\$(d $M)\" \"\$(d $P)\" --shop=\"\$(d $S)\" --user=\"\$(d $U)\" --data=\"\$(d $D)\"; echo '--- log ---'; grep -a '^\[20' storage/logs/laravel.log | tail -n 6 | cut -c1-700"
