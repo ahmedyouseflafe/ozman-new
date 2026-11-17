@@ -596,7 +596,8 @@ class RestaurantController extends Controller
         $lines = [
             '🆕 طلب جديد · '.$shop->name,
             'رقم الطلب: '.$order->order_number,
-            'نوع الطلب: '.$type,
+            // Shop orders (not a restaurant's) have no dine-in/pickup type; the pickup choice is in the notes.
+            ...($order->order_type ? ['نوع الطلب: '.$type] : []),
             '',
             '👤 العميل: '.$order->customer_name,
             '📞 الجوال: '.($order->customer_phone ?: '-'),
@@ -618,7 +619,7 @@ class RestaurantController extends Controller
             $lines[] = '📝 ملاحظات العميل: '.$order->customer_notes;
         }
 
-        $lines = array_merge($lines, ['', '🍽 الأصناف:', ...$items]);
+        $lines = array_merge($lines, ['', ($shop->catalog_type === 'restaurant' ? '🍽' : '🛍').' الأصناف:', ...$items]);
         $purchaseReward = json_decode($order->purchase_reward ?? 'null', true);
         if ($purchaseReward && ($purchaseReward['discount_type'] ?? '') !== 'none') {
             $lines[] = '🎁 جائزة عجلة الشراء مع الطلب: '.$purchaseReward['label'];

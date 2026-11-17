@@ -49,6 +49,8 @@ class MobileCustomersAndShareApiTest extends TestCase
         $this->assertStringStartsWith('https://wa.me/972599000111?text=', $url);
         $this->assertStringContainsString('APP-1', rawurldecode($url));
         $this->assertStringContainsString('فستان', rawurldecode($url));
+        $this->assertStringContainsString('🛍 الأصناف', rawurldecode($url));
+        $this->assertStringNotContainsString('نوع الطلب', rawurldecode($url));
 
         $order->update(['status' => 'cancelled']);
         $this->getJson("/api/v1/orders/{$order->id}", $this->auth($customer))->assertJsonPath('order.whatsapp_url', null);
