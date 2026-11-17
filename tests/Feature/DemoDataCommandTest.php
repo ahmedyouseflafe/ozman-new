@@ -15,7 +15,9 @@ class DemoDataCommandTest extends TestCase
     {
         Storage::fake('local');
         $this->artisan('ozman:demo-data')->assertSuccessful();
-        $this->assertSame(6, Shop::where('slug', 'like', 'demo-%')->count());
+        $this->assertSame(7, Shop::where('slug', 'like', 'demo-%')->count());
+        $this->assertSame(1, Shop::where('slug', 'demo-krembo')->sole()->outlets()->count());
+        $this->assertTrue(\App\Models\Distributor::whereHas('user', fn ($q) => $q->where('email', 'demo-distributor@staging.ozman.test'))->exists());
         $products = Product::count();
         $this->assertGreaterThan(15, $products);
         $this->assertTrue(User::where('email', 'demo-customer@staging.ozman.test')->where('role', 'customer')->exists());
@@ -28,7 +30,7 @@ class DemoDataCommandTest extends TestCase
         Storage::disk('local')->assertExists(PromoterPost::first()->media);
         $this->getJson('/api/v1/promoters')->assertOk()->assertJsonCount(2, 'data');
         $this->getJson('/api/v1/market')->assertOk()->assertJsonCount(3, 'data');
-        $this->getJson('/api/v1/home')->assertOk()->assertJsonCount(6, 'types');
+        $this->getJson('/api/v1/home')->assertOk()->assertJsonCount(7, 'types');
 
         $this->app['env'] = 'production';
         $this->artisan('ozman:demo-data')->assertFailed();

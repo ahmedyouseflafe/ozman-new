@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\{Category, MarketListing, RealEstateProperty, Product, PromoterPost, PromoterProfile, RewardWheel, Shop, User};
+use App\Models\{Category, Distributor, EmployeePermission, MarketListing, RealEstateProperty, Product, PromoterPost, PromoterProfile, RewardWheel, Shop, User};
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -156,6 +156,25 @@ class SeedDemoData extends Command
                     'title' => $title, 'description' => 'عقار تجريبي لتجربة التطبيق.', 'price' => $price, 'currency' => 'ILS', 'city' => 'رام الله', 'neighborhood' => 'الماصيون',
                     'rooms' => $rooms, 'bathrooms' => 2, 'area' => $area, 'has_balcony' => true, 'has_elevator' => ! $k, 'status' => 'published', 'published_at' => now()]);
             }
+
+            // A Krembo-style company with a point of sale, and one of its distributors (who manages marketers in the app).
+            $kremboEmail = 'demo-owner-krembo@staging.ozman.test';
+            $kremboOwner = User::where('email', $kremboEmail)->first();
+            if (! $kremboOwner) {
+                $passwords[$kremboEmail] = Str::password(14, symbols: false);
+                $kremboOwner = User::create(['name' => 'صاحب شركة كريمبو الديمو', 'email' => $kremboEmail, 'password' => Hash::make($passwords[$kremboEmail]), 'role' => 'shop_owner', 'is_active' => true]);
+            }
+            $krembo = Shop::updateOrCreate(['slug' => 'demo-krembo'], ['user_id' => $kremboOwner->id, 'name' => 'كريمبو (ديمو)', 'catalog_type' => 'krembo',
+                'city' => 'نابلس', 'description' => 'شركة توزيع تجريبية.', 'phone' => '0590000950', 'whatsapp' => '0590000950', 'is_active' => true, 'is_accepting_orders' => true]);
+            $krembo->outlets()->firstOrCreate(['name' => 'سوبرماركت الديمو'], ['region' => 'نابلس', 'address' => 'شارع فيصل (تجربة)', 'phone' => '0590000951', 'is_active' => true]);
+            $distributorEmail = 'demo-distributor@staging.ozman.test';
+            $distributorUser = User::where('email', $distributorEmail)->first();
+            if (! $distributorUser) {
+                $passwords[$distributorEmail] = Str::password(14, symbols: false);
+                $distributorUser = User::create(['name' => 'موزع الديمو', 'email' => $distributorEmail, 'password' => Hash::make($passwords[$distributorEmail]), 'role' => 'distributor', 'is_active' => true]);
+            }
+            EmployeePermission::firstOrCreate(['user_id' => $distributorUser->id, 'permission' => 'distributors.marketers']);
+            Distributor::firstOrCreate(['user_id' => $distributorUser->id, 'shop_id' => $krembo->id], ['name' => 'موزع الديمو', 'email' => $distributorEmail, 'phone' => '0590000960', 'is_active' => true]);
 
             $customerEmail = 'demo-customer@staging.ozman.test';
             if (! User::where('email', $customerEmail)->exists()) {

@@ -13,7 +13,8 @@ class MerchantCustomersController extends Controller
     {
         $user = $request->user();
         abort_unless($user->isSuperAdmin() || in_array($shop->id, $user->accessibleShopIds(), true), 403);
-        abort_unless($user->isSuperAdmin() || $user->canAccessRouteName('restaurant.customers.index'), 403);
+        // The shop's own owner always sees its customers; staff need the dashboard's customers permission.
+        abort_unless($user->isSuperAdmin() || (int) $shop->user_id === (int) $user->id || $user->canAccessRouteName('restaurant.customers.index'), 403);
         $search = trim((string) ($request->validate(['search' => ['nullable', 'string', 'max:120']])['search'] ?? ''));
 
         $query = VisitorRegistration::query()->where('shop_id', $shop->id)->where('type', 'customer');
