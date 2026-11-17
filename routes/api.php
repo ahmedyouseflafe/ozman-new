@@ -100,6 +100,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/assistant', [\App\Http\Controllers\CustomerAssistantController::class, 'send'])->middleware('throttle:10,1,assistant.send')->name('assistant.send');
         Route::post('/assistant/reset', [\App\Http\Controllers\CustomerAssistantController::class, 'reset'])->name('assistant.reset');
 
+        // Reward wheels: the signup wheel and the purchase wheels.
+        Route::get('/merchant/shops/{shop:id}/wheels', [\App\Http\Controllers\Api\V1\RewardWheelsController::class, 'index'])->name('merchant.wheels');
+        Route::post('/merchant/shops/{shop:id}/wheels/signup', [\App\Http\Controllers\Api\V1\RewardWheelsController::class, 'saveSignup'])->middleware('throttle:30,1,merchant.wheels')->name('merchant.wheels.signup');
+        Route::post('/merchant/shops/{shop:id}/wheels/purchase', [\App\Http\Controllers\Api\V1\RewardWheelsController::class, 'storePurchase'])->middleware('throttle:30,1,merchant.wheels')->name('merchant.wheels.purchase.store');
+        Route::post('/merchant/wheels/{wheel}', [\App\Http\Controllers\Api\V1\RewardWheelsController::class, 'updatePurchase'])->middleware('throttle:30,1,merchant.wheels')->name('merchant.wheels.purchase.update');
+        Route::delete('/merchant/wheels/{wheel}', [\App\Http\Controllers\Api\V1\RewardWheelsController::class, 'destroyPurchase'])->name('merchant.wheels.purchase.destroy');
+
         // The shop owner's AI assistant (confirming a change is in the session group below).
         Route::get('/merchant/shops/{shop:id}/assistant', [\App\Http\Controllers\ShopAssistantController::class, 'show'])->name('merchant.assistant');
         Route::post('/merchant/shops/{shop:id}/assistant', [\App\Http\Controllers\ShopAssistantController::class, 'send'])->middleware('throttle:15,1,merchant.assistant.send')->name('merchant.assistant.send');
