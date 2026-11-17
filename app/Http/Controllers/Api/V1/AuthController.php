@@ -5,7 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\ApiToken;
 use App\Models\User;
-use App\Services\CommunityUsername;
+use App\Services\{CommunityUsername, MerchantRegistration};
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -112,6 +113,36 @@ class AuthController extends Controller
         });
 
         return response()->json(['deleted' => true]);
+    }
+
+    /** Who a referral code (a distributor's or marketer's QR) belongs to, before the shop form is filled in. */
+    public function shopReferral(Request $request, MerchantRegistration $registration): JsonResponse
+    {
+        $code = (string) $request->validate(['code' => ['required', 'string', 'max:500']])['code'];
+        $referral = $registration->referralFromCode($code);
+        abort_unless($referral, 404, __('رمز الإحالة مش صالح أو مش فعّال. امسح QR الموزّع أو المسوّق كمان مرة.'));
+
+        return response()->json(['referral' => $registration->describe($referral)]);
+    }
+
+    /** A new shop signs up in the app through a distributor's or marketer's referral, like the website, and is signed in. */
+    public function registerShop(Request $request, MerchantRegistration $registration): JsonResponse
+    {
+        $request->merge(['email' => mb_strtolower(trim((string) $request->input('email')))]);
+        $orphanOwner = $registration->orphanOwner($request->input('email'));
+        $data = $request->validate($registration->rules($orphanOwner) + [
+            'referral_code' => ['required', 'string', 'max:500'],
+            'device_name' => ['nullable', 'string', 'max:120'],
+        ], $registration->messages());
+        $referral = $registration->referralFromCode($data['referral_code']);
+        if (! $referral) {
+            throw ValidationException::withMessages(['referral_code' => __('رمز الإحالة مش صالح أو مش فعّال. امسح QR الموزّع أو المسوّق كمان مرة.')]);
+        }
+        [$user, $shop] = $registration->create($data, $referral, $orphanOwner, $request);
+
+        $response = $this->tokenResponse($user, $data['device_name'] ?? 'mobile', 201);
+
+        return $response->setData($response->getData(true) + ['shop' => Presenter::shop($shop)]);
     }
 
     private function tokenResponse(User $user, string $device, int $status = 200): JsonResponse

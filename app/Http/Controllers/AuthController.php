@@ -165,30 +165,10 @@ class AuthController extends Controller
 
     public function merchantRegister(Request $request): RedirectResponse
     {
-        $normalizedEmail = Str::lower(trim((string) $request->input('email')));
-        $request->merge(['email' => $normalizedEmail]);
-        $orphanOwner = filter_var($normalizedEmail, FILTER_VALIDATE_EMAIL)
-            ? User::query()->where('email', $normalizedEmail)->first()
-            : null;
-        if (! $orphanOwner?->isShopOwner() || $orphanOwner->shops()->exists()) {
-            $orphanOwner = null;
-        }
-
-        $data = $request->validate([
-            'owner_name' => ['required', 'string', 'max:255'],
-            'shop_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($orphanOwner?->id)],
-            'phone' => ['required', 'string', 'max:60', new ValidPhoneNumber],
-            'whatsapp' => ['nullable', 'string', 'max:60', new ValidPhoneNumber],
-            'address' => ['nullable', 'string', 'max:1000'],
-            'latitude' => ['required', 'numeric', 'between:-90,90'],
-            'longitude' => ['required', 'numeric', 'between:-180,180'],
-            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'password' => ['required', 'confirmed', Password::min(8)],
-            'redirect' => ['nullable', 'string', 'max:1000'],
-        ], [
-            'email.unique' => 'هذا البريد مرتبط بحساب موجود فعلياً. جرّب تسجيل الدخول أو استخدم بريداً آخر.',
-        ]);
+        $registration = app(\App\Services\MerchantRegistration::class);
+        $request->merge(['email' => Str::lower(trim((string) $request->input('email')))]);
+        $orphanOwner = $registration->orphanOwner($request->input('email'));
+        $data = $request->validate($registration->rules($orphanOwner) + ['redirect' => ['nullable', 'string', 'max:1000']], $registration->messages());
 
         $referral = $this->resolvedMerchantReferral($request);
         if (! $referral) {
@@ -196,47 +176,7 @@ class AuthController extends Controller
                 ->withErrors(['email' => 'انتهت أو أصبحت إحالة QR غير صالحة. امسح QR مرة أخرى.'])
                 ->withInput($request->except(['password', 'password_confirmation']));
         }
-
-        // حذف المتجر قديماً كان يترك حساب صاحبه بلا متجر ويحجز بريده.
-        // لا نحذف السجل اليتيم إلا بعد التأكد من صلاحية إحالة QR.
-        $orphanOwner?->delete();
-
-        $logoPath = $request->hasFile('logo')
-            ? 'storage/'.$request->file('logo')->store('shops/logos', 'public')
-            : null;
-
-        [$user, $shop] = DB::transaction(function () use ($data, $referral, $logoPath) {
-            $user = User::create([
-                'name' => $data['owner_name'],
-                'email' => $data['email'],
-                'phone' => $data['phone'],
-                'password' => $data['password'],
-                'role' => 'shop_owner',
-                'is_active' => true,
-            ]);
-
-            $shop = Shop::create([
-                'user_id' => $user->id,
-                'distributor_id' => $referral['distributor_id'],
-                'distributor_marketer_id' => $referral['distributor_marketer_id'],
-                'name' => $data['shop_name'],
-                'slug' => $this->uniqueShopSlug($data['shop_name']),
-                'catalog_type' => 'general',
-                'logo' => $logoPath,
-                'phone' => $data['phone'],
-                'whatsapp' => ($data['whatsapp'] ?? null) ?: $data['phone'],
-                'email' => $data['email'],
-                'address' => $data['address'] ?? null,
-                'latitude' => $data['latitude'],
-                'longitude' => $data['longitude'],
-                'is_active' => true,
-                // المتجر المسجل من QR هو عميل للموزع/المروج، لذلك يجب أن
-                // يرى كتالوج Ozman الأساسي فور دخوله بدون نسخ ملكية المنتجات.
-                'show_ozman_products' => true,
-            ]);
-
-            return [$user, $shop];
-        });
+        [$user, $shop] = $registration->create($data, $referral, $orphanOwner, $request);
 
         Auth::login($user, true);
         $request->session()->regenerate();
@@ -540,33 +480,9 @@ class AuthController extends Controller
     private function resolvedMerchantReferral(Request $request): ?array
     {
         $referral = $request->session()->get('merchant_referral');
-        if (! is_array($referral)) {
-            return null;
-        }
 
-        $marketerId = (int) ($referral['distributor_marketer_id'] ?? 0);
-        if ($marketerId > 0) {
-            $marketer = DistributorMarketer::query()
-                ->whereKey($marketerId)
-                ->where('is_active', true)
-                ->whereHas('distributor', fn ($query) => $query->where('is_active', true))
-                ->first();
-
-            return $marketer ? [
-                'distributor_id' => $marketer->distributor_id,
-                'distributor_marketer_id' => $marketer->id,
-            ] : null;
-        }
-
-        $distributor = Distributor::query()
-            ->whereKey((int) ($referral['distributor_id'] ?? 0))
-            ->where('is_active', true)
-            ->first();
-
-        return $distributor ? [
-            'distributor_id' => $distributor->id,
-            'distributor_marketer_id' => null,
-        ] : null;
+        return is_array($referral) ? app(\App\Services\MerchantRegistration::class)->referral(
+            (int) ($referral['distributor_id'] ?? 0) ?: null, (int) ($referral['distributor_marketer_id'] ?? 0) ?: null) : null;
     }
 
     private function uniqueShopSlug(string $name): string

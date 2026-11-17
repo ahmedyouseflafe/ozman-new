@@ -31,6 +31,9 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1,auth.login')->name('auth.login');
     Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:5,1,auth.register')->name('auth.register');
+    // A new shop signs up through a distributor's or marketer's referral QR.
+    Route::get('/auth/shop-referral', [AuthController::class, 'shopReferral'])->middleware('throttle:20,1,auth.shop-referral')->name('auth.shop-referral');
+    Route::post('/auth/register-shop', [AuthController::class, 'registerShop'])->middleware('throttle:5,1,auth.register-shop')->name('auth.register-shop');
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1,auth.forgot')->name('auth.forgot');
 
     Route::middleware('throttle:120,1,api')->group(function () {
