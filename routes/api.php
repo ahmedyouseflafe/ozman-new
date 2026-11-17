@@ -100,6 +100,24 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/assistant', [\App\Http\Controllers\CustomerAssistantController::class, 'send'])->middleware('throttle:10,1,assistant.send')->name('assistant.send');
         Route::post('/assistant/reset', [\App\Http\Controllers\CustomerAssistantController::class, 'reset'])->name('assistant.reset');
 
+        // Real estate companies: properties with photos, and services with sections and options.
+        Route::get('/merchant/shops/{shop:id}/properties', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'properties'])->name('merchant.properties');
+        Route::post('/merchant/shops/{shop:id}/properties', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'storeProperty'])->middleware('throttle:30,1,merchant.properties')->name('merchant.properties.store');
+        Route::get('/merchant/properties/{property}', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'property'])->name('merchant.properties.show');
+        Route::post('/merchant/properties/{property}', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'updateProperty'])->middleware('throttle:60,1,merchant.properties')->name('merchant.properties.update');
+        Route::delete('/merchant/properties/{property}', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'destroyProperty'])->name('merchant.properties.destroy');
+        Route::delete('/merchant/property-images/{image}', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'destroyPropertyImage'])->name('merchant.property-images.destroy');
+        Route::patch('/merchant/property-images/{image}/cover', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'coverPropertyImage'])->name('merchant.property-images.cover');
+        Route::get('/merchant/shops/{shop:id}/services', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'services'])->name('merchant.services');
+        Route::post('/merchant/shops/{shop:id}/services', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'storeService'])->middleware('throttle:30,1,merchant.services')->name('merchant.services.store');
+        Route::get('/merchant/services/{service}', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'service'])->name('merchant.services.show');
+        Route::post('/merchant/services/{service}', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'updateService'])->middleware('throttle:60,1,merchant.services')->name('merchant.services.update');
+        Route::delete('/merchant/services/{service}', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'destroyService'])->name('merchant.services.destroy');
+        Route::delete('/merchant/service-images/{image}', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'destroyServiceImage'])->name('merchant.service-images.destroy');
+        Route::post('/merchant/shops/{shop:id}/service-categories', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'storeCategory'])->name('merchant.service-categories.store');
+        Route::post('/merchant/service-categories/{category}', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'updateCategory'])->name('merchant.service-categories.update');
+        Route::delete('/merchant/service-categories/{category}', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'destroyCategory'])->name('merchant.service-categories.destroy');
+
         // Reward wheels: the signup wheel and the purchase wheels.
         Route::get('/merchant/shops/{shop:id}/wheels', [\App\Http\Controllers\Api\V1\RewardWheelsController::class, 'index'])->name('merchant.wheels');
         Route::post('/merchant/shops/{shop:id}/wheels/signup', [\App\Http\Controllers\Api\V1\RewardWheelsController::class, 'saveSignup'])->middleware('throttle:30,1,merchant.wheels')->name('merchant.wheels.signup');
