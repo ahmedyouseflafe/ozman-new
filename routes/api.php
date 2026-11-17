@@ -104,6 +104,26 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/assistant/reset', [\App\Http\Controllers\CustomerAssistantController::class, 'reset'])->name('assistant.reset');
 
         // Real estate companies: properties with photos, and services with sections and options.
+        Route::get('/merchant/shops/{shop:id}/social', [\App\Http\Controllers\Api\V1\SocialController::class, 'index'])->name('merchant.social');
+        Route::post('/merchant/shops/{shop:id}/social/connect/{platform}', [\App\Http\Controllers\Api\V1\SocialController::class, 'connect'])->middleware('throttle:20,1')->name('merchant.social.connect');
+        Route::post('/merchant/shops/{shop:id}/social/caption', [\App\Http\Controllers\Api\V1\SocialController::class, 'caption'])->middleware('throttle:20,1')->name('merchant.social.caption');
+        Route::post('/merchant/shops/{shop:id}/social/posts', [\App\Http\Controllers\Api\V1\SocialController::class, 'store'])->middleware('throttle:20,1')->name('merchant.social.posts.store');
+        Route::delete('/merchant/social-posts/{post}', [\App\Http\Controllers\Api\V1\SocialController::class, 'destroy'])->name('merchant.social.posts.destroy');
+        Route::get('/merchant/shops/{shop:id}/ads', [\App\Http\Controllers\Api\V1\ShopAdsController::class, 'index'])->name('merchant.ads');
+        Route::post('/merchant/shops/{shop:id}/ads', [\App\Http\Controllers\Api\V1\ShopAdsController::class, 'storeAd'])->middleware('throttle:30,1')->name('merchant.ads.store');
+        Route::post('/merchant/ads/{ad}', [\App\Http\Controllers\Api\V1\ShopAdsController::class, 'updateAd'])->middleware('throttle:60,1')->name('merchant.ads.update');
+        Route::delete('/merchant/ads/{ad}', [\App\Http\Controllers\Api\V1\ShopAdsController::class, 'destroyAd'])->name('merchant.ads.destroy');
+        Route::post('/merchant/shops/{shop:id}/screens', [\App\Http\Controllers\Api\V1\ShopAdsController::class, 'storeScreen'])->middleware('throttle:30,1')->name('merchant.screens.store');
+        Route::post('/merchant/screens/{screen}', [\App\Http\Controllers\Api\V1\ShopAdsController::class, 'updateScreen'])->middleware('throttle:60,1')->name('merchant.screens.update');
+        Route::delete('/merchant/screens/{screen}', [\App\Http\Controllers\Api\V1\ShopAdsController::class, 'destroyScreen'])->name('merchant.screens.destroy');
+        Route::get('/merchant/shops/{shop:id}/outlets', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'outlets'])->name('merchant.outlets');
+        Route::post('/merchant/shops/{shop:id}/outlets', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'storeOutlet'])->middleware('throttle:60,1')->name('merchant.outlets.store');
+        Route::post('/merchant/outlets/{outlet}', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'updateOutlet'])->middleware('throttle:60,1')->name('merchant.outlets.update');
+        Route::delete('/merchant/outlets/{outlet}', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'destroyOutlet'])->name('merchant.outlets.destroy');
+        Route::post('/me/network/distributors/{distributor}/marketers', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'storeMarketer'])->middleware('throttle:30,1')->name('network.marketers.store');
+        Route::post('/me/network/marketers/{marketer}', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'updateMarketer'])->middleware('throttle:60,1')->name('network.marketers.update');
+        Route::delete('/me/network/marketers/{marketer}', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'destroyMarketer'])->name('network.marketers.destroy');
+        Route::get('/merchant/shops/{shop:id}/customers', [\App\Http\Controllers\Api\V1\MerchantCustomersController::class, 'index'])->name('merchant.customers');
         Route::get('/merchant/shops/{shop:id}/properties', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'properties'])->name('merchant.properties');
         Route::post('/merchant/shops/{shop:id}/properties', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'storeProperty'])->middleware('throttle:30,1,merchant.properties')->name('merchant.properties.store');
         Route::get('/merchant/properties/{property}', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'property'])->name('merchant.properties.show');

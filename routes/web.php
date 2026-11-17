@@ -9,6 +9,7 @@ use App\Http\Controllers\ClothingStoreController;
 use App\Http\Controllers\CosmeticsStoreController;
 
 Route::post('/cosmetics/{shop:slug}/orders', [\App\Http\Controllers\CosmeticsCheckoutController::class, 'store'])->middleware('throttle:20,1')->name('cosmetics.orders.store');
+Route::get('/social/app-connected', [\App\Http\Controllers\ShopSocialController::class, 'appCallback'])->middleware('throttle:30,1')->name('social.app-callback');
 Route::get('/cosmetics/orders/{order}/share', [\App\Http\Controllers\CosmeticsCheckoutController::class, 'share'])->middleware(['signed', 'throttle:60,1'])->name('cosmetics.orders.share');
 
 use App\Http\Controllers\DistributorController;

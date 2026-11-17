@@ -313,8 +313,11 @@ class ScreenController extends Controller
     private function canAccessScreenRoute(): bool
     {
         $user = Auth::user();
+        // The app's API calls these actions under its own route names and says which dashboard page it stands for.
+        $route = request()->attributes->get('dashboard_route') ?? request()->route()?->getName();
+
         return $user && in_array($user->role, ['super_admin', 'employee', 'shop_owner', 'agent', 'distributor'], true)
-            && $user->canAccessRouteName(request()->route()->getName());
+            && $user->canAccessRouteName($route);
     }
 
     private function canManagePlatformScreens(): bool

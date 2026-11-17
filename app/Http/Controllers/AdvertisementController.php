@@ -98,6 +98,7 @@ class AdvertisementController extends Controller
 
     public function update(Request $request, Advertisement $ad, WebPushService $webPush): RedirectResponse
     {
+        $this->authorizeShopAccess($ad);
         $wasActive = $ad->is_active;
         $data = $this->validatedData($request, $ad);
         $this->normalizeShopId($data);

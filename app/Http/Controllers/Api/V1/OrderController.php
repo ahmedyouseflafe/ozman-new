@@ -130,6 +130,8 @@ class OrderController extends Controller
             'tracking_url' => $order->shop?->catalog_type === 'restaurant' ? URL::signedRoute('restaurant.orders.track', $order) : null,
             'shop_phone' => $order->shop?->phone,
             'shop_whatsapp' => $order->shop?->whatsapp,
+            // The order written out for the shop's WhatsApp, like after checkout on the website.
+            'whatsapp_url' => $order->shop && $order->status !== 'cancelled' ? app(\App\Http\Controllers\RestaurantController::class)->restaurantWhatsappUrl($order->shop, $order) : null,
             // The shop's purchase wheel: can this order still spin, and what did it win.
             'wheel_available' => ! $order->purchase_reward && $order->status !== 'cancelled'
                 && RestaurantPurchaseWheelController::channelAllowed($order) && RestaurantPurchaseWheelController::eligible($order) !== null,
