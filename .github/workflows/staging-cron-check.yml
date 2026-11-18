@@ -8,6 +8,10 @@ on:
         description: "Clear the latest booking's reminder marks and run salon:send-reminders once by hand"
         type: boolean
         default: false
+      clear_latest:
+        description: "Only clear the latest booking's reminder marks (the scheduler should re-send it)"
+        type: boolean
+        default: false
 
 jobs:
   check:
@@ -21,6 +25,7 @@ jobs:
           PORT: 65002
           USER_NAME: u379351114
           RUN_REMINDERS: ${{ inputs.run_reminders }}
+          CLEAR_LATEST: ${{ inputs.clear_latest }}
         run: |
           set -e
           mkdir -p ~/.ssh
@@ -28,6 +33,7 @@ jobs:
           chmod 600 ~/.ssh/staging_key
           ssh-keyscan -p "$PORT" "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
           ssh -i ~/.ssh/staging_key -o IdentitiesOnly=yes -p "$PORT" "$USER_NAME@$HOST" 'cd ~/staging-app
+            if [ "'"$CLEAR_LATEST"'" = true ]; then php artisan tinker --execute="App\Models\SalonAppointment::latest(\"id\")->first()?->forceFill([\"reminded_day_at\" => null, \"reminded_hour_at\" => null])->save();" >/dev/null 2>&1; echo "=== cleared latest at $(date -u +%T) ==="; fi
             if [ "'"$RUN_REMINDERS"'" = true ]; then echo "=== run reminders ==="; php artisan tinker --execute="App\Models\SalonAppointment::latest(\"id\")->first()?->forceFill([\"reminded_day_at\" => null, \"reminded_hour_at\" => null])->save();" >/dev/null 2>&1; date -u +%T; php artisan salon:send-reminders 2>&1; date -u +%T; fi
             echo "=== recent scheduler output ==="; ls -la --time-style=+%H:%M storage/framework/schedule-* 2>/dev/null | tail -3; grep -a "salon\|schedule" storage/logs/laravel.log | tail -3 | cut -c1-300
             echo "=== crontab ==="; crontab -l 2>&1 | grep -v "^#" || true
