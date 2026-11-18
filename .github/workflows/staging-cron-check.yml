@@ -40,4 +40,5 @@ jobs:
             echo "=== schedule:list ==="; php artisan schedule:list 2>&1 | head -30
             echo "=== salon reminders ==="; php artisan tinker --execute="foreach (App\Models\SalonAppointment::latest(\"id\")->limit(3)->get() as \$a) echo \$a->id, \" \", \$a->appointment_at, \" status=\", \$a->status, \" day=\", \$a->reminded_day_at ?? \"-\", \" hour=\", \$a->reminded_hour_at ?? \"-\", PHP_EOL;" 2>&1
             echo "=== push devices of the latest booking customer ==="; php artisan tinker --execute="\$u = App\Models\SalonAppointment::latest(\"id\")->value(\"user_id\"); foreach (App\Models\PushDevice::where(\"user_id\", \$u)->get() as \$d) echo \$d->id, \" \", \$d->platform, \" seen=\", \$d->last_seen_at, \" updated=\", \$d->updated_at, PHP_EOL;" 2>&1
+            echo "=== try-on / AR setup ==="; php artisan tinker --execute="echo \"fashn key set: \", filled(config(\"services.fashn.key\")) ? \"yes\" : \"no\", PHP_EOL, \"fashn shops: \", implode(\",\", config(\"services.fashn.shops\", [])) ?: \"-\", PHP_EOL;" 2>&1
             echo "=== now ==="; date -u'
