@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       run_reminders:
-        description: "Also run salon:send-reminders once by hand"
+        description: "Clear the latest booking's reminder marks and run salon:send-reminders once by hand"
         type: boolean
         default: false
 
@@ -28,7 +28,7 @@ jobs:
           chmod 600 ~/.ssh/staging_key
           ssh-keyscan -p "$PORT" "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
           ssh -i ~/.ssh/staging_key -o IdentitiesOnly=yes -p "$PORT" "$USER_NAME@$HOST" 'cd ~/staging-app
-            if [ "'"$RUN_REMINDERS"'" = true ]; then echo "=== run reminders ==="; php artisan salon:send-reminders 2>&1; fi
+            if [ "'"$RUN_REMINDERS"'" = true ]; then echo "=== run reminders ==="; php artisan tinker --execute="App\Models\SalonAppointment::latest(\"id\")->first()?->forceFill([\"reminded_day_at\" => null, \"reminded_hour_at\" => null])->save();" >/dev/null 2>&1; date -u +%T; php artisan salon:send-reminders 2>&1; date -u +%T; fi
             echo "=== recent scheduler output ==="; ls -la --time-style=+%H:%M storage/framework/schedule-* 2>/dev/null | tail -3; grep -a "salon\|schedule" storage/logs/laravel.log | tail -3 | cut -c1-300
             echo "=== crontab ==="; crontab -l 2>&1 | grep -v "^#" || true
             echo "=== schedule:list ==="; php artisan schedule:list 2>&1 | head -30
