@@ -206,4 +206,19 @@ class MobileLaunchFeaturesTest extends TestCase
         $this->assertCount(2, $this->pushes);
         Carbon::setTestNow();
     }
+
+    public function test_order_again_returns_what_can_still_be_bought(): void
+    {
+        [, $shop, $product] = $this->shop();
+        $gone = Product::create(['shop_id' => $shop->id, 'category_id' => $product->category_id, 'name' => 'قديم', 'slug' => 'old-'.uniqid(), 'price' => 10, 'is_active' => false]);
+        $customer = $this->customer();
+        $order = FrontOrder::create(['shop_id' => $shop->id, 'user_id' => $customer->id, 'order_number' => 'O-1', 'customer_name' => 'Lina', 'customer_phone' => '0599123456',
+            'items' => [['product_id' => $product->id, 'name' => 'فستان', 'qty' => 2, 'price' => 100, 'size' => 'M'], ['product_id' => $gone->id, 'name' => 'قديم', 'qty' => 1, 'price' => 10],
+                ['product_id' => $product->id, 'name' => 'فستان مع إضافات', 'qty' => 1, 'price' => 100, 'addons' => ['x']]],
+            'subtotal' => 210, 'total' => 210, 'status' => 'completed']);
+        $this->getJson("/api/v1/orders/{$order->id}/reorder", $this->auth($customer))->assertOk()->assertJsonCount(1, 'lines')
+            ->assertJsonPath('lines.0.product.id', $product->id)->assertJsonPath('lines.0.qty', 2)->assertJsonPath('lines.0.size', 'M')
+            ->assertJsonPath('skipped', ['قديم', 'فستان مع إضافات']);
+        $this->getJson("/api/v1/orders/{$order->id}/reorder", $this->auth($this->customer()))->assertNotFound();
+    }
 }

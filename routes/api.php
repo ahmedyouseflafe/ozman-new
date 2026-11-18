@@ -80,6 +80,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/orders/{order:id}', [OrderController::class, 'show'])->name('orders.show');
         Route::post('/shops/{shop:id}/orders', [OrderController::class, 'storeShop'])->middleware('throttle:20,1,orders.shop')->name('orders.shop');
         Route::get('/orders/{order:id}/wheel', [OrderController::class, 'wheel'])->name('orders.wheel');
+        Route::get('/orders/{order:id}/reorder', [OrderController::class, 'reorder'])->name('orders.reorder');
         Route::post('/orders/{order:id}/review', [\App\Http\Controllers\Api\V1\ReviewController::class, 'store'])->middleware('throttle:10,1')->name('orders.review');
         Route::post('/shops/{shop:id}/coupons/check', [\App\Http\Controllers\Api\V1\CouponController::class, 'check'])->middleware('throttle:30,1')->name('coupons.check');
         Route::post('/orders/{order:id}/wheel/spin', [OrderController::class, 'spin'])->middleware('throttle:10,1,orders.wheel.spin')->name('orders.wheel.spin');

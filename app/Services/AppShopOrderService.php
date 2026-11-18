@@ -55,6 +55,9 @@ class AppShopOrderService
                 $items[] = array_filter([
                     'product_id' => $product->id,
                     'variant_id' => $variantId,
+                    // Kept on their own too, so "order again" can pick the same size and colour.
+                    'size' => filled($row['size'] ?? null) ? trim($row['size']) : null,
+                    'color' => filled($row['color'] ?? null) ? trim($row['color']) : null,
                     'name' => $product->localized('name').($details ? ' · '.implode(' · ', $details) : ''),
                     'price' => $price,
                     'qty' => $quantity,

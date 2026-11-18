@@ -453,5 +453,7 @@
   "تذكير بموعدك بكرا ⏰": "Reminder: your appointment is tomorrow ⏰",
   "موعدك بعد ساعة ⏰": "Your appointment is in an hour ⏰",
   ":service عند :shop الساعة :time": ":service at :shop at :time",
-  "كود :code": "Code :code"
+  "كود :code": "Code :code",
+  "المحل مش متاح هلقيت.": "The shop isn't available right now.",
+  "صنف": "Item"
 }
