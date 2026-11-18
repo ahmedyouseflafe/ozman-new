@@ -147,7 +147,9 @@ class MobileLaunchFeaturesTest extends TestCase
         $this->getJson("/api/v1/merchant/shops/{$shop->id}/insights?period=today", $this->auth($owner))->assertOk()
             ->assertJsonPath('summary.revenue', 80)->assertJsonPath('summary.orders', 2)->assertJsonPath('top_products.0.name', 'فستان')
             ->assertJsonPath('top_products.0.units', 2)->assertJsonCount(24, 'hours')->assertJsonCount(1, 'daily');
-        $this->getJson("/api/v1/merchant/shops/{$shop->id}/insights?period=month", $this->auth($owner))->assertOk()->assertJsonPath('period', 'month');
+        $this->getJson("/api/v1/merchant/shops/{$shop->id}/insights?period=month", $this->auth($owner))->assertOk()->assertJsonPath('period', 'month')
+            ->assertJsonPath('daily.0.day', now('Asia/Hebron')->startOfMonth()->toDateString())
+            ->assertJsonPath('daily', fn ($days) => collect($days)->sum('revenue') == 80);
         [$otherOwner] = $this->shop();
         $this->getJson("/api/v1/merchant/shops/{$shop->id}/insights", $this->auth($otherOwner))->assertForbidden();
     }

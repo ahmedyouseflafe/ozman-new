@@ -41,10 +41,30 @@ class InsightsController extends Controller
             'period' => $period,
             'from' => $from->toDateString(), 'to' => $to->toDateString(),
             'summary' => array_map(fn ($v) => is_numeric($v) ? $v + 0 : $v, $summary),
-            'daily' => collect($report['chart'])->map(fn ($d) => ['day' => $d['day'], 'revenue' => round($d['revenue'], 2), 'sales' => $d['sales']])->values(),
+            'daily' => $this->daily($shop, $from, $to),
             'hours' => collect($hours)->map(fn ($count, $hour) => ['hour' => $hour, 'orders' => $count])->values(),
             'top_products' => collect($report['top_products'])->take(5)->map(fn ($p) => ['name' => $p['name'], 'units' => $p['units'], 'gross' => round($p['gross'], 2)])->values(),
             'rating' => ShopReview::summaryFor($shop->id),
         ], 200, ['Cache-Control' => 'no-store']);
+    }
+
+    /** Confirmed sales per local day, every day of the period (zero when nothing sold). */
+    private function daily(Shop $shop, $from, $to): array
+    {
+        $days = [];
+        for ($day = $from->copy()->startOfDay(); $day->lte($to); $day->addDay()) {
+            $days[$day->toDateString()] = ['day' => $day->toDateString(), 'revenue' => 0.0, 'sales' => 0];
+        }
+        FrontOrder::where('shop_id', $shop->id)->whereIn('status', ['completed', 'delivered'])
+            ->whereBetween('sale_confirmed_at', [$from->copy()->utc(), $to->copy()->utc()])->select(['id', 'total', 'sale_confirmed_at'])
+            ->lazyById(500)->each(function ($order) use (&$days) {
+                $key = \Illuminate\Support\Carbon::parse($order->sale_confirmed_at)->timezone(self::TZ)->toDateString();
+                if (isset($days[$key])) {
+                    $days[$key]['revenue'] = round($days[$key]['revenue'] + (float) $order->total, 2);
+                    $days[$key]['sales']++;
+                }
+            });
+
+        return array_values($days);
     }
 }
