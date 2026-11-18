@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\PushDevice;
 use App\Models\Shop;
+use App\Models\ShopCoupon;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -22,7 +23,7 @@ use Throwable;
  */
 class AppShopOrderService
 {
-    public function __construct(private FirebaseMessagingService $firebase)
+    public function __construct(private FirebaseMessagingService $firebase, private CouponService $coupons)
     {
     }
 
@@ -30,9 +31,9 @@ class AppShopOrderService
      * @param  array{customer_name:string, customer_phone:string, order_type:string, customer_address?:?string,
      *               customer_notes?:?string, items:array<int, array{product_id:int, qty:int, variant_id?:?int, size?:?string, color?:?string}>}  $data
      */
-    public function place(Shop $shop, User $user, array $data, ?string $pushToken): FrontOrder
+    public function place(Shop $shop, User $user, array $data, ?string $pushToken, ?ShopCoupon $coupon = null): FrontOrder
     {
-        $order = DB::transaction(function () use ($shop, $user, $data, $pushToken) {
+        $order = DB::transaction(function () use ($shop, $user, $data, $pushToken, $coupon) {
             $products = Product::query()
                 ->where('shop_id', $shop->id)
                 ->where('is_active', true)
@@ -67,6 +68,8 @@ class AppShopOrderService
                 $data['customer_notes'] ?? null,
             ])));
             $subtotal = $subtotalCents / 100;
+            // A discount code is checked again and counted inside the same transaction as the order.
+            $couponOff = $coupon ? $this->coupons->redeem($coupon, $subtotal) : 0.0;
 
             $pin = $data['order_type'] === 'delivery' && isset($data['latitude'], $data['longitude']);
             return FrontOrder::create([
@@ -83,8 +86,11 @@ class AppShopOrderService
                 'customer_notes' => $notes,
                 'items' => $items,
                 'subtotal' => $subtotal,
-                'discount' => 0,
-                'total' => $subtotal,
+                'discount' => $couponOff,
+                'total' => round($subtotal - $couponOff, 2),
+                'shop_coupon_id' => $coupon?->id,
+                'coupon_code' => $coupon?->code,
+                'coupon_discount' => $couponOff,
                 'order_channel' => 'app',
                 'customer_push_token' => $pushToken,
                 'payment_method' => 'cash',

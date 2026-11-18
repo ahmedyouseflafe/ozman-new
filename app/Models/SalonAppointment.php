@@ -17,12 +17,14 @@ class SalonAppointment extends Model
 
     protected $fillable = [
         'shop_id', 'user_id', 'service', 'appointment_at', 'slot_key', 'customer_name',
-        'customer_phone', 'notes', 'status', 'locale', 'whatsapp_opened_at',
+        'customer_phone', 'notes', 'status', 'locale', 'whatsapp_opened_at', 'reminded_day_at', 'reminded_hour_at',
     ];
 
     protected $casts = [
         'appointment_at' => 'datetime',
         'whatsapp_opened_at' => 'datetime',
+        'reminded_day_at' => 'datetime',
+        'reminded_hour_at' => 'datetime',
     ];
 
     public static function statusLabels(): array

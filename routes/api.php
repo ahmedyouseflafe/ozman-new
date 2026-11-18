@@ -41,6 +41,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/shops', [CatalogController::class, 'shops'])->name('shops.index');
         Route::get('/shops/{shop:id}', [CatalogController::class, 'shop'])->name('shops.show');
         Route::get('/shops/{shop:id}/products', [CatalogController::class, 'products'])->name('shops.products');
+        Route::get('/shops/{shop:id}/reviews', [\App\Http\Controllers\Api\V1\ReviewController::class, 'index'])->name('shops.reviews');
         Route::get('/products/{product:id}', [CatalogController::class, 'product'])->name('products.show');
         Route::get('/search', [CatalogController::class, 'search'])->name('search');
         Route::get('/stories', [StoryController::class, 'feed'])->name('stories.feed');
@@ -79,6 +80,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/orders/{order:id}', [OrderController::class, 'show'])->name('orders.show');
         Route::post('/shops/{shop:id}/orders', [OrderController::class, 'storeShop'])->middleware('throttle:20,1,orders.shop')->name('orders.shop');
         Route::get('/orders/{order:id}/wheel', [OrderController::class, 'wheel'])->name('orders.wheel');
+        Route::post('/orders/{order:id}/review', [\App\Http\Controllers\Api\V1\ReviewController::class, 'store'])->middleware('throttle:10,1')->name('orders.review');
+        Route::post('/shops/{shop:id}/coupons/check', [\App\Http\Controllers\Api\V1\CouponController::class, 'check'])->middleware('throttle:30,1')->name('coupons.check');
         Route::post('/orders/{order:id}/wheel/spin', [OrderController::class, 'spin'])->middleware('throttle:10,1,orders.wheel.spin')->name('orders.wheel.spin');
         Route::get('/me/points', [PointsController::class, 'index'])->name('me.points');
         Route::get('/me/likes', [CatalogController::class, 'liked'])->name('me.likes');
@@ -123,6 +126,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/me/network/distributors/{distributor}/marketers', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'storeMarketer'])->middleware('throttle:30,1')->name('network.marketers.store');
         Route::post('/me/network/marketers/{marketer}', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'updateMarketer'])->middleware('throttle:60,1')->name('network.marketers.update');
         Route::delete('/me/network/marketers/{marketer}', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'destroyMarketer'])->name('network.marketers.destroy');
+        Route::get('/merchant/shops/{shop:id}/insights', [\App\Http\Controllers\Api\V1\InsightsController::class, 'show'])->name('merchant.insights');
+        Route::get('/merchant/shops/{shop:id}/reviews', [\App\Http\Controllers\Api\V1\ReviewController::class, 'merchant'])->name('merchant.reviews');
+        Route::post('/merchant/reviews/{review}/reply', [\App\Http\Controllers\Api\V1\ReviewController::class, 'reply'])->name('merchant.reviews.reply');
+        Route::get('/merchant/shops/{shop:id}/coupons', [\App\Http\Controllers\Api\V1\CouponController::class, 'index'])->name('merchant.coupons');
+        Route::post('/merchant/shops/{shop:id}/coupons', [\App\Http\Controllers\Api\V1\CouponController::class, 'store'])->middleware('throttle:30,1')->name('merchant.coupons.store');
+        Route::post('/merchant/coupons/{coupon}', [\App\Http\Controllers\Api\V1\CouponController::class, 'update'])->name('merchant.coupons.update');
+        Route::delete('/merchant/coupons/{coupon}', [\App\Http\Controllers\Api\V1\CouponController::class, 'destroy'])->name('merchant.coupons.destroy');
         Route::get('/merchant/shops/{shop:id}/customers', [\App\Http\Controllers\Api\V1\MerchantCustomersController::class, 'index'])->name('merchant.customers');
         Route::get('/merchant/shops/{shop:id}/properties', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'properties'])->name('merchant.properties');
         Route::post('/merchant/shops/{shop:id}/properties', [\App\Http\Controllers\Api\V1\RealEstateManageController::class, 'storeProperty'])->middleware('throttle:30,1,merchant.properties')->name('merchant.properties.store');
@@ -223,6 +233,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::patch('/driver/offers/{offer}/reject', [DriverController::class, 'reject'])->name('driver.offers.reject');
         Route::patch('/driver/orders/{order:id}/status', [DriverController::class, 'status'])->name('driver.orders.status');
         Route::patch('/driver/orders/{order:id}/delivery-time', [DriverController::class, 'deliveryTime'])->name('driver.orders.time');
+        Route::post('/driver/location', [DriverController::class, 'location'])->middleware('throttle:30,1')->name('driver.location');
     });
 
     // Placing an order reuses the website's checkout, which keeps a little state in a session.

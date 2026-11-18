@@ -6,13 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\RestaurantController;
 use App\Http\Controllers\RestaurantPurchaseWheelController;
 use App\Models\FrontOrder;
+use App\Models\ShopReview;
 use App\Models\PushDevice;
 use App\Models\Shop;
 use App\Rules\ValidPhoneNumber;
 use App\Services\AppShopOrderService;
+use App\Services\CouponService;
 use App\Services\FirebaseMessagingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\URL;
 
 /**
@@ -21,10 +24,15 @@ use Illuminate\Support\Facades\URL;
  */
 class OrderController extends Controller
 {
-    public function storeRestaurant(Request $request, Shop $shop, RestaurantController $restaurant, FirebaseMessagingService $firebase): JsonResponse
+    public function storeRestaurant(Request $request, Shop $shop, RestaurantController $restaurant, FirebaseMessagingService $firebase, CouponService $coupons): JsonResponse
     {
         $user = $request->user();
-        $request->validate(['device_token' => ['nullable', 'string', 'max:512']]);
+        $request->validate(['device_token' => ['nullable', 'string', 'max:512'], 'coupon_code' => ['nullable', 'string', 'max:40']]);
+        // A wrong code stops the order before it's placed; the amount rules are checked once the total is known.
+        $code = trim((string) $request->input('coupon_code', ''));
+        if ($code !== '') {
+            $coupons->find($shop, $code, $user);
+        }
         // The website's checkout fields, filled from the account when the app leaves them out.
         $request->merge([
             'customer_name' => $request->input('customer_name') ?: $user->name,
@@ -41,16 +49,27 @@ class OrderController extends Controller
             $request->merge(['registration_token' => $signupToken]);
         }
         $response = $restaurant->storeOrder($request, $shop, $firebase);
-        $orderId = $response->getData(true)['order_id'] ?? null;
+        $payload = $response->getData(true);
+        $orderId = $payload['order_id'] ?? null;
         if ($orderId) {
             FrontOrder::whereKey($orderId)->whereNull('user_id')->update(['user_id' => $user->id]);
+            if ($code !== '') {
+                try {
+                    $payload['coupon_discount'] = $coupons->apply(FrontOrder::findOrFail($orderId), $shop, $code, $user);
+                    $payload['total'] = Presenter::price(FrontOrder::find($orderId)->total);
+                } catch (ValidationException $e) {
+                    // The order stands without the code; the app says why.
+                    $payload['coupon_error'] = collect($e->errors())->flatten()->first();
+                }
+                $response->setData($payload);
+            }
         }
 
         return $response;
     }
 
     /** Every shop type except restaurants (they have their own kitchen flow above). */
-    public function storeShop(Request $request, Shop $shop, AppShopOrderService $orders): JsonResponse
+    public function storeShop(Request $request, Shop $shop, AppShopOrderService $orders, CouponService $coupons): JsonResponse
     {
         abort_unless($shop->is_active, 404);
         abort_if($shop->catalog_type === 'restaurant', 422, 'طلبات المطاعم لها مسار خاص.');
@@ -76,17 +95,20 @@ class OrderController extends Controller
             'items.*.variant_id' => ['nullable', 'integer'],
             'items.*.size' => ['nullable', 'string', 'max:100'],
             'items.*.color' => ['nullable', 'string', 'max:100'],
+            'coupon_code' => ['nullable', 'string', 'max:40'],
         ]);
+        $coupon = filled($data['coupon_code'] ?? null) ? $coupons->find($shop, $data['coupon_code'], $user) : null;
         $token = $data['device_token'] ?? null;
         $token = $token && PushDevice::where('token', $token)->exists() ? $token : null;
 
-        $order = $orders->place($shop, $user, $data, $token);
+        $order = $orders->place($shop, $user, $data, $token, $coupon);
 
         return response()->json([
             'ok' => true,
             'order_id' => $order->id,
             'order_number' => $order->order_number,
             'total' => Presenter::price($order->total),
+            'coupon_discount' => (float) $order->coupon_discount,
         ], 201);
     }
 
@@ -104,6 +126,7 @@ class OrderController extends Controller
         abort_unless((int) $order->user_id === (int) $request->user()->id, 404);
         $order->load('shop:id,name,slug,catalog_type,logo,phone,whatsapp', 'restaurantTable', 'restaurantDriver.user');
         $due = $order->preparationDueAt();
+        $review = ShopReview::where('front_order_id', $order->id)->first();
 
         return response()->json(['order' => $this->summary($order) + [
             'items' => collect($order->items ?? [])->map(fn ($item) => [
@@ -142,7 +165,14 @@ class OrderController extends Controller
                 ? $order->estimated_delivery_at?->toIso8601String() : null,
             'driver' => $order->order_type === 'delivery' && in_array($order->status, ['ready', 'out_for_delivery'], true) && $order->restaurantDriver?->user
                 ? ['name' => $order->restaurantDriver->user->name, 'phone' => $order->status === 'out_for_delivery' ? $order->restaurantDriver->user->phone : null]
+                    + $this->driverLocation($order)
                 : null,
+            'delivery_location' => $order->latitude !== null ? ['latitude' => (float) $order->latitude, 'longitude' => (float) $order->longitude] : null,
+            'coupon_code' => $order->coupon_code,
+            'coupon_discount' => (float) $order->coupon_discount,
+            // The customer rates the shop once the order is done.
+            'can_review' => in_array($order->status, ['completed', 'delivered'], true) && ! $review,
+            'review' => $review ? ['rating' => $review->rating, 'comment' => $review->comment, 'reply' => $review->reply] : null,
         ]]);
     }
 
@@ -175,6 +205,17 @@ class OrderController extends Controller
         return response()->json(['registered' => true]);
     }
 
+    /** Where the driver is, while the order is on its way and the position is fresh (last 10 minutes). */
+    private function driverLocation(FrontOrder $order): array
+    {
+        $driver = $order->restaurantDriver;
+        if ($order->status !== 'out_for_delivery' || ! $driver || $driver->latitude === null || ! $driver->location_at || $driver->location_at->lt(now()->subMinutes(10))) {
+            return ['location' => null];
+        }
+
+        return ['location' => ['latitude' => $driver->latitude, 'longitude' => $driver->longitude, 'at' => $driver->location_at->toIso8601String()]];
+    }
+
     private function summary(FrontOrder $order): array
     {
         return [
@@ -186,7 +227,10 @@ class OrderController extends Controller
             'total' => Presenter::price($order->total),
             'discount' => Presenter::price($order->discount),
             // What was taken off this order (the welcome-wheel prize), if anything.
-            'discount_label' => (float) $order->discount > 0 ? ($order->reward_label ?: 'خصم') : null,
+            'discount_label' => (float) $order->discount > 0 ? collect([
+                (float) $order->discount > (float) $order->coupon_discount ? ($order->reward_label ?: 'خصم') : null,
+                $order->coupon_code ? __('كود :code', ['code' => $order->coupon_code]) : null,
+            ])->filter()->implode(' + ') : null,
             'items_count' => (int) collect($order->items ?? [])->sum(fn ($item) => (int) ($item['qty'] ?? 1)),
             'created_at' => $order->created_at?->toIso8601String(),
             'shop' => $order->shop ? ['id' => $order->shop->id, 'name' => $order->shop->name, 'type' => $order->shop->catalog_type, 'logo' => Presenter::media($order->shop->logo)] : null,

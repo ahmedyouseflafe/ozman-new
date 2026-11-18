@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RestaurantDriver extends Model
 {
-    protected $fillable = ['shop_id', 'user_id', 'is_active'];
+    protected $fillable = ['shop_id', 'user_id', 'is_active', 'latitude', 'longitude', 'location_at'];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return ['is_active' => 'boolean', 'latitude' => 'float', 'longitude' => 'float', 'location_at' => 'datetime'];
     }
 
     public function shop(): BelongsTo

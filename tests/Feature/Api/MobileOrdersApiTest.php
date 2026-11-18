@@ -70,4 +70,24 @@ class MobileOrdersApiTest extends TestCase
         $this->postJson('/api/v1/devices', ['token' => 'fcm-1', 'platform' => 'android'], $this->auth($user))->assertOk();
         $this->assertDatabaseHas('push_devices', ['token' => 'fcm-1', 'user_id' => $user->id]);
     }
+
+    public function test_a_coupon_comes_off_a_restaurant_order_and_a_wrong_one_stops_it(): void
+    {
+        [$shop, $product] = $this->restaurant();
+        \App\Models\ShopCoupon::create(['shop_id' => $shop->id, 'code' => 'SUSHI10', 'type' => 'amount', 'value' => 10, 'is_active' => true]);
+        \App\Models\ShopCoupon::create(['shop_id' => $shop->id, 'code' => 'BIG', 'type' => 'percent', 'value' => 50, 'min_total' => 500, 'is_active' => true]);
+        $customer = User::factory()->create(['role' => 'customer', 'is_active' => true, 'name' => 'Sama', 'phone' => '0599123456']);
+        $headers = $this->auth($customer);
+        $order = ['order_type' => 'pickup', 'items' => [['product_id' => $product->id, 'qty' => 2]]];
+
+        $this->postJson('/api/v1/shops/'.$shop->id.'/restaurant-orders', $order + ['coupon_code' => 'nope'], $headers)->assertStatus(422);
+        $this->assertSame(0, FrontOrder::count());
+        $this->postJson('/api/v1/shops/'.$shop->id.'/restaurant-orders', $order + ['coupon_code' => 'sushi10'], $headers)->assertOk()
+            ->assertJsonPath('coupon_discount', 10)->assertJsonPath('total', 60);
+        $this->assertEquals(60, FrontOrder::sole()->total);
+        // Too small for this one: the order still goes through, without it, and the app hears why.
+        $this->postJson('/api/v1/shops/'.$shop->id.'/restaurant-orders', $order + ['coupon_code' => 'BIG'], $headers)->assertOk()
+            ->assertJsonPath('coupon_error', fn ($m) => is_string($m) && $m !== '');
+        $this->assertEquals(70, FrontOrder::latest('id')->first()->total);
+    }
 }

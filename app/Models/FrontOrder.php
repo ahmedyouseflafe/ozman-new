@@ -51,6 +51,9 @@ class FrontOrder extends Model
         'reward_gift_image',
         'reward_color',
         'reward_won_at',
+        'shop_coupon_id',
+        'coupon_code',
+        'coupon_discount',
     ];
 
     protected $casts = [
@@ -62,6 +65,7 @@ class FrontOrder extends Model
         'marketer_commission_amount' => 'decimal:2',
         'reward_discount_value' => 'decimal:2',
         'reward_won_at' => 'datetime',
+        'coupon_discount' => 'float',
         'estimated_preparation_minutes' => 'integer',
         'preparation_started_at' => 'datetime',
         'ready_at' => 'datetime',

@@ -68,7 +68,7 @@ class CatalogController extends Controller
             ->filter(fn ($category) => $category->products_count > 0)->values();
 
         return response()->json([
-            'shop' => Presenter::shop($shop, true),
+            'shop' => Presenter::shop($shop, true) + ['rating' => \App\Models\ShopReview::summaryFor($shop->id)],
             'categories' => $categories->map(fn ($category) => Presenter::category($category)),
         ]);
     }

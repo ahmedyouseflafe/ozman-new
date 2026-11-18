@@ -65,6 +65,20 @@ class DriverController extends Controller
         return response()->json(['order' => $this->present($order->fresh(), true), 'message' => 'تم تحديث وقت الوصول.']);
     }
 
+    /** The driver's phone shares where it is while an order is out for delivery; customers see it on the map. */
+    public function location(Request $request): JsonResponse
+    {
+        $driver = $this->driver($request->user());
+        $data = $request->validate(['latitude' => ['required', 'numeric', 'between:-90,90'], 'longitude' => ['required', 'numeric', 'between:-180,180']]);
+        $delivering = FrontOrder::where('restaurant_driver_id', $driver->id)->where('status', 'out_for_delivery')->exists();
+        // Only kept while delivering; otherwise the last position is cleared.
+        $driver->forceFill($delivering
+            ? ['latitude' => $data['latitude'], 'longitude' => $data['longitude'], 'location_at' => now()]
+            : ['latitude' => null, 'longitude' => null, 'location_at' => null])->save();
+
+        return response()->json(['shared' => $delivering]);
+    }
+
     private function driver(User $user): RestaurantDriver
     {
         abort_unless($user->isRestaurantDriver() && $user->is_active, 403, 'هذا الحساب مش حساب مندوب.');
