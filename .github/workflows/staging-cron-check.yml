@@ -1,0 +1,28 @@
+# Shows whether staging's scheduler runs: the account's cron lines, the scheduled commands, and the latest salon appointments' reminder state.
+name: Staging cron check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect the scheduler on staging
+        env:
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          HOST: 82.198.227.221
+          PORT: 65002
+          USER_NAME: u379351114
+        run: |
+          set -e
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' | sed '/^[[:space:]]*$/d' > ~/.ssh/staging_key
+          chmod 600 ~/.ssh/staging_key
+          ssh-keyscan -p "$PORT" "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh -i ~/.ssh/staging_key -o IdentitiesOnly=yes -p "$PORT" "$USER_NAME@$HOST" 'cd ~/staging-app
+            echo "=== crontab ==="; crontab -l 2>&1 | grep -v "^#" || true
+            echo "=== schedule:list ==="; php artisan schedule:list 2>&1 | head -30
+            echo "=== salon reminders ==="; php artisan tinker --execute="foreach (App\Models\SalonAppointment::latest(\"id\")->limit(3)->get() as \$a) echo \$a->id, \" \", \$a->appointment_at, \" status=\", \$a->status, \" day=\", \$a->reminded_day_at ?? \"-\", \" hour=\", \$a->reminded_hour_at ?? \"-\", PHP_EOL;" 2>&1
+            echo "=== now ==="; date -u'
