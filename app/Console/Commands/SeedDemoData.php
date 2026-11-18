@@ -154,6 +154,7 @@ class SeedDemoData extends Command
             foreach ([['شقة 3 غرف بالماصيون', 'rent', 2800, 3, 140, 'flat'], ['بيت مستقل مع حديقة', 'sale', 950000, 5, 260, 'house']] as $k => [$title, $purpose, $price, $rooms, $area, $slug]) {
                 RealEstateProperty::firstOrCreate(['shop_id' => $company->id, 'slug' => 'demo-'.$slug], ['purpose' => $purpose, 'property_type' => $k ? 'house' : 'apartment',
                     'title' => $title, 'description' => 'عقار تجريبي لتجربة التطبيق.', 'price' => $price, 'currency' => 'ILS', 'city' => 'رام الله', 'neighborhood' => 'الماصيون',
+                    'latitude' => 31.9038 + $k * 0.004, 'longitude' => 35.1958 + $k * 0.004,
                     'rooms' => $rooms, 'bathrooms' => 2, 'area' => $area, 'has_balcony' => true, 'has_elevator' => ! $k, 'status' => 'published', 'published_at' => now()]);
             }
 
