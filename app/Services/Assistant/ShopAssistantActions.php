@@ -32,6 +32,8 @@ class ShopAssistantActions
                 'product_change' => $this->product($action),
                 'order_status' => $this->orderStatus($action, $user, $request),
                 'accepting_orders' => $this->accepting($action),
+                'coupon_create' => $this->coupon($action, $user),
+                'review_reply' => $this->reviewReply($action, $user),
                 default => throw new \InvalidArgumentException('Unknown action.'),
             };
             $action->update(['status' => AssistantAction::DONE, 'result' => $result]);
@@ -115,5 +117,32 @@ class ShopAssistantActions
         $action->shop->update(['is_accepting_orders' => $open]);
 
         return $open ? __('تم: المحل رجع يستقبل طلبات.') : __('تم: وقّفنا استقبال الطلبات مؤقتاً.');
+    }
+
+    private function coupon(AssistantAction $action, User $user): string
+    {
+        // Through the app's own coupon screen code, so the same rules and checks apply.
+        $this->callApi($user, \App\Http\Controllers\Api\V1\CouponController::class, 'store', ['shop' => $action->shop], $action->payload, 'POST');
+
+        return __('تم: :summary', ['summary' => $action->summary]);
+    }
+
+    private function reviewReply(AssistantAction $action, User $user): string
+    {
+        $review = \App\Models\ShopReview::where('shop_id', $action->shop_id)->find($action->payload['review_id'] ?? 0);
+        if (! $review) {
+            throw new \InvalidArgumentException(__('التقييم مش موجود.'));
+        }
+        $this->callApi($user, \App\Http\Controllers\Api\V1\ReviewController::class, 'reply', ['review' => $review], ['reply' => $action->payload['reply'] ?? ''], 'POST');
+
+        return __('تم: انحفظ الرد على التقييم.');
+    }
+
+    private function callApi(User $user, string $controller, string $method, array $params, array $data, string $verb): void
+    {
+        $sub = Request::create('/assistant/action', $verb, $data);
+        $sub->headers->set('Accept', 'application/json');
+        $sub->setUserResolver(fn () => $user);
+        app()->call([app($controller), $method], ['request' => $sub] + $params);
     }
 }

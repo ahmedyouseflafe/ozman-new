@@ -265,4 +265,47 @@ class ShopAssistantTest extends TestCase
         $this->assertStringContainsString('"input":{}', $second->body());
         $this->assertStringNotContainsString('"input":[]', $second->body());
     }
+
+    public function test_the_assistant_reads_codes_reviews_and_busy_hours_and_proposes_codes_and_replies_the_owner_confirms(): void
+    {
+        $owner = User::factory()->create(['role' => 'shop_owner', 'is_active' => true]);
+        $shop = $this->shop('sweets', $owner);
+        $other = $this->shop('sweets');
+        \App\Models\ShopCoupon::create(['shop_id' => $shop->id, 'code' => 'EID10', 'type' => 'percent', 'value' => 10, 'is_active' => true, 'used_count' => 3]);
+        $order = FrontOrder::create(['shop_id' => $shop->id, 'order_number' => 'R-1', 'customer_name' => 'هبة', 'items' => [], 'total' => 50, 'status' => 'completed']);
+        $review = \App\Models\ShopReview::create(['shop_id' => $shop->id, 'user_id' => User::factory()->create(['name' => 'هبة سالم'])->id,
+            'front_order_id' => $order->id, 'rating' => 2, 'comment' => 'الطلب وصل بارد', 'is_visible' => true]);
+        $otherReview = \App\Models\ShopReview::create(['shop_id' => $other->id, 'user_id' => User::factory()->create()->id,
+            'front_order_id' => FrontOrder::create(['shop_id' => $other->id, 'order_number' => 'R-2', 'customer_name' => 'x', 'items' => [], 'total' => 1, 'status' => 'completed'])->id,
+            'rating' => 5, 'is_visible' => true]);
+        $tools = app(ShopAssistantTools::class);
+        $conversation = \App\Models\AssistantConversation::create(['shop_id' => $shop->id, 'user_id' => $owner->id]);
+        $p = [];
+        $run = fn ($name, $input = []) => $tools->run($name, $input, $shop, $owner, $conversation, $p);
+
+        $this->assertSame('EID10', $run('list_coupons')['coupons'][0]['code']);
+        $reviews = $run('reviews', ['unanswered' => true]);
+        $this->assertSame(['هبة س.', 2], [$reviews['reviews'][0]['name'], $reviews['reviews'][0]['rating']]);
+        $this->assertSame(2.0, $reviews['summary']['average']);
+        $this->assertArrayHasKey('hours', $run('busy_hours', ['period' => 'month']));
+
+        // Bad proposals come back as errors the model can fix: a taken code, another shop's review.
+        $this->assertArrayHasKey('error', $run('propose_coupon', ['code' => 'eid10', 'type' => 'percent', 'value' => 15]));
+        $this->assertArrayHasKey('error', $run('propose_coupon', ['code' => 'BIG', 'type' => 'percent', 'value' => 150]));
+        $this->assertArrayHasKey('error', $run('propose_review_reply', ['review_id' => $otherReview->id, 'reply' => 'شكراً']));
+        $this->assertSame(0, AssistantAction::count());
+
+        $this->assertTrue($run('propose_coupon', ['code' => 'weekend15', 'type' => 'percent', 'value' => 15, 'min_total' => 40, 'ends_at' => now('Asia/Hebron')->addDays(3)->toDateString()])['proposed']);
+        $this->assertTrue($run('propose_review_reply', ['review_id' => $review->id, 'reply' => 'آسفين كتير يا هبة، رح ننتبه للتغليف.'])['proposed']);
+        $this->assertSame(0, \App\Models\ShopCoupon::where('code', 'WEEKEND15')->count());
+        $this->assertNull($review->fresh()->reply);
+
+        $h = $this->auth($owner);
+        foreach (AssistantAction::orderBy('id')->get() as $action) {
+            $this->postJson("/api/v1/merchant/assistant-actions/{$action->id}/confirm", [], $h)->assertOk()->assertJsonPath('action.status', 'done');
+        }
+        $coupon = \App\Models\ShopCoupon::where('shop_id', $shop->id)->where('code', 'WEEKEND15')->sole();
+        $this->assertSame([15.0, 40.0], [(float) $coupon->value, (float) $coupon->min_total]);
+        $this->assertSame('آسفين كتير يا هبة، رح ننتبه للتغليف.', $review->fresh()->reply);
+    }
 }

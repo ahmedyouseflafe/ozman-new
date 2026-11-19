@@ -2,7 +2,7 @@
 
 namespace App\Services\Assistant;
 
-use App\Models\{AssistantAction, AssistantConversation, Category, FrontOrder, Product, SalonAppointment, Shop, User};
+use App\Models\{AssistantAction, AssistantConversation, Category, FrontOrder, Product, SalonAppointment, Shop, ShopCoupon, ShopReview, User};
 use App\Services\ShopAnalytics;
 use Carbon\Carbon;
 use Illuminate\Support\{Arr, Str};
@@ -59,6 +59,31 @@ class ShopAssistantTools
                     'days' => ['type' => 'integer', 'minimum' => 7, 'maximum' => 365],
                     'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 30],
                 ]]],
+            ['name' => 'busy_hours', 'description' => 'When orders come in and what sells: orders per hour of the day (local time), sales per day, best sellers, the rating and how many returning buyers, for today, the last 7 days or this month.',
+                'input_schema' => ['type' => 'object', 'properties' => ['period' => ['type' => 'string', 'enum' => ['today', 'week', 'month']]]]],
+            ['name' => 'list_coupons', 'description' => 'The shop\'s discount codes: code, percent or amount, minimum order, uses so far and limits, dates, and state (active, scheduled, expired, used_up, off).',
+                'input_schema' => ['type' => 'object', 'properties' => (object) []]],
+            ['name' => 'reviews', 'description' => 'Customer reviews of the shop: average, stars per level, and the latest reviews with id, rating, comment, the shop\'s reply and the date. unanswered=true lists only reviews without a reply.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'unanswered' => ['type' => 'boolean'],
+                    'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 30],
+                ]]],
+            ['name' => 'propose_coupon', 'description' => 'Propose a new discount code. Code: letters/numbers, no spaces, 3-40 characters, not already used by this shop (check list_coupons). type percent (value 1-100) or amount (shekels). Dates are local days YYYY-MM-DD; ends_at is the last day it works. Only records a proposal; the owner must press confirm.',
+                'input_schema' => ['type' => 'object', 'required' => ['code', 'type', 'value'], 'properties' => [
+                    'code' => ['type' => 'string'],
+                    'type' => ['type' => 'string', 'enum' => ['percent', 'amount']],
+                    'value' => ['type' => 'number', 'exclusiveMinimum' => 0],
+                    'min_total' => ['type' => 'number', 'minimum' => 0, 'description' => 'smallest basket in shekels'],
+                    'max_uses' => ['type' => 'integer', 'minimum' => 1, 'description' => 'total uses across all customers'],
+                    'per_customer' => ['type' => 'integer', 'minimum' => 1],
+                    'starts_at' => $date,
+                    'ends_at' => $date,
+                ]]],
+            ['name' => 'propose_review_reply', 'description' => 'Propose the shop\'s public reply to a customer review (shown under the review in the app and on the website). Write it as the shop, short and warm, in the language of the review; thank them, and for a complaint apologise and say what will change, without promising refunds. Only records a proposal; the owner must press confirm.',
+                'input_schema' => ['type' => 'object', 'required' => ['review_id', 'reply'], 'properties' => [
+                    'review_id' => ['type' => 'integer', 'description' => 'from reviews'],
+                    'reply' => ['type' => 'string', 'maxLength' => 1000],
+                ]]],
             ['name' => 'propose_product_change', 'description' => 'Propose changing a product: price, discount price (0 removes the discount) or whether it is shown (hide a product that is unavailable). Only records a proposal; the owner must press confirm. Look the product up first.',
                 'input_schema' => ['type' => 'object', 'required' => ['product_id'], 'properties' => [
                     'product_id' => ['type' => 'integer'],
@@ -96,6 +121,11 @@ class ShopAssistantTools
                 'list_categories' => $this->categories($shop),
                 'customers' => $this->customers($shop, $input),
                 'salon_appointments' => $this->appointments($shop, $input),
+                'busy_hours' => $this->busyHours($shop, $user, $input),
+                'list_coupons' => $this->coupons($shop, $user),
+                'reviews' => $this->reviews($shop, $user, $input),
+                'propose_coupon' => $this->proposeCoupon($shop, $user, $conversation, $input, $proposed),
+                'propose_review_reply' => $this->proposeReviewReply($shop, $user, $conversation, $input, $proposed),
                 'propose_product_change' => $this->proposeProduct($shop, $user, $conversation, $input, $proposed),
                 'propose_order_status' => $this->proposeOrderStatus($shop, $user, $conversation, $input, $proposed),
                 'propose_accepting_orders' => $this->proposeAccepting($shop, $user, $conversation, $input, $proposed),
@@ -292,6 +322,50 @@ class ShopAssistantTools
 
     // ── Proposals ────────────────────────────────────────────────────────────
 
+    private function busyHours(Shop $shop, User $user, array $input): array
+    {
+        $period = in_array($input['period'] ?? null, ['today', 'week', 'month'], true) ? $input['period'] : 'week';
+        $data = $this->callApi($user, \App\Http\Controllers\Api\V1\InsightsController::class, 'show', ['shop' => $shop], ['period' => $period]);
+        // Only the hours that had orders, to keep the answer short.
+        $data['hours'] = array_values(array_filter($data['hours'] ?? [], fn ($h) => ($h['orders'] ?? 0) > 0));
+
+        return ['period' => $period, 'times' => 'local (Asia/Hebron)'] + Arr::only($data, ['summary', 'hours', 'daily', 'top_products', 'rating']);
+    }
+
+    private function coupons(Shop $shop, User $user): array
+    {
+        $data = $this->callApi($user, \App\Http\Controllers\Api\V1\CouponController::class, 'index', ['shop' => $shop]);
+
+        return ['coupons' => array_map(fn ($c) => Arr::except($c, ['id']), array_slice($data['data'] ?? [], 0, 40))];
+    }
+
+    private function reviews(Shop $shop, User $user, array $input): array
+    {
+        $query = ShopReview::where('shop_id', $shop->id)->with('user:id,name')->latest()->orderByDesc('id');
+        if (! empty($input['unanswered'])) {
+            $query->whereNull('reply');
+        }
+
+        return [
+            'summary' => ShopReview::summaryFor($shop->id) + ['stars' => ShopReview::starsFor($shop->id)],
+            'reviews' => $query->limit($this->limit($input, 10, 30))->get()->map(fn (ShopReview $r) => [
+                'id' => $r->id, 'name' => $r->publicName(), 'rating' => $r->rating, 'comment' => $r->comment,
+                'reply' => $r->reply, 'hidden' => ! $r->is_visible, 'date' => $r->created_at?->timezone(self::TZ)->toDateString(),
+            ])->all(),
+        ];
+    }
+
+    /** Runs one of the app's own API actions as the owner, so its permissions and numbers are the same as in the app. */
+    private function callApi(User $user, string $controller, string $method, array $params, array $query = []): array
+    {
+        $request = \Illuminate\Http\Request::create('/assistant/read', 'GET', $query);
+        $request->headers->set('Accept', 'application/json');
+        $request->setUserResolver(fn () => $user);
+        $response = app()->call([app($controller), $method], ['request' => $request] + $params);
+
+        return $response->getData(true);
+    }
+
     private function proposeProduct(Shop $shop, User $user, AssistantConversation $conversation, array $input, array &$proposed): array
     {
         $product = Product::where('shop_id', $shop->id)->find((int) ($input['product_id'] ?? 0));
@@ -363,6 +437,58 @@ class ShopAssistantTools
 
         return $this->propose($shop, $user, $conversation, 'accepting_orders', ['open' => $open],
             $open ? __('استقبال الطلبات من جديد') : __('إيقاف استقبال الطلبات مؤقتاً'), $proposed);
+    }
+
+    private function proposeCoupon(Shop $shop, User $user, AssistantConversation $conversation, array $input, array &$proposed): array
+    {
+        $payload = Arr::only($input, ['code', 'type', 'value', 'min_total', 'max_uses', 'per_customer', 'starts_at', 'ends_at']);
+        $payload['code'] = ShopCoupon::normalize((string) ($payload['code'] ?? ''));
+        // Checked now with the same rules the confirm will use, so the owner isn't shown a button that will fail.
+        $validator = validator($payload, [
+            'code' => ['required', 'string', 'min:3', 'max:40', 'regex:/^[\p{L}\p{N}_-]+$/u'],
+            'type' => ['required', 'in:percent,amount'],
+            'value' => ['required', 'numeric', 'gt:0', ($payload['type'] ?? '') === 'percent' ? 'max:100' : 'max:100000'],
+            'min_total' => ['nullable', 'numeric', 'min:0'], 'max_uses' => ['nullable', 'integer', 'min:1'], 'per_customer' => ['nullable', 'integer', 'min:1'],
+            'starts_at' => ['nullable', 'date_format:Y-m-d'], 'ends_at' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+        if ($validator->fails()) {
+            throw new \InvalidArgumentException($validator->errors()->first());
+        }
+        if (ShopCoupon::where('shop_id', $shop->id)->where('code', $payload['code'])->exists()) {
+            throw new \InvalidArgumentException('This shop already has the code '.$payload['code'].'. Pick another code.');
+        }
+        if (filled($payload['ends_at'] ?? null) && $payload['ends_at'] < now(self::TZ)->toDateString()) {
+            throw new \InvalidArgumentException('ends_at is in the past.');
+        }
+        $value = rtrim(rtrim(number_format((float) $payload['value'], 2, '.', ''), '0'), '.');
+        $summary = __('كود خصم :code: :label', ['code' => $payload['code'],
+            'label' => $payload['type'] === 'percent' ? __('خصم :value%', ['value' => $value]) : __('خصم :value ₪', ['value' => $value])]);
+        if (filled($payload['min_total'] ?? null)) {
+            $summary .= ' · '.__('على طلب من :min ₪ وفوق', ['min' => $this->money($payload['min_total'])]);
+        }
+        if (filled($payload['ends_at'] ?? null)) {
+            $summary .= ' · '.__('لحد :date', ['date' => $payload['ends_at']]);
+        }
+        if (filled($payload['max_uses'] ?? null)) {
+            $summary .= ' · '.__(':count استخدام', ['count' => $payload['max_uses']]);
+        }
+
+        return $this->propose($shop, $user, $conversation, 'coupon_create', $payload, $summary, $proposed);
+    }
+
+    private function proposeReviewReply(Shop $shop, User $user, AssistantConversation $conversation, array $input, array &$proposed): array
+    {
+        $review = ShopReview::where('shop_id', $shop->id)->find((int) ($input['review_id'] ?? 0));
+        if (! $review) {
+            throw new \InvalidArgumentException('No review with that id in this shop. Use reviews first.');
+        }
+        $reply = trim((string) ($input['reply'] ?? ''));
+        if ($reply === '' || mb_strlen($reply) > 1000) {
+            throw new \InvalidArgumentException('The reply must be 1-1000 characters.');
+        }
+
+        return $this->propose($shop, $user, $conversation, 'review_reply', ['review_id' => $review->id, 'reply' => $reply],
+            __('رد على تقييم :name (:rating★): :reply', ['name' => $review->publicName(), 'rating' => $review->rating, 'reply' => Str::limit($reply, 300)]), $proposed);
     }
 
     private function propose(Shop $shop, User $user, AssistantConversation $conversation, string $type, array $payload, string $summary, array &$proposed): array

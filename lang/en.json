@@ -472,5 +472,11 @@
   "لسا ما في تقييمات": "No reviews yet",
   ":count تقييم": ":count reviews",
   ":average من 5 · :count تقييم": ":average out of 5 · :count reviews",
-  "عرض المزيد": "Show more"
+  "عرض المزيد": "Show more",
+  "كود خصم :code: :label": "Discount code :code: :label",
+  "لحد :date": "until :date",
+  ":count استخدام": ":count uses",
+  "رد على تقييم :name (:rating★): :reply": "Reply to :name's review (:rating★): :reply",
+  "التقييم مش موجود.": "Review not found.",
+  "تم: انحفظ الرد على التقييم.": "Done: the reply to the review was saved."
 }
