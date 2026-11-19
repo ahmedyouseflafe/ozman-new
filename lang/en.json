@@ -462,5 +462,15 @@
   "تعذّر فحص الكود. جرّب مرة ثانية.": "Couldn't check the code. Please try again.",
   "على طلب من :min ₪ وفوق": "on orders of :min ₪ or more",
   "ما قدرنا نطبّق الكود، والطلب انبعت بدونه.": "We couldn't apply the code; the order was sent without it.",
-  "كود الخصم": "Discount code"
+  "كود الخصم": "Discount code",
+  "تقييمات :shop": "Reviews of :shop",
+  "ارجع للمحل": "Back to the shop",
+  "ملخص التقييمات": "Ratings summary",
+  "كل التقييمات من زباين طلبوا فعلاً من المحل عن طريق تطبيق أوزمان.": "Every review is from a customer who really ordered from this shop through the Ozman app.",
+  ":rating من 5": ":rating out of 5",
+  "رد المحل: :reply": "Shop reply: :reply",
+  "لسا ما في تقييمات": "No reviews yet",
+  ":count تقييم": ":count reviews",
+  ":average من 5 · :count تقييم": ":average out of 5 · :count reviews",
+  "عرض المزيد": "Show more"
 }

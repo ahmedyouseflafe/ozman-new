@@ -86,8 +86,7 @@ class ReviewController extends Controller
     {
         $name = trim((string) $review->user?->name);
         // Customers see a first name and an initial only.
-        $parts = preg_split('/\s+/u', $name) ?: [];
-        $shown = $name === '' ? __('زبون') : ($parts[0].(isset($parts[1]) ? ' '.mb_substr($parts[1], 0, 1).'.' : ''));
+        $shown = $review->publicName();
 
         return [
             'id' => $review->id, 'rating' => $review->rating, 'comment' => $review->comment,
@@ -99,9 +98,7 @@ class ReviewController extends Controller
     /** How many reviews gave each number of stars (5 to 1). */
     private function stars(int $shopId): array
     {
-        $counts = ShopReview::where('shop_id', $shopId)->where('is_visible', true)->selectRaw('rating, COUNT(*) AS c')->groupBy('rating')->pluck('c', 'rating');
-
-        return collect([5, 4, 3, 2, 1])->mapWithKeys(fn ($s) => [(string) $s => (int) ($counts[$s] ?? 0)])->all();
+        return ShopReview::starsFor($shopId);
     }
 
     private function authorizeShop(Request $request, ?Shop $shop): void
