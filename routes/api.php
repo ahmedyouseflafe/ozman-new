@@ -176,6 +176,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/merchant/products/{product:id}', [MerchantCatalogController::class, 'show'])->name('merchant.products.show');
         Route::post('/merchant/products/{product:id}', [MerchantCatalogController::class, 'update'])->middleware('throttle:120,1,merchant.products.update')->name('merchant.products.update');
         Route::delete('/merchant/products/{product:id}', [MerchantCatalogController::class, 'destroy'])->name('merchant.products.destroy');
+        Route::get('/merchant/products/{product:id}/model-3d', [\App\Http\Controllers\Product3dController::class, 'show'])->name('merchant.products.model3d');
+        Route::post('/merchant/products/{product:id}/model-3d', [\App\Http\Controllers\Product3dController::class, 'upload'])->middleware('throttle:10,1,merchant.model3d.upload')->name('merchant.products.model3d.upload');
+        Route::post('/merchant/products/{product:id}/model-3d/size', [\App\Http\Controllers\Product3dController::class, 'size'])->name('merchant.products.model3d.size');
+        Route::post('/merchant/products/{product:id}/model-3d/convert', [\App\Http\Controllers\Product3dController::class, 'convert'])->middleware('throttle:5,10,merchant.model3d.convert')->name('merchant.products.model3d.convert');
+        Route::delete('/merchant/products/{product:id}/model-3d', [\App\Http\Controllers\Product3dController::class, 'destroy'])->name('merchant.products.model3d.destroy');
+        Route::post('/merchant/product-3d-jobs/{job}/approve', [\App\Http\Controllers\Product3dController::class, 'approve'])->name('merchant.model3d.approve');
+        Route::post('/merchant/product-3d-jobs/{job}/discard', [\App\Http\Controllers\Product3dController::class, 'discard'])->name('merchant.model3d.discard');
         Route::post('/merchant/shops/{shop:id}/categories', [MerchantCatalogController::class, 'storeCategory'])->name('merchant.categories.store');
         Route::patch('/merchant/categories/{category}', [MerchantCatalogController::class, 'updateCategory'])->name('merchant.categories.update');
         Route::delete('/merchant/categories/{category}', [MerchantCatalogController::class, 'destroyCategory'])->name('merchant.categories.destroy');

@@ -40,6 +40,8 @@ class Product extends Model
         'barcode',
         'main_image',
         'video',
+        'model_3d',
+        'model_3d_size',
         'views',
         'rating',
         'is_featured',
@@ -47,6 +49,7 @@ class Product extends Model
     ];
 
     protected $casts = [
+        'model_3d_size' => 'array',
         'price' => 'decimal:2',
         'discount_price' => 'decimal:2',
         'customer_package_price' => 'decimal:2',

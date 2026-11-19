@@ -235,6 +235,7 @@ Route::post('/stores/{shop:slug}/orders', [\App\Http\Controllers\CatalogCheckout
     ->middleware('throttle:20,1')->name('catalog.orders.store');
 Route::get('/restaurants/{shop:slug}', [RestaurantController::class, 'menu'])->name('restaurant.menu');
 Route::get('/product-likes', [\App\Http\Controllers\ProductLikeController::class, 'state'])->middleware('throttle:120,1')->name('product-likes.state');
+Route::get('/products/{product:id}/ar', [\App\Http\Controllers\Product3dController::class, 'ar'])->name('products.ar');
 Route::post('/products/{product:id}/like', [\App\Http\Controllers\ProductLikeController::class, 'toggle'])->middleware('throttle:60,1')->name('product-likes.toggle');
 Route::get('/share/product/{product:id}', [\App\Http\Controllers\ProductShareController::class, 'show'])->name('share.product');
 Route::post('/restaurants/{shop:slug}/customer-registration', [\App\Http\Controllers\RestaurantCustomerRegistrationController::class, 'store'])
@@ -468,6 +469,15 @@ Route::middleware(['auth', 'admin.access'])->group(function () {
     Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('/products/store', [ProductController::class, 'store'])->name('products.store');
     Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+    // A product's 3D model for "see it in your room" (furniture).
+    Route::get('/products/{product}/model-3d', [\App\Http\Controllers\Product3dController::class, 'page'])->name('products.model3d');
+    Route::get('/products/{product}/model-3d/state', [\App\Http\Controllers\Product3dController::class, 'show'])->name('products.model3d.state');
+    Route::post('/products/{product}/model-3d', [\App\Http\Controllers\Product3dController::class, 'upload'])->middleware('throttle:10,1')->name('products.model3d.upload');
+    Route::post('/products/{product}/model-3d/size', [\App\Http\Controllers\Product3dController::class, 'size'])->name('products.model3d.size');
+    Route::post('/products/{product}/model-3d/convert', [\App\Http\Controllers\Product3dController::class, 'convert'])->middleware('throttle:5,10')->name('products.model3d.convert');
+    Route::delete('/products/{product}/model-3d', [\App\Http\Controllers\Product3dController::class, 'destroy'])->name('products.model3d.destroy');
+    Route::post('/product-3d-jobs/{job}/approve', [\App\Http\Controllers\Product3dController::class, 'approve'])->name('products.model3d.approve');
+    Route::post('/product-3d-jobs/{job}/discard', [\App\Http\Controllers\Product3dController::class, 'discard'])->name('products.model3d.discard');
     Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
     Route::patch('/products/{product}/quick-settings', [ProductController::class, 'quickSettings'])->name('products.quick-settings');
     Route::patch('/products/{product}/category', [ProductController::class, 'moveCategory'])->name('products.move-category');

@@ -2,6 +2,12 @@
 
 return [
 
+    // Product photo → 3D model for "see it in your room" (furniture). Off until a key is set.
+    'meshy' => [
+        'key' => env('MESHY_API_KEY'),
+        'shop_types' => ['furniture_appliances'],
+    ],
+
     'fashn' => [
         'key' => env('FASHN_API_KEY'),
         'shops' => array_filter(explode(',', env('FASHN_ENABLED_SHOPS', ''))),

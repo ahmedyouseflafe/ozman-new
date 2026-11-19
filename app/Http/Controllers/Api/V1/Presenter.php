@@ -90,6 +90,8 @@ class Presenter
                 'images' => $product->images->map(fn ($image) => self::media($image->image))->filter()->values(),
                 'video' => self::media($product->video),
                 'attributes' => $product->catalog_attributes ?: (object) [],
+                // "See it in your room": the product's AR page (opened in the browser).
+                'ar_url' => $product->model_3d ? route('products.ar', $product) : null,
                 'sizes' => self::optionList($product, 'sizes'),
                 'colors' => self::optionList($product, 'colors'),
                 // Restaurant meals: sizes, extras, "without…" and choice groups, as the menu page offers them.

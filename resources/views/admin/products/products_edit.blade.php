@@ -106,6 +106,9 @@
                         <h1>تعديل {{ $itemLabel }}</h1>
                         <p>حدّث بيانات {{ $itemLabel }} والسعر والصور وحالة الظهور في {{ $placeLabel }}.</p>
                     </div>
+                    @if(($product->shop?->catalog_type ?? null) === 'furniture_appliances')
+                        <a href="{{ route('products.model3d', $product) }}" class="btn"><i class="ti ti-cube-3d-sphere"></i>{{ $product->model_3d ? __('عرض 3D ✓') : __('عرض 3D') }}</a>
+                    @endif
                     <a href="{{ route('products') }}" class="btn"><i class="ti ti-arrow-right"></i>رجوع لـ{{ $itemsLabel }}</a>
                 </header>
 

@@ -28,7 +28,7 @@ return [
                 'products.view' => ['label' => 'عرض منتجات المتاجر', 'description' => 'مشاهدة قائمة المنتجات وتفاصيلها.', 'routes' => ['products', 'products.show']],
                 'products.preview' => ['label' => 'معاينة واجهة المتجر', 'description' => 'معاينة طريقة ظهور المنتجات للعملاء.', 'routes' => ['products.preview']],
                 'products.create' => ['label' => 'إضافة منتج لمتجر', 'description' => 'إنشاء منتج في متجر مسموح بإدارته.', 'routes' => ['products.create', 'products.store']],
-                'products.edit' => ['label' => 'تعديل منتج وأسعاره ومخزونه', 'description' => 'تعديل بيانات المنتج وظهوره وأسعاره.', 'routes' => ['products.edit', 'products.update', 'products.quick-settings', 'products.move-category', 'social.index', 'social.connect', 'social.callback', 'social.caption', 'social.posts.store', 'social.posts.destroy']],
+                'products.edit' => ['label' => 'تعديل منتج وأسعاره ومخزونه', 'description' => 'تعديل بيانات المنتج وظهوره وأسعاره.', 'routes' => ['products.edit', 'products.update', 'products.quick-settings', 'products.move-category', 'social.index', 'social.connect', 'social.callback', 'social.caption', 'social.posts.store', 'social.posts.destroy', 'products.model3d', 'products.model3d.state', 'products.model3d.upload', 'products.model3d.size', 'products.model3d.convert', 'products.model3d.destroy', 'products.model3d.approve', 'products.model3d.discard']],
                 'products.delete' => ['label' => 'حذف منتج من متجر', 'description' => 'حذف المنتج؛ صلاحية حساسة.', 'routes' => ['products.destroy']],
             ],
         ],
