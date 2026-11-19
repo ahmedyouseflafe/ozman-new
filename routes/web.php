@@ -227,6 +227,7 @@ Route::get('/krembo/{shop:slug}/catalog', [\App\Http\Controllers\KremboStoreCont
 Route::get('/dental/{shop:slug}', [\App\Http\Controllers\DentalClinicController::class, 'show'])->name('dental.clinic');
 Route::get('/front/shops/{shop}', [FrontController::class, 'index'])->name('front.shop');
 Route::get('/stores/{shop:slug}', [FrontController::class, 'index'])->name('front.shop.slug');
+Route::post('/shops/{shop:slug}/coupon-check', [\App\Http\Controllers\WebCouponController::class, 'check'])->middleware('throttle:20,1')->name('shop.coupon-check');
 Route::post('/stores/{shop:slug}/orders', [\App\Http\Controllers\CatalogCheckoutController::class, 'store'])
     ->middleware('throttle:20,1')->name('catalog.orders.store');
 Route::get('/restaurants/{shop:slug}', [RestaurantController::class, 'menu'])->name('restaurant.menu');

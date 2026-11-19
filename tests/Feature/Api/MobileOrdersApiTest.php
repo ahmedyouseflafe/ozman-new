@@ -85,9 +85,9 @@ class MobileOrdersApiTest extends TestCase
         $this->postJson('/api/v1/shops/'.$shop->id.'/restaurant-orders', $order + ['coupon_code' => 'sushi10'], $headers)->assertOk()
             ->assertJsonPath('coupon_discount', 10)->assertJsonPath('total', 60);
         $this->assertEquals(60, FrontOrder::sole()->total);
-        // Too small for this one: the order still goes through, without it, and the app hears why.
-        $this->postJson('/api/v1/shops/'.$shop->id.'/restaurant-orders', $order + ['coupon_code' => 'BIG'], $headers)->assertOk()
-            ->assertJsonPath('coupon_error', fn ($m) => is_string($m) && $m !== '');
-        $this->assertEquals(70, FrontOrder::latest('id')->first()->total);
+        // Too small for this one: nothing is ordered, and the app hears why, so the customer can add more or drop the code.
+        $this->postJson('/api/v1/shops/'.$shop->id.'/restaurant-orders', $order + ['coupon_code' => 'BIG'], $headers)
+            ->assertUnprocessable()->assertJsonValidationErrors('coupon_code');
+        $this->assertSame(1, FrontOrder::count());
     }
 }

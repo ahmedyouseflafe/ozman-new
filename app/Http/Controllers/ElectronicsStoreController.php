@@ -17,6 +17,8 @@ use Illuminate\View\View;
 
 class ElectronicsStoreController extends Controller
 {
+    use \App\Http\Controllers\Concerns\TakesShopCoupons;
+
     public function index(Request $request, Shop $shop): View
     {
         $this->ensureStore($shop);
@@ -105,9 +107,11 @@ class ElectronicsStoreController extends Controller
             'items' => ['required', 'array', 'min:1', 'max:30'],
             'items.*.variant_id' => ['required', 'integer'],
             'items.*.qty' => ['required', 'integer', 'min:1', 'max:20'],
+            'coupon_code' => ['nullable', 'string', 'max:40'],
         ]);
 
-        $order = DB::transaction(function () use ($data, $shop) {
+        $coupon = null;
+        $order = DB::transaction(function () use ($request, $data, $shop, &$coupon) {
             $items = [];
             $subtotal = 0.0;
             foreach ($data['items'] as $row) {
@@ -138,6 +142,8 @@ class ElectronicsStoreController extends Controller
                 $variant->product->update(['quantity' => $variant->product->variants()->where('is_active', true)->sum('quantity')]);
             }
 
+            $coupon = $this->couponForBasket($request, $shop, $subtotal);
+
             return FrontOrder::create([
                 'shop_id' => $shop->id,
                 'order_number' => 'ELC-' . now()->format('ymd') . '-' . Str::upper(Str::random(6)),
@@ -155,7 +161,9 @@ class ElectronicsStoreController extends Controller
             ]);
         });
 
-        return response()->json(['ok' => true, 'order_id' => $order->id, 'order_number' => $order->order_number]);
+        $couponResult = $this->takeCoupon($coupon, $order, $shop, $request);
+
+        return response()->json(['ok' => true, 'order_id' => $order->id, 'order_number' => $order->order_number, 'total' => (float) $order->total, ...$couponResult]);
     }
 
     private function applyFilters(Builder $query, Request $request): void

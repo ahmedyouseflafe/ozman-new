@@ -378,6 +378,7 @@
     });
 })();
 </script>
+@include('front.partials.coupon_field')
 <script>
 (() => {
     const config = {
@@ -478,6 +479,7 @@
         $('beautyCustomerName').value = saved.name || '';
         $('beautyCustomerWhatsapp').value = saved.whatsapp || '';
     }
+    window.OzmanCoupon?.mount($('beautyWhatsappOrder')?.closest('.cart-actions') || $('beautyWhatsappOrder'));
     $('beautyWhatsappOrder')?.addEventListener('click', async event => {
         event.preventDefault();
         if (!rewardCart.length) return;
@@ -498,10 +500,11 @@
         orderLink.style.pointerEvents = 'none';
         try {
             localStorage.setItem('beautyCustomer', JSON.stringify({name, whatsapp}));
-            const order = await request(config.orderUrl, {shop_id: config.shopId, customer_name: name, customer_phone: whatsapp, customer_whatsapp: whatsapp, items: rewardCart.map(item => ({name: item.name, price: String(item.price), qty: item.qty})), subtotal: value, total: value, order_channel: 'whatsapp', visitor_type: 'customer', reward_wheel_id: rewardWheel?.id || null});
+            const order = await request(config.orderUrl, {shop_id: config.shopId, customer_name: name, customer_phone: whatsapp, customer_whatsapp: whatsapp, items: rewardCart.map(item => ({name: item.name, price: String(item.price), qty: item.qty})), subtotal: value, total: value, order_channel: 'whatsapp', visitor_type: 'customer', reward_wheel_id: rewardWheel?.id || null, coupon_code: window.OzmanCoupon?.code() || null});
             const message = rewardCart.map(item => `• ${item.name} × ${item.qty} — ${format(item.price * item.qty)}`).join('\n');
             if (config.whatsapp) {
-                const whatsappUrl = `https://wa.me/${config.whatsapp}?text=${encodeURIComponent(`مرحباً، أود طلب المنتجات التالية من {{ $shop->name }}:\n${message}\n\nالمجموع: ${format(value)}`)}`;
+                const whatsappUrl = `https://wa.me/${config.whatsapp}?text=${encodeURIComponent(`مرحباً، أود طلب المنتجات التالية من {{ $shop->name }}:\n${message}\n${order.coupon_discount > 0 ? `\nكود الخصم: -${format(order.coupon_discount)}` : ''}\nالمجموع: ${format(order.total ?? value)}`)}`;
+                window.OzmanCoupon?.reset();
                 if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.location.replace(whatsappUrl);
                 else window.location.assign(whatsappUrl);
             }

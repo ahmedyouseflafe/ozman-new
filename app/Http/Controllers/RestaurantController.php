@@ -30,6 +30,8 @@ use Throwable;
 
 class RestaurantController extends Controller
 {
+    use \App\Http\Controllers\Concerns\TakesShopCoupons;
+
     /** Kitchen order: orders that still need work come first (new, cooking, ready), finished ones after. */
     private const ACTIVE_FIRST = "CASE status WHEN 'new' THEN 0 WHEN 'preparing' THEN 1 WHEN 'ready' THEN 2 WHEN 'out_for_delivery' THEN 3 ELSE 4 END";
 
@@ -278,6 +280,7 @@ class RestaurantController extends Controller
             'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
             'registration_token' => ['nullable', 'string', 'regex:/\A[a-f0-9]{64}\z/'],
+            'coupon_code' => ['nullable', 'string', 'max:40'],
             'skip_signup_reward' => ['sometimes', 'boolean'],
             'items' => ['required', 'array', 'min:1', 'max:100'],
             'items.*.product_id' => ['required', 'integer'],
@@ -349,6 +352,8 @@ class RestaurantController extends Controller
             ];
         }
 
+        $coupon = $this->couponForBasket($request, $shop, (float) $subtotal);
+
         $customerPushToken = $request->session()->get('app_push_token');
         if (! is_string($customerPushToken) || ! PushDevice::query()->where('token', $customerPushToken)->exists()) {
             $customerPushToken = null;
@@ -372,6 +377,7 @@ class RestaurantController extends Controller
         $order = \App\Services\RestaurantNotificationRewardService::applies($shop)
             ? app(\App\Services\RestaurantNotificationRewardService::class)->checkout($shop, $request, $orderAttributes)
             : app(\App\Services\ShopSignupRewardService::class)->placeOrder($shop, $data['registration_token'] ?? null, $orderAttributes);
+        $couponResult = $this->takeCoupon($coupon, $order, $shop, $request);
         $request->session()->put([
             'restaurant_customer_names.'.$shop->id => $data['customer_name'],
         ]);
@@ -381,6 +387,8 @@ class RestaurantController extends Controller
             'ok' => true,
             'order_id' => $order->id,
             'order_number' => $order->order_number,
+            'total' => (float) $order->total,
+            ...$couponResult,
             'purchase_wheel' => \App\Http\Controllers\RestaurantPurchaseWheelController::eligible($order) ? [
                 'url' => URL::signedRoute('restaurant.purchase-wheel.show', $order),
                 'spin_url' => URL::signedRoute('restaurant.purchase-wheel.spin', $order),
@@ -630,8 +638,15 @@ class RestaurantController extends Controller
             if ($order->reward_gift_image) $lines[] = 'صورة الهدية: '.asset($order->reward_gift_image);
         }
         if ((float) $order->discount > 0) {
+            $couponOff = (float) ($order->coupon_discount ?? 0);
+            $otherOff = round((float) $order->discount - $couponOff, 2);
             $lines[] = 'قبل الخصم: '.number_format((float) $order->subtotal, 2).' ₪';
-            $lines[] = 'خصم التسجيل: -'.number_format((float) $order->discount, 2).' ₪';
+            if ($otherOff > 0) {
+                $lines[] = 'خصم التسجيل: -'.number_format($otherOff, 2).' ₪';
+            }
+            if ($couponOff > 0) {
+                $lines[] = 'كود الخصم '.$order->coupon_code.': -'.number_format($couponOff, 2).' ₪';
+            }
         }
         $lines[] = '💰 المجموع: '.number_format((float) $order->total, 2).' ₪';
 

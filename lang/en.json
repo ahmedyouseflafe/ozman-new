@@ -455,5 +455,12 @@
   ":service عند :shop الساعة :time": ":service at :shop at :time",
   "كود :code": "Code :code",
   "المحل مش متاح هلقيت.": "The shop isn't available right now.",
-  "صنف": "Item"
+  "صنف": "Item",
+  "عندك كود خصم؟": "Have a discount code?",
+  "طبّق": "Apply",
+  "إزالة": "Remove",
+  "تعذّر فحص الكود. جرّب مرة ثانية.": "Couldn't check the code. Please try again.",
+  "على طلب من :min ₪ وفوق": "on orders of :min ₪ or more",
+  "ما قدرنا نطبّق الكود، والطلب انبعت بدونه.": "We couldn't apply the code; the order was sent without it.",
+  "كود الخصم": "Discount code"
 }

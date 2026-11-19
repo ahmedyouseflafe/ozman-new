@@ -11,6 +11,8 @@ use Illuminate\Validation\ValidationException;
 
 class CatalogCheckoutController extends Controller
 {
+    use \App\Http\Controllers\Concerns\TakesShopCoupons;
+
     public function store(Request $request, Shop $shop)
     {
         abort_unless($shop->is_active && in_array($shop->catalog_type, ['sweets', 'clothing', 'furniture_appliances'], true), 404);
@@ -23,10 +25,12 @@ class CatalogCheckoutController extends Controller
             'items' => ['required', 'array', 'min:1', 'max:100'], 'items.*.product_id' => ['required', 'integer'],
             'items.*.qty' => ['required', 'integer', 'min:1', 'max:100'],
             'items.*.size' => ['nullable', 'string', 'max:100'], 'items.*.color' => ['nullable', 'string', 'max:100'],
+            'coupon_code' => ['nullable', 'string', 'max:40'],
         ]);
         $token = hash('sha256', $shop->id.':'.$data['request_token']);
-        $payloadHash = hash('sha256', json_encode([$data['customer_name'], $data['customer_phone'], $data['items']]));
-        $order = DB::transaction(function () use ($shop, $data, $token, $payloadHash) {
+        $payloadHash = hash('sha256', json_encode([$data['customer_name'], $data['customer_phone'], $data['items'], $data['coupon_code'] ?? null]));
+        $coupon = null;
+        $order = DB::transaction(function () use ($request, $shop, $data, $token, $payloadHash, &$coupon) {
             Shop::whereKey($shop->id)->lockForUpdate()->firstOrFail();
             $existing = FrontOrder::where('checkout_token_hash', $token)->first();
             if ($existing) {
@@ -50,6 +54,7 @@ class CatalogCheckoutController extends Controller
                 $subtotal += (int) round($price * 100) * $item['qty'];
                 $items[] = ['product_id' => $product->id, 'name' => $product->localized('name').($options ? ' · '.implode(' · ', $options) : ''), 'qty' => $item['qty'], 'price' => $price];
             }
+            $coupon = $this->couponForBasket($request, $shop, $subtotal / 100);
             $order = new FrontOrder(['shop_id' => $shop->id, 'order_number' => 'SHOP-'.Str::ulid(),
                 'customer_name' => $data['customer_name'], 'customer_phone' => $data['customer_phone'],
                 'items' => $items, 'subtotal' => $subtotal / 100, 'discount' => 0, 'total' => $subtotal / 100,
@@ -57,10 +62,14 @@ class CatalogCheckoutController extends Controller
             $order->checkout_token_hash = $token; $order->checkout_payload_hash = $payloadHash; $order->save();
             return $order;
         });
+        $couponResult = $this->takeCoupon($coupon, $order, $shop, $request);
         $lines = ['طلب من '.$shop->name, 'رقم الطلب: '.$order->order_number, 'الاسم: '.$order->customer_name, 'رقم التواصل: '.$order->customer_phone, ''];
         foreach ($order->items as $item) $lines[] = $item['qty'].' × '.$item['name'].' — '.number_format($item['price'] * $item['qty'], 2).' ₪';
+        if ((float) $order->coupon_discount > 0) {
+            $lines[] = 'كود الخصم '.$order->coupon_code.': -'.number_format((float) $order->coupon_discount, 2).' ₪';
+        }
         $lines[] = 'المجموع: '.number_format((float) $order->total, 2).' ₪';
         $lines[] = 'للرجوع والتسوق: '.$shop->publicUrl();
-        return response()->json(['order_number' => $order->order_number, 'whatsapp_url' => 'https://wa.me/'.$number.'?text='.rawurlencode(implode("\n", $lines))])->header('Cache-Control', 'private, no-store');
+        return response()->json(['order_number' => $order->order_number, 'total' => (float) $order->total, ...$couponResult, 'whatsapp_url' => 'https://wa.me/'.$number.'?text='.rawurlencode(implode("\n", $lines))])->header('Cache-Control', 'private, no-store');
     }
 }

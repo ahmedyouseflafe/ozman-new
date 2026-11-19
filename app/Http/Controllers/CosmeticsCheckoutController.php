@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\URL;
 
 class CosmeticsCheckoutController extends Controller
 {
+    use \App\Http\Controllers\Concerns\TakesShopCoupons;
+
     public function store(Request $request, Shop $shop, CosmeticsGuestRewardService $rewards): JsonResponse
     {
         abort_unless($shop->is_active && $shop->catalog_type === 'cosmetics' && $shop->slug === 'elegance-perfumes', 404);
@@ -33,6 +35,7 @@ class CosmeticsCheckoutController extends Controller
             'items' => ['required','array','min:1','max:100'],
             'items.*.product_id' => ['required','integer','distinct'],
             'items.*.qty' => ['required','integer','min:1','max:100'],
+            'coupon_code' => ['nullable','string','max:40'],
         ]);
         $products = Product::where('shop_id',$shop->id)->where('is_active',true)
             ->whereIn('id',array_column($data['items'],'product_id'))->with('images')->get()->keyBy('id');
@@ -47,6 +50,7 @@ class CosmeticsCheckoutController extends Controller
             $items[] = ['product_id'=>$product->id,'name'=>$product->name,'price'=>$price,'qty'=>$item['qty'],'image_url'=>$imageUrl];
             $subtotal += $price * $item['qty'];
         }
+        $coupon = $this->couponForBasket($request, $shop, round($subtotal, 2));
         $latitude = $data['latitude'] ?? null;
         $longitude = $data['longitude'] ?? null;
         $order = $rewards->checkout($shop,$data['registration_token'] ?? null,[
@@ -57,6 +61,7 @@ class CosmeticsCheckoutController extends Controller
             'items'=>$items,'subtotal'=>round($subtotal,2),'discount'=>0,'total'=>round($subtotal,2),
             'order_channel'=>'whatsapp','status'=>'new','payment_status'=>'whatsapp_order',
         ], (bool) ($data['skip_signup_reward'] ?? false));
+        $couponResult = $this->takeCoupon($coupon, $order, $shop, $request);
         \App\Models\AdminNotification::create([
             'shop_id'=>$shop->id,'type'=>'front_order_created','title'=>'طلب جديد من الواجهة',
             'message'=>$order->customer_name.' — '.$order->total.' ₪',
@@ -65,6 +70,7 @@ class CosmeticsCheckoutController extends Controller
         ]);
         return response()->json([
             'ok'=>true,'order_id'=>$order->id,'order_number'=>$order->order_number,'total'=>(float)$order->total,
+            ...$couponResult,
             'whatsapp_url'=>app(RestaurantController::class)->restaurantWhatsappUrl($shop, $order),
             'order_share_url'=>self::shareUrl($order),
             'order_share'=>self::sharePayload($order),

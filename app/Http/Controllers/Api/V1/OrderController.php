@@ -28,11 +28,7 @@ class OrderController extends Controller
     {
         $user = $request->user();
         $request->validate(['device_token' => ['nullable', 'string', 'max:512'], 'coupon_code' => ['nullable', 'string', 'max:40']]);
-        // A wrong code stops the order before it's placed; the amount rules are checked once the total is known.
-        $code = trim((string) $request->input('coupon_code', ''));
-        if ($code !== '') {
-            $coupons->find($shop, $code, $user);
-        }
+        // The discount code is checked against the basket and taken off by the website's checkout below.
         // The website's checkout fields, filled from the account when the app leaves them out.
         $request->merge([
             'customer_name' => $request->input('customer_name') ?: $user->name,
@@ -53,16 +49,11 @@ class OrderController extends Controller
         $orderId = $payload['order_id'] ?? null;
         if ($orderId) {
             FrontOrder::whereKey($orderId)->whereNull('user_id')->update(['user_id' => $user->id]);
-            if ($code !== '') {
-                try {
-                    $payload['coupon_discount'] = $coupons->apply(FrontOrder::findOrFail($orderId), $shop, $code, $user);
-                    $payload['total'] = Presenter::price(FrontOrder::find($orderId)->total);
-                } catch (ValidationException $e) {
-                    // The order stands without the code; the app says why.
-                    $payload['coupon_error'] = collect($e->errors())->flatten()->first();
-                }
-                $response->setData($payload);
+            $payload['total'] = Presenter::price(FrontOrder::find($orderId)->total);
+            if (empty($payload['coupon_error'])) {
+                unset($payload['coupon_error']);
             }
+            $response->setData($payload);
         }
 
         return $response;

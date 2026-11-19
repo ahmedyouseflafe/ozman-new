@@ -25,6 +25,8 @@ use Illuminate\View\View;
 
 class FrontOrderController extends Controller
 {
+    use \App\Http\Controllers\Concerns\TakesShopCoupons;
+
     public function store(Request $request): JsonResponse
     {
         $authenticatedShop = $request->user()?->isShopOwner()
@@ -132,6 +134,12 @@ class FrontOrderController extends Controller
 
         unset($validated['visitor_type'], $validated['merchant_registration_token'], $validated['signup_reward']);
 
+        // A shop's discount code (customers only; merchant prices already have their own terms).
+        $coupon = null;
+        if (! $isMerchant && ! empty($validated['shop_id']) && filled($request->input('coupon_code'))) {
+            $coupon = $this->couponForBasket($request, Shop::findOrFail($validated['shop_id']), (float) ($validated['total'] ?? 0));
+        }
+
         if (! empty($validated['reward_wheel_id'])) {
             $wheel = RewardWheel::query()
                 ->whereKey($validated['reward_wheel_id'])
@@ -177,24 +185,32 @@ class FrontOrderController extends Controller
             }
         }
 
-        $total = (float) ($validated['total'] ?? 0);
-        $commissionRate = $marketer ? (float) $marketer->commission_rate : null;
-        $commissionAmount = $commissionRate !== null
-            ? round($total * max($commissionRate, 0) / 100, 2)
-            : null;
+        $order = DB::transaction(function () use ($validated, $marketer, $coupon) {
+            $total = (float) ($validated['total'] ?? 0);
+            // The code's use is counted here, locked, so two orders can't take its last use.
+            $off = $coupon ? app(\App\Services\CouponService::class)->redeem($coupon, $total) : 0.0;
+            $total = round(max(0, $total - $off), 2);
+            $commissionRate = $marketer ? (float) $marketer->commission_rate : null;
+            $commissionAmount = $commissionRate !== null
+                ? round($total * max($commissionRate, 0) / 100, 2)
+                : null;
 
-        $order = FrontOrder::create([
-            ...$validated,
-            'order_number' => $this->makeOrderNumber(),
-            'subtotal' => $validated['subtotal'] ?? 0,
-            'discount' => $validated['discount'] ?? 0,
-            'total' => $total,
-            'marketer_commission_rate' => $commissionRate,
-            'marketer_commission_amount' => $commissionAmount,
-            'payment_status' => $validated['order_channel'] === 'instant_payment'
-                ? 'instant_payment_submitted'
-                : 'whatsapp_order',
-        ]);
+            return FrontOrder::create([
+                ...$validated,
+                'order_number' => $this->makeOrderNumber(),
+                'subtotal' => $validated['subtotal'] ?? 0,
+                'discount' => round((float) ($validated['discount'] ?? 0) + $off, 2),
+                'total' => $total,
+                'shop_coupon_id' => $coupon?->id,
+                'coupon_code' => $coupon?->code,
+                'coupon_discount' => $off,
+                'marketer_commission_rate' => $commissionRate,
+                'marketer_commission_amount' => $commissionAmount,
+                'payment_status' => $validated['order_channel'] === 'instant_payment'
+                    ? 'instant_payment_submitted'
+                    : 'whatsapp_order',
+            ]);
+        });
 
         $this->notify(
             'front_order_created',
@@ -212,6 +228,8 @@ class FrontOrderController extends Controller
             'ok' => true,
             'order_id' => $order->id,
             'order_number' => $order->order_number,
+            'total' => (float) $order->total,
+            'coupon_discount' => (float) ($order->coupon_discount ?? 0),
             'order_qr_url' => route('front-orders.qr', $order),
             'order_lookup_url' => route('front-orders.index', ['search' => $order->order_number]),
         ]);

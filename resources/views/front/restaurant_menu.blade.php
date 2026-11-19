@@ -2297,6 +2297,7 @@
     @include('front.shop_stories', ['showStoryList' => false])
     <style>.meal-choice-section .choice{margin:7px 0}.meal-choice-hint{color:#a9c2cb;font-size:12px;margin:5px 0}.meal-choice-section [data-count]{color:#08dcf4}.meal-choice-qty{width:76px!important;min-width:60px;text-align:center}.meal-choice-section[data-valid="false"]{border-color:#4e6171}</style>
     <script>{!! file_get_contents(base_path('public/restaurant-meal-choices.js')) !!}</script>
+    @include('front.partials.coupon_field')
     @if($hasCustomerWelcome)
         @if($shop->slug === 'bankai-sushi')
             @include('front.partials.restaurant_notification_reward')
@@ -2745,6 +2746,7 @@
             } catch (_) {}
 
             let sendingOrder = false;
+            window.OzmanCoupon?.mount($('send'));
             $('send').onclick = async () => {
                 if (sendingOrder) return;
                 const message = $('message');
@@ -2775,6 +2777,7 @@
                     latitude: $('latitude').value || null,
                     longitude: $('longitude').value || null,
                     customer_notes: $('orderNotes').value,
+                    coupon_code: window.OzmanCoupon?.code() || null,
                     items: cart
                 };
                 try {
@@ -2801,7 +2804,10 @@
                     cart.length = 0;
                     render();
                     message.classList.add('success');
-                    message.textContent = `${ui.sent_success} ${data.order_number}`;
+                    message.textContent = `${ui.sent_success} ${data.order_number}`
+                        + (data.coupon_discount > 0 ? ` · ${@json(__('كود الخصم'))} -${Number(data.coupon_discount).toFixed(2)} ₪` : '')
+                        + (data.coupon_error ? ` · ${data.coupon_error}` : '');
+                    window.OzmanCoupon?.reset();
                     activateTracking(data);
                     if (window.RestaurantPurchaseWheel?.ordered(data)) {
                         // The wheel keeps the WhatsApp handoff available after spinning or skipping.

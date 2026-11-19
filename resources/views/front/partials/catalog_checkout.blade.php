@@ -1,3 +1,4 @@
+@include('front.partials.coupon_field')
 @php($catalogCheckoutConfig = ['url' => route('catalog.orders.store', $shop), 'csrf' => csrf_token(), 'csrfUrl' => route('csrf.refresh')])
 <script>
 window.OzmanCatalogCheckout = @json($catalogCheckoutConfig);

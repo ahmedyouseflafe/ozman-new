@@ -1,9 +1,11 @@
 (() => {
     const config=window.OzmanCatalogCheckout;if(!config)return;
+    const mountCoupon=()=>window.OzmanCoupon?.mount(document.getElementById('sendOrder'));
+    document.readyState==='loading'?document.addEventListener('DOMContentLoaded',mountCoupon):mountCoupon();
     let busy=false,signature='',token='';
     window.OzmanSaveCatalogOrder=async(cart,name,phone,button)=>{
         if(busy||!cart.length)return;busy=true;const label=button.textContent;button.disabled=true;button.textContent='جارٍ تجهيز الطلب…';
-        const details={customer_name:name,customer_phone:phone,items:cart.map(item=>({product_id:Number(item.id),qty:Number(item.qty??item.quantity),size:item.size||null,color:item.color||null}))};
+        const details={customer_name:name,customer_phone:phone,coupon_code:window.OzmanCoupon?.code()||null,items:cart.map(item=>({product_id:Number(item.id),qty:Number(item.qty??item.quantity),size:item.size||null,color:item.color||null}))};
         const next=JSON.stringify(details);if(next!==signature){signature=next;token=crypto.randomUUID();}
         const body=JSON.stringify({...details,request_token:token});
         const send=()=>fetch(config.url,{method:'POST',headers:{Accept:'application/json','Content-Type':'application/json','X-CSRF-TOKEN':config.csrf},credentials:'same-origin',body,signal:AbortSignal.timeout(20000)});

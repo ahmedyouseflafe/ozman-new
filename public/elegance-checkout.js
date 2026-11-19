@@ -107,6 +107,7 @@
             const details = Object.fromEntries(['customer_name', 'customer_phone', 'customer_whatsapp', 'customer_address'].map(name => [name, form.elements.namedItem(name).value.trim()]));
             const data = await submit({...details, registration_token: token, skip_signup_reward: skip,
                 latitude: point?.latitude ?? null, longitude: point?.longitude ?? null,
+                coupon_code: window.OzmanCoupon?.code() || null,
                 items: window.OzmanBeautyCart.map(item => ({product_id: item.id, qty: item.qty}))});
             write(`${key}.checkout`, JSON.stringify(details));
             window.OzmanSignupReward.consumed();
