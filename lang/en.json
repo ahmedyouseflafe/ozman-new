@@ -484,5 +484,9 @@
   "هاد الحجز مش مستني تأكيد.": "This booking is not waiting for confirmation.",
   "تم الحجز. الصالون رح يأكد معك، والموعد صار بـ«مواعيدي».": "Booked. The salon will confirm with you; it is in \"My bookings\".",
   "ما زبط الحجز.": "The booking didn't go through.",
-  "احجز": "Book"
+  "احجز": "Book",
+  "منشور على :platforms · :when: :caption": "Post on :platforms · :when: :caption",
+  "هلقيت": "now",
+  "الصورة مش موجودة، ابعتها للمساعد مرة ثانية.": "The photo is gone; send it to the assistant again.",
+  "ما انتشر المنشور.": "The post wasn't published."
 }

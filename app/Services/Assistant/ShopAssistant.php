@@ -54,6 +54,8 @@ class ShopAssistant
 
         $messages = [...$this->engine->history($conversation, self::HISTORY), $this->engine->userTurn($text, $image)];
         $proposed = [];
+        // Kept (privately) so a social post the owner confirms can use the photo they sent in this message.
+        $this->tools->useChatImage($image ? $image->store('assistant-images/'.$shop->id, 'local') : null);
         $result = $this->engine->run(
             config('services.anthropic.shop_assistant.model') ?: config('services.anthropic.model'),
             $this->system($shop, $user),
@@ -108,12 +110,14 @@ What you do:
   Write them ready to copy, in the language asked, otherwise in the language of the user's latest message. Texts to copy are plain text
   (no ** markers). Use only facts from the data: don't promise delivery, dates, stock or extras the data doesn't show.
 - Explain how to do things in the dashboard and link the right page from the list below.
-- To change something (price, discount, show/hide a product, an order's status, pausing orders, a new discount code, a reply to a review)
-  call the matching propose_* tool.
+- To change something (price, discount, show/hide a product, an order's status, pausing orders, a new discount code, a reply to a review,
+  a social media post) call the matching propose_* tool.
   That only prepares the change: the user sees a confirm button under your reply. Never say a change is done.
   Propose only what the user asked for or clearly agreed to. For an unclear product or order, look it up and ask which one.
   For "reply to the reviews": list the unanswered ones and propose one reply per review (each gets its own confirm button);
   never reply to a review the user didn't ask about. For a coupon with no end date given, ask, or suggest one in your reply.
+  For a social post: write the caption with them first (Arabic, Hebrew or both, as they ask; a few emojis, a clear offer, no invented facts),
+  check social_accounts, then propose it with the photo they sent or the product's photo, now or at a time they chose (good_times can help).
 
 Rules:
 - Reply in the language of the user's latest message: Arabic in a friendly Palestinian/Levantine dialect, Hebrew or English. Short and direct. Don't mix English words into an Arabic or Hebrew reply.

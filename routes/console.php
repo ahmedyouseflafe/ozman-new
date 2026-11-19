@@ -20,3 +20,13 @@ Artisan::command('promoters:prune-stories', function () {
 Schedule::command('promoters:prune-stories')->dailyAt('03:30')->withoutOverlapping(30);
 Schedule::command('analytics:weekly-report')->weeklyOn(0, '08:10')->timezone('Asia/Jerusalem')->withoutOverlapping(30)->onOneServer();
 Schedule::command('salon:send-reminders')->everyFiveMinutes()->withoutOverlapping(10)->onOneServer();
+
+// Photos owners send to their assistant are kept only long enough to confirm a social post with them.
+Schedule::call(function () {
+    $disk = \Illuminate\Support\Facades\Storage::disk('local');
+    foreach ($disk->allFiles('assistant-images') as $file) {
+        if ($disk->lastModified($file) < now()->subDays(2)->getTimestamp()) {
+            $disk->delete($file);
+        }
+    }
+})->name('assistant-images:prune')->dailyAt('03:45')->withoutOverlapping(30);

@@ -34,6 +34,7 @@ class ShopAssistantActions
                 'accepting_orders' => $this->accepting($action),
                 'coupon_create' => $this->coupon($action, $user),
                 'review_reply' => $this->reviewReply($action, $user),
+                'social_post' => $this->socialPost($action, $user),
                 default => throw new \InvalidArgumentException('Unknown action.'),
             };
             $action->update(['status' => AssistantAction::DONE, 'result' => $result]);
@@ -136,6 +137,33 @@ class ShopAssistantActions
         $this->callApi($user, \App\Http\Controllers\Api\V1\ReviewController::class, 'reply', ['review' => $review], ['reply' => $action->payload['reply'] ?? ''], 'POST');
 
         return __('تم: انحفظ الرد على التقييم.');
+    }
+
+    private function socialPost(AssistantAction $action, User $user): string
+    {
+        $data = $action->payload;
+        $files = [];
+        if (! empty($data['photo'])) {
+            $path = \Illuminate\Support\Facades\Storage::disk('local')->path($data['photo']);
+            if (! is_file($path)) {
+                throw new \InvalidArgumentException(__('الصورة مش موجودة، ابعتها للمساعد مرة ثانية.'));
+            }
+            $files['media'] = [new \Illuminate\Http\UploadedFile($path, basename($path), mime_content_type($path) ?: null, null, true)];
+        }
+        // Through the Social media screen's own code: the same account checks, picture rules and scheduling.
+        $sub = Request::create('/assistant/social', 'POST', array_filter([
+            'caption' => $data['caption'] ?? '', 'accounts' => $data['accounts'] ?? [], 'product_id' => $data['product_id'] ?? null,
+            'add_link' => ! empty($data['add_link']) ? 1 : 0,
+            'when' => empty($data['scheduled_at']) ? 'now' : 'schedule', 'scheduled_at' => $data['scheduled_at'] ?? null,
+        ], fn ($v) => $v !== null), [], $files);
+        $sub->headers->set('Accept', 'application/json');
+        $sub->setUserResolver(fn () => $user);
+        $response = app()->call([app(\App\Http\Controllers\Api\V1\SocialController::class), 'store'], ['request' => $sub, 'shop' => $action->shop]);
+        if ($response->getStatusCode() >= 300) {
+            throw new \InvalidArgumentException($response->getData(true)['message'] ?? __('ما انتشر المنشور.'));
+        }
+
+        return $response->getData(true)['message'] ?? __('تم: :summary', ['summary' => $action->summary]);
     }
 
     private function callApi(User $user, string $controller, string $method, array $params, array $data, string $verb): void

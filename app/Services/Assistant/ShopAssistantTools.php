@@ -19,7 +19,15 @@ class ShopAssistantTools
     private const SHOP_STATUSES = ['new', 'preparing', 'ready', 'out_for_delivery', 'completed', 'delivered', 'not_delivered', 'cancelled'];
     private const RESTAURANT_STATUSES = ['new', 'preparing', 'ready', 'out_for_delivery', 'completed', 'cancelled'];
 
-    public function __construct(private ShopAnalytics $analytics) {}
+    /** The photo the owner sent with the current message (a private storage path), for a social post. */
+    private ?string $chatImage = null;
+
+    public function __construct(private ShopAnalytics $analytics, private \App\Services\Social\ShopSocialManager $social) {}
+
+    public function useChatImage(?string $path): void
+    {
+        $this->chatImage = $path;
+    }
 
     /** The tool definitions sent to Claude. */
     public function definitions(Shop $shop): array
@@ -84,6 +92,17 @@ class ShopAssistantTools
                     'review_id' => ['type' => 'integer', 'description' => 'from reviews'],
                     'reply' => ['type' => 'string', 'maxLength' => 1000],
                 ]]],
+            ['name' => 'social_accounts', 'description' => 'The shop\'s connected social media accounts (id, platform, username) for posting, and suggested good times to post. Empty when none are connected.',
+                'input_schema' => ['type' => 'object', 'properties' => (object) []]],
+            ['name' => 'propose_social_post', 'description' => 'Prepare a post for the shop\'s connected Instagram/Facebook/TikTok accounts: the caption you wrote with the owner, the picture (the photo the owner sent in this message, or a product\'s photo), and now or a scheduled local time. Instagram and TikTok need a picture. Only records a proposal; it is posted when the owner presses confirm.',
+                'input_schema' => ['type' => 'object', 'required' => ['caption', 'account_ids'], 'properties' => [
+                    'caption' => ['type' => 'string', 'maxLength' => 2000],
+                    'account_ids' => ['type' => 'array', 'items' => ['type' => 'string'], 'minItems' => 1, 'description' => 'ids from social_accounts'],
+                    'use_sent_photo' => ['type' => 'boolean', 'description' => 'use the photo the owner sent with their latest message'],
+                    'product_id' => ['type' => 'integer', 'description' => 'the product the post is about (its photo is used when no photo was sent)'],
+                    'add_link' => ['type' => 'boolean', 'description' => 'add the order link (product or shop page)'],
+                    'scheduled_at' => ['type' => 'string', 'description' => 'local time YYYY-MM-DDTHH:MM to schedule; leave out to post now'],
+                ]]],
             ['name' => 'propose_product_change', 'description' => 'Propose changing a product: price, discount price (0 removes the discount) or whether it is shown (hide a product that is unavailable). Only records a proposal; the owner must press confirm. Look the product up first.',
                 'input_schema' => ['type' => 'object', 'required' => ['product_id'], 'properties' => [
                     'product_id' => ['type' => 'integer'],
@@ -126,6 +145,8 @@ class ShopAssistantTools
                 'reviews' => $this->reviews($shop, $user, $input),
                 'propose_coupon' => $this->proposeCoupon($shop, $user, $conversation, $input, $proposed),
                 'propose_review_reply' => $this->proposeReviewReply($shop, $user, $conversation, $input, $proposed),
+                'social_accounts' => $this->socialAccounts($shop),
+                'propose_social_post' => $this->proposeSocialPost($shop, $user, $conversation, $input, $proposed),
                 'propose_product_change' => $this->proposeProduct($shop, $user, $conversation, $input, $proposed),
                 'propose_order_status' => $this->proposeOrderStatus($shop, $user, $conversation, $input, $proposed),
                 'propose_accepting_orders' => $this->proposeAccepting($shop, $user, $conversation, $input, $proposed),
@@ -489,6 +510,64 @@ class ShopAssistantTools
 
         return $this->propose($shop, $user, $conversation, 'review_reply', ['review_id' => $review->id, 'reply' => $reply],
             __('رد على تقييم :name (:rating★): :reply', ['name' => $review->publicName(), 'rating' => $review->rating, 'reply' => Str::limit($reply, 300)]), $proposed);
+    }
+
+    private function socialAccounts(Shop $shop): array
+    {
+        if (! $this->social->configured()) {
+            return ['accounts' => [], 'note' => 'Posting to social media is not set up on Ozman yet.'];
+        }
+        $data = $this->social->accounts($shop);
+        $accounts = collect($data['accounts'] ?? [])->filter(fn ($a) => $a['active'] ?? false)
+            ->map(fn ($a) => Arr::only($a, ['id', 'platform', 'username']))->values()->all();
+
+        return ['accounts' => $accounts, 'good_times' => $data['suggestions'] ?? [], 'times' => 'local (Asia/Jerusalem)']
+            + ($accounts ? [] : ['note' => 'No accounts connected. The owner connects Instagram/Facebook/TikTok from the Social media screen in the app.']);
+    }
+
+    private function proposeSocialPost(Shop $shop, User $user, AssistantConversation $conversation, array $input, array &$proposed): array
+    {
+        $caption = trim((string) ($input['caption'] ?? ''));
+        if ($caption === '' || mb_strlen($caption) > 2000) {
+            throw new \InvalidArgumentException('The caption must be 1-2000 characters.');
+        }
+        $owned = collect($this->socialAccounts($shop)['accounts'])->keyBy('id');
+        $targets = collect((array) ($input['account_ids'] ?? []))->map(fn ($id) => $owned->get((string) $id))->filter()->values();
+        if ($targets->isEmpty() || $targets->count() !== count(array_unique((array) $input['account_ids']))) {
+            throw new \InvalidArgumentException('Use account ids from social_accounts (only this shop\'s connected accounts).');
+        }
+        $product = isset($input['product_id']) ? Product::where('shop_id', $shop->id)->find((int) $input['product_id']) : null;
+        if (isset($input['product_id']) && ! $product) {
+            throw new \InvalidArgumentException('No such product in this shop.');
+        }
+        $photo = ! empty($input['use_sent_photo']) ? $this->chatImage : null;
+        if (! empty($input['use_sent_photo']) && ! $photo) {
+            throw new \InvalidArgumentException('No photo was sent with this message. Ask the owner to send it, or use a product photo.');
+        }
+        $hasPicture = $photo || ($product && $this->social->imageUrl($product->main_image));
+        if (! $hasPicture && $targets->contains(fn ($a) => in_array($a['platform'], ['instagram', 'tiktok'], true))) {
+            throw new \InvalidArgumentException('Instagram and TikTok need a picture: use the sent photo or a product with a photo.');
+        }
+        $when = null;
+        if (filled($input['scheduled_at'] ?? null)) {
+            try {
+                $when = Carbon::createFromFormat('Y-m-d\TH:i', (string) $input['scheduled_at'], config('services.zernio.timezone'));
+            } catch (\Throwable) {
+                throw new \InvalidArgumentException('scheduled_at must be YYYY-MM-DDTHH:MM.');
+            }
+            if ($when->isPast()) {
+                throw new \InvalidArgumentException('scheduled_at is in the past.');
+            }
+        }
+        $platforms = $targets->map(fn ($a) => ucfirst($a['platform']))->unique()->implode(' + ');
+        $summary = __('منشور على :platforms · :when: :caption', ['platforms' => $platforms,
+            'when' => $when ? $when->locale(app()->getLocale())->translatedFormat('l j/n H:i') : __('هلقيت'),
+            'caption' => Str::limit(preg_replace('/\s+/u', ' ', $caption), 160)]);
+
+        return $this->propose($shop, $user, $conversation, 'social_post', array_filter([
+            'caption' => $caption, 'accounts' => $targets->pluck('id')->all(), 'product_id' => $product?->id,
+            'photo' => $photo, 'add_link' => ! empty($input['add_link']), 'scheduled_at' => $when?->format('Y-m-d\TH:i'),
+        ], fn ($v) => $v !== null), $summary, $proposed);
     }
 
     private function propose(Shop $shop, User $user, AssistantConversation $conversation, string $type, array $payload, string $summary, array &$proposed): array

@@ -308,4 +308,38 @@ class ShopAssistantTest extends TestCase
         $this->assertSame([15.0, 40.0], [(float) $coupon->value, (float) $coupon->min_total]);
         $this->assertSame('آسفين كتير يا هبة، رح ننتبه للتغليف.', $review->fresh()->reply);
     }
+
+    public function test_the_assistant_prepares_a_social_post_with_the_sent_photo_and_it_goes_out_only_on_confirm(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        \Illuminate\Support\Facades\Storage::fake('public');
+        config(['services.zernio.key' => 'zk_test']);
+        $owner = User::factory()->create(['role' => 'shop_owner', 'is_active' => true]);
+        $shop = $this->shop('sweets', $owner);
+        $shop->forceFill(['zernio_profile_id' => 'prof_1'])->save();
+        Http::fake([
+            'zernio.com/api/v1/accounts*' => Http::response(['accounts' => [['_id' => 'acc_ig', 'platform' => 'instagram', 'username' => 'kunafa', 'isActive' => true]]]),
+            'zernio.com/api/v1/analytics/best-time*' => Http::response(['slots' => []]),
+            'zernio.com/api/v1/posts' => Http::response(['post' => ['_id' => 'post_1', 'status' => 'scheduled']], 201),
+            'api.anthropic.com/*' => Http::sequence()
+                ->push($this->toolUse('social_accounts', []))
+                ->push($this->toolUse('propose_social_post', ['caption' => 'كنافة طازة 🔥 خصم 10% اليوم', 'account_ids' => ['acc_ig'], 'use_sent_photo' => true,
+                    'scheduled_at' => now('Asia/Jerusalem')->addDay()->format('Y-m-d').'T19:00'], 'tu_2'))
+                ->push($this->text('جهّزتلك المنشور، اكبس «أكّد».')),
+        ]);
+        $h = $this->auth($owner);
+
+        $message = $this->post("/api/v1/merchant/shops/{$shop->id}/assistant", ['message' => 'انشر هالصورة على إنستغرام بكرا 7 المسا',
+            'image' => \Illuminate\Http\UploadedFile::fake()->image('kunafa.jpg', 800, 800)], $h)->assertOk()
+            ->assertJsonPath('message.actions.0.status', 'pending')->json('message');
+        $this->assertSame(0, \App\Models\SocialPost::count());
+        Http::assertNotSent(fn (HttpRequest $r) => str_ends_with($r->url(), '/v1/posts'));
+
+        $this->postJson("/api/v1/merchant/assistant-actions/{$message['actions'][0]['id']}/confirm", [], $h)->assertOk()->assertJsonPath('action.status', 'done');
+        $post = \App\Models\SocialPost::sole();
+        $this->assertSame('كنافة طازة 🔥 خصم 10% اليوم', $post->caption);
+        $this->assertNotNull($post->scheduled_for);
+        Http::assertSent(fn (HttpRequest $r) => str_ends_with($r->url(), '/v1/posts') && ($r->data()['mediaItems'][0]['type'] ?? null) === 'image'
+            && ($r->data()['platforms'][0]['accountId'] ?? null) === 'acc_ig');
+    }
 }
