@@ -45,6 +45,7 @@
 .oz-sa-welcome{margin:auto 0;text-align:center;color:#93aab7;font-size:13.5px;line-height:1.8}.oz-sa-welcome b{display:block;color:#f2f7fa;font-size:16px;margin-bottom:4px}
 .oz-sa-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:10px}
 .oz-sa-chip{padding:6px 10px;border:1px solid #1f5468;border-radius:999px;background:rgba(8,222,244,.07);color:#cdf6ff;font:inherit;font-size:12px;cursor:pointer}
+.oz-sa-action{align-self:stretch;display:grid;gap:8px;padding:10px 12px;border:1px solid #27dd86;border-radius:14px;background:rgba(39,221,134,.07)}.oz-sa-action b{line-height:1.5}.oz-sa-action div{display:flex;gap:8px}.oz-sa-action button{padding:7px 14px;border-radius:10px;border:1px solid #27dd86;font:inherit;font-weight:800;cursor:pointer}.oz-sa-book{background:#27dd86;color:#04210f}.oz-sa-drop{background:transparent;color:#cfe;border-color:#1d3b49!important}.oz-sa-action button:disabled{opacity:.6;cursor:wait}.oz-sa-action small{color:#93aab7}.oz-sa-action.failed,.oz-sa-action.expired{border-color:#ff9aae;background:rgba(255,154,174,.07)}.oz-sa-action.cancelled{border-color:#1d3b49;background:transparent}
 .oz-sa-typing{align-self:flex-end;color:#93aab7;font-size:12.5px}.oz-sa-error{color:#ff9aae;font-size:12.5px;text-align:center}
 .oz-sa-login{display:inline-block;margin-top:10px;padding:9px 16px;border-radius:12px;background:linear-gradient(135deg,#08def4,#1fa8ee);color:#02161a;font-weight:900;text-decoration:none}
 .oz-sa-form{display:flex;gap:6px;padding:10px;border-top:1px solid #1d3b49}
@@ -56,13 +57,13 @@
     const fab = document.getElementById('ozSaFab'), panel = document.getElementById('ozSaPanel'), log = document.getElementById('ozSaLog');
     const form = document.getElementById('ozSaForm'), input = document.getElementById('ozSaInput'), send = document.getElementById('ozSaSend');
     const shopId = @json($saShop?->id);
-    const urls = { state: @json(route('customer-assistant.state')), send: @json(route('customer-assistant.send')), reset: @json(route('customer-assistant.reset')),
+    const urls = { action: (id, verb) => @json(url('/assistant/actions')) + `/${id}/${verb}`, state: @json(route('customer-assistant.state')), send: @json(route('customer-assistant.send')), reset: @json(route('customer-assistant.reset')),
         login: @json(route('community.login', ['return' => '/'.ltrim(request()->path(), '/')])) };
     const T = { hello: @json($saShop ? __('أهلاً! اسألني أي إشي عن :shop', ['shop' => $saShop->name]) : __('أهلاً! شو بتدوّر عليه اليوم؟')),
         intro: @json(__('احكيلي شو بدك بكلامك، وأنا بلاقيلك من محلات أوزمان. وبقدر أحكيلك وين طلبك وكم نقطة عندك.')),
         login: @json(__('سجّل دخول عشان تحكي مع المساعد')), loginBtn: @json(__('تسجيل الدخول')), typing: @json(__('عم بدوّرلك…')),
         failed: @json(__('صار خطأ، جرّب كمان مرة.')), expired: @json(__('حدّث الصفحة وجرّب كمان مرة.')), off: @json(__('المساعد مش متاح هلقيت.')),
-        today: @json(__('أسئلة اليوم')) };
+        today: @json(__('أسئلة اليوم')), book: @json(__('احجز')), cancel: @json(__('إلغاء')), cancelled: @json(__('انلغى')), stale: @json(__('انتهت صلاحيته، اطلبه من جديد')) };
     let state = null, csrf = null, conversationId = null, busy = false;
 
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -90,7 +91,29 @@
         const cards = [...(m.products || []).map((p) => `<a class="oz-sa-card" href="${esc(p.url)}">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : '<span class="ph"></span>'}<b>${esc(p.name)}</b><small>${esc(p.shop?.name)}</small><span><span class="price">${money(p.final_price)}</span>${p.discount_price ? `<s>${money(p.price)}</s>` : ''}</span></a>`),
             ...(m.shops || []).map((s) => `<a class="oz-sa-card" href="${esc(s.web_url)}">${s.logo ? `<img src="${esc(s.logo)}" alt="" loading="lazy">` : '<span class="ph"></span>'}<b>${esc(s.name)}</b><small>${esc(s.city || '')}</small></a>`)];
         if (cards.length) { const row = document.createElement('div'); row.className = 'oz-sa-cards'; row.innerHTML = cards.join(''); log.append(row); }
+        (m.actions || []).forEach((a) => log.append(actionCard(a)));
         scroll();
+    };
+    // A booking the assistant prepared: "book" makes it, "cancel" drops it; afterwards the card says what happened.
+    const actionCard = (a) => {
+        const box = document.createElement('div');
+        const draw = () => {
+            box.className = `oz-sa-action ${a.status}`;
+            const note = a.status === 'cancelled' ? T.cancelled : a.status === 'expired' ? T.stale : (a.result || '');
+            box.innerHTML = `<b>${esc(a.summary)}</b>` + (a.status === 'pending'
+                ? `<div><button type="button" class="oz-sa-book">${esc(T.book)}</button><button type="button" class="oz-sa-drop">${esc(T.cancel)}</button></div>`
+                : (note ? `<small>${esc(note)}</small>` : ''));
+            const decide = async (verb) => {
+                box.querySelectorAll('button').forEach((b) => b.disabled = true);
+                try { const data = await post(urls.action(a.id, verb)); Object.assign(a, data.action || {}, {result: data.message || data.action?.result}); }
+                catch (e) { Object.assign(a, {status: 'failed', result: e.message}); }
+                draw();
+            };
+            box.querySelector('.oz-sa-book')?.addEventListener('click', () => decide('confirm'));
+            box.querySelector('.oz-sa-drop')?.addEventListener('click', () => decide('cancel'));
+        };
+        draw();
+        return box;
     };
     const welcome = () => {
         log.innerHTML = `<div class="oz-sa-welcome"><b>${esc(T.hello)}</b>${esc(T.intro)}<div class="oz-sa-chips"></div></div>`;

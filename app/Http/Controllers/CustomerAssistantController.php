@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{AssistantConversation, AssistantMessage, Shop};
+use App\Models\{AssistantConversation, AssistantMessage, Shop, AssistantAction};
 use App\Services\Assistant\{CustomerAssistant, CustomerAssistantTools};
 use Illuminate\Http\{JsonResponse, Request};
 
@@ -59,6 +59,53 @@ class CustomerAssistantController extends Controller
             200, ['Cache-Control' => 'no-store, private']);
     }
 
+    /** The customer presses "book" under a booking the assistant prepared. */
+    public function confirm(Request $request, AssistantAction $action): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($action->user_id === $user->id && $action->type === 'salon_booking'
+            && $action->conversation?->kind === 'customer', 404);
+        if ($action->status !== AssistantAction::PENDING || $action->isStale()) {
+            if ($action->status === AssistantAction::PENDING) {
+                $action->update(['status' => AssistantAction::EXPIRED, 'decided_at' => now()]);
+            }
+
+            return response()->json(['action' => CustomerAssistantTools::presentAction($action->fresh()),
+                'message' => __('هاد الحجز مش مستني تأكيد. اطلبه من المساعد مرة ثانية.')], 422);
+        }
+        // Claimed first, so a double tap can't book twice.
+        if (! AssistantAction::whereKey($action->id)->where('status', AssistantAction::PENDING)->update(['status' => 'running', 'decided_at' => now()])) {
+            return response()->json(['action' => CustomerAssistantTools::presentAction($action->fresh()), 'message' => __('هاد الحجز مش مستني تأكيد.')], 422);
+        }
+        $payload = $action->payload;
+        // The booking form's own code, with the name and phone on the account.
+        $sub = Request::create('/assistant/booking', 'POST', array_filter([
+            'service' => $payload['service'] ?? null, 'date' => $payload['date'] ?? null, 'time' => $payload['time'] ?? null,
+            'name' => $user->name, 'phone' => $user->phone, 'notes' => $payload['notes'] ?? null,
+        ], fn ($v) => $v !== null && $v !== ''));
+        $sub->headers->set('Accept', 'application/json');
+        $sub->setUserResolver(fn () => $user);
+        try {
+            $response = app()->call([app(\App\Http\Controllers\Api\V1\SalonController::class), 'store'], ['request' => $sub, 'shop' => $action->shop]);
+            $ok = $response->getStatusCode() === 201;
+            $message = $ok ? __('تم الحجز. الصالون رح يأكد معك، والموعد صار بـ«مواعيدي».') : ($response->getData(true)['message'] ?? __('ما زبط الحجز.'));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $ok = false;
+            $message = collect($e->errors())->flatten()->first() ?: __('ما زبط الحجز.');
+        }
+        $action->update(['status' => $ok ? AssistantAction::DONE : AssistantAction::FAILED, 'result' => mb_substr($message, 0, 490)]);
+
+        return response()->json(['action' => CustomerAssistantTools::presentAction($action->fresh()), 'message' => $message], $ok ? 200 : 422);
+    }
+
+    public function cancel(Request $request, AssistantAction $action): JsonResponse
+    {
+        abort_unless($action->user_id === $request->user()->id && $action->type === 'salon_booking', 404);
+        AssistantAction::whereKey($action->id)->where('status', AssistantAction::PENDING)->update(['status' => AssistantAction::CANCELLED, 'decided_at' => now()]);
+
+        return response()->json(['action' => CustomerAssistantTools::presentAction($action->fresh())]);
+    }
+
     public function reset(Request $request): JsonResponse
     {
         $conversation = AssistantConversation::create(['kind' => 'customer', 'user_id' => $request->user()->id]);
@@ -73,7 +120,7 @@ class CustomerAssistantController extends Controller
             'role' => $message->role,
             'content' => $message->content,
             'created_at' => $message->created_at?->toIso8601String(),
-        ] + ($message->role === 'assistant' ? CustomerAssistantTools::cardsFor($message->attachments) : ['products' => [], 'shops' => []]);
+        ] + ($message->role === 'assistant' ? CustomerAssistantTools::cardsFor($message->attachments) : ['products' => [], 'shops' => [], 'actions' => []]);
     }
 
     private function usage(Request $request): array

@@ -201,4 +201,57 @@ class CustomerAssistantTest extends TestCase
         $this->assertSame(['type' => 'none'], $retry['tool_choice']);
         $this->assertSame('text', end($retry['messages'])['content'][1]['type']);
     }
+
+    public function test_the_assistant_checks_a_code_the_customer_typed(): void
+    {
+        $shop = $this->shop('sweets');
+        \App\Models\ShopCoupon::create(['shop_id' => $shop->id, 'code' => 'EID10', 'type' => 'percent', 'value' => 10, 'min_total' => 50, 'is_active' => true, 'used_count' => 0]);
+        $customer = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+
+        $works = $this->tools($customer, 'check_coupon', ['shop_id' => $shop->id, 'code' => 'eid10', 'basket_total' => 80]);
+        $this->assertSame([true, 8.0], [$works['works'], $works['saving']]);
+        $this->assertFalse($this->tools($customer, 'check_coupon', ['shop_id' => $shop->id, 'code' => 'eid10', 'basket_total' => 20])['works']);
+        $this->assertFalse($this->tools($customer, 'check_coupon', ['shop_id' => $shop->id, 'code' => 'GUESS'])['works']);
+    }
+
+    public function test_a_salon_booking_is_made_only_when_the_customer_presses_book(): void
+    {
+        $salon = $this->shop('cosmetics');
+        $customer = User::factory()->create(['role' => 'customer', 'is_active' => true, 'name' => 'رنا', 'phone' => '0599000111']);
+        $stranger = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+        $tomorrow = now('Asia/Hebron')->addDay()->toDateString();
+        Http::fake(['api.anthropic.com/*' => Http::sequence()
+            ->push($this->toolUse('salon_availability', ['shop_id' => $salon->id, 'date' => $tomorrow]))
+            ->push($this->toolUse('propose_booking', ['shop_id' => $salon->id, 'service' => 'مكياج', 'date' => $tomorrow, 'time' => '12:00'], 'tu_2'))
+            ->push($this->text('جهّزتلك الحجز، اكبسي «احجز» تحت.'))]);
+        $h = $this->auth($customer);
+
+        $message = $this->postJson('/api/v1/assistant', ['message' => 'بدي مكياج بكرا الساعة 12'], $h)->assertOk()
+            ->assertJsonPath('message.actions.0.status', 'pending')->assertJsonPath('message.actions.0.type', 'salon_booking')->json('message');
+        $this->assertSame(0, \App\Models\SalonAppointment::count());
+        $id = $message['actions'][0]['id'];
+
+        $this->postJson("/api/v1/assistant/actions/{$id}/confirm", [], $this->auth($stranger))->assertNotFound();
+        $this->postJson("/api/v1/assistant/actions/{$id}/confirm", [], $h)->assertOk()->assertJsonPath('action.status', 'done');
+        $booking = \App\Models\SalonAppointment::sole();
+        $this->assertSame(['مكياج', $tomorrow.' 12:00', $customer->id, '0599000111'], [$booking->service, $booking->appointment_at->format('Y-m-d H:i'), $booking->user_id, $booking->customer_phone]);
+        $this->postJson("/api/v1/assistant/actions/{$id}/confirm", [], $h)->assertStatus(422);
+        $this->assertSame(1, \App\Models\SalonAppointment::count());
+
+        // That time is now taken: a new proposal for it is refused, and it is gone from the free times.
+        $cards = [];
+        $conversation = AssistantConversation::create(['kind' => 'customer', 'user_id' => $customer->id]);
+        $this->assertArrayHasKey('error', app(CustomerAssistantTools::class)->run('propose_booking', ['shop_id' => $salon->id, 'service' => 'مكياج', 'date' => $tomorrow, 'time' => '12:00'], $customer, $cards, $conversation));
+        $this->assertNotContains('12:00', $this->tools($customer, 'salon_availability', ['shop_id' => $salon->id, 'date' => $tomorrow])['free_times']);
+    }
+
+    public function test_the_booking_form_refuses_a_time_already_past_in_local_time(): void
+    {
+        $this->travelTo(\Carbon\Carbon::parse('2026-11-19 15:30:00', 'UTC')); // 17:30 in Hebron
+        $salon = $this->shop('cosmetics');
+        $this->postJson(route('cosmetics.booking.store', $salon), ['service' => 'مكياج', 'date' => '2026-11-19', 'time' => '16:00', 'name' => 'رنا', 'phone' => '0599000111'])
+            ->assertUnprocessable();
+        $this->postJson(route('cosmetics.booking.store', $salon), ['service' => 'مكياج', 'date' => '2026-11-19', 'time' => '18:00', 'name' => 'رنا', 'phone' => '0599000111'])
+            ->assertCreated();
+    }
 }

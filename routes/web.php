@@ -94,6 +94,8 @@ Route::middleware(['auth', 'throttle:60,1'])->prefix('assistant')->name('custome
     Route::get('/state', [\App\Http\Controllers\CustomerAssistantController::class, 'show'])->name('state');
     Route::post('/messages', [\App\Http\Controllers\CustomerAssistantController::class, 'send'])->middleware('throttle:10,1')->name('send');
     Route::post('/reset', [\App\Http\Controllers\CustomerAssistantController::class, 'reset'])->name('reset');
+    Route::post('/actions/{action}/confirm', [\App\Http\Controllers\CustomerAssistantController::class, 'confirm'])->middleware('throttle:10,1')->name('actions.confirm');
+    Route::post('/actions/{action}/cancel', [\App\Http\Controllers\CustomerAssistantController::class, 'cancel'])->name('actions.cancel');
 });
 Route::middleware(['auth','throttle:60,1'])->prefix('community')->name('community.')->group(function () {
     Route::get('/account', [\App\Http\Controllers\CommunityAccountController::class, 'account'])->name('account');

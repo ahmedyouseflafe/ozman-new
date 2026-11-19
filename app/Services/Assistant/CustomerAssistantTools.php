@@ -3,7 +3,11 @@
 namespace App\Services\Assistant;
 
 use App\Http\Controllers\Api\V1\Presenter;
-use App\Models\{FrontOrder, Product, SalonAppointment, Shop, User};
+use App\Http\Controllers\SalonAppointmentController;
+use App\Models\{AssistantAction, AssistantConversation, FrontOrder, Product, SalonAppointment, Shop, User};
+use App\Services\CouponService;
+use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 use App\Services\LoyaltyPoints;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -54,6 +58,25 @@ class CustomerAssistantTools
                 'input_schema' => ['type' => 'object', 'properties' => (object) []]],
             ['name' => 'my_appointments', 'description' => 'The signed-in customer\'s salon bookings.',
                 'input_schema' => ['type' => 'object', 'properties' => (object) []]],
+            ['name' => 'check_coupon', 'description' => 'Check a discount code the customer has for a shop: whether it works now, what it gives (percent or shekels), the minimum order, and the saving on a basket total if given. Codes are private to each shop: only check a code the customer typed; never list or guess codes.',
+                'input_schema' => ['type' => 'object', 'required' => ['shop_id', 'code'], 'properties' => [
+                    'shop_id' => ['type' => 'integer'],
+                    'code' => ['type' => 'string'],
+                    'basket_total' => ['type' => 'number', 'minimum' => 0, 'description' => 'the basket total in shekels, if known'],
+                ]]],
+            ['name' => 'salon_availability', 'description' => 'For a salon (a cosmetics shop that takes bookings): its services and the times still free on a local date (YYYY-MM-DD, today or later).',
+                'input_schema' => ['type' => 'object', 'required' => ['shop_id', 'date'], 'properties' => [
+                    'shop_id' => ['type' => 'integer'],
+                    'date' => ['type' => 'string', 'description' => 'YYYY-MM-DD (local date)'],
+                ]]],
+            ['name' => 'propose_booking', 'description' => 'Prepare a salon booking for the signed-in customer, with a service and a free time from salon_availability. It only shows a "book" button under your reply; the booking is made when the customer presses it, with the name and phone on their account. Only after the customer chose the salon, service, day and time.',
+                'input_schema' => ['type' => 'object', 'required' => ['shop_id', 'service', 'date', 'time'], 'properties' => [
+                    'shop_id' => ['type' => 'integer'],
+                    'service' => ['type' => 'string'],
+                    'date' => ['type' => 'string', 'description' => 'YYYY-MM-DD (local date)'],
+                    'time' => ['type' => 'string', 'description' => 'HH:MM, one of the free times'],
+                    'notes' => ['type' => 'string', 'maxLength' => 500],
+                ]]],
             ['name' => 'show_products', 'description' => 'Show product cards under your answer (photo, price, open button, add to basket). Use it whenever you recommend products. Up to 6 ids from search results.',
                 'input_schema' => ['type' => 'object', 'required' => ['product_ids'], 'properties' => ['product_ids' => ['type' => 'array', 'items' => ['type' => 'integer'], 'maxItems' => 6]]]],
             ['name' => 'show_shops', 'description' => 'Show shop cards under your answer (logo, open now, open button). Up to 6 ids from search results.',
@@ -61,8 +84,8 @@ class CustomerAssistantTools
         ];
     }
 
-    /** @param  array{products: int[], shops: int[]}  $cards */
-    public function run(string $name, array $input, ?User $user, array &$cards): array
+    /** @param  array{products: int[], shops: int[], actions?: int[]}  $cards */
+    public function run(string $name, array $input, ?User $user, array &$cards, ?AssistantConversation $conversation = null): array
     {
         try {
             return match ($name) {
@@ -73,6 +96,9 @@ class CustomerAssistantTools
                 'my_orders' => $this->myOrders($user, $input),
                 'my_points' => $this->myPoints($user),
                 'my_appointments' => $this->myAppointments($user),
+                'check_coupon' => $this->checkCoupon($input, $user),
+                'salon_availability' => $this->salonAvailability($input),
+                'propose_booking' => $this->proposeBooking($input, $user, $conversation, $cards),
                 'show_products' => $this->show('products', $input['product_ids'] ?? [], $cards),
                 'show_shops' => $this->show('shops', $input['shop_ids'] ?? [], $cards),
                 default => ['error' => 'unknown tool'],
@@ -260,6 +286,93 @@ class CustomerAssistantTools
                 'status' => $labels[$a->status] ?? $a->status, 'past' => $a->appointment_at->isPast()])->all()];
     }
 
+    // ── Coupons and bookings ─────────────────────────────────────────────────
+
+    private function checkCoupon(array $input, ?User $user): array
+    {
+        $shop = Shop::where('is_active', true)->find((int) ($input['shop_id'] ?? 0));
+        if (! $shop) {
+            throw new \InvalidArgumentException('No such shop.');
+        }
+        $coupons = app(CouponService::class);
+        try {
+            $coupon = $coupons->find($shop, (string) ($input['code'] ?? ''), $user);
+            $saving = isset($input['basket_total']) ? $coupons->discount($coupon, (float) $input['basket_total']) : null;
+        } catch (ValidationException $e) {
+            return ['works' => false, 'reason' => collect($e->errors())->flatten()->first()];
+        }
+
+        return ['works' => true, 'shop' => $shop->name] + \App\Http\Controllers\WebCouponController::couponSummary($coupon)
+            + ['ends' => $coupon->ends_at?->timezone(self::TZ)->toDateString(), 'saving' => $saving,
+                'how' => 'The customer types the code in the basket before sending the order.'];
+    }
+
+    private function salon(int $id): Shop
+    {
+        $shop = Shop::where('is_active', true)->where('catalog_type', 'cosmetics')->find($id);
+        if (! $shop) {
+            throw new \InvalidArgumentException('That shop does not take salon bookings.');
+        }
+
+        return $shop;
+    }
+
+    /** Free times on a local day: the salon's slots that aren't taken and haven't passed. */
+    private function freeTimes(Shop $shop, string $date): array
+    {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) || $date < now(self::TZ)->toDateString()) {
+            throw new \InvalidArgumentException('date must be YYYY-MM-DD, today or later.');
+        }
+        $taken = $shop->salonAppointments()->whereDate('appointment_at', $date)
+            ->whereIn('status', [SalonAppointment::STATUS_NEW, SalonAppointment::STATUS_CONFIRMED])
+            ->get()->map(fn ($a) => $a->appointment_at->format('H:i'))->all();
+        $now = now(self::TZ)->format('Y-m-d H:i');
+
+        return array_values(array_filter(SalonAppointmentController::TIMES, fn ($t) => ! in_array($t, $taken, true) && "$date $t" > $now));
+    }
+
+    private function salonAvailability(array $input): array
+    {
+        $shop = $this->salon((int) ($input['shop_id'] ?? 0));
+        $date = (string) ($input['date'] ?? '');
+
+        return ['shop' => $shop->name, 'date' => $date, 'services' => SalonAppointmentController::SERVICES, 'free_times' => $this->freeTimes($shop, $date)];
+    }
+
+    private function proposeBooking(array $input, ?User $user, ?AssistantConversation $conversation, array &$cards): array
+    {
+        $user = $this->needUser($user);
+        if (! $conversation) {
+            throw new \InvalidArgumentException('Booking is not available here.');
+        }
+        if (blank($user->phone)) {
+            return ['error' => 'The account has no phone number. Ask the customer to add one in their account, or to book from the salon page.'];
+        }
+        $shop = $this->salon((int) ($input['shop_id'] ?? 0));
+        $date = (string) ($input['date'] ?? '');
+        $time = (string) ($input['time'] ?? '');
+        $service = trim((string) ($input['service'] ?? ''));
+        if ($service === '' || mb_strlen($service) > 120) {
+            throw new \InvalidArgumentException('Give the service, e.g. one from salon_availability.');
+        }
+        if (! in_array($time, $this->freeTimes($shop, $date), true)) {
+            throw new \InvalidArgumentException('That time is not free. Check salon_availability again.');
+        }
+        $notes = trim((string) ($input['notes'] ?? ''));
+        $day = Carbon::createFromFormat('Y-m-d', $date, self::TZ);
+        $action = AssistantAction::create([
+            'assistant_conversation_id' => $conversation->id, 'shop_id' => $shop->id, 'user_id' => $user->id, 'type' => 'salon_booking',
+            'payload' => ['service' => $service, 'date' => $date, 'time' => $time, 'notes' => $notes !== '' ? mb_substr($notes, 0, 500) : null],
+            'summary' => Str::limit(__('حجز :service عند :shop · :day :date الساعة :time', ['service' => $service, 'shop' => $shop->name,
+                'day' => $day->locale(app()->getLocale())->translatedFormat('l'), 'date' => $day->format('d/m'), 'time' => $time]), 490),
+            'status' => AssistantAction::PENDING,
+        ]);
+        $cards['actions'] = [...($cards['actions'] ?? []), $action->id];
+
+        return ['proposed' => true, 'summary' => $action->summary,
+            'note' => 'Not booked yet. A "book" button is shown under your reply; tell the customer to press it. Do not say it is booked.'];
+    }
+
     // ── Cards ────────────────────────────────────────────────────────────────
 
     private function show(string $kind, array $ids, array &$cards): array
@@ -290,7 +403,17 @@ class CustomerAssistantTools
             $shops = collect($cards['shops'])->map(fn ($id) => $found[$id] ?? null)->filter()->map(fn (Shop $s) => Presenter::shop($s))->values();
         }
 
-        return ['products' => $products->all(), 'shops' => $shops->all()];
+        $actions = empty($cards['actions']) ? [] : AssistantAction::whereIn('id', $cards['actions'])->get()
+            ->map(fn (AssistantAction $a) => self::presentAction($a))->values()->all();
+
+        return ['products' => $products->all(), 'shops' => $shops->all(), 'actions' => $actions];
+    }
+
+    public static function presentAction(AssistantAction $action): array
+    {
+        $status = $action->status === AssistantAction::PENDING && $action->isStale() ? AssistantAction::EXPIRED : $action->status;
+
+        return ['id' => $action->id, 'type' => $action->type, 'summary' => $action->summary, 'status' => $status, 'result' => $action->result];
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

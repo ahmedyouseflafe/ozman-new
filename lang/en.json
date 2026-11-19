@@ -478,5 +478,11 @@
   ":count استخدام": ":count uses",
   "رد على تقييم :name (:rating★): :reply": "Reply to :name's review (:rating★): :reply",
   "التقييم مش موجود.": "Review not found.",
-  "تم: انحفظ الرد على التقييم.": "Done: the reply to the review was saved."
+  "تم: انحفظ الرد على التقييم.": "Done: the reply to the review was saved.",
+  "حجز :service عند :shop · :day :date الساعة :time": "Book :service at :shop · :day :date at :time",
+  "هاد الحجز مش مستني تأكيد. اطلبه من المساعد مرة ثانية.": "This booking is no longer waiting. Ask the assistant again.",
+  "هاد الحجز مش مستني تأكيد.": "This booking is not waiting for confirmation.",
+  "تم الحجز. الصالون رح يأكد معك، والموعد صار بـ«مواعيدي».": "Booked. The salon will confirm with you; it is in \"My bookings\".",
+  "ما زبط الحجز.": "The booking didn't go through.",
+  "احجز": "Book"
 }

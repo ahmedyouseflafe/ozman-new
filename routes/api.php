@@ -106,6 +106,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/assistant', [\App\Http\Controllers\CustomerAssistantController::class, 'show'])->name('assistant');
         Route::post('/assistant', [\App\Http\Controllers\CustomerAssistantController::class, 'send'])->middleware('throttle:10,1,assistant.send')->name('assistant.send');
         Route::post('/assistant/reset', [\App\Http\Controllers\CustomerAssistantController::class, 'reset'])->name('assistant.reset');
+        Route::post('/assistant/actions/{action}/confirm', [\App\Http\Controllers\CustomerAssistantController::class, 'confirm'])->middleware('throttle:10,1')->name('assistant.actions.confirm');
+        Route::post('/assistant/actions/{action}/cancel', [\App\Http\Controllers\CustomerAssistantController::class, 'cancel'])->name('assistant.actions.cancel');
 
         // Real estate companies: properties with photos, and services with sections and options.
         Route::get('/merchant/shops/{shop:id}/social', [\App\Http\Controllers\Api\V1\SocialController::class, 'index'])->name('merchant.social');

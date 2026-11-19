@@ -49,7 +49,8 @@ class SalonAppointmentController extends Controller
         ]);
         $appointmentAt = Carbon::createFromFormat('Y-m-d H:i', $data['date'].' '.$data['time'], config('app.timezone'));
 
-        if ($appointmentAt->isPast()) {
+        // Times are the salon's local wall time (stored as such); "past" is judged in that local time.
+        if (Carbon::createFromFormat('Y-m-d H:i', $data['date'].' '.$data['time'], 'Asia/Hebron')->isPast()) {
             return response()->json(['message' => 'اختر وقتًا قادمًا للحجز.'], 422);
         }
 
