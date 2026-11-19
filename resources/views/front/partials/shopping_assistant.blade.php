@@ -12,12 +12,14 @@
 <section class="oz-sa" id="ozSaPanel" role="dialog" aria-modal="false" aria-label="{{ __('مساعد التسوّق') }}" dir="{{ $saLocale === 'en' ? 'ltr' : 'rtl' }}" hidden>
     <header class="oz-sa-head">
         <div><b>{{ $saShop ? __('اسأل عن :shop', ['shop' => $saShop->name]) : __('مساعد التسوّق') }}</b><small id="ozSaUsage"></small></div>
+        <button type="button" class="oz-sa-icon" id="ozSaVoice" title="{{ __('اقرأ الردود بصوت') }}" aria-label="{{ __('اقرأ الردود بصوت') }}" aria-pressed="false">🔈</button>
         <button type="button" class="oz-sa-icon" id="ozSaReset" title="{{ __('محادثة جديدة') }}" aria-label="{{ __('محادثة جديدة') }}">＋</button>
         <button type="button" class="oz-sa-icon" id="ozSaClose" title="{{ __('إغلاق') }}" aria-label="{{ __('إغلاق') }}">×</button>
     </header>
     <div class="oz-sa-log" id="ozSaLog" aria-live="polite"></div>
     <form class="oz-sa-form" id="ozSaForm">
         <input type="text" id="ozSaInput" maxlength="1000" autocomplete="off" placeholder="{{ __('شو بتدوّر عليه؟') }}" aria-label="{{ __('رسالتك') }}">
+        <button type="button" id="ozSaMic" class="oz-sa-mic" aria-label="{{ __('احكي بدل ما تكتب') }}" title="{{ __('احكي بدل ما تكتب') }}" hidden>🎤</button>
         <button type="submit" id="ozSaSend" aria-label="{{ __('إرسال') }}">➤</button>
     </form>
 </section>
@@ -51,7 +53,11 @@
 .oz-sa-form{display:flex;gap:6px;padding:10px;border-top:1px solid #1d3b49}
 .oz-sa-form input{flex:1;min-width:0;padding:11px 12px;border:1px solid #1d3b49;border-radius:14px;background:#131719;color:#f2f7fa;font:inherit;font-size:14px;outline:none}
 .oz-sa-form button{width:44px;border:0;border-radius:14px;background:#08def4;color:#02161a;font-size:17px;cursor:pointer}.oz-sa-form button:disabled{opacity:.5}
+.oz-sa-form .oz-sa-mic{background:#102029;border:1px solid #1d3b49;color:#e8fbff}.oz-sa-form .oz-sa-mic.on{background:#ff5d7a;border-color:#ff5d7a;color:#fff;animation:ozSaPulse 1.1s infinite}
+@keyframes ozSaPulse{50%{box-shadow:0 0 0 6px rgba(255,93,122,.25)}}
+#ozSaVoice[aria-pressed="true"]{background:#08def4;color:#02161a;border-color:#08def4}
 </style>
+<script>{!! file_get_contents(public_path('assistant-voice.js')) !!}</script>
 <script>
 (() => {
     const fab = document.getElementById('ozSaFab'), panel = document.getElementById('ozSaPanel'), log = document.getElementById('ozSaLog');
@@ -63,7 +69,7 @@
         intro: @json(__('احكيلي شو بدك بكلامك، وأنا بلاقيلك من محلات أوزمان. وبقدر أحكيلك وين طلبك وكم نقطة عندك.')),
         login: @json(__('سجّل دخول عشان تحكي مع المساعد')), loginBtn: @json(__('تسجيل الدخول')), typing: @json(__('عم بدوّرلك…')),
         failed: @json(__('صار خطأ، جرّب كمان مرة.')), expired: @json(__('حدّث الصفحة وجرّب كمان مرة.')), off: @json(__('المساعد مش متاح هلقيت.')),
-        today: @json(__('أسئلة اليوم')), book: @json(__('احجز')), cancel: @json(__('إلغاء')), cancelled: @json(__('انلغى')), stale: @json(__('انتهت صلاحيته، اطلبه من جديد')) };
+        today: @json(__('أسئلة اليوم')), listening: @json(__('عم بسمعك…')), noMic: @json(__('اسمح للموقع يستعمل الميكروفون وجرّب كمان مرة.')), book: @json(__('احجز')), cancel: @json(__('إلغاء')), cancelled: @json(__('انلغى')), stale: @json(__('انتهت صلاحيته، اطلبه من جديد')) };
     let state = null, csrf = null, conversationId = null, busy = false;
 
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -158,9 +164,39 @@
         try {
             const data = await post(urls.send, {message: text, conversation_id: conversationId, shop_id: shopId});
             conversationId = data.conversation_id; bubble(data.message); usage(data.usage);
+            if (speakReplies || spoken) window.OzmanVoice?.speak(data.message.content, voiceLang);
         } catch (e) {
             const err = Object.assign(document.createElement('div'), {className: 'oz-sa-error', textContent: e.message}); log.append(err); scroll();
-        } finally { typing.remove(); busy = false; send.disabled = false; input.focus(); }
+        } finally { typing.remove(); busy = false; send.disabled = false; spoken = false; input.focus(); }
+    }
+
+    // Voice: the mic fills the box as you talk and sends when you stop; replies are read aloud when 🔊 is on (or after you spoke).
+    const voiceLang = @json($saLocale);
+    const mic = document.getElementById('ozSaMic'), voiceBtn = document.getElementById('ozSaVoice');
+    let speakReplies = false, spoken = false, stopListening = null;
+    try { speakReplies = localStorage.getItem('ozSaSpeak') === '1'; } catch (e) {}
+    const drawVoice = () => { voiceBtn.setAttribute('aria-pressed', String(speakReplies)); voiceBtn.textContent = speakReplies ? '🔊' : '🔈'; };
+    drawVoice();
+    voiceBtn.addEventListener('click', () => {
+        speakReplies = !speakReplies; drawVoice();
+        if (!speakReplies) window.OzmanVoice?.stopSpeaking();
+        try { localStorage.setItem('ozSaSpeak', speakReplies ? '1' : '0'); } catch (e) {}
+    });
+    if (window.OzmanVoice?.canListen) {
+        mic.hidden = false;
+        mic.addEventListener('click', () => {
+            if (stopListening) { stopListening(); return; }
+            if (busy || !state || input.disabled) return;
+            const before = input.placeholder;
+            mic.classList.add('on'); input.value = ''; input.placeholder = T.listening;
+            stopListening = window.OzmanVoice.listen({lang: voiceLang,
+                onText: (text) => { input.value = text; },
+                onError: (error) => { if (error === 'not-allowed' || error === 'service-not-allowed') { const err = Object.assign(document.createElement('div'), {className: 'oz-sa-error', textContent: T.noMic}); log.append(err); scroll(); } },
+                onEnd: (text) => {
+                    mic.classList.remove('on'); input.placeholder = before; stopListening = null;
+                    if (text.trim()) { spoken = true; ask(text); }
+                }});
+        });
     }
 
     fab.addEventListener('click', () => { panel.hidden = false; fab.hidden = true; if (!state) load(); else input.focus(); });

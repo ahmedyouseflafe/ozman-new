@@ -38,6 +38,8 @@
         .composer textarea{flex:1;min-height:44px;max-height:160px;resize:none;border:0;background:transparent;color:#f7fbff;font:inherit;font-size:14px;line-height:1.7;padding:8px;outline:none}
         .attach{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;border:1px solid var(--line);color:var(--muted);cursor:pointer}.attach input{display:none}
         .attach.on{color:var(--green);border-color:var(--green)}
+        button.attach{background:transparent;font:inherit;font-size:18px}#micBtn.listening{color:#fff;background:#ff5d7a;border-color:#ff5d7a}
+        #voiceBtn[aria-pressed="true"]{color:var(--green);border-color:var(--green)}
         .error{color:var(--red);font-size:13px;margin:6px 4px 0}.note{color:var(--muted);font-size:11.5px;margin:6px 4px 0;text-align:center}
         .warn{margin-top:12px;padding:12px 14px;border:1px solid #6a5420;border-radius:14px;background:rgba(56,44,14,.35);color:#ffe3a3;font-size:13px}
         @media(max-width:1050px){.as-page,[dir=ltr] .as-page{width:calc(100% - 24px);margin:auto;padding-top:70px}.msg{max-width:92%}}
@@ -53,6 +55,7 @@
         </div>
         <div style="display:flex;gap:10px;align-items:center">
             <span class="usage" id="usage"></span>
+            <button class="btn btn-ghost" type="button" id="voiceBtn" aria-pressed="false" title="{{ __('اقرأ الردود بصوت') }}"><i class="ti ti-volume" aria-hidden="true"></i></button>
             <button class="btn btn-ghost" type="button" id="resetBtn"><i class="ti ti-plus" aria-hidden="true"></i>{{ __('محادثة جديدة') }}</button>
         </div>
     </section>
@@ -65,11 +68,13 @@
     <form class="composer" id="composer">
         <label class="attach" id="attach" title="{{ __('صورة منتج') }}"><i class="ti ti-photo" aria-hidden="true"></i><input type="file" id="image" accept="image/jpeg,image/png,image/webp"></label>
         <textarea id="input" rows="1" placeholder="{{ __('اكتب سؤالك… مثلاً: كم بعت هالأسبوع؟') }}" aria-label="{{ __('رسالتك') }}"></textarea>
+        <button class="attach" type="button" id="micBtn" title="{{ __('احكي بدل ما تكتب') }}" aria-label="{{ __('احكي بدل ما تكتب') }}" hidden><i class="ti ti-microphone" aria-hidden="true"></i></button>
         <button class="btn btn-main" type="submit" id="sendBtn" @disabled(! $state['enabled'])><i class="ti ti-send" aria-hidden="true"></i></button>
     </form>
     <div class="error" id="error" role="alert"></div>
     <div class="note">{{ __('المساعد بيعتمد على بيانات محلك بس، وما بيغيّر إشي إلا لما تكبس «أكّد».') }}</div>
 </main>
+<script>{!! file_get_contents(public_path('assistant-voice.js')) !!}</script>
 <script>
 (() => {
     const state = @json($state);
@@ -170,8 +175,34 @@
             const r = await post(urls.send, fd);
             if (!r.ok) throw new Error(r.data.message || T.failed);
             conversationId = r.data.conversation_id; bubble(r.data.message); usage(r.data.usage);
+            if (speakReplies || spoken) window.OzmanVoice?.speak(r.data.message.content, voiceLang);
         } catch (e) { error.textContent = e.message; }
-        finally { typing.remove(); sendBtn.disabled = !state.enabled; input.focus(); }
+        finally { typing.remove(); sendBtn.disabled = !state.enabled; spoken = false; input.focus(); }
+    }
+
+    // Voice: talk instead of typing (sends when you stop), and hear the replies.
+    const voiceLang = @json(app()->getLocale());
+    const micBtn = document.getElementById('micBtn'), voiceBtn = document.getElementById('voiceBtn');
+    let speakReplies = false, spoken = false, stopListening = null;
+    try { speakReplies = localStorage.getItem('ozAssistantSpeak') === '1'; } catch (e) {}
+    const drawVoice = () => { voiceBtn.setAttribute('aria-pressed', String(speakReplies)); voiceBtn.querySelector('i').className = speakReplies ? 'ti ti-volume' : 'ti ti-volume-off'; };
+    drawVoice();
+    voiceBtn.addEventListener('click', () => {
+        speakReplies = !speakReplies; drawVoice();
+        if (!speakReplies) window.OzmanVoice?.stopSpeaking();
+        try { localStorage.setItem('ozAssistantSpeak', speakReplies ? '1' : '0'); } catch (e) {}
+    });
+    if (window.OzmanVoice?.canListen && state.enabled) {
+        micBtn.hidden = false;
+        micBtn.addEventListener('click', () => {
+            if (stopListening) { stopListening(); return; }
+            if (sendBtn.disabled) return;
+            micBtn.classList.add('listening'); input.value = '';
+            stopListening = window.OzmanVoice.listen({lang: voiceLang,
+                onText: (text) => { input.value = text; },
+                onError: (e) => { if (e === 'not-allowed' || e === 'service-not-allowed') error.textContent = @json(__('اسمح للموقع يستعمل الميكروفون وجرّب كمان مرة.')); },
+                onEnd: (text) => { micBtn.classList.remove('listening'); stopListening = null; if (text.trim()) { spoken = true; send(text); } }});
+        });
     }
 
     form.addEventListener('submit', (e) => { e.preventDefault(); send(); });

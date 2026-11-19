@@ -488,5 +488,9 @@
   "منشور على :platforms · :when: :caption": "Post on :platforms · :when: :caption",
   "هلقيت": "now",
   "الصورة مش موجودة، ابعتها للمساعد مرة ثانية.": "The photo is gone; send it to the assistant again.",
-  "ما انتشر المنشور.": "The post wasn't published."
+  "ما انتشر المنشور.": "The post wasn't published.",
+  "اقرأ الردود بصوت": "Read replies aloud",
+  "احكي بدل ما تكتب": "Talk instead of typing",
+  "عم بسمعك…": "Listening…",
+  "اسمح للموقع يستعمل الميكروفون وجرّب كمان مرة.": "Allow the site to use the microphone and try again."
 }
