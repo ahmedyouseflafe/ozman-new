@@ -1,0 +1,37 @@
+# Read-only: shows which services are set up on ozman.online (yes/no only, never the values) and whether the scheduler line exists.
+name: Production config check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect ozman.online settings (read-only)
+        env:
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          HOST: 82.198.227.221
+          PORT: 65002
+          USER_NAME: u379351114
+        run: |
+          set -e
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' | sed '/^[[:space:]]*$/d' > ~/.ssh/key
+          chmod 600 ~/.ssh/key
+          ssh-keyscan -p "$PORT" "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh -i ~/.ssh/key -o IdentitiesOnly=yes -p "$PORT" "$USER_NAME@$HOST" 'cd ~/domains/ozman.online
+            php artisan tinker --execute="
+              \$c = fn (\$k) => filled(config(\$k)) ? \"yes\" : \"NO\";
+              \$f = config(\"services.firebase.credentials\");
+              echo \"app env: \", app()->environment(), \" · debug: \", config(\"app.debug\") ? \"ON\" : \"off\", \" · url: \", config(\"app.url\"), PHP_EOL;
+              echo \"firebase project id: \", \$c(\"services.firebase.project_id\"), PHP_EOL;
+              echo \"firebase credentials file: \", (\$f && is_file(\$f)) ? \"yes\" : \"NO\", PHP_EOL;
+              echo \"claude (assistant) key: \", \$c(\"services.anthropic.key\"), PHP_EOL;
+              echo \"zernio (social) key: \", \$c(\"services.zernio.key\"), PHP_EOL;
+              echo \"fashn (try-on) key: \", \$c(\"services.fashn.key\"), \" · shops: \", count(config(\"services.fashn.shops\", [])), PHP_EOL;
+              \$w = config(\"services.web_push.key_file\"); echo \"web push keys: \", (filled(config(\"services.web_push.public_key\")) || (\$w && is_file(\$w))) ? \"yes\" : \"NO\", PHP_EOL;
+              echo \"mail driver: \", config(\"mail.default\"), PHP_EOL;
+            " 2>&1
+            echo "pending migrations:"; php artisan migrate:status 2>/dev/null | grep -c Pending || true'
