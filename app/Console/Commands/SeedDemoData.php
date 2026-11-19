@@ -2,7 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Models\{Category, Distributor, EmployeePermission, MarketListing, RealEstateProperty, Product, PromoterPost, PromoterProfile, RewardWheel, Shop, User};
+use App\Models\{Category, Distributor, EmployeePermission, MarketListing, RealEstateProperty, Product, PromoterPost, PromoterProfile, RewardWheel, Shop, ShopCoupon, User};
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +38,10 @@ class SeedDemoData extends Command
         ['electronics', 'تك ستور (ديمو)', 'demo-electronics', 'جنين', [
             'سماعات' => [['سماعة بلوتوث لاسلكية', 189, 159], ['سماعة رأس للألعاب', 249, null]],
             'شواحن' => [['شاحن سريع 33 واط', 69, null], ['باور بنك 20000', 129, 109]],
+        ]],
+        ['furniture_appliances', 'بيت الأثاث (ديمو)', 'demo-furniture', 'طولكرم', [
+            'كراسي وكنب' => [['كرسي صالون مخمل', 450, 399], ['كنبة ثلاث مقاعد', 2200, null]],
+            'طاولات' => [['طاولة قهوة خشب', 380, null], ['طاولة سفرة 6 أشخاص', 1650, 1490]],
         ]],
         ['sweets', 'حلويات الديمو', 'demo-sweets', 'بيت لحم', [
             'كنافة' => [['كنافة نابلسية (كيلو)', 70, null], ['كنافة بالقشطة', 75, 65]],
@@ -168,6 +173,14 @@ class SeedDemoData extends Command
             $krembo = Shop::updateOrCreate(['slug' => 'demo-krembo'], ['user_id' => $kremboOwner->id, 'name' => 'كريمبو (ديمو)', 'catalog_type' => 'krembo',
                 'city' => 'نابلس', 'description' => 'شركة توزيع تجريبية.', 'phone' => '0590000950', 'whatsapp' => '0590000950', 'is_active' => true, 'is_accepting_orders' => true]);
             $krembo->outlets()->firstOrCreate(['name' => 'سوبرماركت الديمو'], ['region' => 'نابلس', 'address' => 'شارع فيصل (تجربة)', 'phone' => '0590000951', 'is_active' => true]);
+            // Its products, so the customer network page and the distributor's orders have something to pick.
+            foreach (['شوكولاتة' => [['كريمبو كلاسيك (كرتونة 24)', 96, null], ['كريمبو بالفانيلا (كرتونة 24)', 96, 89]], 'بسكويت' => [['بسكويت بالشوكولاتة (كرتونة)', 60, null]]] as $categoryName => $items) {
+                $category = Category::updateOrCreate(['shop_id' => $krembo->id, 'name' => $categoryName], ['slug' => 'demo-krembo-'.substr(md5($categoryName), 0, 8), 'is_active' => true]);
+                foreach ($items as $position => [$productName, $price, $discount]) {
+                    Product::updateOrCreate(['shop_id' => $krembo->id, 'name' => $productName], ['category_id' => $category->id, 'slug' => 'demo-krembo-'.substr(md5($productName), 0, 8),
+                        'description' => 'منتج تجريبي: '.$productName.'.', 'price' => $price, 'discount_price' => $discount, 'is_active' => true, 'is_featured' => $position === 0]);
+                }
+            }
             $distributorEmail = 'demo-distributor@staging.ozman.test';
             $distributorUser = User::where('email', $distributorEmail)->first();
             if (! $distributorUser) {
@@ -182,8 +195,16 @@ class SeedDemoData extends Command
                 $passwords[$customerEmail] = Str::password(14, symbols: false);
                 User::create(['name' => 'زبون تجريبي', 'email' => $customerEmail, 'username' => 'democustomer', 'password' => Hash::make($passwords[$customerEmail]), 'role' => 'customer', 'is_active' => true]);
             }
+            // A (fake) phone, so the assistant can book a salon appointment for the demo customer.
+            User::where('email', $customerEmail)->where(fn ($q) => $q->whereNull('phone')->orWhere('phone', ''))->update(['phone' => '0599000111']);
+
+            // A discount code at the demo restaurant, to try coupons on the website and in the app.
+            if ($restaurant) {
+                ShopCoupon::firstOrCreate(['shop_id' => $restaurant->id, 'code' => 'DEMO10'], ['type' => 'percent', 'value' => 10, 'min_total' => 30, 'per_customer' => 5, 'is_active' => true]);
+            }
         });
 
+        $this->demoChair();
         $this->info('Demo shops: '.Shop::where('slug', 'like', 'demo-%')->count().' · demo products: '.Product::whereIn('shop_id', Shop::where('slug', 'like', 'demo-%')->pluck('id'))->count());
         if ($passwords) {
             $this->warn('New test accounts (shown once — keep them for testing the app on staging):');
@@ -198,6 +219,29 @@ class SeedDemoData extends Command
     }
 
     /** A plain coloured picture for demo posts and listings (the GD extension draws it). */
+    /** One demo furniture piece gets a real 3D model (a free sample chair), so "see it in your room" can be tried. */
+    private function demoChair(): void
+    {
+        $product = Product::whereHas('shop', fn ($q) => $q->where('slug', 'demo-furniture'))->where('name', 'كرسي صالون مخمل')->first();
+        if (! $product || ($product->model_3d && Storage::disk('public')->exists($product->model_3d))) {
+            return;
+        }
+        try {
+            // Khronos glTF sample "SheenChair" (CC BY 4.0, Wayfair).
+            $file = Http::timeout(60)->get('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/SheenChair/glTF-Binary/SheenChair.glb');
+            if (! $file->successful() || substr($file->body(), 0, 4) !== 'glTF') {
+                $this->warn('Demo chair model: download failed, skipped.');
+
+                return;
+            }
+            $path = 'products/3d/'.$product->shop_id.'/demo-chair.glb';
+            Storage::disk('public')->put($path, $file->body());
+            $product->forceFill(['model_3d' => $path, 'model_3d_size' => ['w' => 70, 'd' => 75, 'h' => 85]])->save();
+        } catch (\Throwable $e) {
+            $this->warn('Demo chair model: '.$e->getMessage());
+        }
+    }
+
     private function demoImage(string $dir, string $hex, int $n): string
     {
         $path = $dir.'/demo-'.substr(md5($hex.$n.$dir), 0, 10).'.png';
