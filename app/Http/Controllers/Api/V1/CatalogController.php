@@ -105,9 +105,8 @@ class CatalogController extends Controller
             'product' => Presenter::product($product, true) + ['liked' => $liked]
                 + ($product->shop->catalog_type === 'electronics' ? ['specs' => \App\Services\ElectronicsSpecs::list($product), 'comparable' => true] : [])
                 + ['try_on' => TryOnController::modeFor($product->loadMissing('category')),
-                    // Furniture: see a sample piece in your room (the website's AR demo model).
-                    'ar_model' => $product->shop->catalog_type === 'furniture_appliances' || $product->shop->home_section === 'home_furniture'
-                        ? 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/SheenChair/glTF-Binary/SheenChair.glb' : null],
+                    // Furniture: the product's own 3D model, when the shop added one (ar_url is its "see it in your room" page).
+                    'ar_model' => $product->model_3d ? app(\App\Services\Product3d::class)->url($product->model_3d) : null],
             'shop' => Presenter::shop($product->shop),
         ]);
     }
