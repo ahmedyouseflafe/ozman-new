@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
     <style>
         :root{--cyan:#08def4;--green:#27dd86;--red:#ff6678;--muted:#9ca9b4;--border:rgba(150,174,190,.18)}
         *{box-sizing:border-box}body{min-height:100vh;margin:0;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at 80% 5%,rgba(8,222,244,.13),transparent 30%),radial-gradient(circle at 10% 90%,rgba(102,50,255,.14),transparent 30%),#05070a;color:#fff;font-family:"Cairo",Arial,sans-serif}

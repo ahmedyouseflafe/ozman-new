@@ -273,7 +273,7 @@ export function initClothingTryOn(root = document) {
             await video.play();
             if (!isCurrent()) return;
             video.parentElement.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
-            run.pose = new window.Pose({ locateFile: file => 'https://cdn.jsdelivr.net/npm/@mediapipe/pose/' + file });
+            run.pose = new window.Pose({ locateFile: file => 'https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/' + file });
             run.pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, enableSegmentation: true, smoothSegmentation: true,
                 minDetectionConfidence: 0.55, minTrackingConfidence: 0.55 });
             run.pose.onResults(results => {

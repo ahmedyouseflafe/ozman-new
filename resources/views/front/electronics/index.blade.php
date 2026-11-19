@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
     <style>
         :root{--cyan:#21dcff;--violet:#7956ff;--bg:#05070c;--panel:#0a1018;--border:rgba(125,174,205,.2);--muted:#91a8b9}
         *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 78% 4%,rgba(33,220,255,.09),transparent 28%),radial-gradient(circle at 8% 42%,rgba(121,86,255,.1),transparent 27%),var(--bg);color:#fff;font-family:Cairo,Segoe UI,sans-serif;overflow-x:hidden}a{color:inherit;text-decoration:none}button,input,select{font:inherit}.wrap{width:min(1380px,calc(100% - 32px));margin:auto}

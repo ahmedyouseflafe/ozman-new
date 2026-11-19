@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>فحص بطاقة رابحة - Ozman</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
     <style>
         *{box-sizing:border-box} :root{--cyan:#00e5ff;--purple:#7000ff;--green:#25d366;--red:#ff5572;--line:rgba(255,255,255,.11);--muted:rgba(255,255,255,.62)}
         body{margin:0;min-height:100vh;background:radial-gradient(circle at 20% 10%,rgba(112,0,255,.18),transparent 34%),radial-gradient(circle at 75% 8%,rgba(0,229,255,.16),transparent 32%),#05070a;color:#fff;font-family:Cairo,sans-serif}

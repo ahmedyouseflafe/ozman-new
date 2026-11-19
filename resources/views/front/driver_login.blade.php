@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>دخول مندوب التوصيل | Ozman</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
     <style>
         * { box-sizing: border-box; }
         body { min-height:100vh; margin:0; display:grid; place-items:center; padding:22px; background:#03080a; color:#fff; font-family:Arial,sans-serif; }

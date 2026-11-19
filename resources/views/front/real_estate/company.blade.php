@@ -76,7 +76,7 @@
     @include('front.partials.seo', ['title' => $shop->name.' | Ozman', 'description' => $description, 'canonical' => $canonical, 'image' => $shopImage, 'schema' => ['@context' => 'https://schema.org', '@type' => 'Store', 'name' => $shop->name, 'url' => $canonical, 'description' => $description, 'image' => $shopImage, 'telephone' => $shop->phone, 'address' => $shop->address]])
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
     @include('front.real_estate._company_design')
 </head>
 <body>

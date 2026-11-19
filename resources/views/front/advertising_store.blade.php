@@ -98,7 +98,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
     <style>
         :root{--cyan:#08def4;--green:#27dd86;--bg:#05070a;--card:#10151a;--border:rgba(150,174,190,.18);--muted:#9ca9b4}
         *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 85% 5%,rgba(8,222,244,.11),transparent 27%),radial-gradient(circle at 8% 30%,rgba(101,42,255,.1),transparent 25%),var(--bg);color:#fff;font-family:Cairo,Arial,sans-serif}button{font:inherit}

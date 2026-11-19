@@ -5,7 +5,7 @@
     <title>{{ __('طلبات المروّجين') }} - Ozman</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
     <style>
         :root{--bg:#071118;--panel:#0c1b24;--line:#1d3b49;--cyan:#16d3ee;--green:#55e9a0;--gold:#ffd166;--red:#ff9aae;--muted:#9eb4c2}*{box-sizing:border-box}
         body{margin:0;background:radial-gradient(circle at 85% 0,rgba(0,207,242,.12),transparent 28%),var(--bg);color:#f7fbff;font-family:Cairo,Arial,sans-serif}
