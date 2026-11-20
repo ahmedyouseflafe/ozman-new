@@ -62,6 +62,7 @@
             <button class="btn btn-ghost" type="button" id="resetBtn"><i class="ti ti-plus" aria-hidden="true"></i>{{ __('محادثة جديدة') }}</button>
         </div>
     </section>
+    @include('front.partials.assistant_stage')
     @if(! $state['enabled'])
         <div class="warn">@if(auth()->user()?->isSuperAdmin()){{ __('المساعد مش مفعّل: لازم مفتاح ANTHROPIC_API_KEY بملف .env.') }}@else{{ __('المساعد مش متاح هلقيت. إدارة أوزمان رح تفعّله قريباً.') }}@endif</div>
     @endif

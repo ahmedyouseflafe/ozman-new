@@ -17,6 +17,7 @@
         <button type="button" class="oz-sa-icon" id="ozSaReset" title="{{ __('محادثة جديدة') }}" aria-label="{{ __('محادثة جديدة') }}">＋</button>
         <button type="button" class="oz-sa-icon" id="ozSaClose" title="{{ __('إغلاق') }}" aria-label="{{ __('إغلاق') }}">×</button>
     </header>
+    @include('front.partials.assistant_stage')
     <div class="oz-sa-log" id="ozSaLog" aria-live="polite"></div>
     <template id="ozSaFaceBig">@include('front.partials.assistant_avatar', ['size' => 96, 'class' => 'oz-sa-face-big'])</template>
     <form class="oz-sa-form" id="ozSaForm">
