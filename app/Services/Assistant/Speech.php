@@ -2,7 +2,7 @@
 
 namespace App\Services\Assistant;
 
-use Illuminate\Support\Facades\{Http, Storage};
+use Illuminate\Support\Facades\{Cache, Http, Storage};
 use RuntimeException;
 
 /**
@@ -31,6 +31,55 @@ class Speech
         $text = preg_replace('/[ \t]+/u', ' ', $text);
 
         return trim(mb_substr((string) $text, 0, self::MAX_CHARS));
+    }
+
+    /**
+     * The reply written for the phone's own voice: Arabic gets full diacritics, so the reader says dialect words
+     * right. Kept a month. Falls back to the plain text whenever the writing fails or changes the words.
+     */
+    public function spokenText(string $text, string $lang): string
+    {
+        $words = self::plain($text);
+        if ($lang !== 'ar' || $words === '' || ! filled(config('services.anthropic.key'))) {
+            return $words;
+        }
+
+        return Cache::remember('assistant-spoken:'.hash('sha256', $words), now()->addDays(30), function () use ($words) {
+            try {
+                $response = Http::withHeaders([
+                    'x-api-key' => config('services.anthropic.key'),
+                    'anthropic-version' => '2023-06-01',
+                ])->acceptJson()->timeout(30)->post('https://api.anthropic.com/v1/messages', [
+                    'model' => config('services.anthropic.model'),
+                    'max_tokens' => 2000,
+                    'system' => 'You add Arabic diacritics (tashkeel) so a text-to-speech voice pronounces the text the way a '
+                        .'Palestinian speaker would say it. The text is in Levantine/Palestinian dialect mixed with standard Arabic. '
+                        .'Put full diacritics on every Arabic word as it is pronounced in that dialect. Do not add, remove, '
+                        .'reorder or translate any word, and keep numbers, Latin words and punctuation exactly as they are. '
+                        .'Reply with the diacritized text only.',
+                    'messages' => [['role' => 'user', 'content' => $words]],
+                ]);
+                $out = trim((string) collect($response->json('content', []))->where('type', 'text')->pluck('text')->implode(''));
+
+                return $response->successful() && self::sameWords($words, $out) ? $out : $words;
+            } catch (\Throwable $e) {
+                report($e);
+
+                return $words;
+            }
+        });
+    }
+
+    /** The diacritized text must have the same letters as the original (diacritics and spaces aside). */
+    private static function sameWords(string $original, string $diacritized): bool
+    {
+        $bare = fn (string $s) => preg_replace('/[\x{064B}-\x{065F}\x{0670}\x{0640}\s]/u', '', $s);
+        if ($diacritized === '') {
+            return false;
+        }
+        similar_text($bare($original), $bare($diacritized), $percent);
+
+        return $percent >= 97;
     }
 
     /** Path (on the local disk) of the mp3 for this text, made now if it isn't there yet. */

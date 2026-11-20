@@ -18,14 +18,15 @@ class AssistantSpeechController extends Controller
             'lang' => ['nullable', 'string', 'in:ar,he,en'],
         ]);
         if (! $speech->ready()) {
-            return response()->json(['message' => 'Natural voice is not set up.'], 503);
+            // No natural voice: the device reads it, from text written to be pronounced right.
+            return response()->json(['message' => 'Natural voice is not set up.', 'spoken' => $speech->spokenText($data['text'], $data['lang'] ?? app()->getLocale())], 503);
         }
         try {
             $path = $speech->audio($data['text'], $data['lang'] ?? app()->getLocale());
         } catch (Throwable $e) {
             report($e);
 
-            return response()->json(['message' => 'Natural voice is not available right now.'], 503);
+            return response()->json(['message' => 'Natural voice is not available right now.', 'spoken' => $speech->spokenText($data['text'], $data['lang'] ?? app()->getLocale())], 503);
         }
 
         return response(Storage::disk('local')->get($path), 200, [

@@ -7,7 +7,7 @@
     const speechLang = (lang) => ({ar: 'ar-JO', he: 'he-IL', en: 'en-US'}[String(lang || 'ar').slice(0, 2)] || 'ar-JO');
     const ttsUrl = {ar: '/tts/arabic', he: '/tts/hebrew'};
     const config = {speechUrl: '/assistant-speech', csrf: () => document.querySelector('meta[name=csrf-token]')?.content || ''};
-    let audio = null, queue = [], natural = true, turn = 0, busy = false;
+    let audio = null, queue = [], turn = 0, busy = false;
 
     const face = (state) => window.OzmanAvatar?.set(state);
     const started = () => face('speaking');
@@ -81,27 +81,28 @@
         busy = true;
         face('thinking');
         const short = String(lang || 'ar').slice(0, 2);
-        if (natural) {
-            try {
-                const body = new FormData();
-                body.append('text', words); body.append('lang', short); body.append('_token', config.csrf());
-                const response = await fetch(config.speechUrl, {method: 'POST', body, credentials: 'same-origin', headers: {Accept: 'audio/mpeg'}});
+        let spoken = words;
+        try {
+            const body = new FormData();
+            body.append('text', words); body.append('lang', short); body.append('_token', config.csrf());
+            const response = await fetch(config.speechUrl, {method: 'POST', body, credentials: 'same-origin', headers: {Accept: 'audio/mpeg'}});
+            if (myTurn !== turn) return;
+            // No natural voice: the site sends the reply written to be pronounced right (Arabic with diacritics).
+            if (response.status === 503) spoken = (await response.json().catch(() => ({}))).spoken || words;
+            if (myTurn !== turn) return;
+            if (response.ok) {
+                const url = URL.createObjectURL(await response.blob());
                 if (myTurn !== turn) return;
-                if (response.status === 503) natural = false; // not set up: the browser's voice from now on
-                if (response.ok) {
-                    const url = URL.createObjectURL(await response.blob());
-                    if (myTurn !== turn) return;
-                    audio = new Audio(url);
-                    audio.onplaying = started;
-                    audio.onended = audio.onerror = () => { URL.revokeObjectURL(url); audio = null; finished(myTurn); };
-                    await audio.play();
-                    return;
-                }
-            } catch (e) {
-                if (myTurn !== turn) return;
+                audio = new Audio(url);
+                audio.onplaying = started;
+                audio.onended = audio.onerror = () => { URL.revokeObjectURL(url); audio = null; finished(myTurn); };
+                await audio.play();
+                return;
             }
+        } catch (e) {
+            if (myTurn !== turn) return;
         }
-        speakLocally(words, lang, myTurn);
+        speakLocally(spoken, lang, myTurn);
     };
 
     /** Listens once; calls onText with what was said (interim results as they come, final=true at the end). Returns a stop function. */
