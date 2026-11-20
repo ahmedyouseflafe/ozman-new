@@ -13,7 +13,7 @@
         .as-page{width:min(980px,calc(100% - 310px));margin:0 270px 0 auto;padding:24px 0 24px;display:flex;flex-direction:column;height:100vh}
         [dir=ltr] .as-page{margin:0 auto 0 270px}
         .hero{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(145deg,rgba(15,37,48,.96),rgba(7,19,26,.98));flex-wrap:wrap}
-        .hero h1{margin:0;font-size:22px;display:flex;align-items:center;gap:8px}.hero h1 i{color:var(--cyan)}.hero p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
+        .hero-who{display:flex;align-items:center;gap:14px}.hero h1{margin:0;font-size:22px;display:flex;align-items:center;gap:8px}.hero h1 i{color:var(--cyan)}.hero p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
         .usage{font-size:12px;color:var(--muted)}.usage b{color:#e8fbff}
         .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border:1px solid #276377;border-radius:12px;background:#102b37;color:#e8fbff;font:inherit;font-size:13px;font-weight:900;cursor:pointer}
         .btn:disabled{opacity:.55;cursor:wait}.btn-main{border:0;background:linear-gradient(135deg,#3fe0a0,#16b5d6);color:#04202a}
@@ -49,9 +49,12 @@
 @include('admin.includes.sidebar')
 <main class="as-page">
     <section class="hero">
-        <div>
-            <h1><i class="ti ti-sparkles" aria-hidden="true"></i>{{ __('المساعد الذكي') }}</h1>
+        <div class="hero-who">
+            @include('front.partials.assistant_avatar', ['size' => 64])
+            <div>
+            <h1>{{ __('المساعد الذكي') }}</h1>
             <p>{{ __('اسأله عن مبيعاتك وطلباتك ومنتجاتك، خلّيه يكتبلك منشورات ووصف منتجات، أو يجهّزلك تغيير وإنت بتأكّده.') }}</p>
+            </div>
         </div>
         <div style="display:flex;gap:10px;align-items:center">
             <span class="usage" id="usage"></span>
@@ -165,6 +168,7 @@
         bubble({ role: 'user', content: text || '', has_image: !!file });
         input.value = ''; input.style.height = '';
         const typing = Object.assign(document.createElement('div'), { className: 'typing', textContent: T.thinking }); chat.append(typing); chat.scrollTop = chat.scrollHeight;
+        window.OzmanAvatar?.set('thinking');
         sendBtn.disabled = true;
         const fd = new FormData();
         if (text) fd.append('message', text);
@@ -177,11 +181,15 @@
             conversationId = r.data.conversation_id; bubble(r.data.message); usage(r.data.usage);
             if (speakReplies || spoken) window.OzmanVoice?.speak(r.data.message.content, voiceLang);
         } catch (e) { error.textContent = e.message; }
-        finally { typing.remove(); sendBtn.disabled = !state.enabled; spoken = false; input.focus(); }
+        finally {
+            typing.remove(); sendBtn.disabled = !state.enabled; spoken = false; input.focus();
+            if (!window.OzmanVoice?.busy()) window.OzmanAvatar?.set('idle');
+        }
     }
 
     // Voice: talk instead of typing (sends when you stop), and hear the replies.
     const voiceLang = @json(app()->getLocale());
+    window.OzmanVoice?.configure({speechUrl: @json(route('assistant.speech'))});
     const micBtn = document.getElementById('micBtn'), voiceBtn = document.getElementById('voiceBtn');
     let speakReplies = false, spoken = false, stopListening = null;
     try { speakReplies = localStorage.getItem('ozAssistantSpeak') === '1'; } catch (e) {}

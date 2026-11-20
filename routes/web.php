@@ -89,6 +89,9 @@ Route::middleware('guest')->group(function () {
 });
 Route::get('/creator-invitation/{token}', [\App\Http\Controllers\PromoterInvitationController::class, 'show'])->middleware('throttle:30,1')->name('promoter.invitation');
 Route::post('/creator-invitation/{token}', [\App\Http\Controllers\PromoterInvitationController::class, 'accept'])->middleware('throttle:5,1')->name('promoter.invitation.accept');
+// Both assistants' replies read aloud in a natural voice (customers and shop owners, signed in).
+Route::post('/assistant-speech', \App\Http\Controllers\AssistantSpeechController::class)->middleware(['auth', 'throttle:40,1,assistant.speech'])->name('assistant.speech');
+
 // The customers' shopping assistant (the chat bubble on the website).
 Route::middleware(['auth', 'throttle:60,1'])->prefix('assistant')->name('customer-assistant.')->group(function () {
     Route::get('/state', [\App\Http\Controllers\CustomerAssistantController::class, 'show'])->name('state');

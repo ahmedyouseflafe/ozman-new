@@ -106,6 +106,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/assistant', [\App\Http\Controllers\CustomerAssistantController::class, 'show'])->name('assistant');
         Route::post('/assistant', [\App\Http\Controllers\CustomerAssistantController::class, 'send'])->middleware('throttle:10,1,assistant.send')->name('assistant.send');
         Route::post('/assistant/reset', [\App\Http\Controllers\CustomerAssistantController::class, 'reset'])->name('assistant.reset');
+        // Both assistants' replies read aloud in a natural voice.
+        Route::post('/assistant/speech', \App\Http\Controllers\AssistantSpeechController::class)->middleware('throttle:40,1,assistant.speech')->name('assistant.speech');
         Route::post('/assistant/actions/{action}/confirm', [\App\Http\Controllers\CustomerAssistantController::class, 'confirm'])->middleware('throttle:10,1')->name('assistant.actions.confirm');
         Route::post('/assistant/actions/{action}/cancel', [\App\Http\Controllers\CustomerAssistantController::class, 'cancel'])->name('assistant.actions.cancel');
 

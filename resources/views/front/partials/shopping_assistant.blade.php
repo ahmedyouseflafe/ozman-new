@@ -6,17 +6,19 @@
 @endphp
 @if(config('services.anthropic.customer_assistant.enabled', true) && filled(config('services.anthropic.key')))
 <button type="button" class="oz-sa-fab" id="ozSaFab" aria-haspopup="dialog" aria-controls="ozSaPanel">
-    <span class="oz-sa-fab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8zM19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9zM5 15l.7 1.8 1.8.7-1.8.7L5 20l-.7-1.8-1.8-.7 1.8-.7z"/></svg></span>
+    @include('front.partials.assistant_avatar', ['size' => 56, 'class' => 'oz-sa-fab-face'])
     <span class="oz-sa-fab-label">{{ $saShop ? __('اسأل') : __('مساعد') }}</span>
 </button>
 <section class="oz-sa" id="ozSaPanel" role="dialog" aria-modal="false" aria-label="{{ __('مساعد التسوّق') }}" dir="{{ $saLocale === 'en' ? 'ltr' : 'rtl' }}" hidden>
     <header class="oz-sa-head">
+        @include('front.partials.assistant_avatar', ['size' => 42])
         <div><b>{{ $saShop ? __('اسأل عن :shop', ['shop' => $saShop->name]) : __('مساعد التسوّق') }}</b><small id="ozSaUsage"></small></div>
         <button type="button" class="oz-sa-icon" id="ozSaVoice" title="{{ __('اقرأ الردود بصوت') }}" aria-label="{{ __('اقرأ الردود بصوت') }}" aria-pressed="false">🔈</button>
         <button type="button" class="oz-sa-icon" id="ozSaReset" title="{{ __('محادثة جديدة') }}" aria-label="{{ __('محادثة جديدة') }}">＋</button>
         <button type="button" class="oz-sa-icon" id="ozSaClose" title="{{ __('إغلاق') }}" aria-label="{{ __('إغلاق') }}">×</button>
     </header>
     <div class="oz-sa-log" id="ozSaLog" aria-live="polite"></div>
+    <template id="ozSaFaceBig">@include('front.partials.assistant_avatar', ['size' => 96, 'class' => 'oz-sa-face-big'])</template>
     <form class="oz-sa-form" id="ozSaForm">
         <input type="text" id="ozSaInput" maxlength="1000" autocomplete="off" placeholder="{{ __('شو بتدوّر عليه؟') }}" aria-label="{{ __('رسالتك') }}">
         <button type="button" id="ozSaMic" class="oz-sa-mic" aria-label="{{ __('احكي بدل ما تكتب') }}" title="{{ __('احكي بدل ما تكتب') }}" hidden>🎤</button>
@@ -25,8 +27,9 @@
 </section>
 <style>
 .oz-sa-fab{position:fixed;z-index:9991;inset-inline-start:12px;bottom:calc(172px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:4px;padding:0;border:0;background:transparent;color:#fff;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.oz-sa-fab-icon{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#08def4,#1fa8ee);border:2px solid rgba(255,255,255,.35);box-shadow:0 10px 26px rgba(0,0,0,.35)}
-.oz-sa-fab-icon svg{width:24px;height:24px;fill:#02161a}
+.oz-sa-fab-face{border:2px solid rgba(255,255,255,.55);animation:ozSaWave 6s ease-in-out infinite}
+@keyframes ozSaWave{0%,86%,100%{transform:none}90%{transform:rotate(-8deg)}94%{transform:rotate(8deg)}}
+.oz-sa-face-big{margin:0 auto 10px}
 .oz-sa-fab-label{padding:3px 8px;border-radius:999px;background:rgba(10,10,14,.72);font-size:11.5px}
 .oz-sa{position:fixed;z-index:9996;inset-inline-start:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:min(400px,calc(100vw - 16px));height:min(620px,calc(100dvh - 24px));display:flex;flex-direction:column;border:1px solid #1d3b49;border-radius:22px;background:#0a141b;color:#f2f7fa;box-shadow:0 24px 70px rgba(0,0,0,.55);font-family:Cairo,Tahoma,Arial,sans-serif;overflow:hidden}
 .oz-sa[hidden]{display:none}
@@ -121,13 +124,14 @@
         draw();
         return box;
     };
+    const faceBig = document.getElementById('ozSaFaceBig').innerHTML;
     const welcome = () => {
-        log.innerHTML = `<div class="oz-sa-welcome"><b>${esc(T.hello)}</b>${esc(T.intro)}<div class="oz-sa-chips"></div></div>`;
+        log.innerHTML = `<div class="oz-sa-welcome">${faceBig}<b>${esc(T.hello)}</b>${esc(T.intro)}<div class="oz-sa-chips"></div></div>`;
         const chips = log.querySelector('.oz-sa-chips');
         (state?.suggestions || []).forEach((s) => { const c = Object.assign(document.createElement('button'), {type: 'button', className: 'oz-sa-chip', textContent: s}); c.onclick = () => ask(s); chips.append(c); });
     };
     const guest = () => {
-        log.innerHTML = `<div class="oz-sa-welcome"><b>${esc(T.hello)}</b>${esc(T.login)}<br><a class="oz-sa-login" href="${esc(urls.login)}">${esc(T.loginBtn)}</a></div>`;
+        log.innerHTML = `<div class="oz-sa-welcome">${faceBig}<b>${esc(T.hello)}</b>${esc(T.login)}<br><a class="oz-sa-login" href="${esc(urls.login)}">${esc(T.loginBtn)}</a></div>`;
         input.disabled = send.disabled = true;
     };
 
@@ -161,17 +165,22 @@
         bubble({role: 'user', content: text});
         input.value = '';
         const typing = Object.assign(document.createElement('div'), {className: 'oz-sa-typing', textContent: T.typing}); log.append(typing); scroll();
+        window.OzmanAvatar?.set('thinking');
         try {
             const data = await post(urls.send, {message: text, conversation_id: conversationId, shop_id: shopId});
             conversationId = data.conversation_id; bubble(data.message); usage(data.usage);
             if (speakReplies || spoken) window.OzmanVoice?.speak(data.message.content, voiceLang);
         } catch (e) {
             const err = Object.assign(document.createElement('div'), {className: 'oz-sa-error', textContent: e.message}); log.append(err); scroll();
-        } finally { typing.remove(); busy = false; send.disabled = false; spoken = false; input.focus(); }
+        } finally {
+            typing.remove(); busy = false; send.disabled = false; spoken = false; input.focus();
+            if (!window.OzmanVoice?.busy()) window.OzmanAvatar?.set('idle');
+        }
     }
 
     // Voice: the mic fills the box as you talk and sends when you stop; replies are read aloud when 🔊 is on (or after you spoke).
     const voiceLang = @json($saLocale);
+    window.OzmanVoice?.configure({speechUrl: @json(route('assistant.speech')), csrf: () => csrf || ''});
     const mic = document.getElementById('ozSaMic'), voiceBtn = document.getElementById('ozSaVoice');
     let speakReplies = false, spoken = false, stopListening = null;
     try { speakReplies = localStorage.getItem('ozSaSpeak') === '1'; } catch (e) {}

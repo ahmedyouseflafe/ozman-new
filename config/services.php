@@ -3,6 +3,17 @@
 return [
 
     // Product photo → 3D model for "see it in your room" (furniture). Off until a key is set.
+    // Natural voices for the assistants (Azure neural text to speech). Without a key the apps use the phone's own voice.
+    'azure_speech' => [
+        'key' => env('AZURE_SPEECH_KEY'),
+        'region' => env('AZURE_SPEECH_REGION', 'westeurope'),
+        'voices' => [
+            'ar' => env('AZURE_SPEECH_VOICE_AR', 'ar-JO-SanaNeural'),
+            'he' => env('AZURE_SPEECH_VOICE_HE', 'he-IL-HilaNeural'),
+            'en' => env('AZURE_SPEECH_VOICE_EN', 'en-US-AvaNeural'),
+        ],
+    ],
+
     'meshy' => [
         'key' => env('MESHY_API_KEY'),
         'shop_types' => ['furniture_appliances'],

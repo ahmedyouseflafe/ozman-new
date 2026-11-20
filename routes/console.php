@@ -29,4 +29,10 @@ Schedule::call(function () {
             $disk->delete($file);
         }
     }
+    // Spoken replies are kept a month, so a repeated answer is read for free.
+    foreach ($disk->allFiles('assistant-speech') as $file) {
+        if ($disk->lastModified($file) < now()->subDays(30)->getTimestamp()) {
+            $disk->delete($file);
+        }
+    }
 })->name('assistant-images:prune')->dailyAt('03:45')->withoutOverlapping(30);
