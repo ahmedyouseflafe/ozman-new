@@ -126,6 +126,22 @@ class ShopAssistantTest extends TestCase
         $this->assertTrue((bool) ($shop->fresh()->is_accepting_orders ?? true));
     }
 
+    public function test_a_price_change_needs_the_same_product_permission_as_the_app(): void
+    {
+        $shop = $this->shop();
+        $product = $this->product($shop);
+        // A network account that sees the shop but may only look at orders.
+        $agent = User::factory()->create(['role' => 'agent', 'is_active' => true]);
+        \App\Models\Agent::create(['shop_id' => $shop->id, 'user_id' => $agent->id, 'name' => 'Agent', 'email' => $agent->email, 'is_active' => true]);
+        \App\Models\EmployeePermission::create(['user_id' => $agent->id, 'permission' => 'front_orders.view']);
+        $conversation = \App\Models\AssistantConversation::create(['kind' => 'shop', 'user_id' => $agent->id, 'shop_id' => $shop->id]);
+        $action = AssistantAction::create(['assistant_conversation_id' => $conversation->id, 'shop_id' => $shop->id, 'user_id' => $agent->id,
+            'type' => 'product_change', 'payload' => ['product_id' => $product->id, 'price' => 1], 'summary' => 'price to 1']);
+
+        $this->postJson("/api/v1/merchant/assistant-actions/{$action->id}/confirm", [], $this->auth($agent))->assertStatus(422)->assertJsonPath('action.status', 'failed');
+        $this->assertEquals(30, (float) $product->fresh()->price);
+    }
+
     public function test_bad_proposals_go_back_to_the_model_as_errors(): void
     {
         $owner = User::factory()->create(['role' => 'shop_owner', 'is_active' => true]);

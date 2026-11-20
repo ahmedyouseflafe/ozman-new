@@ -29,7 +29,7 @@ class ShopAssistantActions
         }
         try {
             $result = match ($action->type) {
-                'product_change' => $this->product($action),
+                'product_change' => $this->product($action, $user),
                 'order_status' => $this->orderStatus($action, $user, $request),
                 'accepting_orders' => $this->accepting($action),
                 'coupon_create' => $this->coupon($action, $user),
@@ -58,8 +58,12 @@ class ShopAssistantActions
             ->update(['status' => AssistantAction::CANCELLED, 'decided_at' => now()]);
     }
 
-    private function product(AssistantAction $action): string
+    private function product(AssistantAction $action, User $user): string
     {
+        // The same permission the app's product screen needs.
+        if (! $user->isSuperAdmin() && ! $user->canAccessRouteName('products.update')) {
+            throw new \InvalidArgumentException(__('حسابك ما إله صلاحية تعدّل المنتجات.'));
+        }
         $data = $action->payload;
         $product = Product::where('shop_id', $action->shop_id)->find($data['product_id'] ?? 0);
         if (! $product) {

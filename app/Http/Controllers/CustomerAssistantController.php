@@ -92,6 +92,10 @@ class CustomerAssistantController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             $ok = false;
             $message = collect($e->errors())->flatten()->first() ?: __('ما زبط الحجز.');
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            // The salon closed or stopped booking since the proposal: say so instead of leaving it half-done.
+            $ok = false;
+            $message = __('الصالون مش مستقبل حجوزات هلقيت.');
         }
         $action->update(['status' => $ok ? AssistantAction::DONE : AssistantAction::FAILED, 'result' => mb_substr($message, 0, 490)]);
 

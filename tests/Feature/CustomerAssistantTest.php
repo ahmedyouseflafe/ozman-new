@@ -245,6 +245,19 @@ class CustomerAssistantTest extends TestCase
         $this->assertNotContains('12:00', $this->tools($customer, 'salon_availability', ['shop_id' => $salon->id, 'date' => $tomorrow])['free_times']);
     }
 
+    public function test_a_booking_the_salon_refuses_ends_as_failed_not_stuck(): void
+    {
+        $salon = $this->shop('cosmetics');
+        $customer = User::factory()->create(['role' => 'customer', 'is_active' => true, 'phone' => '0599000111']);
+        $conversation = AssistantConversation::create(['kind' => 'customer', 'user_id' => $customer->id]);
+        $action = \App\Models\AssistantAction::create(['assistant_conversation_id' => $conversation->id, 'shop_id' => $salon->id, 'user_id' => $customer->id,
+            'type' => 'salon_booking', 'payload' => ['service' => 'مكياج', 'date' => now('Asia/Hebron')->addDay()->toDateString(), 'time' => '12:00'], 'summary' => 'x']);
+        $salon->update(['is_active' => false]); // closed after the proposal
+
+        $this->postJson("/api/v1/assistant/actions/{$action->id}/confirm", [], $this->auth($customer))->assertStatus(422)->assertJsonPath('action.status', 'failed');
+        $this->assertSame(0, \App\Models\SalonAppointment::count());
+    }
+
     public function test_the_booking_form_refuses_a_time_already_past_in_local_time(): void
     {
         $this->travelTo(\Carbon\Carbon::parse('2026-11-19 15:30:00', 'UTC')); // 17:30 in Hebron

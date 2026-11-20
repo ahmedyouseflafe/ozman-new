@@ -297,8 +297,8 @@ Route::get('/marketer-stores/{marketer:tracking_code}', [FrontController::class,
 Route::get('/marketer-wheel/{marketer:tracking_code}', [RewardWheelController::class, 'publicMarketerDirect'])->name('front.marketer.direct-wheel');
 Route::post('/marketer-wheel/{marketer:tracking_code}/spin', [RewardWheelController::class, 'publicMarketerDirectSpin'])->name('front.marketer.direct-wheel.spin');
 Route::view('/customer-login', 'front.customer_login')->name('customer.login');
-Route::get('/tts/hebrew', [TextToSpeechController::class, 'hebrew'])->name('tts.hebrew');
-Route::get('/tts/arabic', [TextToSpeechController::class, 'arabic'])->name('tts.arabic');
+Route::get('/tts/hebrew', [TextToSpeechController::class, 'hebrew'])->middleware('throttle:60,1,tts')->name('tts.hebrew');
+Route::get('/tts/arabic', [TextToSpeechController::class, 'arabic'])->middleware('throttle:60,1,tts')->name('tts.arabic');
 Route::post('/visitor-registrations', [VisitorRegistrationController::class, 'store'])->name('visitor-registrations.store');
 Route::get('/visitor-registrations/status/{token}', [VisitorRegistrationController::class, 'status'])
     ->middleware('throttle:30,1')
