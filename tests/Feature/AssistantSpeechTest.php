@@ -86,7 +86,7 @@ class AssistantSpeechTest extends TestCase
         $this->assertSame('RIFF', substr($audio, 0, 4));
         $this->assertSame(24000, unpack('V', substr($audio, 24, 4))[1]);
         Http::assertSent(fn ($request) => str_contains($request->url(), 'models/gemini-tts-test:generateContent') && $request->hasHeader('x-goog-api-key', 'g-key')
-            && str_contains($request->body(), 'Palestinian') && str_contains($request->body(), 'Aoede') && str_contains($request->body(), 'AUDIO'));
+            && str_contains($request->body(), 'Palestinian') && str_contains($request->body(), 'TRANSCRIPT') && str_contains($request->body(), 'Aoede') && str_contains($request->body(), 'AUDIO'));
 
         // A refusal (e.g. the free quota is used up) falls back to the phone's voice.
         $this->postJson('/api/v1/assistant/speech', ['text' => 'جملة ثانية', 'lang' => 'ar'], $this->auth($user))->assertStatus(503)->assertJsonPath('spoken', 'جملة ثانية');
@@ -105,6 +105,12 @@ class AssistantSpeechTest extends TestCase
         $audio = $this->post('/api/v1/assistant/speech', ['text' => 'أهلاً فيك', 'lang' => 'ar'], $this->auth($user))->assertOk()->getContent();
         $this->assertSame($wav, $audio);
         $this->assertSame(1, substr_count($audio, 'WAVE'));
+    }
+
+    public function test_her_name_is_read_fulla_with_its_vowels(): void
+    {
+        $this->assertSame('أهلاً! أنا فُلّة، وفُلّة بتساعدك.', Speech::plain('أهلاً! أنا فلة، وفلّة بتساعدك.'));
+        $this->assertSame('الفلة وفلتة', Speech::plain('الفلة وفلتة'));
     }
 
     public function test_the_website_route_needs_a_signed_in_user_and_xml_is_escaped(): void

@@ -120,24 +120,56 @@
         finished(myTurn);
     };
 
-    /** Listens once; calls onText with what was said (interim results as they come, final=true at the end). Returns a stop function. */
+    /** Listens until the person has finished talking: the browser stops at the first short breath, so it is started
+        again and the pieces are joined; it ends after ~2.8s of silence, or when stop() is called (a tap on the mic).
+        onText gets the words as they come; onEnd the final text. Returns a stop function. */
     const listen = ({lang, onText, onEnd, onError}) => {
         stopSpeaking();
-        const recognition = new Recognition();
-        recognition.lang = speechLang(lang);
-        recognition.interimResults = true;
-        recognition.continuous = false;
-        recognition.maxAlternatives = 1;
-        let text = '';
+        let said = '', current = '', finished = false, stopAsked = false, recognition = null;
+        let lastHeard = Date.now();
+        const began = Date.now();
+        const all = () => [said, current].filter((piece) => piece.trim()).join(' ').trim();
         face('listening');
-        recognition.onresult = (event) => {
-            text = Array.from(event.results).map((r) => r[0].transcript).join(' ').trim();
-            onText?.(text, event.results[event.results.length - 1].isFinal);
+        const finish = () => {
+            if (finished) return;
+            finished = true;
+            clearInterval(watch);
+            try { recognition?.abort(); } catch (e) {}
+            const text = all();
+            face(text ? 'thinking' : 'idle');
+            onEnd?.(text);
         };
-        recognition.onerror = (event) => onError?.(event.error);
-        recognition.onend = () => { face(text ? 'thinking' : 'idle'); onEnd?.(text); };
-        recognition.start();
-        return () => { try { recognition.stop(); } catch (e) {} };
+        const round = () => {
+            if (finished) return;
+            current = '';
+            recognition = new Recognition();
+            recognition.lang = speechLang(lang);
+            recognition.interimResults = true;
+            recognition.continuous = false;
+            recognition.maxAlternatives = 1;
+            recognition.onresult = (event) => {
+                const heard = Array.from(event.results).map((r) => r[0].transcript).join(' ').trim();
+                if (heard !== current) lastHeard = Date.now();
+                current = heard;
+                onText?.(all(), false);
+            };
+            recognition.onerror = (event) => {
+                // "no-speech" / "aborted" are just pauses; anything else (no permission, no mic) ends listening.
+                if (!['no-speech', 'aborted'].includes(event.error)) { onError?.(event.error); finish(); }
+            };
+            recognition.onend = () => {
+                if (finished) return;
+                if (current.trim()) { said = all(); current = ''; }
+                if (stopAsked) finish(); else setTimeout(round, 120);
+            };
+            try { recognition.start(); } catch (e) { finish(); }
+        };
+        const watch = setInterval(() => {
+            const quiet = Date.now() - lastHeard;
+            if (Date.now() - began > 90000 || (all() && quiet > 2800) || (!all() && quiet > 8000)) finish();
+        }, 250);
+        round();
+        return () => { stopAsked = true; try { recognition?.stop(); } catch (e) {} };
     };
 
     window.speechSynthesis?.getVoices(); // loads the voice list early in Chrome

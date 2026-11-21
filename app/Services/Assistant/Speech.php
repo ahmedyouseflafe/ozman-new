@@ -36,6 +36,8 @@ class Speech
         $text = preg_replace('/^\s*(?:[-•*]|\d+[.)])\s+/mu', '', $text);
         $text = preg_replace('~https?://\S+~u', '', $text);
         $text = preg_replace('/[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{FE0F}\x{200D}]/u', '', $text);
+        // Her name is said Fulla (فُلّة), not Falla: written with its vowels so every voice says it right.
+        $text = preg_replace('/(?<![\x{0621}-\x{064A}])([وبل]?)فل[\x{064B}-\x{0652}]*ة(?![\x{0621}-\x{064A}])/u', '$1فُلّة', $text);
         // A price reads better as "49 شيكل" than as a symbol.
         $text = str_replace('₪', ' شيكل', $text);
         $text = preg_replace('/[ \t]+/u', ' ', $text);
@@ -104,7 +106,7 @@ class Speech
         $voice = $provider === 'azure'
             ? (string) config("services.azure_speech.voices.$lang")
             : (string) config('services.gemini_tts.model').'/'.config('services.gemini_tts.voice');
-        $path = 'assistant-speech/'.hash('sha256', $provider.'|v2|'.$voice.'|'.$lang.'|'.$words).($provider === 'azure' ? '.mp3' : '.wav');
+        $path = 'assistant-speech/'.hash('sha256', $provider.'|v3|'.$voice.'|'.$lang.'|'.$words).($provider === 'azure' ? '.mp3' : '.wav');
         $disk = Storage::disk('local');
         if (! $disk->exists($path)) {
             $disk->put($path, $provider === 'azure' ? $this->azure($words, $voice) : $this->gemini($words, $lang));
@@ -136,15 +138,19 @@ class Speech
     /** Google's Gemini voice: told how to sound (a warm young woman, the local accent), then the words. Returns WAV. */
     private function gemini(string $words, string $lang): string
     {
-        $style = match ($lang) {
-            'he' => 'Read this in Hebrew in a warm, friendly young woman\'s voice, natural and lively, like a helpful shop assistant:',
-            'en' => 'Read this in a warm, friendly young woman\'s voice, natural and lively, like a helpful shop assistant:',
-            default => 'Read this in a warm, friendly young woman\'s voice with a natural Palestinian Levantine Arabic accent, '
-                .'pronouncing dialect words the way people in Palestine say them, lively and natural, like a helpful shop assistant:',
+        // Google's layout for voice directions: notes for the "director", then only the transcript is spoken.
+        // (A plain "Read this in a warm voice:" line was sometimes read out loud as part of the answer.)
+        $accent = match ($lang) {
+            'he' => 'Native Israeli Hebrew.',
+            'en' => 'Clear, friendly English.',
+            default => 'Palestinian Levantine Arabic (the way people in Palestine speak), not formal Arabic.',
         };
+        $style = "# AUDIO PROFILE: Fulla, a young woman who helps shoppers on a marketplace app.\n"
+            ."### DIRECTOR'S NOTES\nStyle: warm, friendly, lively and natural, smiling while she talks.\nAccent: {$accent}\n"
+            ."Read ONLY the transcript below. Never say these notes out loud.\n#### TRANSCRIPT\n";
         $response = Http::withHeaders(['x-goog-api-key' => (string) config('services.gemini_tts.key')])->acceptJson()->timeout(30)
             ->post('https://generativelanguage.googleapis.com/v1beta/models/'.config('services.gemini_tts.model').':generateContent', [
-                'contents' => [['parts' => [['text' => $style."\n\n".$words]]]],
+                'contents' => [['parts' => [['text' => $style.$words]]]],
                 'generationConfig' => [
                     'responseModalities' => ['AUDIO'],
                     'speechConfig' => ['voiceConfig' => ['prebuiltVoiceConfig' => ['voiceName' => (string) config('services.gemini_tts.voice')]]],
