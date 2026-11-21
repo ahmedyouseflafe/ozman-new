@@ -154,6 +154,10 @@ class Speech
         if (! $response->successful() || ! $pcm || strlen($pcm) < 200) {
             throw new RuntimeException('Gemini voice answered '.$response->status());
         }
+        // Newer models already send a finished WAV file; older ones send raw PCM that needs the header.
+        if (str_starts_with($pcm, 'RIFF') && substr($pcm, 8, 4) === 'WAVE') {
+            return $pcm;
+        }
         $rate = 24000;
         if (preg_match('/rate=(\d+)/', (string) $response->json('candidates.0.content.parts.0.inlineData.mimeType'), $m)) {
             $rate = (int) $m[1];

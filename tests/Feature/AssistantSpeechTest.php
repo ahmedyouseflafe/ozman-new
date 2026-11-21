@@ -92,6 +92,21 @@ class AssistantSpeechTest extends TestCase
         $this->postJson('/api/v1/assistant/speech', ['text' => 'جملة ثانية', 'lang' => 'ar'], $this->auth($user))->assertStatus(503)->assertJsonPath('spoken', 'جملة ثانية');
     }
 
+    public function test_a_finished_wav_from_gemini_is_not_wrapped_twice(): void
+    {
+        Storage::fake('local');
+        config(['services.azure_speech.key' => null, 'services.gemini_tts.key' => 'g-key']);
+        $wav = Speech::wav(str_repeat("\x01\x00", 600), 24000);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['candidates' => [['content' => ['parts' => [['inlineData' => [
+            'mimeType' => 'audio/wav', 'data' => base64_encode($wav),
+        ]]]]]]])]);
+        $user = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+
+        $audio = $this->post('/api/v1/assistant/speech', ['text' => 'أهلاً فيك', 'lang' => 'ar'], $this->auth($user))->assertOk()->getContent();
+        $this->assertSame($wav, $audio);
+        $this->assertSame(1, substr_count($audio, 'WAVE'));
+    }
+
     public function test_the_website_route_needs_a_signed_in_user_and_xml_is_escaped(): void
     {
         $this->postJson('/assistant-speech', ['text' => 'مرحبا'])->assertUnauthorized();
