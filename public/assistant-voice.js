@@ -10,7 +10,10 @@
     let audio = null, queue = [], turn = 0, busy = false;
 
     const face = (state) => window.OzmanAvatar?.set(state);
-    const started = () => face('speaking');
+    // Called once when she actually starts talking (or gives up), so the page can show the reply at that moment.
+    let pendingStart = null;
+    const fireStart = () => { const f = pendingStart; pendingStart = null; f?.(); };
+    const started = () => { face('speaking'); fireStart(); };
     const finished = (myTurn) => { if (myTurn === turn) { busy = false; face('idle'); } };
 
     // What the assistant wrote, as it should sound: no markdown, links or emoji.
@@ -43,6 +46,7 @@
         if (audio) { audio.pause(); audio = null; }
         try { window.speechSynthesis?.cancel(); } catch (e) {}
         face('idle');
+        fireStart();
     };
 
     // The browser's own voice, or the site's Google reader.
@@ -100,10 +104,11 @@
         audio.play().catch(() => { URL.revokeObjectURL(url); audio = null; resolve(); });
     });
 
-    const speak = async (text, lang) => {
+    const speak = async (text, lang, {onStart} = {}) => {
         stopSpeaking();
+        pendingStart = onStart || null;
         const words = plain(text);
-        if (!words) return;
+        if (!words) { fireStart(); return; }
         const myTurn = turn;
         busy = true;
         face('thinking');
@@ -117,8 +122,15 @@
             else await speakLocally(result.spoken, lang, myTurn);
             if (myTurn !== turn) return;
         }
+        fireStart();
         finished(myTurn);
     };
+
+    /** Starts reading and resolves when she begins talking (at most `wait` ms), so the text can appear with her voice. */
+    const speakThen = (text, lang, wait = 8000) => new Promise((resolve) => {
+        speak(text, lang, {onStart: resolve});
+        setTimeout(resolve, wait);
+    });
 
     /** Listens until the person has finished talking: the browser stops at the first short breath, so it is started
         again and the pieces are joined; it ends after ~2.8s of silence, or when stop() is called (a tap on the mic).
@@ -174,7 +186,7 @@
 
     window.speechSynthesis?.getVoices(); // loads the voice list early in Chrome
     window.OzmanVoice = {
-        canListen: !!Recognition, listen, speak, stopSpeaking,
+        canListen: !!Recognition, listen, speak, speakThen, stopSpeaking,
         /** True from asking for a reading until it ends. */
         busy: () => busy,
         configure(options) { Object.assign(config, options || {}); },

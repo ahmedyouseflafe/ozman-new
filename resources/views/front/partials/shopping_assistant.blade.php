@@ -173,8 +173,10 @@
         window.OzmanAvatar?.set('thinking');
         try {
             const data = await post(urls.send, {message: text, conversation_id: conversationId, shop_id: shopId});
-            conversationId = data.conversation_id; bubble(data.message); usage(data.usage);
-            if (speakReplies || spoken) window.OzmanVoice?.speak(data.message.content, voiceLang);
+            conversationId = data.conversation_id; usage(data.usage);
+            // When she reads it, the text appears as she starts talking (not seconds before her voice).
+            if ((speakReplies || spoken) && window.OzmanVoice) await window.OzmanVoice.speakThen(data.message.content, voiceLang);
+            bubble(data.message);
         } catch (e) {
             const err = Object.assign(document.createElement('div'), {className: 'oz-sa-error', textContent: e.message}); log.append(err); scroll();
         } finally {

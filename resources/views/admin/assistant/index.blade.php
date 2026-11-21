@@ -179,8 +179,10 @@
         try {
             const r = await post(urls.send, fd);
             if (!r.ok) throw new Error(r.data.message || T.failed);
-            conversationId = r.data.conversation_id; bubble(r.data.message); usage(r.data.usage);
-            if (speakReplies || spoken) window.OzmanVoice?.speak(r.data.message.content, voiceLang);
+            conversationId = r.data.conversation_id; usage(r.data.usage);
+            // When she reads it, the text appears as she starts talking (not seconds before her voice).
+            if ((speakReplies || spoken) && window.OzmanVoice) await window.OzmanVoice.speakThen(r.data.message.content, voiceLang);
+            bubble(r.data.message);
         } catch (e) { error.textContent = e.message; }
         finally {
             typing.remove(); sendBtn.disabled = !state.enabled; spoken = false; input.focus();
