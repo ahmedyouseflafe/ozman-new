@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ __('المساعد الذكي') }} - {{ $shop->name }}</title>
+    <title>{{ \App\Support\AssistantPersona::name() }} - {{ $shop->name }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
@@ -52,7 +52,7 @@
         <div class="hero-who">
             @include('front.partials.assistant_avatar', ['size' => 64])
             <div>
-            <h1>{{ __('المساعد الذكي') }}</h1>
+            <h1>{{ \App\Support\AssistantPersona::name() }} · {{ __('مساعدتك الذكية') }}</h1>
             <p>{{ __('اسأله عن مبيعاتك وطلباتك ومنتجاتك، خلّيه يكتبلك منشورات ووصف منتجات، أو يجهّزلك تغيير وإنت بتأكّده.') }}</p>
             </div>
         </div>

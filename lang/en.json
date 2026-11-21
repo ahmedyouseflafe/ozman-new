@@ -555,5 +555,10 @@
   "هدية التسجيل بدعوة": "Invite sign-up gift",
   "صاحبك :name طلب أول طلب": "Your friend :name placed their first order",
   "ملخص اليوم في :shop 📊": "Today's summary at :shop 📊",
-  "{1} اليوم إجاك طلب واحد بـ :sales ₪.|[2,*] اليوم إجاك :count طلبات بـ :sales ₪.": "{1} Today you got one order for :sales ₪.|[2,*] Today you got :count orders for :sales ₪."
+  "{1} اليوم إجاك طلب واحد بـ :sales ₪.|[2,*] اليوم إجاك :count طلبات بـ :sales ₪.": "{1} Today you got one order for :sales ₪.|[2,*] Today you got :count orders for :sales ₪.",
+    "اسأل :name": "Ask :name",
+    "مساعدة التسوّق": "Shopping assistant",
+    "مساعدتك الذكية": "Your smart assistant",
+    "أهلاً! أنا :name 🌸 شو بتدوّر عليه اليوم؟": "Hi! I'm :name 🌸 what are you looking for today?",
+    "أهلاً! أنا :name 🌸 اسألني أي إشي عن :shop": "Hi! I'm :name 🌸 ask me anything about :shop"
 }

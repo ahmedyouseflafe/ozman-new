@@ -30,7 +30,7 @@ class AssistantSpeechController extends Controller
         }
 
         return response(Storage::disk('local')->get($path), 200, [
-            'Content-Type' => 'audio/mpeg',
+            'Content-Type' => str_ends_with($path, '.wav') ? 'audio/wav' : 'audio/mpeg',
             'Cache-Control' => 'private, max-age=86400',
         ]);
     }

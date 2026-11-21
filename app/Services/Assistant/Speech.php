@@ -13,9 +13,19 @@ class Speech
 {
     public const MAX_CHARS = 1500;
 
+    /** A natural voice is set up: Azure first, otherwise Google's Gemini voice. */
     public function ready(): bool
     {
-        return filled(config('services.azure_speech.key'));
+        return $this->provider() !== null;
+    }
+
+    public function provider(): ?string
+    {
+        return match (true) {
+            filled(config('services.azure_speech.key')) => 'azure',
+            filled(config('services.gemini_tts.key')) => 'gemini',
+            default => null,
+        };
     }
 
     /** What the assistant wrote, as it should sound: no markdown, links or emoji. */
@@ -82,21 +92,29 @@ class Speech
         return $percent >= 97;
     }
 
-    /** Path (on the local disk) of the mp3 for this text, made now if it isn't there yet. */
+    /** Path (on the local disk) of the audio for this text (mp3 or wav), made now if it isn't there yet. */
     public function audio(string $text, string $lang): string
     {
         $lang = in_array($lang, ['ar', 'he', 'en'], true) ? $lang : 'ar';
-        $voice = (string) config("services.azure_speech.voices.$lang");
         $words = self::plain($text);
         if ($words === '') {
             throw new RuntimeException('Nothing to read.');
         }
-        $path = 'assistant-speech/'.hash('sha256', $voice.'|'.$words).'.mp3';
+        $provider = $this->provider() ?? throw new RuntimeException('No natural voice is set up.');
+        $voice = $provider === 'azure'
+            ? (string) config("services.azure_speech.voices.$lang")
+            : (string) config('services.gemini_tts.model').'/'.config('services.gemini_tts.voice');
+        $path = 'assistant-speech/'.hash('sha256', $provider.'|'.$voice.'|'.$lang.'|'.$words).($provider === 'azure' ? '.mp3' : '.wav');
         $disk = Storage::disk('local');
-        if ($disk->exists($path)) {
-            return $path;
+        if (! $disk->exists($path)) {
+            $disk->put($path, $provider === 'azure' ? $this->azure($words, $voice) : $this->gemini($words, $lang));
         }
 
+        return $path;
+    }
+
+    private function azure(string $words, string $voice): string
+    {
         $locale = substr($voice, 0, 5);
         $ssml = '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="'.$locale.'">'
             .'<voice name="'.htmlspecialchars($voice, ENT_XML1 | ENT_QUOTES).'">'
@@ -108,12 +126,47 @@ class Speech
             'User-Agent' => 'Ozman',
         ])->withBody($ssml, 'application/ssml+xml')->timeout(20)
             ->post('https://'.config('services.azure_speech.region').'.tts.speech.microsoft.com/cognitiveservices/v1');
-
         if (! $response->successful() || strlen($response->body()) < 100) {
             throw new RuntimeException('Speech service answered '.$response->status());
         }
-        $disk->put($path, $response->body());
 
-        return $path;
+        return $response->body();
+    }
+
+    /** Google's Gemini voice: told how to sound (a warm young woman, the local accent), then the words. Returns WAV. */
+    private function gemini(string $words, string $lang): string
+    {
+        $style = match ($lang) {
+            'he' => 'Read this in Hebrew in a warm, friendly young woman\'s voice, natural and lively, like a helpful shop assistant:',
+            'en' => 'Read this in a warm, friendly young woman\'s voice, natural and lively, like a helpful shop assistant:',
+            default => 'Read this in a warm, friendly young woman\'s voice with a natural Palestinian Levantine Arabic accent, '
+                .'pronouncing dialect words the way people in Palestine say them, lively and natural, like a helpful shop assistant:',
+        };
+        $response = Http::withHeaders(['x-goog-api-key' => (string) config('services.gemini_tts.key')])->acceptJson()->timeout(30)
+            ->post('https://generativelanguage.googleapis.com/v1beta/models/'.config('services.gemini_tts.model').':generateContent', [
+                'contents' => [['parts' => [['text' => $style."\n\n".$words]]]],
+                'generationConfig' => [
+                    'responseModalities' => ['AUDIO'],
+                    'speechConfig' => ['voiceConfig' => ['prebuiltVoiceConfig' => ['voiceName' => (string) config('services.gemini_tts.voice')]]],
+                ],
+            ]);
+        $pcm = base64_decode((string) $response->json('candidates.0.content.parts.0.inlineData.data'), true);
+        if (! $response->successful() || ! $pcm || strlen($pcm) < 200) {
+            throw new RuntimeException('Gemini voice answered '.$response->status());
+        }
+        $rate = 24000;
+        if (preg_match('/rate=(\d+)/', (string) $response->json('candidates.0.content.parts.0.inlineData.mimeType'), $m)) {
+            $rate = (int) $m[1];
+        }
+
+        return self::wav($pcm, $rate);
+    }
+
+    /** 16-bit mono PCM wrapped in a WAV header, so phones and browsers can play it. */
+    public static function wav(string $pcm, int $rate): string
+    {
+        return 'RIFF'.pack('V', 36 + strlen($pcm)).'WAVE'
+            .'fmt '.pack('VvvVVvv', 16, 1, 1, $rate, $rate * 2, 2, 16)
+            .'data'.pack('V', strlen($pcm)).$pcm;
     }
 }

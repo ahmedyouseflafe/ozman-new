@@ -36,16 +36,6 @@
         return out;
     };
 
-    const playNext = (lang, myTurn) => {
-        const piece = queue.shift();
-        if (!piece) { audio = null; finished(myTurn); return; }
-        audio = new Audio(`${ttsUrl[lang]}?text=${encodeURIComponent(piece)}`);
-        audio.onplaying = started;
-        audio.onended = () => playNext(lang, myTurn);
-        audio.onerror = () => { queue = []; audio = null; finished(myTurn); };
-        audio.play().catch(() => { queue = []; audio = null; finished(myTurn); });
-    };
-
     const stopSpeaking = () => {
         turn++;
         busy = false;
@@ -56,22 +46,59 @@
     };
 
     // The browser's own voice, or the site's Google reader.
-    const speakLocally = (words, lang, myTurn) => {
+    // The browser's own voice, or the site's Google reader. Resolves when it has finished.
+    const speakLocally = (words, lang, myTurn) => new Promise((resolve) => {
         const code = speechLang(lang), short = code.slice(0, 2);
         const voice = (window.speechSynthesis?.getVoices() || []).find((v) => v.lang?.toLowerCase().startsWith(short));
         if (voice) {
             const utterance = new SpeechSynthesisUtterance(words);
             utterance.voice = voice; utterance.lang = voice.lang; utterance.rate = 1;
             utterance.onstart = started;
-            utterance.onend = utterance.onerror = () => finished(myTurn);
+            utterance.onend = utterance.onerror = () => resolve();
             window.speechSynthesis.speak(utterance);
         } else if (ttsUrl[short]) {
             queue = pieces(words);
-            playNext(short, myTurn);
+            const next = () => {
+                const piece = queue.shift();
+                if (!piece || myTurn !== turn) { audio = null; resolve(); return; }
+                audio = new Audio(`${ttsUrl[short]}?text=${encodeURIComponent(piece)}`);
+                audio.onplaying = started;
+                audio.onended = next;
+                audio.onerror = () => { queue = []; audio = null; resolve(); };
+                audio.play().catch(() => { queue = []; audio = null; resolve(); });
+            };
+            next();
         } else {
-            finished(myTurn);
+            resolve();
         }
+    });
+
+    // The first sentence alone, so she starts talking quickly while the rest is being made.
+    const parts = (words) => {
+        const m = words.match(/^[\s\S]{12,200}?[.!؟?\n،,]/u);
+        if (!m || words.length - m[0].length < 15) return [words];
+        return [m[0].trim(), words.slice(m[0].length).trim()];
     };
+
+    // One part from the site: its audio, or (no natural voice) the text written for the browser's voice.
+    const fetchPart = async (piece, short) => {
+        try {
+            const body = new FormData();
+            body.append('text', piece); body.append('lang', short); body.append('_token', config.csrf());
+            const response = await fetch(config.speechUrl, {method: 'POST', body, credentials: 'same-origin', headers: {Accept: 'audio/*'}});
+            if (response.ok) return {url: URL.createObjectURL(await response.blob())};
+            if (response.status === 503) return {spoken: (await response.json().catch(() => ({}))).spoken || piece};
+        } catch (e) {}
+        return {spoken: piece};
+    };
+
+    const playUrl = (url, myTurn) => new Promise((resolve) => {
+        if (myTurn !== turn) { URL.revokeObjectURL(url); resolve(); return; }
+        audio = new Audio(url);
+        audio.onplaying = started;
+        audio.onended = audio.onerror = () => { URL.revokeObjectURL(url); audio = null; resolve(); };
+        audio.play().catch(() => { URL.revokeObjectURL(url); audio = null; resolve(); });
+    });
 
     const speak = async (text, lang) => {
         stopSpeaking();
@@ -81,28 +108,16 @@
         busy = true;
         face('thinking');
         const short = String(lang || 'ar').slice(0, 2);
-        let spoken = words;
-        try {
-            const body = new FormData();
-            body.append('text', words); body.append('lang', short); body.append('_token', config.csrf());
-            const response = await fetch(config.speechUrl, {method: 'POST', body, credentials: 'same-origin', headers: {Accept: 'audio/mpeg'}});
-            if (myTurn !== turn) return;
-            // No natural voice: the site sends the reply written to be pronounced right (Arabic with diacritics).
-            if (response.status === 503) spoken = (await response.json().catch(() => ({}))).spoken || words;
-            if (myTurn !== turn) return;
-            if (response.ok) {
-                const url = URL.createObjectURL(await response.blob());
-                if (myTurn !== turn) return;
-                audio = new Audio(url);
-                audio.onplaying = started;
-                audio.onended = audio.onerror = () => { URL.revokeObjectURL(url); audio = null; finished(myTurn); };
-                await audio.play();
-                return;
-            }
-        } catch (e) {
+        // Both parts are asked for at once; the first plays as soon as it's ready.
+        const jobs = parts(words).map((piece) => fetchPart(piece, short));
+        for (const job of jobs) {
+            const result = await job;
+            if (myTurn !== turn) { if (result.url) URL.revokeObjectURL(result.url); return; }
+            if (result.url) await playUrl(result.url, myTurn);
+            else await speakLocally(result.spoken, lang, myTurn);
             if (myTurn !== turn) return;
         }
-        speakLocally(spoken, lang, myTurn);
+        finished(myTurn);
     };
 
     /** Listens once; calls onText with what was said (interim results as they come, final=true at the end). Returns a stop function. */

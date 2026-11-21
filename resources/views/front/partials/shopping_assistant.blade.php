@@ -3,16 +3,20 @@
 @php
     $saShop = isset($shop) && $shop instanceof \App\Models\Shop && $shop->exists ? $shop : null;
     $saLocale = app()->getLocale();
+    $saName = \App\Support\AssistantPersona::name();
+    $saHello = $saShop
+        ? __('أهلاً! أنا :name 🌸 اسألني أي إشي عن :shop', ['name' => $saName, 'shop' => $saShop->name])
+        : __('أهلاً! أنا :name 🌸 شو بتدوّر عليه اليوم؟', ['name' => $saName]);
 @endphp
 @if(config('services.anthropic.customer_assistant.enabled', true) && filled(config('services.anthropic.key')))
 <button type="button" class="oz-sa-fab" id="ozSaFab" aria-haspopup="dialog" aria-controls="ozSaPanel">
     @include('front.partials.assistant_avatar', ['size' => 56, 'class' => 'oz-sa-fab-face'])
-    <span class="oz-sa-fab-label">{{ $saShop ? __('اسأل') : __('مساعد') }}</span>
+    <span class="oz-sa-fab-label">{{ $saShop ? __('اسأل :name', ['name' => $saName]) : $saName }}</span>
 </button>
 <section class="oz-sa" id="ozSaPanel" role="dialog" aria-modal="false" aria-label="{{ __('مساعد التسوّق') }}" dir="{{ $saLocale === 'en' ? 'ltr' : 'rtl' }}" hidden>
     <header class="oz-sa-head">
         @include('front.partials.assistant_avatar', ['size' => 42])
-        <div><b>{{ $saShop ? __('اسأل عن :shop', ['shop' => $saShop->name]) : __('مساعد التسوّق') }}</b><small id="ozSaUsage"></small></div>
+        <div><b>{{ $saName }} · {{ $saShop ? __('اسأل عن :shop', ['shop' => $saShop->name]) : __('مساعدة التسوّق') }}</b><small id="ozSaUsage"></small></div>
         <button type="button" class="oz-sa-icon" id="ozSaVoice" title="{{ __('اقرأ الردود بصوت') }}" aria-label="{{ __('اقرأ الردود بصوت') }}" aria-pressed="false">🔈</button>
         <button type="button" class="oz-sa-icon" id="ozSaReset" title="{{ __('محادثة جديدة') }}" aria-label="{{ __('محادثة جديدة') }}">＋</button>
         <button type="button" class="oz-sa-icon" id="ozSaClose" title="{{ __('إغلاق') }}" aria-label="{{ __('إغلاق') }}">×</button>
@@ -69,7 +73,7 @@
     const shopId = @json($saShop?->id);
     const urls = { action: (id, verb) => @json(url('/assistant/actions')) + `/${id}/${verb}`, state: @json(route('customer-assistant.state')), send: @json(route('customer-assistant.send')), reset: @json(route('customer-assistant.reset')),
         login: @json(route('community.login', ['return' => '/'.ltrim(request()->path(), '/')])) };
-    const T = { hello: @json($saShop ? __('أهلاً! اسألني أي إشي عن :shop', ['shop' => $saShop->name]) : __('أهلاً! شو بتدوّر عليه اليوم؟')),
+    const T = { hello: @json($saHello),
         intro: @json(__('احكيلي شو بدك بكلامك، وأنا بلاقيلك من محلات أوزمان. وبقدر أحكيلك وين طلبك وكم نقطة عندك.')),
         login: @json(__('سجّل دخول عشان تحكي مع المساعد')), loginBtn: @json(__('تسجيل الدخول')), typing: @json(__('عم بدوّرلك…')),
         failed: @json(__('صار خطأ، جرّب كمان مرة.')), expired: @json(__('حدّث الصفحة وجرّب كمان مرة.')), off: @json(__('المساعد مش متاح هلقيت.')),

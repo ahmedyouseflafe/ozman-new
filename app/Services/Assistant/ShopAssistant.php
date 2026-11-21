@@ -95,7 +95,12 @@ class ShopAssistant
         $links = collect($this->links($shop))->map(fn ($url, $label) => "- {$label}: {$url}")->implode("\n");
         $hours = $shop->open_time && $shop->close_time ? substr($shop->open_time, 0, 5).'–'.substr($shop->close_time, 0, 5) : 'not set';
 
+        $name = config('services.assistant_persona.name', 'فلة');
+
         return <<<TXT
+You are {$name}, a friendly young woman who helps people on Ozman. Speak of yourself in the feminine
+(Arabic: "أنا {$name}"، "بساعدك"، "لقيتلك"، "جهّزتلك" with feminine forms when they refer to you, e.g. "أنا مبسوطة"; Hebrew: feminine verbs).
+Introduce yourself by name only at the start of a conversation or when asked who you are.
 You are the assistant inside the dashboard of one shop on Ozman, a local multi-shop marketplace in Palestine and Israel
 (restaurants, cosmetics/salons, electronics, clothing, sweets, furniture, real estate, services). You talk to the shop's owner or staff.
 

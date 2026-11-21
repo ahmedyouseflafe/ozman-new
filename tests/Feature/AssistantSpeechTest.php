@@ -70,6 +70,28 @@ class AssistantSpeechTest extends TestCase
         Http::assertSentCount(2);
     }
 
+    public function test_without_azure_the_gemini_voice_reads_it_with_the_local_accent_as_wav(): void
+    {
+        Storage::fake('local');
+        config(['services.azure_speech.key' => null, 'services.gemini_tts.key' => 'g-key', 'services.gemini_tts.model' => 'gemini-tts-test', 'services.gemini_tts.voice' => 'Aoede']);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
+            ->push(['candidates' => [['content' => ['parts' => [['inlineData' => [
+                'mimeType' => 'audio/L16;codec=pcm;rate=24000', 'data' => base64_encode(str_repeat("\x01\x00", 600)),
+            ]]]]]]])
+            ->push(['error' => ['message' => 'quota']], 429)]);
+        $user = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+
+        $audio = $this->post('/api/v1/assistant/speech', ['text' => 'شو بدك اليوم؟', 'lang' => 'ar'], $this->auth($user))
+            ->assertOk()->assertHeader('Content-Type', 'audio/wav')->getContent();
+        $this->assertSame('RIFF', substr($audio, 0, 4));
+        $this->assertSame(24000, unpack('V', substr($audio, 24, 4))[1]);
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'models/gemini-tts-test:generateContent') && $request->hasHeader('x-goog-api-key', 'g-key')
+            && str_contains($request->body(), 'Palestinian') && str_contains($request->body(), 'Aoede') && str_contains($request->body(), 'AUDIO'));
+
+        // A refusal (e.g. the free quota is used up) falls back to the phone's voice.
+        $this->postJson('/api/v1/assistant/speech', ['text' => 'جملة ثانية', 'lang' => 'ar'], $this->auth($user))->assertStatus(503)->assertJsonPath('spoken', 'جملة ثانية');
+    }
+
     public function test_the_website_route_needs_a_signed_in_user_and_xml_is_escaped(): void
     {
         $this->postJson('/assistant-speech', ['text' => 'مرحبا'])->assertUnauthorized();

@@ -3,6 +3,13 @@
 return [
 
     // Product photo → 3D model for "see it in your room" (furniture). Off until a key is set.
+    // The assistants' name (the illustrated girl on the website and in the app).
+    'assistant_persona' => [
+        'name' => env('ASSISTANT_NAME', 'فلة'),
+        'name_he' => env('ASSISTANT_NAME_HE', 'פולה'),
+        'name_en' => env('ASSISTANT_NAME_EN', 'Fulla'),
+    ],
+
     // Natural voices for the assistants (Azure neural text to speech). Without a key the apps use the phone's own voice.
     'azure_speech' => [
         'key' => env('AZURE_SPEECH_KEY'),
@@ -17,6 +24,13 @@ return [
     // "Invite a friend": Ozman points for both when the friend's first order is completed (0 turns it off).
     'invites' => [
         'points' => (int) env('INVITE_POINTS', 50),
+    ],
+
+    // Google's Gemini voice: the free option when there's no Azure key (a key from Google AI Studio).
+    'gemini_tts' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_TTS_MODEL', 'gemini-3.8-flash-tts'),
+        'voice' => env('GEMINI_TTS_VOICE', 'Aoede'),
     ],
 
     'meshy' => [
