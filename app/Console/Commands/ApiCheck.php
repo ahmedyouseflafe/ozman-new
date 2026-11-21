@@ -30,8 +30,10 @@ class ApiCheck extends Command
             'HTTP_AUTHORIZATION' => $plain ? 'Bearer '.$plain : null,
         ]), $data ? json_encode($data) : null);
         try {
+            $started = microtime(true);
             $response = app(\Illuminate\Contracts\Http\Kernel::class)->handle($request);
-            $this->line('Status: '.$response->getStatusCode().($user ? ' (as '.$user->email.')' : ''));
+            $took = (int) round((microtime(true) - $started) * 1000);
+            $this->line('Status: '.$response->getStatusCode().($user ? ' (as '.$user->email.')' : '').' in '.$took.'ms');
             $body = (string) $response->getContent();
             $json = json_decode($body, true);
             $this->line(mb_substr($json !== null ? json_encode($json, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : $body, 0, 6000));
