@@ -158,7 +158,7 @@ class Speech
             ]);
         $pcm = base64_decode((string) $response->json('candidates.0.content.parts.0.inlineData.data'), true);
         if (! $response->successful() || ! $pcm || strlen($pcm) < 200) {
-            throw new RuntimeException('Gemini voice answered '.$response->status());
+            throw new RuntimeException('Gemini voice answered '.$response->status().': '.mb_substr((string) $response->json('error.message'), 0, 400));
         }
         // Newer models already send a finished WAV file; older ones send raw PCM that needs the header.
         if (str_starts_with($pcm, 'RIFF') && substr($pcm, 8, 4) === 'WAVE') {
