@@ -145,6 +145,18 @@ class Shop extends Model
         return $this->hasMany(Category::class);
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ShopReview::class);
+    }
+
+    /** Adds rating_avg and rating_count (visible reviews) for lists of shops. */
+    public function scopeWithRating($query)
+    {
+        return $query->withAvg(['reviews as rating_avg' => fn ($q) => $q->where('is_visible', true)], 'rating')
+            ->withCount(['reviews as rating_count' => fn ($q) => $q->where('is_visible', true)]);
+    }
+
     public function products()
     {
         return $this->hasMany(Product::class);

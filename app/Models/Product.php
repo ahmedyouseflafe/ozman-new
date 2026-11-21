@@ -10,6 +10,23 @@ class Product extends Model
 {
     use HasFactory, HasLocalizedText;
 
+    protected static function booted(): void
+    {
+        // A product going on offer (a new discount, or a lower one) tells the shop's followers.
+        static::saved(function (Product $product) {
+            $now = (float) $product->discount_price;
+            $before = $product->wasRecentlyCreated ? 0.0 : (float) $product->getOriginal('discount_price');
+            if ($now > 0 && $now < (float) $product->price && ($product->wasRecentlyCreated || $product->wasChanged('discount_price'))
+                && ($before <= 0 || $now < $before)) {
+                try {
+                    app(\App\Services\ShopFollows::class)->offerStarted($product);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+        });
+    }
+
     protected $fillable = [
         'shop_id',
         'category_id',

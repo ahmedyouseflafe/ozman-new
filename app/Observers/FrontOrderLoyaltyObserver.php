@@ -30,6 +30,10 @@ class FrontOrderLoyaltyObserver
         if ($order->user_id && $order->wasChanged(self::AMOUNT_FIELDS)) {
             $this->safely(fn () => $this->points->sync($order));
         }
+        // An invited friend's first completed order rewards both of them.
+        if ($order->user_id && $order->wasChanged('status')) {
+            $this->safely(fn () => app(\App\Services\Invites::class)->rewardFirstOrder($order));
+        }
     }
 
     private function safely(callable $callback): void

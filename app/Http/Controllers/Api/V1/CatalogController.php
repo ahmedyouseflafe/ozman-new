@@ -36,8 +36,13 @@ class CatalogController extends Controller
 
         return response()->json([
             'types' => $types,
-            'featured_shops' => Shop::where('is_active', true)->latest()->limit(12)->get()->map(fn ($shop) => Presenter::shop($shop)),
+            'featured_shops' => Shop::where('is_active', true)->withRating()->latest()->limit(12)->get()->map(fn ($shop) => Presenter::shop($shop)),
             'featured_products' => $this->activeProducts()->where('products.is_featured', true)->latest('products.id')->limit(12)->get()->map(fn ($p) => Presenter::product($p)),
+            // Today's offers: discounted products from open shops, newest first.
+            'offers' => $this->activeProducts()->whereNotNull('products.discount_price')->where('products.discount_price', '>', 0)
+                ->whereColumn('products.discount_price', '<', 'products.price')
+                ->whereHas('shop', fn ($q) => $q->where('is_accepting_orders', true))
+                ->with('shop')->latest('products.updated_at')->limit(12)->get()->map(fn ($p) => Presenter::product($p) + ['shop_name' => $p->shop?->name]),
         ]);
     }
 
@@ -48,7 +53,7 @@ class CatalogController extends Controller
             'q' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
-        $shops = Shop::where('is_active', true)
+        $shops = Shop::where('is_active', true)->withRating()
             ->when($data['type'] ?? null, fn ($q, $type) => $q->where('catalog_type', $type))
             ->when($data['q'] ?? null, fn ($q, $term) => $q->where('name', 'like', '%'.addcslashes($term, '%_\\').'%'))
             ->orderByDesc('is_accepting_orders')->latest()
@@ -153,7 +158,7 @@ class CatalogController extends Controller
     {
         $data = $request->validate(['q' => ['required', 'string', 'min:2', 'max:100']]);
         $like = '%'.addcslashes(trim($data['q']), '%_\\').'%';
-        $shops = Shop::where('is_active', true)->where('name', 'like', $like)
+        $shops = Shop::where('is_active', true)->withRating()->where('name', 'like', $like)
             ->orderByDesc('is_accepting_orders')->limit(10)->get();
         $products = $this->activeProducts()->with('shop:id,name,catalog_type')
             ->where(fn ($q) => $q->where('products.name', 'like', $like)->orWhere('products.description', 'like', $like)

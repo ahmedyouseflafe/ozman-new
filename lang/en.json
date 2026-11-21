@@ -547,5 +547,13 @@
   "التحويل ما بلّش. جرّب مرة ثانية.": "It didn't start. Try again.",
   "شوفها بغرفتك": "See it in your room",
   "عم بفكّر…": "Thinking…",
-  "عم بحكيلك…": "Talking…"
+  "عم بحكيلك…": "Talking…",
+  "رح يوصلك إشعار لما :shop ينزّل عرض جديد.": "You will be notified when :shop posts a new offer.",
+  "ما رح توصلك عروض :shop بعد هيك.": "You won't get :shop offers anymore.",
+  "عرض جديد عند :shop 🔥": "New offer at :shop 🔥",
+  ":product صار بـ :price ₪": ":product is now :price ₪",
+  "هدية التسجيل بدعوة": "Invite sign-up gift",
+  "صاحبك :name طلب أول طلب": "Your friend :name placed their first order",
+  "ملخص اليوم في :shop 📊": "Today's summary at :shop 📊",
+  "{1} اليوم إجاك طلب واحد بـ :sales ₪.|[2,*] اليوم إجاك :count طلبات بـ :sales ₪.": "{1} Today you got one order for :sales ₪.|[2,*] Today you got :count orders for :sales ₪."
 }

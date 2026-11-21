@@ -14,6 +14,11 @@ return [
         ],
     ],
 
+    // "Invite a friend": Ozman points for both when the friend's first order is completed (0 turns it off).
+    'invites' => [
+        'points' => (int) env('INVITE_POINTS', 50),
+    ],
+
     'meshy' => [
         'key' => env('MESHY_API_KEY'),
         'shop_types' => ['furniture_appliances'],

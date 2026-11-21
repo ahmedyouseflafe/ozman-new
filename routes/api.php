@@ -85,6 +85,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/shops/{shop:id}/coupons/check', [\App\Http\Controllers\Api\V1\CouponController::class, 'check'])->middleware('throttle:30,1')->name('coupons.check');
         Route::post('/orders/{order:id}/wheel/spin', [OrderController::class, 'spin'])->middleware('throttle:10,1,orders.wheel.spin')->name('orders.wheel.spin');
         Route::get('/me/points', [PointsController::class, 'index'])->name('me.points');
+        Route::get('/me/invite', [\App\Http\Controllers\InviteController::class, 'show'])->name('me.invite');
+        // Following shops (offer notifications).
+        Route::get('/me/following', [\App\Http\Controllers\Api\V1\FollowController::class, 'index'])->name('me.following');
+        Route::get('/shops/{shop:id}/follow', [\App\Http\Controllers\Api\V1\FollowController::class, 'show'])->name('shops.follow.show');
+        Route::post('/shops/{shop:id}/follow', [\App\Http\Controllers\Api\V1\FollowController::class, 'update'])->middleware('throttle:30,1')->name('shops.follow');
         Route::get('/me/likes', [CatalogController::class, 'liked'])->name('me.likes');
         Route::patch('/auth/me', [AccountController::class, 'update'])->name('account.update');
         Route::post('/auth/avatar', [AccountController::class, 'avatar'])->middleware('throttle:10,1,account.avatar')->name('account.avatar');

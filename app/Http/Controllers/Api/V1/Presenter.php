@@ -37,6 +37,11 @@ class Presenter
             'is_accepting_orders' => (bool) ($shop->is_accepting_orders ?? true),
             'web_url' => $shop->publicUrl(),
         ];
+        // Lists that loaded ratings (Shop::withRating) show stars on the shop card.
+        if (array_key_exists('rating_count', $shop->getAttributes())) {
+            $count = (int) $shop->getAttribute('rating_count');
+            $data['rating'] = ['average' => $count ? round((float) $shop->getAttribute('rating_avg'), 1) : null, 'count' => $count];
+        }
         if ($full) {
             $data += [
                 'description' => $shop->description,

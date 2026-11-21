@@ -60,6 +60,8 @@ class CommunityAccountController extends Controller {
                 return $user;
             });
         } catch (\Throwable $e) { $avatars->delete($avatar); throw $e; }
+        // Signed up from a friend's invite link: remember who invited them.
+        app(\App\Services\Invites::class)->attach($user, app(\App\Services\Invites::class)->codeFromRequest($r));
         Auth::login($user,true); $r->session()->regenerate(); app(GuestFollows::class)->merge($r,$user);
         if ($promoter) {
             return redirect()->route('community.account')->with('status',__('وصل طلبك كمروّج 🎉 الإدارة بتراجعه، وبيوصلك إيميل أول ما ينقبل. لهلأ بتقدر تتابع المروّجين وتجمع نقاط.'));

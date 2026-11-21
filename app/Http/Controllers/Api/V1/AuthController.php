@@ -59,6 +59,7 @@ class AuthController extends Controller
             'phone' => ['nullable', 'string', 'max:30'],
             'password' => ['required', 'string', Password::defaults()],
             'device_name' => ['nullable', 'string', 'max:120'],
+            'invite_code' => ['nullable', 'string', 'max:12'],
         ]);
         $user = User::create([
             'name' => $data['name'],
@@ -68,6 +69,7 @@ class AuthController extends Controller
             'role' => 'customer',
             'is_active' => true,
         ]);
+        app(\App\Services\Invites::class)->attach($user, $data['invite_code'] ?? null);
 
         return $this->tokenResponse($user, $data['device_name'] ?? 'mobile', 201);
     }
