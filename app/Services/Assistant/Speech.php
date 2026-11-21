@@ -104,7 +104,7 @@ class Speech
         $voice = $provider === 'azure'
             ? (string) config("services.azure_speech.voices.$lang")
             : (string) config('services.gemini_tts.model').'/'.config('services.gemini_tts.voice');
-        $path = 'assistant-speech/'.hash('sha256', $provider.'|'.$voice.'|'.$lang.'|'.$words).($provider === 'azure' ? '.mp3' : '.wav');
+        $path = 'assistant-speech/'.hash('sha256', $provider.'|v2|'.$voice.'|'.$lang.'|'.$words).($provider === 'azure' ? '.mp3' : '.wav');
         $disk = Storage::disk('local');
         if (! $disk->exists($path)) {
             $disk->put($path, $provider === 'azure' ? $this->azure($words, $voice) : $this->gemini($words, $lang));
