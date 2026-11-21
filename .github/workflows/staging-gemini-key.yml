@@ -22,7 +22,7 @@ jobs:
           set -e
           NEW_KEY="$(printf '%s' "$NEW_KEY" | tr -d '\r\n ')"
           if [ -z "$NEW_KEY" ]; then echo "::error::Add the repository secret STAGING_GEMINI_API_KEY first."; exit 1; fi
-          if ! printf '%s' "$NEW_KEY" | grep -Eq '^AIza[A-Za-z0-9_-]+$'; then echo "::error::The secret doesn't look like a Gemini key (AIza...)."; exit 1; fi
+          if ! printf '%s' "$NEW_KEY" | grep -Eq '^[A-Za-z0-9._-]{20,}$'; then echo "::error::The secret doesn't look like an API key (letters, numbers, dots, dashes; 20+ long)."; exit 1; fi
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_KEY" | tr -d '\r' | sed '/^[[:space:]]*$/d' > ~/.ssh/staging_key
           chmod 600 ~/.ssh/staging_key
@@ -36,5 +36,5 @@ jobs:
               \$env = preg_match("/^GEMINI_API_KEY=.*\$/m", \$env) ? preg_replace("/^GEMINI_API_KEY=.*\$/m", \$line, \$env) : rtrim(\$env)."\n".\$line."\n";
               file_put_contents(\$f, \$env);'
             php artisan optimize:clear > /dev/null
-            grep -c '^GEMINI_API_KEY=AIza' .env > /dev/null && echo "Staging now has a Gemini key (ends with ...\${NEW_KEY: -4})."
+            grep -c '^GEMINI_API_KEY=.' .env > /dev/null && echo "Staging now has a Gemini key (ends with ...\${NEW_KEY: -4})."
           REMOTE
