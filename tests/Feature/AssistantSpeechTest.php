@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Models\{ApiToken, User};
 use App\Services\Assistant\Speech;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\{Http, Storage};
+use Illuminate\Support\Facades\{Cache, Http, Storage};
 use Tests\TestCase;
 
 class AssistantSpeechTest extends TestCase
@@ -111,6 +111,26 @@ class AssistantSpeechTest extends TestCase
     {
         $this->assertSame('أهلاً! أنا فُلّة، وفُلّة بتساعدك.', Speech::plain('أهلاً! أنا فلة، وفلّة بتساعدك.'));
         $this->assertSame('الفلة وفلتة', Speech::plain('الفلة وفلتة'));
+    }
+
+    public function test_after_google_says_the_daily_quota_is_used_up_it_is_not_asked_again_until_tomorrow(): void
+    {
+        Storage::fake('local');
+        Cache::flush();
+        config(['services.azure_speech.key' => null, 'services.gemini_tts.key' => 'g-key', 'services.anthropic.key' => null]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['error' => ['code' => 429, 'message' => 'You exceeded your current quota', 'details' => [
+            ['@type' => 'type.googleapis.com/google.rpc.QuotaFailure', 'violations' => [['quotaId' => 'GenerateRequestsPerDayPerProjectPerModel-FreeTier']]],
+            ['@type' => 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay' => '20s'],
+        ]]], 429)]);
+        $user = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+
+        $this->postJson('/api/v1/assistant/speech', ['text' => 'أول رد', 'lang' => 'ar'], $this->auth($user))->assertStatus(503);
+        $this->postJson('/api/v1/assistant/speech', ['text' => 'تاني رد', 'lang' => 'ar'], $this->auth($user))->assertStatus(503)->assertJsonPath('spoken', 'تاني رد');
+        Http::assertSentCount(1);
+
+        $this->travelTo(now('America/Los_Angeles')->addDay()->startOfDay()->addMinute());
+        $this->postJson('/api/v1/assistant/speech', ['text' => 'بكرة', 'lang' => 'ar'], $this->auth($user));
+        Http::assertSentCount(2);
     }
 
     public function test_the_website_route_needs_a_signed_in_user_and_xml_is_escaped(): void

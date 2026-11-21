@@ -13,6 +13,9 @@ class Speech
 {
     public const MAX_CHARS = 1500;
 
+    /** Set while Google refuses the free voice (quota used up), so replies don't wait for a refusal every time. */
+    public const GEMINI_RESTING = 'gemini-tts-resting';
+
     /** A natural voice is set up: Azure first, otherwise Google's Gemini voice. */
     public function ready(): bool
     {
@@ -23,7 +26,7 @@ class Speech
     {
         return match (true) {
             filled(config('services.azure_speech.key')) => 'azure',
-            filled(config('services.gemini_tts.key')) => 'gemini',
+            filled(config('services.gemini_tts.key')) && ! Cache::has(self::GEMINI_RESTING) => 'gemini',
             default => null,
         };
     }
@@ -157,6 +160,9 @@ class Speech
                 ],
             ]);
         $pcm = base64_decode((string) $response->json('candidates.0.content.parts.0.inlineData.data'), true);
+        if ($response->status() === 429) {
+            self::restGemini((array) $response->json('error.details', []));
+        }
         if (! $response->successful() || ! $pcm || strlen($pcm) < 200) {
             throw new RuntimeException('Gemini voice answered '.$response->status().': '.mb_substr((string) $response->json('error.message'), 0, 400));
         }
@@ -170,6 +176,18 @@ class Speech
         }
 
         return self::wav($pcm, $rate);
+    }
+
+    /**
+     * Google said "quota used up": a daily quota comes back at midnight Pacific time (Google's reset), a per-minute
+     * one after the delay Google gives (a minute if it gives none).
+     */
+    private static function restGemini(array $details): void
+    {
+        $daily = collect($details)->pluck('violations')->flatten(1)->contains(fn ($v) => str_contains((string) ($v['quotaId'] ?? ''), 'PerDay'));
+        $delay = (int) collect($details)->pluck('retryDelay')->filter()->map(fn ($d) => (int) $d)->first();
+        $until = $daily ? now('America/Los_Angeles')->addDay()->startOfDay() : now()->addSeconds(max(30, $delay ?: 60));
+        Cache::put(self::GEMINI_RESTING, true, $until);
     }
 
     /** 16-bit mono PCM wrapped in a WAV header, so phones and browsers can play it. */
