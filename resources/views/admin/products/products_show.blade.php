@@ -21,19 +21,7 @@
 <body>
     @php
         $currentUser = auth()->user();
-        $currentUserAgentIds = $currentUser?->isAgent()
-            ? \App\Models\Agent::query()
-                ->where(function ($query) use ($currentUser) {
-                    $query->where('user_id', $currentUser->id);
-
-                    if ($currentUser->email) {
-                        $query->orWhere('email', $currentUser->email);
-                    }
-                })
-                ->pluck('id')
-                ->map(fn($id) => (int) $id)
-                ->all()
-            : [];
+        // $currentUserAgentIds comes from PageDataComposers::agentIds.
         $canManageProducts = $currentUser?->canAccessRouteName('products.edit')
             && (! $currentUser?->isAgent() || in_array((int) $product->agent_id, $currentUserAgentIds, true));
     @endphp

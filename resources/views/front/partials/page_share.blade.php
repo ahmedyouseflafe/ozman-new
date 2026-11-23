@@ -6,7 +6,7 @@
     <span class="oz-share-label">{{ $pageShareLabel }}</span>
 </button>
 {{-- The shop's star rating, above the share button, once it has reviews. --}}
-@if (isset($shop) && $shop instanceof \App\Models\Shop && ($shopRating = \App\Models\ShopReview::summaryFor($shop->id))['count'] > 0)
+@if (isset($shop) && $shop instanceof \App\Models\Shop && $shopRating['count'] > 0)
     <a class="oz-shop-rating" href="{{ route('shop.reviews', $shop) }}" aria-label="{{ __('تقييمات :shop', ['shop' => $shop->name]) }}">
         <span class="oz-shop-rating-star">★</span><b>{{ number_format($shopRating['average'], 1) }}</b><small>{{ $shopRating['count'] }}</small>
     </a>

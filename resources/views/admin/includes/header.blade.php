@@ -4,21 +4,8 @@
 @endonce
 
 @php
-    $adminNotifications = collect();
-    $adminUnreadNotificationsCount = 0;
+    // $adminNotifications and $adminUnreadNotificationsCount come from App\View\Composers\AdminHeaderComposer.
     $currentUser = auth()->user();
-
-    if ($currentUser?->isSuperAdmin()) {
-        $adminNotifications = \App\Models\AdminNotification::query()
-            ->with(['shop', 'user'])
-            ->latest()
-            ->limit(30)
-            ->get();
-
-        $adminUnreadNotificationsCount = \App\Models\AdminNotification::query()
-            ->whereNull('read_at')
-            ->count();
-    }
 
     $notificationIcons = [
         'shop_created' => 'ti ti-building-store',

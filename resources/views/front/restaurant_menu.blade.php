@@ -1,6 +1,6 @@
 @php
     $locale = app()->getLocale();
-    $hasCustomerWelcome = $shop->slug === 'bankai-sushi' || \App\Models\RewardWheel::where('key', 'shop_signup_'.$shop->id)->exists();
+    $hasCustomerWelcome = $shop->slug === 'bankai-sushi' || $hasSignupWheel; // from PageDataComposers::restaurantMenu
     $isRtl = in_array($locale, ['ar', 'he'], true);
     $restaurantDictionary = [
         'ar' => [

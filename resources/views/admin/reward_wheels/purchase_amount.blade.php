@@ -221,7 +221,7 @@
         </template>
         <script>
             @php
-                $signupSource = \App\Models\RewardWheel::where('shop_id', $selectedShopId)->where('key', 'shop_signup_'.$selectedShopId)->with(['segments' => fn($q) => $q->orderBy('sort_order')])->first();
+                // $signupSource comes from PageDataComposers::purchaseWheelSettings.
                 $signupCopy = $signupSource ? ['title'=>$signupSource->title,'quota'=>$signupSource->win_quota_total,'segments'=>$signupSource->segments->map(fn($s)=>['label'=>$s->label,'discount_type'=>$s->discount_type,'discount_value'=>$s->discount_value,'win_quota'=>$s->win_quota,'color'=>$s->color,'is_active'=>$s->is_active,'existing_gift_image'=>$s->gift_image])->all()] : null;
             @endphp
             const signupCopy = @json($signupCopy);

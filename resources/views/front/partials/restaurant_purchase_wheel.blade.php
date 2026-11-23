@@ -1,7 +1,5 @@
 @php
-    $purchaseWheels = \App\Models\RewardWheel::where('shop_id', $shop->id)->where('wheel_type', 'purchase_amount')->where('is_active', true)
-        ->whereHas('segments', fn($q) => $q->where('is_active', true), '>=', 2)
-        ->with(['segments' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')])->orderBy('min_order_total')->get();
+    // $purchaseWheels comes from PageDataComposers::purchaseWheels.
     $previewSegments = $purchaseWheels->first()?->segments ?? collect();
     $previewGradient = $previewSegments->map(function($segment, $index) use ($previewSegments) {
         $color = preg_match('/^#[0-9a-f]{6}$/i', $segment->color ?? '') ? $segment->color : '#087f93';

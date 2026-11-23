@@ -17,8 +17,7 @@
     $me = auth()->user();
     $inMarket = request()->routeIs('market.*');
     $isCreator = $me?->isPromoter() && $me->promoterProfile && ! $me->promoterProfile->isPending();
-    $pendingSales = $me?->earnsPoints() ? \App\Models\MarketOrder::where('seller_id', $me->id)->where('status', 'pending')->count() : 0;
-    $pendingPromoters = $me?->isSuperAdmin() ? \App\Models\PromoterProfile::pending()->count() : 0;
+    // $pendingSales and $pendingPromoters come from PageDataComposers::communityLayout.
     $alerts = $pendingSales + $pendingPromoters;
     $loginUrl = route('community.login', ['return' => '/'.ltrim(request()->path(), '/')]);
 @endphp

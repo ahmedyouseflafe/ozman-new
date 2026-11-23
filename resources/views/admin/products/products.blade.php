@@ -85,19 +85,7 @@
         $categoryOptions = collect($categories ?? []);
         $categoriesByShop = $categoryOptions->groupBy('shop_id');
         $currentUser = auth()->user();
-        $currentUserAgentIds = $currentUser?->isAgent()
-            ? \App\Models\Agent::query()
-                ->where(function ($query) use ($currentUser) {
-                    $query->where('user_id', $currentUser->id);
-
-                    if ($currentUser->email) {
-                        $query->orWhere('email', $currentUser->email);
-                    }
-                })
-                ->pluck('id')
-                ->map(fn($id) => (int) $id)
-                ->all()
-            : [];
+        // $currentUserAgentIds comes from PageDataComposers::agentIds.
         $canCreateProducts = $currentUser?->canAccessRouteName('products.create');
         $canEditProducts = $currentUser?->canAccessRouteName('products.edit');
         $canDeleteProducts = $currentUser?->canAccessRouteName('products.destroy');
