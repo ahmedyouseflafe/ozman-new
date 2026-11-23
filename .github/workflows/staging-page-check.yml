@@ -16,16 +16,17 @@ jobs:
       - name: Fetch pages and their files
         env:
           PATHS: ${{ inputs.paths }}
+        shell: bash
         run: |
           set -u
           base=https://staging.ozman.online
           bad=0
           for p in $PATHS; do
-            code=$(curl -s -o page.html -w '%{http_code}' -L "$base$p")
+            code=$(curl -s --http1.1 -A 'Mozilla/5.0 (OzmanCheck)' -o page.html -w '%{http_code}' -L "$base$p" || echo "curl-error-$?")
             echo "$code $p"
             [ "$code" = 200 ] || bad=1
             for f in $(grep -oE '(css|js)/views/[A-Za-z0-9._-]+\.(css|js)\?v=[0-9]+' page.html | sort -u); do
-              c=$(curl -s -o /dev/null -w '%{http_code}' "$base/$f")
+              c=$(curl -s --http1.1 -A 'Mozilla/5.0 (OzmanCheck)' -o /dev/null -w '%{http_code}' "$base/$f" || echo "curl-error-$?")
               echo "    $c $f"
               [ "$c" = 200 ] || bad=1
             done
