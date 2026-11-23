@@ -21,11 +21,11 @@ class ScreenDisplayTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->get(route('display.main'))
+        $page = $this->get(route('display.main'))
             ->assertOk()
             ->assertSee('data-sound-toggle', false)
             ->assertSee('ti-volume-off', false)
-            ->assertSee('muted playsinline autoplay loop', false)
-            ->assertSee('syncVideoSound', false);
+            ->assertSee('muted playsinline autoplay loop', false);
+        $this->assertPageHas($page, 'syncVideoSound');
     }
 }

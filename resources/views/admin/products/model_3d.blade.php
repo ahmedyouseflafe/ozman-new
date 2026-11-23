@@ -7,27 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
-    <style>
-        :root{--bg:#071118;--panel:#0c1b24;--line:#1d3b49;--cyan:#16d3ee;--green:#55e9a0;--red:#ff9aae;--muted:#9eb4c2}*{box-sizing:border-box}
-        body{margin:0;background:radial-gradient(circle at 85% 0,rgba(22,211,238,.12),transparent 30%),var(--bg);color:#f7fbff;font-family:Cairo,Arial,sans-serif}
-        .m3-page{width:min(980px,calc(100% - 310px));margin:0 270px 0 auto;padding:24px 0 40px;display:grid;gap:14px}
-        [dir=ltr] .m3-page{margin:0 auto 0 270px}
-        .card{padding:18px 20px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(145deg,rgba(15,37,48,.96),rgba(7,19,26,.98))}
-        h1{margin:0;font-size:22px;display:flex;align-items:center;gap:8px}h1 i{color:var(--cyan)}h2{margin:0 0 6px;font-size:16px}
-        p{margin:4px 0;color:var(--muted);font-size:13px;line-height:1.8}
-        .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border:1px solid #276377;border-radius:12px;background:#102b37;color:#e8fbff;font:inherit;font-size:13px;font-weight:900;cursor:pointer;text-decoration:none}
-        .btn:disabled{opacity:.55;cursor:wait}.btn-main{border:0;background:linear-gradient(135deg,#3fe0a0,#16b5d6);color:#04202a}.btn-danger{border-color:#6a2c3a;color:var(--red);background:transparent}
-        .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
-        model-viewer{width:100%;height:380px;border-radius:18px;background:radial-gradient(circle at 50% 35%,#16303d,#08141b 70%);border:1px solid var(--line)}
-        .sizes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
-        label{display:grid;gap:4px;font-size:12.5px;color:var(--muted);font-weight:700}
-        input[type=number]{min-height:42px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:#0a1820;color:#fff;font:inherit}
-        .status{padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:#0a1820;font-size:13.5px}
-        .status.bad{border-color:#6a2c3a;color:var(--red)}.bar{height:8px;border-radius:6px;background:#12303d;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;background:var(--cyan)}
-        .msg{min-height:20px;font-size:13px;color:var(--green)}.msg.bad{color:var(--red)}
-        .empty{padding:30px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:18px}
-        @media(max-width:1050px){.m3-page,[dir=ltr] .m3-page{width:calc(100% - 24px);margin:auto;padding-top:70px}.sizes{grid-template-columns:1fr}}
-    </style>
+    @viewStyle('admin.products.model_3d')
 </head>
 <body>
 @include('admin.includes.sidebar')

@@ -5,22 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>{{ __('شوفها بغرفتك') }} · {{ $product->localized('name') }}</title>
     <meta name="description" content="{{ __(':product من :shop، بالحجم الحقيقي بغرفتك.', ['product' => $product->localized('name'), 'shop' => $product->shop->name]) }}">
-    <style>
-        :root { --bg: #0b0f1a; --card: #141a2b; --line: #263049; --text: #eef2ff; --muted: #9aa6c4; --accent: #08def4; }
-        * { box-sizing: border-box; }
-        html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: Cairo, system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif; }
-        .wrap { display: flex; flex-direction: column; min-height: 100%; max-width: 760px; margin: 0 auto; padding: 14px 16px 22px; gap: 12px; }
-        .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-        .top h1 { margin: 0; font-size: 19px; line-height: 1.4; }
-        .top small { display: block; color: var(--muted); font-weight: 600; }
-        .back { color: var(--accent); text-decoration: none; font-weight: 800; white-space: nowrap; }
-        model-viewer { flex: 1; width: 100%; min-height: 58vh; border-radius: 22px; background: radial-gradient(circle at 50% 35%, #1b2440, #0d1120 70%); border: 1px solid var(--line); --poster-color: transparent; }
-        .place { position: absolute; inset-inline: 16px; bottom: 16px; padding: 14px; border: 0; border-radius: 16px; background: var(--accent); color: #02161a; font: inherit; font-size: 16px; font-weight: 900; cursor: pointer; }
-        .facts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
-        .price { font-size: 20px; font-weight: 900; }
-        .size { color: var(--muted); font-size: 14px; }
-        .note { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
-    </style>
+    @viewStyle('front.product_ar')
 </head>
 <body>
 @php

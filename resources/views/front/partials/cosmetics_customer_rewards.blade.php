@@ -27,15 +27,7 @@
     <p id="eleganceCheckoutStatus" role="status" aria-live="polite"></p>
     <button type="submit" hidden aria-hidden="true" tabindex="-1">إرسال الطلب</button>
 </form>
-<style>
-.cosmetics-checkout-bar{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px;z-index:45;max-width:calc(100% - 24px)}
-.cosmetics-checkout-bar .beauty-cart{position:static;min-width:0;flex:1}.cosmetics-purchase-control{flex:none}
-.beauty-reward-tools{bottom:100px!important}#beautyPurchaseWheelOpen{display:none}
-#shopSignupWheel,#purchaseWheelDialog{border-color:#e8c276;background:radial-gradient(circle at top,#493049,#130d1b)}
-#eleganceCheckoutForm [hidden]{display:none!important}#eleganceCheckoutForm textarea{box-sizing:border-box;width:100%;border:1px solid #51404f;border-radius:14px;background:#110b15;color:#fff;padding:12px;font:inherit;resize:vertical}
-.elegance-location{display:grid;gap:8px;font-size:13px}.elegance-location small{color:#c8b4c5}#eleganceCheckoutStatus{color:#f7ce82;font-size:13px;line-height:1.7;margin:0}
-@media(max-width:480px){.cosmetics-checkout-bar{left:12px}.cosmetics-checkout-bar .beauty-cart strong{font-size:12px}}
-</style>
+@viewStyle('front.partials.cosmetics_customer_rewards')
 @php
 $eleganceCheckoutConfig = [
     'shopId' => $shop->id,

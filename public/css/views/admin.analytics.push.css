@@ -1,0 +1,33 @@
+.admin-push .push-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+}
+.admin-push [hidden] {
+    display: none !important;
+}
+.admin-push p {
+    line-height: 1.8;
+}
+.admin-push #adminPushStatus {
+    font-size: 13px;
+    color: #38557a;
+}
+.admin-push #adminInstallHelp {
+    background: #eff6ff;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 13px;
+}
+.admin-push button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+@media (max-width: 650px) {
+    .admin-push .push-actions > * {
+        flex: 1 1 100%;
+    }
+    .admin-push .section-head {
+        align-items: start;
+    }
+}

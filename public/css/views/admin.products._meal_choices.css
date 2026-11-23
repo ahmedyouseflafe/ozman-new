@@ -1,0 +1,87 @@
+#mealChoiceEditor[hidden] {
+    display: none !important;
+}
+.meal-choice-group {
+    border: 1px solid #26515a;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 15px;
+    background: #07151b50;
+}
+.meal-choice-settings {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
+}
+.meal-choice-group label {
+    display: grid;
+    gap: 6px;
+    font-size: 12px;
+    color: #b9d5df;
+}
+.meal-choice-option {
+    display: grid;
+    grid-template-columns: 2fr 1fr auto;
+    gap: 10px;
+    margin: 10px 0;
+    align-items: end;
+}
+.meal-choice-group button {
+    padding: 8px 12px;
+    border: 1px solid #28545d;
+    border-radius: 10px;
+    background: #09242d;
+    color: #70e5ef;
+    font: inherit;
+    cursor: pointer;
+}
+.meal-choice-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    margin: 12px 0;
+}
+.meal-choice-controls label {
+    display: flex;
+    align-items: center;
+}
+.meal-choice-controls input {
+    width: auto !important;
+}
+.meal-choice-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px 0;
+}
+.meal-choice-categories label {
+    display: flex;
+    align-items: center;
+    border: 1px solid #28545d;
+    padding: 10px;
+    border-radius: 8px;
+}
+.meal-choice-categories input {
+    width: 20px !important;
+    height: 20px;
+    accent-color: #00cfe8;
+}
+.meal-choice-group [hidden] {
+    display: none !important;
+}
+@media (max-width: 600px) {
+    .meal-choice-settings {
+        grid-template-columns: 1fr 1fr;
+    }
+    .meal-choice-settings label:first-child {
+        grid-column: 1/-1;
+    }
+    .meal-choice-option {
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+    }
+    .meal-choice-group {
+        padding: 10px;
+    }
+}

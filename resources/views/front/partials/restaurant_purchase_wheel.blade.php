@@ -16,28 +16,7 @@
         $pwText[3] = match($locale) {'en'=>'Send order on WhatsApp', 'he'=>'שליחת ההזמנה בוואטסאפ', default=>'إرسال الطلب على واتساب'};
     }
 @endphp
-<style>
-.restaurant-bottom-actions{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(640px,calc(100% - 24px));display:flex;gap:8px;z-index:15;align-items:stretch}
-.restaurant-bottom-actions .mobile-cart{position:static;transform:none;width:auto;flex:1;min-width:0;padding:10px;font-size:clamp(12px,3vw,16px)}
-.purchase-wheel-trigger{position:relative;flex:0 0 72px;width:72px;height:72px;align-self:center;border:0;border-radius:50%;background:transparent;padding:0;cursor:pointer;filter:drop-shadow(0 0 9px #00d7ea66)}
-.purchase-wheel-trigger:before{content:'';position:absolute;top:-4px;left:calc(50% - 7px);border-left:7px solid transparent;border-right:7px solid transparent;border-top:14px solid #fff;z-index:3}
-.purchase-wheel-mini{position:absolute;inset:2px;border:3px solid #07d8ec;border-radius:50%;box-sizing:border-box;box-shadow:inset 0 0 0 2px #071b25}
-.purchase-wheel-mini:after{content:'';position:absolute;inset:0;border:3px dotted #ffffffb3;border-radius:50%}
-.purchase-wheel-lock{position:absolute;inset:0;display:grid;place-items:center;border-radius:50%;background:#06111c55;transition:opacity .2s}
-.purchase-wheel-lock svg{width:32px;height:36px;padding:7px;box-sizing:content-box;border-radius:50%;background:#071922e8;filter:drop-shadow(0 2px 3px #0008)}
-.purchase-wheel-trigger.is-ready .purchase-wheel-lock{opacity:0;pointer-events:none}
-.purchase-wheel-trigger.is-ready .purchase-wheel-mini{border-color:#50e9a7}
-.purchase-wheel-trigger:focus-visible{outline:3px solid #fff;outline-offset:4px}
-#purchaseWheelDialog{position:fixed;inset:0;margin:auto;width:min(420px,calc(100vw - 24px));max-height:85dvh;overflow:auto;box-sizing:border-box;padding:20px;border:1px solid #06cde0;border-radius:20px;background:#0b1a22;color:#fff;text-align:center}
-#purchaseWheelDialog::backdrop{background:#000b}
-#purchaseWheelDialog button{padding:12px 16px;border:1px solid #09dcec;border-radius:12px;background:#123842;color:white;cursor:pointer;margin:5px}
-#purchaseWheelDialog button:disabled{opacity:.5;cursor:wait}
-.purchase-wheel-frame{position:relative;width:min(270px,100%);aspect-ratio:1;margin:20px auto}
-.purchase-wheel-frame:before{content:'▼';position:absolute;top:-16px;left:calc(50% - 12px);z-index:2;color:#fff;font-size:26px}
-#purchaseWheelDisc{width:100%;height:100%;border:4px solid #0ad9e9;box-sizing:border-box;border-radius:50%;position:relative;transition:transform 3s cubic-bezier(.12,.8,.15,1)}
-#purchaseWheelDisc span{position:absolute;left:50%;top:50%;width:42%;font-size:11px;font-weight:bold;line-height:1.2;text-shadow:0 1px 3px #000;transform-origin:0 0;text-align:center;overflow-wrap:anywhere}#purchaseWheelDisc span b{display:inline-block;font:inherit}
-body{padding-bottom:90px}
-</style>
+@viewStyle('front.partials.restaurant_purchase_wheel')
 @if($purchaseWheels->isNotEmpty())
 <button type="button" id="purchaseWheelTrigger" class="purchase-wheel-trigger" aria-label="{{ $pwText[0] }} — {{ $pwText[1] }}" title="{{ $pwText[0] }}" aria-haspopup="dialog">
     <span class="purchase-wheel-mini" aria-hidden="true" style="background:conic-gradient({{ $previewGradient }})"></span>

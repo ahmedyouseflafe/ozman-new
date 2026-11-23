@@ -1,0 +1,38 @@
+#wheelForm [hidden] {
+    display: none !important;
+}
+.segment-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+}
+.signup-gift-field {
+    grid-column: 1/-1;
+}
+.signup-gift-field[hidden] {
+    display: none;
+}
+.signup-gift-preview {
+    width: 90px;
+    height: 90px;
+    object-fit: contain;
+    border-radius: 12px;
+    background: #fff;
+    padding: 4px;
+}
+.preview-segment img {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    border-radius: 8px;
+    vertical-align: middle;
+    margin-inline: 8px;
+    background: #fff;
+}
+.save-btn {
+    flex-shrink: 0;
+}
+@media (max-width: 600px) {
+    .segment-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

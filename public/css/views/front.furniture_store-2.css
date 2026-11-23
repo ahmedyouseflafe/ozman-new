@@ -1,0 +1,154 @@
+/* Keep the language picker in the same warm palette as the furniture showroom. */
+.hero-top .public-language-switcher {
+    border-color: #e7c98e88;
+    background: #1d1d16e8;
+    box-shadow: 0 10px 24px #0005;
+}
+.hero-top .public-language-switcher .public-language-icon {
+    filter: saturate(0.7);
+}
+.hero-top .public-language-switcher a {
+    color: #dcccb4;
+}
+.hero-top .public-language-switcher a.active {
+    background: #e8d0a1;
+    color: #332518;
+    box-shadow: 0 3px 10px #0003;
+}
+.hero-actions .ar-launch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 45px;
+    padding: 0 16px;
+    border: 1px solid #e7cb9877;
+    border-radius: 14px;
+    background: #c98252;
+    color: #26180f;
+    font:
+        900 12px Cairo,
+        Arial,
+        sans-serif;
+    box-shadow: 0 10px 25px #0004;
+    cursor: pointer;
+}
+.hero-actions .ar-launch:hover {
+    background: #edcf9c;
+    transform: translateY(-2px);
+}
+.ar-demo-layer {
+    position: fixed;
+    z-index: 500;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: #080a08e8;
+    backdrop-filter: blur(12px);
+}
+.ar-demo-layer.open {
+    display: flex;
+}
+.ar-demo-card {
+    position: relative;
+    width: min(620px, 100%);
+    overflow: hidden;
+    border: 1px solid #efd29a88;
+    border-radius: 28px;
+    background: linear-gradient(145deg, #282116, #171914);
+    box-shadow: 0 28px 80px #000;
+}
+.ar-demo-head {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 18px 20px 12px;
+}
+.ar-demo-head small {
+    display: block;
+    color: #ebc989;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+}
+.ar-demo-head h2 {
+    margin: 4px 0 0;
+    color: #fff5e7;
+    font-size: 21px;
+}
+.ar-demo-close {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    border: 1px solid #ecd3a777;
+    border-radius: 50%;
+    background: #1d1e17;
+    color: #ffe7bb;
+    font-size: 20px;
+    cursor: pointer;
+}
+.ar-model {
+    display: block;
+    width: 100%;
+    height: min(62vh, 500px);
+    --poster-color: transparent;
+    background: radial-gradient(ellipse at 50% 78%, #e5c68a33, transparent 32%),
+        linear-gradient(145deg, #373328, #141714);
+}
+.ar-place-button {
+    position: absolute;
+    right: 50%;
+    bottom: 18px;
+    transform: translateX(50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 45px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 14px;
+    background: #f1d39b;
+    color: #2c1e12;
+    font:
+        900 12px Cairo,
+        Arial,
+        sans-serif;
+    box-shadow: 0 8px 22px #0008;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.ar-demo-note {
+    margin: 0;
+    padding: 0 20px 18px;
+    color: #c6bcad;
+    font-size: 10px;
+    line-height: 1.8;
+}
+.ar-demo-note i {
+    color: #f0ce91;
+}
+@media (max-width: 720px) {
+    .hero-actions .ar-launch {
+        width: 100%;
+    }
+    .ar-demo-layer {
+        padding: 10px;
+    }
+    .ar-demo-card {
+        border-radius: 23px;
+    }
+    .ar-demo-head h2 {
+        font-size: 17px;
+    }
+    .ar-model {
+        height: 58vh;
+    }
+    .ar-demo-note {
+        font-size: 9px;
+    }
+}

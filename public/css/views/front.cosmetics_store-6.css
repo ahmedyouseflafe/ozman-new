@@ -1,0 +1,74 @@
+/* Product clips open in their own gallery-style viewer, separate from the store display. */
+.beauty-product-video-modal {
+    position: fixed;
+    z-index: 110;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 88px;
+    background: rgba(3, 1, 5, 0.84);
+    backdrop-filter: blur(13px);
+    direction: rtl;
+}
+.beauty-product-video-modal.open {
+    display: flex;
+}
+.beauty-product-video-dialog {
+    position: relative;
+    width: auto;
+    max-width: 100%;
+    max-height: calc(100vh - 60px);
+    background: transparent;
+}
+.beauty-product-video-dialog video {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: calc(100vh - 60px);
+    min-height: 0;
+    background: #000;
+    object-fit: contain;
+}
+.beauty-product-video-meta {
+    display: none;
+}
+.beauty-product-video-close {
+    position: fixed;
+    z-index: 1;
+    top: 30px;
+    left: 32px;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border: 1px solid rgba(255, 205, 228, 0.34);
+    border-radius: 50%;
+    background: rgba(19, 10, 22, 0.88);
+    color: #fff;
+    font-size: 30px;
+    cursor: pointer;
+}
+.beauty-product-video-close:hover {
+    border-color: var(--rose);
+    color: var(--rose);
+}
+@media (max-width: 720px) {
+    .beauty-product-video-modal {
+        padding: 12px;
+    }
+    .beauty-product-video-dialog {
+        max-height: calc(100vh - 24px);
+    }
+    .beauty-product-video-dialog video {
+        max-height: calc(100vh - 24px);
+    }
+    .beauty-product-video-close {
+        top: 18px;
+        left: 18px;
+        width: 42px;
+        height: 42px;
+        font-size: 25px;
+    }
+}

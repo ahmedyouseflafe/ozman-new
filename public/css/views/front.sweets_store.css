@@ -1,0 +1,438 @@
+/* A pastry counter, not another generic storefront: paper notes, warm oven
+           colors, a flavour rail and a display case for the baked goods. */
+body {
+    background: radial-gradient(circle at 14% 4%, #ffd99a22, transparent 22%),
+        radial-gradient(circle at 88% 26%, #ec889522, transparent 28%), #1c0c08;
+}
+.hero {
+    position: relative;
+    display: block;
+    min-height: 510px;
+    border-radius: 38px;
+    background: #35150e;
+    isolation: isolate;
+    overflow: hidden;
+}
+.hero-media {
+    position: absolute;
+    inset: 0;
+    min-height: 0;
+    background: linear-gradient(130deg, #3c180f, #160705);
+}
+.hero-media:after {
+    background: linear-gradient(90deg, #1c0805bb 0%, transparent 62%), linear-gradient(0deg, #1b0805cc, transparent 60%);
+}
+.fallback {
+    background: radial-gradient(ellipse at 70% 35%, #f9c87855 0 10%, transparent 10.5%),
+        radial-gradient(ellipse at 36% 70%, #f59c7455 0 15%, transparent 15.5%),
+        radial-gradient(ellipse at 65% 75%, #b8543855 0 18%, transparent 18.5%),
+        repeating-linear-gradient(135deg, #5c2415 0 13px, #461b12 13px 27px);
+}
+.fallback.with-banner {
+    background:
+        linear-gradient(90deg, #1c080566, #1c080599),
+        var(--bakery-banner) center/cover;
+}
+.brand {
+    position: absolute;
+    z-index: 3;
+    right: 56px;
+    bottom: 38px;
+    width: min(365px, calc(100% - 112px));
+    min-height: 360px;
+    padding: 66px 30px 28px;
+    border: 1px dashed #a96a3d;
+    border-radius: 9px 28px 22px 28px;
+    color: #4a2216;
+    background: linear-gradient(145deg, #fff5d8, #f7d6a7);
+    box-shadow:
+        18px 18px 0 #12060466,
+        0 18px 46px #0008;
+    transform: rotate(1.1deg);
+}
+.brand:before {
+    content: "مخبوز اليوم بحب";
+    position: absolute;
+    top: 18px;
+    right: 24px;
+    padding: 5px 10px;
+    border-radius: 3px;
+    background: #bd5a42;
+    color: #fff5dd;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    transform: rotate(-2deg);
+}
+.brand:after {
+    content: "";
+    position: absolute;
+    top: -8px;
+    left: 39%;
+    width: 88px;
+    height: 24px;
+    background: #fff0c280;
+    transform: rotate(-4deg);
+}
+.tools {
+    top: 16px;
+    right: auto;
+    left: 18px;
+    z-index: 2;
+}
+.back {
+    border-color: #9b5b36;
+    background: #fff4df;
+    color: #5a2a19;
+}
+.tools .public-language-switcher {
+    background: #fff1d8;
+    border-color: #b06c42;
+}
+.tools .public-language-switcher a {
+    color: #5a2a19;
+}
+.logo {
+    width: 102px;
+    height: 102px;
+    border-color: #a96237;
+    background: #fff9e9;
+    box-shadow:
+        0 0 0 7px #c878451c,
+        0 8px 0 #d8a06655;
+}
+.brand h1 {
+    font-size: 34px;
+    color: #4a2115;
+    text-shadow: none;
+}
+.brand p {
+    color: #7f503a;
+    font-size: 11px;
+}
+.open {
+    border-color: #48a576;
+    color: #23734c;
+    background: #e1f6de;
+}
+.cta {
+    border-radius: 999px;
+    background: #522017;
+    color: #fff4d8;
+    box-shadow: inset 0 -3px #2d0f0a;
+}
+.bakery-moments {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr 0.9fr;
+    gap: 12px;
+    margin: 18px 0;
+}
+.bakery-moment {
+    position: relative;
+    min-height: 118px;
+    padding: 19px 20px;
+    overflow: hidden;
+    border: 1px solid #f8cf9570;
+    border-radius: 23px;
+    background: linear-gradient(135deg, #592318, #2c110d);
+    box-shadow: 0 12px 28px #0004;
+}
+.bakery-moment:nth-child(2) {
+    background: linear-gradient(135deg, #3d2734, #29111a);
+}
+.bakery-moment:nth-child(3) {
+    background: linear-gradient(135deg, #56411d, #2a1b0e);
+}
+.bakery-moment i {
+    position: absolute;
+    left: 17px;
+    bottom: 13px;
+    color: #ffc66d55;
+    font-size: 58px;
+}
+.bakery-moment small {
+    display: block;
+    color: #f6bd72;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+}
+.bakery-moment strong {
+    display: block;
+    position: relative;
+    z-index: 1;
+    margin-top: 6px;
+    font-size: 18px;
+}
+.bakery-moment p {
+    position: relative;
+    z-index: 1;
+    margin: 4px 0 0;
+    color: #ebc9ae;
+    font-size: 10px;
+}
+.catalog {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+.catalog-header {
+    align-items: center;
+    margin: 22px 4px 13px;
+}
+.catalog h2 {
+    font-size: 32px;
+    color: #ffe7b9;
+}
+.eyebrow {
+    color: #f6ba62;
+}
+.count {
+    background: #32120e;
+    border-color: #d88a4b;
+    color: #ffe0a0;
+}
+.layout {
+    display: block;
+    direction: rtl;
+}
+.categories {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 9px;
+    max-height: none;
+    padding: 0 2px 13px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+}
+.category {
+    flex: 0 0 120px;
+    padding: 8px 6px;
+    border: 1px solid #f9d8ac2e;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #34120f, #230b09);
+    transition: 0.2s;
+}
+.category:hover {
+    border-color: #efb96d;
+}
+.category figure {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 4px;
+    border-color: #f8ce9155;
+    background: #4a1b12;
+}
+.category span {
+    font-size: 10px;
+}
+.category.active {
+    border-color: #f2c26c;
+    background: linear-gradient(135deg, #6d2b1b, #3c120e);
+}
+.category.active figure {
+    box-shadow:
+        0 0 0 4px #f2c26c1f,
+        0 0 20px #f2c26c88;
+    transform: none;
+}
+.content {
+    padding: 18px;
+    border: 1px solid #f6cf9460;
+    border-radius: 29px;
+    background: linear-gradient(145deg, #35140feb, #1a0807f2);
+    box-shadow: 0 20px 48px #0005;
+}
+.pane-head {
+    padding-bottom: 12px;
+    border-bottom: 1px dashed #f7d7ae48;
+}
+.pane-head h3 {
+    font-family: "Playfair Display", Cairo, serif;
+    font-size: 26px;
+    color: #ffdfab;
+}
+.grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+}
+.card {
+    border-radius: 25px;
+    background: linear-gradient(165deg, #fff2d5, #d99b70);
+    color: #4b2116;
+    box-shadow: 0 14px 25px #0004;
+}
+.card:hover {
+    border-color: #fff0c5;
+    box-shadow: 0 20px 35px #0007;
+}
+.picture {
+    aspect-ratio: 1/0.84;
+    background: #7d3c23;
+}
+.badge {
+    border-color: #ffe5ad;
+    background: #582117;
+    color: #ffe4ad;
+}
+.body {
+    padding: 12px;
+}
+.small-brand {
+    color: #a4493d;
+}
+.name {
+    color: #512015;
+    font-size: 14px;
+}
+.description {
+    color: #80523e;
+}
+.foot {
+    border-color: #a957442c;
+}
+.price {
+    color: #753119;
+}
+.was {
+    color: #a56b55;
+}
+.add {
+    border-radius: 999px;
+    background: #562015;
+    color: #fff2d5;
+    box-shadow: inset 0 -3px #2c100b;
+}
+.empty {
+    min-height: 185px;
+    border: 1px dashed #efbf8155;
+    background: radial-gradient(circle at 75% 28%, #f5bd7424, transparent 25%), #2d100d;
+    color: #f2c8a6;
+}
+.cart-button {
+    border-color: #f0b96e;
+    background: #fff0ce;
+    color: #4b2015;
+    box-shadow: 0 14px 36px #0008;
+}
+.cart-button i {
+    background: #5b2317;
+    color: #ffe8bb;
+}
+.cart-button small {
+    color: #8c543c;
+}
+.sheet {
+    border-color: #efbe78;
+    background: linear-gradient(145deg, #fff1d5, #e2a077);
+    color: #4b2116;
+}
+.sheet .close {
+    border-color: #a75e3e;
+    color: #4b2116;
+}
+.row {
+    background: #fff7e799;
+}
+.total {
+    border-color: #a85d4333;
+    color: #64301e;
+}
+.fields input {
+    border-color: #a65d443f;
+    background: #fff9ea;
+    color: #4b2116;
+}
+.send {
+    border-radius: 999px;
+    background: #5a2116;
+    color: #fff1d3;
+}
+.lightbox button {
+    background: #fff0d5;
+    color: #4b2116;
+}
+@media (max-width: 720px) {
+    .hero {
+        min-height: 475px;
+        border-radius: 25px;
+    }
+    .brand {
+        right: 18px;
+        bottom: 23px;
+        width: calc(100% - 36px);
+        min-height: 295px;
+        padding: 58px 18px 20px;
+    }
+    .brand h1 {
+        font-size: 25px;
+    }
+    .brand p {
+        font-size: 9px;
+    }
+    .logo {
+        width: 82px;
+        height: 82px;
+    }
+    .tools {
+        left: 11px;
+        top: 12px;
+    }
+    .bakery-moments {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        margin: 10px 0;
+    }
+    .bakery-moment {
+        min-height: 88px;
+        padding: 13px 15px;
+    }
+    .bakery-moment strong {
+        font-size: 15px;
+    }
+    .bakery-moment i {
+        font-size: 46px;
+    }
+    .catalog-header {
+        align-items: end;
+    }
+    .catalog h2 {
+        font-size: 24px;
+    }
+    .categories {
+        padding-bottom: 9px;
+    }
+    .category {
+        flex-basis: 94px;
+        padding: 6px 4px;
+    }
+    .category figure {
+        width: 43px;
+        height: 43px;
+    }
+    .content {
+        padding: 10px;
+        border-radius: 22px;
+    }
+    .pane-head h3 {
+        font-size: 20px;
+    }
+    .grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    .card {
+        grid-template-columns: 116px minmax(0, 1fr);
+        border-radius: 18px;
+    }
+    .picture {
+        min-height: 142px;
+    }
+    .description {
+        display: none;
+    }
+}

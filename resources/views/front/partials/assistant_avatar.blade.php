@@ -36,42 +36,7 @@
     </svg>
 </span>
 @once
-<style>
-.oz-av{position:relative;display:inline-grid;place-items:center;width:var(--av);height:var(--av);flex:0 0 var(--av);border-radius:50%;filter:drop-shadow(0 6px 14px rgba(0,0,0,.35))}
-.oz-av svg{width:100%;height:100%;display:block;overflow:visible}
-.oz-av-body{transform-origin:60px 110px;animation:ozAvBreath 4.2s ease-in-out infinite}
-.oz-av-eyes{transform-box:fill-box;transform-origin:center;animation:ozAvBlink 4.6s infinite}
-.oz-av-mouth{transform-box:fill-box;transform-origin:center top;transform:scaleY(.15);opacity:0}
-.oz-av-dots circle{opacity:0}
-.oz-av[data-state="speaking"] .oz-av-smile{opacity:0}
-.oz-av[data-state="speaking"] .oz-av-mouth{opacity:1;animation:ozAvTalk .9s infinite}
-.oz-av[data-state="speaking"] .oz-av-body{animation:ozAvNod 1.4s ease-in-out infinite}
-.oz-av[data-state="speaking"]{animation:ozAvTalkRing .8s ease-in-out infinite}
-.oz-av[data-state="speaking"] .oz-av-brows{animation:ozAvBrows 1.2s ease-in-out infinite}
-.oz-av-brows{transition:transform .3s}
-.oz-av[data-state="thinking"] .oz-av-brows,.oz-av[data-state="listening"] .oz-av-brows{transform:translateY(-2px)}
-.oz-av[data-state="thinking"] .oz-av-body{transform:rotate(6deg)}
-.oz-av[data-state="listening"]{animation:ozAvRing 1.2s ease-in-out infinite}
-.oz-av[data-state="listening"] .oz-av-face{transform:translateY(1px)}
-.oz-av[data-state="thinking"] .oz-av-eyes{animation:none;transform:translate(3px,-3px)}
-.oz-av[data-state="thinking"] .oz-av-dots circle{animation:ozAvDot 1.2s infinite}
-.oz-av[data-state="thinking"] .oz-av-dots circle:nth-child(2){animation-delay:.2s}
-.oz-av[data-state="thinking"] .oz-av-dots circle:nth-child(3){animation-delay:.4s}
-@keyframes ozAvBlink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
-@keyframes ozAvBreath{50%{transform:translateY(1.5px)}}
-@keyframes ozAvNod{25%{transform:rotate(-4.5deg)}75%{transform:rotate(4.5deg)}}
-@keyframes ozAvTalkRing{0%,100%{box-shadow:0 0 0 3px rgba(39,221,134,.95)}50%{box-shadow:0 0 0 10px rgba(39,221,134,.15)}}
-@keyframes ozAvBrows{0%,100%{transform:none}30%{transform:translateY(-2.2px)}60%{transform:translateY(-.5px)}}
-.oz-av-stage{display:none;align-items:center;gap:14px;margin:8px 12px 2px;padding:10px 14px;border-radius:20px;border:1px solid rgba(8,222,244,.35);background:linear-gradient(90deg,rgba(8,222,244,.14),transparent);font-weight:900;font-size:16px;color:#f2f7fa}
-.oz-av-stage[data-state="listening"],.oz-av-stage[data-state="thinking"],.oz-av-stage[data-state="speaking"]{display:flex}
-.oz-av-stage[data-state="speaking"]{border-color:rgba(39,221,134,.4);background:linear-gradient(90deg,rgba(39,221,134,.14),transparent)}
-.oz-av-stage .s-listening,.oz-av-stage .s-thinking,.oz-av-stage .s-speaking{display:none}
-.oz-av-stage[data-state="listening"] .s-listening,.oz-av-stage[data-state="thinking"] .s-thinking,.oz-av-stage[data-state="speaking"] .s-speaking{display:inline}
-@keyframes ozAvTalk{0%{transform:scaleY(.25)}15%{transform:scaleY(1)}30%{transform:scaleY(.45)}45%{transform:scaleY(.9)}60%{transform:scaleY(.2)}75%{transform:scaleY(.75)}90%{transform:scaleY(.35)}100%{transform:scaleY(.25)}}
-@keyframes ozAvRing{0%,100%{box-shadow:0 0 0 3px rgba(8,222,244,.9)}50%{box-shadow:0 0 0 9px rgba(8,222,244,.15)}}
-@keyframes ozAvDot{0%,100%{opacity:.15}50%{opacity:1}}
-@media (prefers-reduced-motion:reduce){.oz-av *{animation:none!important}}
-</style>
+@viewStyle('front.partials.assistant_avatar')
 <script>
 window.OzmanAvatar = window.OzmanAvatar || {
     // idle | listening | thinking | speaking

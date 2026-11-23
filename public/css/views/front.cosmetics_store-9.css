@@ -1,0 +1,25 @@
+.beauty-booking-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 2px;
+    padding: 8px 13px;
+    border: 1px solid var(--gold);
+    border-radius: 999px;
+    background: rgba(232, 194, 118, 0.08);
+    color: #ffe0a1;
+    font-size: 11px;
+    font-weight: 900;
+}
+.beauty-booking-link:hover {
+    border-color: var(--rose);
+    background: rgba(255, 128, 184, 0.14);
+    color: #fff;
+}
+@media (max-width: 720px) {
+    .beauty-booking-link {
+        padding: 6px 9px;
+        font-size: 9px;
+    }
+}

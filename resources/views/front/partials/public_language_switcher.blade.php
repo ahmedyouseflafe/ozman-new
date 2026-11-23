@@ -17,13 +17,7 @@
 @endunless
 
 @once
-    <style>
-        .public-language-switcher{display:flex;align-items:center;gap:5px;padding:5px;border:1px solid rgba(20,215,240,.28);border-radius:13px;background:rgba(4,14,20,.9);backdrop-filter:blur(12px)}
-        .public-language-icon{margin-inline:4px 2px;font-size:13px;line-height:1}
-        .public-language-switcher a{padding:6px 8px;border:0!important;border-radius:8px!important;color:#9eb1bf;text-decoration:none;font-size:11px;font-weight:800}
-        .public-language-switcher a.active{background:var(--cyan,#16d9f3);color:#001318}
-        @media(max-width:520px){.public-language-switcher a{padding:5px 6px;font-size:10px}.public-language-icon{display:none}}
-    </style>
+    @viewStyle('front.partials.public_language_switcher')
     <script>
         (() => {
             const localeLinks = document.querySelectorAll('[data-public-locale]');

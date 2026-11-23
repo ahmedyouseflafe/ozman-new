@@ -4,9 +4,7 @@
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     <title>ستوريات المحل — Ozman</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
-        body{margin:0;background:#061014;color:#fff;font-family:Tahoma,sans-serif;line-height:1.8}main{max-width:760px;margin:auto;padding:24px}a{color:#00e5ff}form,article{background:#10242a;padding:20px;border-radius:18px;margin:16px 0}label{display:block;margin:12px 0}input,select,textarea,button{box-sizing:border-box;width:100%;padding:12px;font:inherit;border-radius:10px;border:1px solid #42616a}button{background:#00e5ff;color:#001014;cursor:pointer;margin-top:12px}textarea{resize:vertical}article form{padding:0}.notice{color:#8fffc3}.errors{color:#ffadae}
-    </style>
+    @viewStyle('admin.shop_stories.index')
     @include('admin.shop_stories.styles')
 </head><body><main>
     <div class="studio-top"><span class="studio-brand">OZMAN <small>STORIES</small></span><a class="back-link" href="{{ route('dashboard') }}">العودة للوحة التحكم ↗</a></div>

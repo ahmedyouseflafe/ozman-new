@@ -1,0 +1,34 @@
+/* Keep the purchase action readable even if an icon font is unavailable. */
+.beauty-product .add-beauty-cart {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 112px;
+    height: 38px;
+    padding: 0 12px;
+    font-size: 11px;
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+}
+.beauty-product .add-beauty-cart i {
+    display: none;
+}
+.beauty-product .add-beauty-cart::before {
+    content: "+";
+    font-size: 21px;
+    font-weight: 500;
+    line-height: 1;
+}
+.beauty-product .add-beauty-cart::after {
+    content: "أضف للسلة";
+}
+@media (max-width: 720px) {
+    .beauty-product .add-beauty-cart {
+        min-width: 102px;
+        height: 35px;
+        padding: 0 9px;
+        font-size: 10px;
+    }
+}

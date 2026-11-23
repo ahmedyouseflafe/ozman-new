@@ -41,7 +41,7 @@ class ShopAnalyticsTest extends TestCase
             $this->postJson('/admin/analytics/read', ['through' => 100])->assertForbidden();
         }
         $this->actingAs(User::factory()->create(['role' => 'super_admin', 'is_active' => false]))->getJson('/admin/analytics/data')->assertForbidden();
-        $this->actingAs($this->admin())->get('/admin/analytics')->assertOk()->assertSee('مركز متابعة المحلات')->assertSee('color-scheme:light', false);
+        $this->assertPageHas($this->actingAs($this->admin())->get('/admin/analytics')->assertOk()->assertSee('مركز متابعة المحلات'), 'color-scheme: light');
         $this->getJson('/admin/analytics/orders/'.$order->id)->assertOk()->assertJsonPath('number', $order->order_number)->assertHeader('Cache-Control', 'no-store, private');
     }
 

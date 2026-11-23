@@ -91,46 +91,7 @@
         default => 'محاولات كثيرة. انتظر دقيقة وجرّب مرة ثانية.',
     };
 @endphp
-<style>
-    .bankai-profile-edit{align-self:center;display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;padding:7px 14px;border:1px solid #25454c;border-radius:20px;background:#092027;color:#aeeef4;font:700 12px Cairo,Arial,sans-serif;cursor:pointer}
-    #bankaiWelcome{box-sizing:border-box;width:min(890px,calc(100% - 28px));max-width:890px;max-height:calc(100dvh - 28px);margin:auto;padding:0;border:1px solid #1c606c;border-radius:28px;background:#081116;color:#edfaff;overflow:auto;box-shadow:0 30px 110px #000a;font-family:Cairo,Arial,sans-serif}
-    #bankaiWelcome::backdrop{background:#01070cd9;backdrop-filter:blur(10px)}
-    #bankaiWelcome *{box-sizing:border-box}
-    #bankaiWelcome [hidden]{display:none!important}
-    .bankai-welcome-layout{display:grid;grid-template-columns:.78fr 1.22fr;min-height:600px}
-    .bankai-welcome-brand{position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 26px;text-align:center;overflow:hidden;background:radial-gradient(ellipse at 50% 38%,#0a667658,transparent 65%),linear-gradient(155deg,#09242c,#071015)}
-    .bankai-welcome-brand:before,.bankai-welcome-brand:after{content:'';position:absolute;z-index:-1;border:1px solid #13d4e51c;border-radius:50%;width:310px;height:310px;top:25px;left:calc(50% - 155px)}
-    .bankai-welcome-brand:after{width:400px;height:400px;top:-20px;left:calc(50% - 200px)}
-    .bankai-welcome-logo{width:148px;height:148px;object-fit:contain;border:1px solid #13c6d987;border-radius:30px;background:#050d12;box-shadow:0 0 45px #00cce226;margin:0 0 30px}
-    .bankai-welcome-kicker{color:#12d9ef;font-size:9px;font-weight:900;letter-spacing:2px;margin:0 0 10px;direction:ltr}
-    #bankaiWelcome h2{margin:0 0 12px;font-size:29px;line-height:1.5;font-weight:900;color:#f1fcff}
-    .bankai-welcome-intro{margin:0;color:#9db5bf;font-size:13px;line-height:2;max-width:260px}
-    .bankai-welcome-form{display:grid;gap:14px;margin:0;padding:28px;background:linear-gradient(135deg,#0d1920,#091217)}
-    .bankai-welcome-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .bankai-welcome-field{display:grid;gap:6px;font-size:12px;font-weight:800;color:#d3e5eb}
-    .bankai-welcome-field input{width:100%;min-width:0;height:46px;padding:10px 12px;border:1px solid #29414c;border-radius:12px;background:#071016;color:#f3fcff;font:500 12px Cairo,Arial,sans-serif;outline:none}
-    .bankai-welcome-field input::placeholder{color:#7d98a4}
-    #bankaiWelcome :focus-visible,.bankai-profile-edit:focus-visible{outline:2px solid #13d9ed;outline-offset:3px}
-    .bankai-welcome-field input:focus{border-color:#13d9ed}
-    .bankai-welcome-box{padding:13px;border:1px solid #253d46;border-radius:15px;background:#071219}
-    .bankai-welcome-box-head{display:flex;align-items:center;gap:9px;margin-bottom:10px}
-    .bankai-welcome-icon{display:grid;place-items:center;flex:none;width:34px;height:34px;background:#0b303a;border-radius:10px;color:#11d7eb;font-size:19px}
-    .bankai-welcome-box strong{font-size:12px;display:block}
-    .bankai-welcome-box p{margin:3px 0 0;color:#94aeb9;font-size:10px;line-height:1.8}
-    .bankai-welcome-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-    #bankaiWelcome button{font-family:inherit;cursor:pointer}
-    .bankai-welcome-action{padding:9px 12px;border:1px solid #167785;border-radius:10px;background:#0a3039;color:#83f1fc;font-size:11px;font-weight:800}
-    .bankai-welcome-link{padding:5px 0;border:0;background:none;color:#a1b8c3;font-size:10px;text-decoration:underline;text-underline-offset:4px}
-    #bankaiWelcome .bankai-welcome-status{font-size:11px;line-height:1.7;color:#acc1ca;margin:7px 0 0}
-    #bankaiWelcome .bankai-welcome-status[data-state=success]{color:#59dfb3}
-    #bankaiWelcome .bankai-welcome-status[data-state=error]{color:#ffabba}
-    .bankai-welcome-map{display:inline-block;margin-top:6px;color:#5ce6f6;font-size:11px;text-decoration:underline}
-    .bankai-welcome-submit{display:flex;justify-content:center;align-items:center;gap:10px;min-height:50px;padding:12px;border:0;border-radius:13px;background:linear-gradient(105deg,#08d1e4,#28baf3);color:#002029;font-size:14px;font-weight:900;box-shadow:0 8px 25px #00cddd16}
-    #bankaiWelcome button:disabled{cursor:wait;opacity:.6}
-    .bankai-welcome-privacy{margin:0;color:#829ca8;font-size:10px;line-height:1.8;text-align:center}
-    #bankaiWelcome .bankai-welcome-cancel{justify-self:center}
-    @media(max-width:650px){#bankaiWelcome{width:calc(100% - 20px);max-height:calc(100dvh - 20px);border-radius:22px}.bankai-welcome-layout{grid-template-columns:1fr;min-height:0}.bankai-welcome-brand{padding:22px 20px 18px}.bankai-welcome-logo{width:70px;height:70px;border-radius:18px;margin-bottom:12px}.bankai-welcome-kicker{font-size:8px;margin-bottom:5px}#bankaiWelcome h2{font-size:23px;margin-bottom:5px}.bankai-welcome-intro{font-size:11px;max-width:310px}.bankai-welcome-form{padding:20px;gap:13px}.bankai-welcome-fields{grid-template-columns:1fr}.bankai-welcome-brand:before{top:-160px}.bankai-welcome-brand:after{top:-205px}}
-</style>
+@viewStyle('front.partials.restaurant_customer_welcome')
 <dialog id="bankaiWelcome" aria-labelledby="bankaiWelcomeTitle" aria-describedby="bankaiWelcomeIntro" dir="{{ $isRtl ? 'rtl' : 'ltr' }}" data-storage-key="ozman.restaurant.{{ $shop->id }}.customer.v{{ $shop->customer_registration_version ?? 1 }}" data-csrf-url="{{ route('csrf.refresh') }}" data-registration-url="{{ route('restaurant.customer-registration.store', $shop) }}">
     <div class="bankai-welcome-layout">
         <section class="bankai-welcome-brand">

@@ -1,0 +1,32 @@
+body {
+    margin: 0;
+    background: #100c19;
+    color: #eee;
+    font:
+        18px/1.9 Arial,
+        sans-serif;
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+}
+main {
+    box-sizing: border-box;
+    width: min(540px, calc(100% - 32px));
+    padding: 32px;
+    border: 1px solid #514363;
+    border-radius: 20px;
+    background: #1b1427;
+}
+h1 {
+    font-size: 25px;
+    color: #00d5eb;
+}
+button {
+    font: inherit;
+    border: 1px solid #00d5eb;
+    border-radius: 10px;
+    background: #00d5eb;
+    color: #102025;
+    padding: 8px 20px;
+    cursor: pointer;
+}

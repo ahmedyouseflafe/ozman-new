@@ -1,0 +1,38 @@
+.overlay.quick {
+    overflow-y: auto;
+}
+.quick-card {
+    position: relative;
+    width: min(800px, 100%);
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.quick-card > .x {
+    position: absolute;
+    z-index: 3;
+    top: 12px;
+    left: 12px;
+    border-color: #ffffff55;
+    background: #101011bb;
+    color: #fff;
+}
+.quick-card > img {
+    align-self: stretch;
+    height: 100%;
+    min-height: 390px;
+    object-fit: cover;
+    object-position: top;
+}
+@media (max-width: 767.98px) {
+    .quick-card {
+        grid-template-columns: 1fr;
+    }
+    .quick-card > img {
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        aspect-ratio: 4/5;
+    }
+}

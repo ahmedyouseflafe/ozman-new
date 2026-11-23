@@ -12,4 +12,4 @@
     <p class="note">يبقى دخولك محفوظًا على هذا الجهاز. تسجيل الخروج يوقف إشعاراته؛ إغلاق التطبيق لا يوقفها. صوت الإشعار حسب إعدادات الجوال والصامت والتركيز.</p>
     <form method="post" action="{{ route('logout') }}">@csrf<button type="submit" class="button secondary">تسجيل الخروج</button></form>
 </section>
-<style>.admin-push .push-actions{display:flex;flex-wrap:wrap;gap:9px}.admin-push [hidden]{display:none!important}.admin-push p{line-height:1.8}.admin-push #adminPushStatus{font-size:13px;color:#38557a}.admin-push #adminInstallHelp{background:#eff6ff;padding:12px;border-radius:10px;font-size:13px}.admin-push button:disabled{opacity:.6;cursor:wait}@media(max-width:650px){.admin-push .push-actions>*{flex:1 1 100%}.admin-push .section-head{align-items:start}}</style>
+@viewStyle('admin.analytics.push')

@@ -20,6 +20,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Pages' own CSS and scripts, kept in public/css/views and public/js/views (see App\Support\ViewAssets).
+        \Illuminate\Support\Facades\Blade::directive('viewStyle', fn (string $name) => "<?php echo \\App\\Support\\ViewAssets::style({$name}); ?>");
+        \Illuminate\Support\Facades\Blade::directive('viewScript', fn (string $name) => "<?php echo \\App\\Support\\ViewAssets::script({$name}); ?>");
+
         // Customer sign-up rule, shared by /community/register and the promoter follow form.
         \Illuminate\Validation\Rules\Password::defaults(fn () => \Illuminate\Validation\Rules\Password::min(8)->max(128));
 

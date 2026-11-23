@@ -1,0 +1,110 @@
+.category-groups {
+    display: grid;
+    gap: 9px;
+    min-width: 0;
+    margin-bottom: 9px;
+}
+.category-groups .categories {
+    min-width: 0;
+    margin: 0;
+}
+.cart-button.cart-flight-pop {
+    animation: sweet-cart-pop 0.9s cubic-bezier(0.16, 0.9, 0.2, 1);
+    box-shadow:
+        0 14px 36px #0008,
+        0 0 38px rgba(242, 194, 108, 0.82);
+}
+@keyframes sweet-cart-pop {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    38% {
+        transform: scale(1.27) rotate(-3deg);
+    }
+    70% {
+        transform: scale(0.96) rotate(1deg);
+    }
+}
+.shopping-cart-flight {
+    position: fixed;
+    z-index: 90;
+    display: grid;
+    place-items: center;
+    overflow: visible;
+    width: 62px;
+    height: 62px;
+    pointer-events: none;
+    will-change: transform, opacity;
+}
+.shopping-cart-flight-media {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    border: 2px solid #fff5dd;
+    border-radius: 16px;
+    background: #4a1b12;
+    box-shadow: 0 12px 24px rgba(237, 117, 154, 0.5);
+}
+.shopping-cart-flight-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.shopping-cart-flight-media i {
+    font-size: 27px;
+    color: #ffe5a2;
+}
+.shopping-cart-flight-stars {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    transform: translate(var(--trail-x, 0), var(--trail-y, 0));
+    pointer-events: none;
+}
+.shopping-cart-flight-stars b {
+    position: absolute;
+    color: #ffe4a2;
+    font-size: 17px;
+    line-height: 1;
+    text-shadow: 0 0 10px #ef8c91;
+    animation: cart-flight-sparkle 0.7s ease-in-out infinite alternate;
+}
+.shopping-cart-flight-stars b:nth-child(1) {
+    left: 7px;
+    top: 10px;
+}
+.shopping-cart-flight-stars b:nth-child(2) {
+    left: 23px;
+    top: 38px;
+    font-size: 12px;
+    animation-delay: 0.16s;
+}
+.shopping-cart-flight-stars b:nth-child(3) {
+    left: 43px;
+    top: 19px;
+    font-size: 10px;
+    animation-delay: 0.32s;
+}
+@keyframes cart-flight-sparkle {
+    from {
+        opacity: 0.28;
+        transform: scale(0.55) rotate(0);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1.3) rotate(45deg);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cart-button.cart-flight-pop {
+        animation: none;
+    }
+    .shopping-cart-flight {
+        display: none;
+    }
+}

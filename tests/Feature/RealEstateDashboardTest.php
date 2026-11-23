@@ -155,17 +155,19 @@ class RealEstateDashboardTest extends TestCase
         $this->assertTrue($property->images->first()->is_cover);
         Storage::disk('public')->assertExists($property->images->first()->path);
 
-        $this->actingAs($owner)
+        $edit = $this->actingAs($owner)
             ->get(route('real-estate.dashboard.properties.edit', [$shop, $property]))
             ->assertOk()
-            ->assertSee('تجهيز منشور فيسبوك')
-            ->assertSee('property-location-map', false)
-            ->assertSee('موقعي الحالي')
-            ->assertSee('نسخ المواصفات وفتح Facebook')
-            ->assertSee('id="open-facebook-share"', false)
-            ->assertSee("document.execCommand('copy')", false)
-            ->assertSee("window.open(shareUrl,'_blank')", false)
-            ->assertDontSee("window.open('about:blank'", false)
+            ->assertSee('تجهيز منشور فيسبوك');
+        $this->assertPageHas($edit, 'property-location-map');
+        $this->assertPageHas($edit, 'موقعي الحالي');
+        $this->assertPageHas($edit, 'نسخ المواصفات وفتح Facebook');
+        $this->assertPageHas($edit, 'id="open-facebook-share"');
+        $this->assertPageHas($edit, 'document.execCommand("copy")');
+        $this->assertPageHas($edit, 'window.open(shareUrl, "_blank")');
+        $this->assertPageLacks($edit, "window.open('about:blank'");
+        $this->assertPageLacks($edit, 'window.open("about:blank"');
+        $edit
             ->assertSee('Ctrl + V')
             ->assertSee(route('real-estate.dashboard.facebook-images', [$shop, $property]), false);
 

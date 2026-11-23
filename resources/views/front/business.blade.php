@@ -11,28 +11,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&amp;display=swap" rel="stylesheet">
-<style>
-body{margin:0;background:#05070A}
-a{color:#19C7E6}a:hover{color:#7FE3F5}
-.wrap{width:100%;max-width:1200px;margin:0 auto;padding:0 24px;box-sizing:border-box}
-.hero-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:48px;align-items:center}
-.types{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px}
-.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
-.feat-main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
-.feat-small{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
-.faq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.nav-links{display:flex;gap:28px}
-details summary{cursor:pointer;list-style:none}
-details summary::-webkit-details-marker{display:none}
-@media (max-width:900px){
-.hero-grid,.feat-main,.faq{grid-template-columns:minmax(0,1fr)}
-.types{grid-template-columns:repeat(4,minmax(0,1fr))}
-.steps,.feat-small{grid-template-columns:minmax(0,1fr)}
-.nav-links{display:none}
-.hero-title{font-size:38px !important}
-.section-title{font-size:28px !important}
-}
-</style>
+@viewStyle('front.business')
 </head>
 <body id="top">
 <div style="font-family: Cairo, system-ui, sans-serif; color: #EEF4F8; background: #0A1018; direction: rtl">

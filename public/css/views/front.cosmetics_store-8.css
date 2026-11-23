@@ -1,0 +1,25 @@
+.product-price-stack {
+    display: inline-flex;
+    min-width: 82px;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 2px;
+    white-space: nowrap;
+    line-height: 1.1;
+}
+.product-price-stack del {
+    display: block;
+    color: #f0accb;
+    font-size: 11px;
+    font-weight: 800;
+    text-decoration-thickness: 2px;
+    text-decoration-color: #ff80b8;
+}
+.product-price-stack ins {
+    display: block;
+    color: #ffe2a0;
+    font-size: 14px;
+    font-weight: 900;
+    text-decoration: none;
+}

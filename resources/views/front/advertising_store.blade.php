@@ -99,34 +99,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
-    <style>
-        :root{--cyan:#08def4;--green:#27dd86;--bg:#05070a;--card:#10151a;--border:rgba(150,174,190,.18);--muted:#9ca9b4}
-        *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 85% 5%,rgba(8,222,244,.11),transparent 27%),radial-gradient(circle at 8% 30%,rgba(101,42,255,.1),transparent 25%),var(--bg);color:#fff;font-family:Cairo,Arial,sans-serif}button{font:inherit}
-        .shell{width:min(1380px,calc(100% - 32px));margin:auto;padding:20px 0 55px}
-        .restaurant-hero-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(310px,380px);align-items:stretch;gap:16px;direction:ltr}
-        .restaurant-display-screen,.hero{position:relative;min-width:0;min-height:310px;overflow:hidden;border:1px solid var(--border);border-radius:28px;box-shadow:0 20px 60px rgba(0,0,0,.28)}
-        .restaurant-display-screen{background:linear-gradient(145deg,#071318,#020608 70%);isolation:isolate}
-        .restaurant-display-screen:before{content:"";position:absolute;z-index:3;inset:0;border-radius:inherit;border:5px solid rgba(2,8,11,.86);box-shadow:inset 0 0 0 1px rgba(8,222,244,.15);pointer-events:none}
-        .restaurant-display-slider,.restaurant-display-slide{position:absolute;inset:0}.restaurant-display-slide{opacity:0;pointer-events:none;background:#020607;transition:opacity .55s ease}.restaurant-display-slide.active{opacity:1;pointer-events:auto}
-        .restaurant-display-slide img,.restaurant-display-slide video,.restaurant-display-slide iframe{display:block;width:100%;height:100%;border:0;object-fit:cover}.restaurant-display-slide.is-logo img{object-fit:contain;padding:22px}
-        .restaurant-display-shade{position:absolute;z-index:1;inset:0;background:linear-gradient(180deg,rgba(1,7,9,.04),transparent 58%,rgba(1,7,9,.32));pointer-events:none}
-        .hero{background:linear-gradient(110deg,rgba(15,18,28,.96),rgba(5,25,28,.9));direction:rtl}.hero:after{content:"";position:absolute;width:360px;height:360px;left:-100px;top:-180px;border-radius:50%;background:rgba(8,222,244,.12);filter:blur(70px);pointer-events:none}
-        .hero-tools{position:absolute;z-index:4;top:18px;right:20px;display:flex;align-items:center;gap:10px}
-        .ozman-directory-link{min-height:43px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:5px 9px;border:1px solid rgba(8,222,244,.24);border-radius:13px;background:rgba(3,10,14,.9);color:#d8e7ed;font-size:10px;font-weight:800;text-decoration:none;white-space:nowrap}.ozman-directory-link img{width:30px;height:30px;object-fit:contain;border-radius:9px}.ozman-directory-link:hover{color:var(--cyan);border-color:var(--cyan)}
-        .brand{position:absolute;z-index:2;right:30px;bottom:24px;display:flex;align-items:center;gap:25px;direction:rtl}.logo-stack{display:flex;flex-direction:column;align-items:center;gap:10px}.shop-logo{display:block;width:166px;height:166px;border:2px solid var(--cyan);border-radius:34px;background:#020607;object-fit:contain;box-shadow:0 0 28px rgba(8,222,244,.3)}
-        .story-trigger{border:0;background:none;padding:0;color:inherit}.story-trigger.has-story{cursor:pointer}.story-trigger.has-story .shop-logo{border:4px solid var(--green)}.story-trigger:focus-visible{outline:3px solid #fff;outline-offset:5px}.shop-name{max-width:180px;color:#fff;font-size:13px;text-align:center;line-height:1.4}
-        .availability{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border:1px solid var(--green);border-radius:999px;background:rgba(39,221,134,.09);color:var(--green);font-size:13px;font-weight:900}.availability:after{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 12px currentColor}
-        .social-links{display:grid;grid-template-columns:repeat(2,38px);gap:8px}.social-link{width:38px;height:38px;display:grid;place-items:center;border:1px solid rgba(8,222,244,.24);border-radius:50%;background:rgba(3,12,17,.9);color:#dceaf0;font-size:18px;text-decoration:none}.social-link:hover,.social-link:focus-visible{border-color:var(--cyan);color:var(--cyan);outline:none}
-        .layout{margin-top:13px;padding-top:13px;border-top:1px solid var(--border)}.menu-panel{min-height:390px;padding:12px;border:1px solid var(--border);border-radius:28px;background:linear-gradient(145deg,rgba(18,23,27,.96),rgba(11,16,18,.98))}
-        .menu-browser{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:12px;direction:ltr}.category-rail{grid-column:2;grid-row:1;display:flex;flex-direction:column;align-items:center;gap:12px;position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto;padding:6px 3px;scrollbar-width:thin}
-        .category-tab{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;padding:6px 3px;border:1px solid transparent;border-radius:17px;background:none;color:var(--muted);font-size:11px;font-weight:900;line-height:1.35;cursor:pointer}.category-tab.active{color:#fff;background:rgba(8,222,244,.07);border-color:rgba(8,222,244,.25)}.category-tab img,.category-icon{width:72px;height:72px;display:grid;place-items:center;border:2px solid rgba(140,165,175,.3);border-radius:50%;object-fit:cover;background:#080d10;color:var(--cyan);font-size:28px}.category-tab.active img,.category-tab.active .category-icon{border-color:var(--cyan);box-shadow:0 0 17px rgba(8,222,244,.38)}.category-tab span:last-child{max-width:105px;text-align:center}
-        .category-content{grid-column:1;grid-row:1;min-width:0;position:relative;overflow:hidden;border-radius:20px;direction:rtl}.category-content:before{content:"";position:absolute;inset:0;z-index:0;background:radial-gradient(circle at 35% 20%,rgba(8,222,244,.09),transparent 50%);pointer-events:none}.category-background{position:absolute;inset:0;width:100%;height:100%;min-height:420px;object-fit:cover;opacity:.17;pointer-events:none}.category-pane{position:relative;z-index:1;min-height:350px}.category-pane[hidden]{display:none!important}.services{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;padding:8px}
-        .service-card{position:relative;min-width:0;overflow:hidden;padding:9px;border:1px solid rgba(150,174,190,.18);border-radius:20px;background:rgba(15,20,24,.94);box-shadow:0 10px 30px rgba(0,0,0,.2)}.service-image{display:grid;place-items:center;width:100%;aspect-ratio:1.12;overflow:hidden;border:1px solid rgba(8,222,244,.22);border-radius:14px;background:#05090b;color:var(--cyan);font-size:54px}.service-image img{width:100%;height:100%;object-fit:cover}.service-body{padding:10px 5px 3px}.service-body h2{margin:0 0 5px;font-size:16px;line-height:1.5}.service-body p{min-height:44px;margin:0;color:var(--muted);font-size:12px;line-height:1.7}.service-details{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.service-details span{padding:3px 7px;border:1px solid rgba(8,222,244,.17);border-radius:999px;color:#c2dce2;font-size:10px}.service-bottom{display:flex;align-items:center;justify-content:space-between;gap:7px;margin-top:12px;padding-top:9px;border-top:1px solid var(--border)}.price{color:var(--cyan);font-size:13px;font-weight:900;white-space:nowrap}.contact-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:33px;padding:5px 9px;border-radius:10px;background:var(--cyan);color:#001318;font-size:11px;font-weight:900;text-decoration:none;text-align:center}.contact-btn:hover{background:#49eaff}.contact-btn.is-call{background:rgba(8,222,244,.13);border:1px solid var(--cyan);color:var(--cyan)}
-        .empty{display:flex;align-items:center;justify-content:center;gap:10px;min-height:240px;color:var(--muted);font-weight:700}.empty i{font-size:26px;color:var(--cyan)}
-        @media(max-width:720px){.shell{width:calc(100% - 18px);padding-top:9px}.restaurant-hero-layout{grid-template-columns:minmax(0,1fr) 148px;gap:7px}.restaurant-display-screen,.hero{min-height:380px;border-radius:21px}.hero-tools{top:0;right:0;width:100%;flex-direction:column;align-items:stretch;gap:8px}.ozman-directory-link{width:100%;min-height:35px;padding:4px 6px;font-size:8px}.ozman-directory-link img{width:25px;height:25px}.brand{top:88px;right:2px;bottom:2px;width:calc(100% - 4px);flex-direction:column;justify-content:flex-start;gap:8px}.logo-stack{width:100%;align-items:stretch}.story-trigger,.shop-logo{width:100%}.shop-logo{height:auto;aspect-ratio:1;border-radius:25px}.social-links{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;width:100%}.social-link{width:29px;height:29px;font-size:14px}.availability{position:absolute;right:0;bottom:0;padding:7px 9px;font-size:10px}.layout{margin-top:7px;padding-top:7px}.menu-panel{padding:7px;border-radius:20px}.menu-browser{grid-template-columns:minmax(0,1fr) 100px;gap:3px}.category-rail{top:8px;gap:8px}.category-tab img,.category-icon{width:57px;height:57px;font-size:24px}.category-tab span:last-child{max-width:90px;font-size:10px}.services{grid-template-columns:1fr;gap:12px;padding:4px}.service-body h2{font-size:14px}.service-bottom{align-items:flex-start;flex-direction:column}.contact-btn{width:100%}}
-        @media(max-width:390px){.restaurant-hero-layout{grid-template-columns:minmax(0,1fr) 135px}.menu-browser{grid-template-columns:minmax(0,1fr) 82px}.category-tab img,.category-icon{width:48px;height:48px}.category-tab span:last-child{font-size:9px}.service-card{padding:6px}.service-body{padding-inline:3px}.price{white-space:normal}}
-        @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.restaurant-display-slide{transition:none}}
-    </style>
+    @viewStyle('front.advertising_store')
 </head>
 <body>
     <main class="shell">
@@ -270,46 +243,7 @@
         </div>
     </main>
     @include('front.shop_stories', ['showStoryList' => false])
-    <script>
-        (() => {
-            const slider = document.querySelector('[data-display-slider]');
-            const slides = [...(slider?.querySelectorAll('.restaurant-display-slide') || [])];
-            let index = 0;
-            const showSlide = next => {
-                slides[index]?.querySelector('video')?.pause();
-                slides[index]?.classList.remove('active');
-                index = next;
-                slides[index]?.classList.add('active');
-                slides[index]?.querySelector('video')?.play().catch(() => {});
-            };
-            slides[0]?.querySelector('video')?.play().catch(() => {});
-            if (slides.length > 1) {
-                const schedule = () => window.setTimeout(() => {
-                    showSlide((index + 1) % slides.length);
-                    schedule();
-                }, Number(slides[index]?.dataset.duration) || 8000);
-                schedule();
-            }
-
-            const tabs = [...document.querySelectorAll('[data-category-key]')];
-            const panes = [...document.querySelectorAll('[data-category-pane]')];
-            const selectCategory = key => {
-                tabs.forEach(tab => {
-                    const active = tab.dataset.categoryKey === key;
-                    tab.classList.toggle('active', active);
-                    tab.setAttribute('aria-pressed', String(active));
-                });
-                panes.forEach(pane => {
-                    const active = pane.dataset.categoryPane === key;
-                    pane.hidden = !active;
-                    const video = pane.querySelector('.category-background');
-                    if (video) active ? video.play().catch(() => {}) : video.pause();
-                });
-            };
-            tabs.forEach(tab => tab.addEventListener('click', () => selectCategory(tab.dataset.categoryKey)));
-            if (tabs[0]) selectCategory(tabs[0].dataset.categoryKey);
-        })();
-    </script>
+    @viewScript('front.advertising_store')
 @include('front.partials.shop_bottom_screens')
 @include('front.partials.page_share', ['title' => $shop->name, 'url' => $shop->publicUrl()])
 </body>
