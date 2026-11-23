@@ -1,0 +1,33 @@
+# Opens pages on staging and checks that each one, and every own CSS/JS file it links (css/views, js/views), loads.
+name: Staging page check
+
+on:
+  workflow_dispatch:
+    inputs:
+      paths:
+        description: Space-separated paths, e.g. "/ /home-furniture/demo-furniture_appliances"
+        required: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch pages and their files
+        env:
+          PATHS: ${{ inputs.paths }}
+        run: |
+          set -u
+          base=https://staging.ozman.online
+          bad=0
+          for p in $PATHS; do
+            code=$(curl -s -o page.html -w '%{http_code}' -L "$base$p")
+            echo "$code $p"
+            [ "$code" = 200 ] || bad=1
+            for f in $(grep -oE '(css|js)/views/[A-Za-z0-9._-]+\.(css|js)\?v=[0-9]+' page.html | sort -u); do
+              c=$(curl -s -o /dev/null -w '%{http_code}' "$base/$f")
+              echo "    $c $f"
+              [ "$c" = 200 ] || bad=1
+            done
+          done
+          exit $bad
