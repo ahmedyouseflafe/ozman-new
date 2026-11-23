@@ -15,24 +15,24 @@
     <main class="card" id="trackingCard">
         <header class="head">
             @if($shop->logo)<img class="logo" src="{{ asset($shop->logo) }}" alt="{{ $shop->name }}">@endif
-            <div><h1>تتبّع طلبك من {{ $shop->name }}</h1><p>ستتحدث الحالة هنا تلقائياً، ولا حاجة لإعادة تحميل الصفحة.</p></div>
+            <div><h1>تتبّع طلبك من {{ $shop->name }}</h1><p>{{ __('ستتحدث الحالة هنا تلقائياً، ولا حاجة لإعادة تحميل الصفحة.') }}</p></div>
         </header>
         <div class="body">
-            <div class="live"><strong>حالة الطلب</strong><span>تحديث مباشر</span></div>
+            <div class="live"><strong>{{ __('حالة الطلب') }}</strong><span>{{ __('تحديث مباشر') }}</span></div>
             <p class="number" id="orderNumber"></p>
-            <div class="prep" id="prepBox" hidden><i class="ti ti-clock-hour-4"></i><div><small id="prepLabel">مدة التجهيز المتوقعة</small><b id="prepFixed"><span id="prepMinutes"></span> دقيقة تقريباً</b><b id="prepCountdown" class="prep-countdown" dir="ltr" hidden></b></div></div>
+            <div class="prep" id="prepBox" hidden><i class="ti ti-clock-hour-4"></i><div><small id="prepLabel">{{ __('مدة التجهيز المتوقعة') }}</small><b id="prepFixed"><span id="prepMinutes"></span> {{ __('دقيقة تقريباً') }}</b><b id="prepCountdown" class="prep-countdown" dir="ltr" hidden></b></div></div>
             <ol class="steps" style="--steps:{{ $order->order_type === 'delivery' ? 5 : 4 }}">
-                <li class="step" data-step="1"><span><i class="ti ti-receipt"></i></span>تم الاستلام</li>
-                <li class="step" data-step="2"><span><i class="ti ti-tools-kitchen-2"></i></span>قيد التحضير</li>
-                <li class="step" data-step="3"><span><i class="ti ti-bell-check"></i></span>جاهز</li>
-                @if($order->order_type === 'delivery')<li class="step" data-step="4"><span><i class="ti ti-motorbike"></i></span>في الطريق</li>@endif
-                <li class="step" data-step="{{ $order->order_type === 'delivery' ? 5 : 4 }}"><span><i class="ti ti-circle-check"></i></span>مكتمل</li>
+                <li class="step" data-step="1"><span><i class="ti ti-receipt"></i></span>{{ __('تم الاستلام') }}</li>
+                <li class="step" data-step="2"><span><i class="ti ti-tools-kitchen-2"></i></span>{{ __('قيد التحضير') }}</li>
+                <li class="step" data-step="3"><span><i class="ti ti-bell-check"></i></span>{{ __('جاهز') }}</li>
+                @if($order->order_type === 'delivery')<li class="step" data-step="4"><span><i class="ti ti-motorbike"></i></span>{{ __('في الطريق') }}</li>@endif
+                <li class="step" data-step="{{ $order->order_type === 'delivery' ? 5 : 4 }}"><span><i class="ti ti-circle-check"></i></span>{{ __('مكتمل') }}</li>
             </ol>
             <section class="status-box"><h2 id="statusLabel"></h2><p id="statusMessage"></p></section>
             @if($order->order_type === 'delivery')
-                <section class="delivery-eta" id="deliveryEtaBox" hidden role="status"><i class="ti ti-clock"></i><div><small>وقت الوصول التقريبي الذي حدده المندوب</small><strong id="deliveryEtaText"></strong></div></section>
+                <section class="delivery-eta" id="deliveryEtaBox" hidden role="status"><i class="ti ti-clock"></i><div><small>{{ __('وقت الوصول التقريبي الذي حدده المندوب') }}</small><strong id="deliveryEtaText"></strong></div></section>
             @endif
-            <footer class="footer"><span id="lastUpdate"></span><a class="back" href="{{ route('restaurant.menu', $shop) }}">العودة إلى المنيو</a></footer>
+            <footer class="footer"><span id="lastUpdate"></span><a class="back" href="{{ route('restaurant.menu', $shop) }}">{{ __('العودة إلى المنيو') }}</a></footer>
         </div>
     </main>
     <script>

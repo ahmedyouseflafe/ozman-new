@@ -45,8 +45,8 @@
             <label class="field-shell"><span>{{ $labels['neighborhood'] }}</span><input name="neighborhood" value="{{ request('neighborhood') }}" placeholder="{{ $labels['neighborhood'] }}"></label>
             <label class="field-shell"><span>{{ $labels['min_price'] }}</span><input type="number" min="0" name="min_price" value="{{ request('min_price') }}" placeholder="{{ $labels['min_price'] }}"></label>
             <label class="field-shell"><span>{{ $labels['max_price'] }}</span><input type="number" min="0" name="max_price" value="{{ request('max_price') }}" placeholder="{{ $labels['max_price'] }}"></label>
-            <label class="field-shell"><span>{{ $labels['min_area'] }}</span><input type="number" min="0" name="min_area" value="{{ request('min_area') }}" placeholder="م²"></label>
-            <label class="field-shell"><span>{{ $labels['max_area'] }}</span><input type="number" min="0" name="max_area" value="{{ request('max_area') }}" placeholder="م²"></label>
+            <label class="field-shell"><span>{{ $labels['min_area'] }}</span><input type="number" min="0" name="min_area" value="{{ request('min_area') }}" placeholder="{{ __('م²') }}"></label>
+            <label class="field-shell"><span>{{ $labels['max_area'] }}</span><input type="number" min="0" name="max_area" value="{{ request('max_area') }}" placeholder="{{ __('م²') }}"></label>
             <label class="field-shell"><span>{{ $labels['rooms'] }}</span><input type="number" min="0" step=".5" name="rooms" value="{{ request('rooms') }}"></label>
             <label class="field-shell"><span>{{ $labels['bathrooms'] }}</span><input type="number" min="0" name="bathrooms" value="{{ request('bathrooms') }}"></label>
             <label class="field-shell"><span>{{ $labels['floor'] }}</span><input type="number" name="floor" value="{{ request('floor') }}"></label>

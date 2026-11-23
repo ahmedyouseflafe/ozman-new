@@ -19,7 +19,7 @@
 <main class="page">
     <section class="card">
         <div class="content">
-            <span class="eyebrow">التطبيق الرسمي للمحل</span>
+            <span class="eyebrow">{{ __('التطبيق الرسمي للمحل') }}</span>
             <h1>تطبيق {{ $shop->name }}</h1>
             <p class="lead">
                 ثبّت التطبيق باسم وشعار {{ $shop->name }}، وافتح
@@ -31,20 +31,20 @@
                 <button class="btn btn-primary" type="button" data-shop-pwa-install>تثبيت تطبيق {{ $shop->name }}</button>
                 <section class="ios-help" id="shop-pwa-ios-help" data-shop-pwa-ios hidden tabindex="-1" aria-labelledby="shop-pwa-ios-title">
                     <h2 id="shop-pwa-ios-title">إضافة {{ $shop->name }} على iPhone أو iPad</h2>
-                    <p data-shop-pwa-ios-browser hidden>افتح رابط التثبيت في Safari أولًا. إذا أنت داخل تطبيق، انسخ الرابط من الزر أدناه والصقه في Safari.</p>
+                    <p data-shop-pwa-ios-browser hidden>{{ __('افتح رابط التثبيت في Safari أولًا. إذا أنت داخل تطبيق، انسخ الرابط من الزر أدناه والصقه في Safari.') }}</p>
                     <ol>
-                        <li>من شريط Safari اضغط <strong>مشاركة</strong> (مربع وسهم للأعلى). إذا مش ظاهرة، افتح قائمة <strong>…</strong> ثم «مشاركة».</li>
-                        <li>مرّر قائمة المشاركة واختر <strong>إضافة إلى الشاشة الرئيسية</strong> (Add to Home Screen).</li>
-                        <li>إذا ظهر خيار <strong>فتح كتطبيق ويب</strong> (Open as Web App)، اتركه مفعّلًا، ثم اضغط <strong>إضافة</strong>.</li>
+                        <li>{{ __('من شريط Safari اضغط') }} <strong>{{ __('مشاركة') }}</strong> {{ __('(مربع وسهم للأعلى). إذا مش ظاهرة، افتح قائمة') }} <strong>…</strong> {{ __('ثم «مشاركة».') }}</li>
+                        <li>{{ __('مرّر قائمة المشاركة واختر') }} <strong>{{ __('إضافة إلى الشاشة الرئيسية') }}</strong> (Add to Home Screen).</li>
+                        <li>{{ __('إذا ظهر خيار') }} <strong>{{ __('فتح كتطبيق ويب') }}</strong> {{ __('(Open as Web App)، اتركه مفعّلًا، ثم اضغط') }} <strong>{{ __('إضافة') }}</strong>.</li>
                     </ol>
                     <p>بعد الإضافة افتح التطبيق من أيقونة {{ $shop->name }} على الشاشة الرئيسية.</p>
-                    <p>إذا خيار الإضافة مش ظاهر، انزل لآخر قائمة المشاركة واضغط «تعديل الإجراءات» وأضف «إضافة إلى الشاشة الرئيسية».</p>
+                    <p>{{ __('إذا خيار الإضافة مش ظاهر، انزل لآخر قائمة المشاركة واضغط «تعديل الإجراءات» وأضف «إضافة إلى الشاشة الرئيسية».') }}</p>
                 </section>
                 <a class="btn" href="{{ $shop->publicUrl() }}">{{ $shop->catalog_type === 'restaurant' ? 'فتح قائمة الطعام' : 'فتح المحل' }}</a>
-                <button class="btn" type="button" data-shop-pwa-share>مشاركة رابط التطبيق</button>
-                <button class="btn" type="button" data-shop-pwa-copy>نسخ رابط التثبيت</button>
+                <button class="btn" type="button" data-shop-pwa-share>{{ __('مشاركة رابط التطبيق') }}</button>
+                <button class="btn" type="button" data-shop-pwa-copy>{{ __('نسخ رابط التثبيت') }}</button>
             </div>
-            <p class="status" data-shop-pwa-status>اضغط زر تثبيت التطبيق للمتابعة.</p>
+            <p class="status" data-shop-pwa-status>{{ __('اضغط زر تثبيت التطبيق للمتابعة.') }}</p>
         </div>
 
         <div class="preview">
@@ -52,7 +52,7 @@
                 <img src="{{ route('merchant-app.icon', ['shop' => $shop, 'size' => 512]) }}" alt="شعار {{ $shop->name }}">
             </div>
             <strong>{{ $shop->name }}</strong>
-            <span>سيظهر بهذا الاسم والشعار على شاشة الجوال</span>
+            <span>{{ __('سيظهر بهذا الاسم والشعار على شاشة الجوال') }}</span>
         </div>
     </section>
 </main>

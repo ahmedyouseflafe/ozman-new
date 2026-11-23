@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 
 <head>
-    <title>تسجيل الدخول - Ozman</title>
+    <title>{{ __('تسجيل الدخول - Ozman') }}</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,8 +17,8 @@
         <div class="brand">
             <div class="brand-mark">O</div>
             <div>
-                <h1>تسجيل الدخول</h1>
-                <div class="subtitle">ادخل للوحة تحكم Ozman حسب صلاحيات حسابك</div>
+                <h1>{{ __('تسجيل الدخول') }}</h1>
+                <div class="subtitle">{{ __('ادخل للوحة تحكم Ozman حسب صلاحيات حسابك') }}</div>
             </div>
         </div>
 
@@ -33,7 +33,7 @@
             @csrf
 
             <div class="field">
-                <label for="email">البريد الإلكتروني</label>
+                <label for="email">{{ __('البريد الإلكتروني') }}</label>
                 <div class="input-wrap">
                     <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus>
                     <i class="ti ti-mail" aria-hidden="true"></i>
@@ -41,7 +41,7 @@
             </div>
 
             <div class="field">
-                <label for="password">كلمة المرور</label>
+                <label for="password">{{ __('كلمة المرور') }}</label>
                 <div class="input-wrap">
                     <input id="password" type="password" name="password" required>
                     <i class="ti ti-lock" aria-hidden="true"></i>
@@ -51,12 +51,12 @@
             <div class="row">
                 <label class="check" for="remember">
                     <input id="remember" type="checkbox" name="remember" value="1">
-                    تذكرني
+                    {{ __('تذكرني') }}
                 </label>
-                <a href="{{ route('community.password.request') }}" style="color:inherit;font-weight:700">نسيت كلمة المرور؟</a>
+                <a href="{{ route('community.password.request') }}" style="color:inherit;font-weight:700">{{ __('نسيت كلمة المرور؟') }}</a>
             </div>
 
-            <button type="submit">دخول</button>
+            <button type="submit">{{ __('دخول') }}</button>
         </form>
     </main>
 </body>

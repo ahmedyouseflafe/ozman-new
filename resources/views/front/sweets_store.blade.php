@@ -58,25 +58,25 @@
         </div>
         @endif
         <aside class="brand">
-            <div class="tools"><a class="back" href="{{ route('home') }}"><i class="ti ti-arrow-right"></i> كل المحلات</a>@include('front.partials.public_language_switcher')</div>
+            <div class="tools"><a class="back" href="{{ route('home') }}"><i class="ti ti-arrow-right"></i> {{ __('كل المحلات') }}</a>@include('front.partials.public_language_switcher')</div>
             <img class="logo" src="{{ $shopLogo }}" alt="{{ $shop->name }}">
             <h1>{{ $shop->name }}</h1>
             <p>{{ $shop->description ?: 'كيكات، حلويات ومخبوزات طازجة تُجهز بحب لكل لحظة حلوة.' }}</p>
-            <span class="open">طلباتنا متاحة الآن</span>
-            <a class="cta" href="#catalog"><i class="ti ti-cookie"></i> اكتشف أشهى الأصناف</a>
+            <span class="open">{{ __('طلباتنا متاحة الآن') }}</span>
+            <a class="cta" href="#catalog"><i class="ti ti-cookie"></i> {{ __('اكتشف أشهى الأصناف') }}</a>
         </aside>
     </section>
-    <section class="bakery-moments {{ $dailyJoyOnly ? 'bakery-moments--daily' : '' }}" aria-label="تجربة المخبز">
+    <section class="bakery-moments {{ $dailyJoyOnly ? 'bakery-moments--daily' : '' }}" aria-label="{{ __('تجربة المخبز') }}">
         @unless($dailyJoyOnly)
-        <article class="bakery-moment"><i class="ti ti-cake"></i><small>CELEBRATE SWEETLY</small><strong>كيكات للمناسبات</strong><p>تفاصيل حلوة تجعل كل احتفال أجمل.</p></article>
-        <article class="bakery-moment"><i class="ti ti-bread"></i><small>FROM THE OVEN</small><strong>طازج من الفرن</strong><p>مخبوزات دافئة بطعم البيت الحقيقي.</p></article>
+        <article class="bakery-moment"><i class="ti ti-cake"></i><small>CELEBRATE SWEETLY</small><strong>{{ __('كيكات للمناسبات') }}</strong><p>{{ __('تفاصيل حلوة تجعل كل احتفال أجمل.') }}</p></article>
+        <article class="bakery-moment"><i class="ti ti-bread"></i><small>FROM THE OVEN</small><strong>{{ __('طازج من الفرن') }}</strong><p>{{ __('مخبوزات دافئة بطعم البيت الحقيقي.') }}</p></article>
         @endunless
-        <article class="bakery-moment"><i class="ti ti-ice-cream-2"></i><small>DAILY LITTLE JOY</small><strong>حلاوة اليوم</strong><p>اختار قطعة صغيرة تغيّر مزاجك.</p></article>
+        <article class="bakery-moment"><i class="ti ti-ice-cream-2"></i><small>DAILY LITTLE JOY</small><strong>{{ __('حلاوة اليوم') }}</strong><p>{{ __('اختار قطعة صغيرة تغيّر مزاجك.') }}</p></article>
     </section>
     <section class="catalog" id="catalog">
-        <header class="catalog-header"><div><span class="eyebrow">SWEET SELECTION</span><h2>اختار الحلو اللي نفسك فيه</h2><p>تشكيلة طازجة من {{ $shop->name }}</p></div><span class="count">{{ $categories->sum(fn($category) => $category->products->count()) + $uncategorizedProducts->count() }} صنف</span></header>
+        <header class="catalog-header"><div><span class="eyebrow">SWEET SELECTION</span><h2>{{ __('اختار الحلو اللي نفسك فيه') }}</h2><p>تشكيلة طازجة من {{ $shop->name }}</p></div><span class="count">{{ $categories->sum(fn($category) => $category->products->count()) + $uncategorizedProducts->count() }} صنف</span></header>
         <div class="layout">
-            <nav class="category-groups" aria-label="أقسام الحلويات">
+            <nav class="category-groups" aria-label="{{ __('أقسام الحلويات') }}">
                 @foreach(['cups' => $cupCategories, 'plates' => $plateCategories] as $group => $groupCategories)
                     @if($groupCategories->isNotEmpty() || ($group === 'plates' && ($categories->isEmpty() || $uncategorizedProducts->isNotEmpty())))
                     <div class="categories" data-category-group="{{ $group }}" role="group" aria-label="{{ $group === 'cups' ? 'المشروبات وأصناف الكاسات' : 'الحلويات وأصناف الصحون' }}">
@@ -85,10 +85,10 @@
                     <button class="category {{ $category->id === $categories->first()?->id ? 'active' : '' }}" type="button" data-tab="{{ $category->id }}"><figure>@if($categoryImage)<img src="{{ $mediaUrl($categoryImage) }}" alt="">@else<i class="ti ti-cookie"></i>@endif</figure><span>{{ $category->localized('name') }}</span></button>
                 @endforeach
                 @if($group === 'plates' && $categories->isEmpty())
-                    <button class="category active" type="button" data-tab="items"><figure><i class="ti ti-cookie"></i></figure><span>الأصناف</span></button>
+                    <button class="category active" type="button" data-tab="items"><figure><i class="ti ti-cookie"></i></figure><span>{{ __('الأصناف') }}</span></button>
                 @endif
                 @if($group === 'plates' && $categories->isNotEmpty() && $uncategorizedProducts->isNotEmpty())
-                    <button class="category" type="button" data-tab="uncategorized"><figure><i class="ti ti-cookie"></i></figure><span>أصناف أخرى</span></button>
+                    <button class="category" type="button" data-tab="uncategorized"><figure><i class="ti ti-cookie"></i></figure><span>{{ __('أصناف أخرى') }}</span></button>
                 @endif
                     </div>
                     @endif
@@ -96,19 +96,19 @@
             </nav>
             <div class="content">
                 @forelse($categories as $category)
-                    <section class="pane" data-pane="{{ $category->id }}" @if(! $loop->first) hidden @endif><header class="pane-head"><h3>{{ $category->localized('name') }}</h3><small>{{ $category->products->count() }} صنف</small></header><div class="grid">@forelse($category->products as $product) @include('front.partials.sweet_product_card', ['product' => $product, 'mediaUrl' => $mediaUrl, 'shop' => $shop]) @empty <div class="empty">قريبًا ستتوفر أصناف لذيذة في هذا القسم 🍰</div> @endforelse</div></section>
+                    <section class="pane" data-pane="{{ $category->id }}" @if(! $loop->first) hidden @endif><header class="pane-head"><h3>{{ $category->localized('name') }}</h3><small>{{ $category->products->count() }} صنف</small></header><div class="grid">@forelse($category->products as $product) @include('front.partials.sweet_product_card', ['product' => $product, 'mediaUrl' => $mediaUrl, 'shop' => $shop]) @empty <div class="empty">{{ __('قريبًا ستتوفر أصناف لذيذة في هذا القسم 🍰') }}</div> @endforelse</div></section>
                 @empty
-                    <section class="pane" data-pane="items"><header class="pane-head"><h3>أصنافنا</h3><small>{{ $uncategorizedProducts->count() }} صنف</small></header><div class="grid">@forelse($uncategorizedProducts as $product) @include('front.partials.sweet_product_card', ['product' => $product, 'mediaUrl' => $mediaUrl, 'shop' => $shop]) @empty <div class="empty">أضف أصناف الحلويات من لوحة التحكم لتظهر هنا 🍰</div> @endforelse</div></section>
+                    <section class="pane" data-pane="items"><header class="pane-head"><h3>{{ __('أصنافنا') }}</h3><small>{{ $uncategorizedProducts->count() }} صنف</small></header><div class="grid">@forelse($uncategorizedProducts as $product) @include('front.partials.sweet_product_card', ['product' => $product, 'mediaUrl' => $mediaUrl, 'shop' => $shop]) @empty <div class="empty">{{ __('أضف أصناف الحلويات من لوحة التحكم لتظهر هنا 🍰') }}</div> @endforelse</div></section>
                 @endforelse
                 @if($categories->isNotEmpty() && $uncategorizedProducts->isNotEmpty())
-                    <section class="pane" data-pane="uncategorized" hidden><header class="pane-head"><h3>أصناف أخرى</h3><small>{{ $uncategorizedProducts->count() }} صنف</small></header><div class="grid">@foreach($uncategorizedProducts as $product) @include('front.partials.sweet_product_card', ['product' => $product, 'mediaUrl' => $mediaUrl, 'shop' => $shop]) @endforeach</div></section>
+                    <section class="pane" data-pane="uncategorized" hidden><header class="pane-head"><h3>{{ __('أصناف أخرى') }}</h3><small>{{ $uncategorizedProducts->count() }} صنف</small></header><div class="grid">@foreach($uncategorizedProducts as $product) @include('front.partials.sweet_product_card', ['product' => $product, 'mediaUrl' => $mediaUrl, 'shop' => $shop]) @endforeach</div></section>
                 @endif
             </div>
         </div>
     </section>
 </main>
-<button class="cart-button" id="cartButton" type="button"><i class="ti ti-shopping-bag"></i><span><strong><span id="cartCount">0</span> أصناف في السلة</strong><small id="cartTotal">0.00 ₪</small></span></button>
-<div class="layer" id="cartLayer"><section class="sheet"><header class="sheet-head"><h2>سلة الحلويات</h2><button class="close" id="cartClose" type="button">×</button></header><div class="items" id="cartItems"></div><div class="total"><span>المجموع</span><span id="sheetTotal">0.00 ₪</span></div>@include('front.partials.loyalty_hint', ['total' => '#sheetTotal'])<div class="fields"><input id="customerName" placeholder="اسمك"><input id="customerPhone" inputmode="tel" placeholder="رقم الجوال أو واتساب"></div><button class="send" id="sendOrder" type="button"><i class="ti ti-brand-whatsapp"></i> إرسال الطلب عبر واتساب</button></section></div>
+<button class="cart-button" id="cartButton" type="button"><i class="ti ti-shopping-bag"></i><span><strong><span id="cartCount">0</span> {{ __('أصناف في السلة') }}</strong><small id="cartTotal">0.00 ₪</small></span></button>
+<div class="layer" id="cartLayer"><section class="sheet"><header class="sheet-head"><h2>{{ __('سلة الحلويات') }}</h2><button class="close" id="cartClose" type="button">×</button></header><div class="items" id="cartItems"></div><div class="total"><span>{{ __('المجموع') }}</span><span id="sheetTotal">0.00 ₪</span></div>@include('front.partials.loyalty_hint', ['total' => '#sheetTotal'])<div class="fields"><input id="customerName" placeholder="{{ __('اسمك') }}"><input id="customerPhone" inputmode="tel" placeholder="{{ __('رقم الجوال أو واتساب') }}"></div><button class="send" id="sendOrder" type="button"><i class="ti ti-brand-whatsapp"></i> {{ __('إرسال الطلب عبر واتساب') }}</button></section></div>
 <div class="lightbox" id="lightbox"><button type="button">×</button><img src="" alt=""></div>
 @viewScript('front.sweets_store')
 @include('front.partials.shop_bottom_screens', ['screenPlacement' => 'bottom'])

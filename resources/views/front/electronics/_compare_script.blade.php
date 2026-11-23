@@ -42,14 +42,14 @@
         bar.classList.toggle('show', selected.length > 0);
         count.textContent = selected.length === 1 ? 'تمت الإضافة — اختر جهازاً آخر' : `${selected.length} من 3 أجهزة`;
         openButton.disabled = selected.length < 2;
-        list.innerHTML = selected.map(item => `<div class="compare-item"><img src="${escapeHtml(item.image)}" alt=""><span><b>${escapeHtml(item.name)}</b><br><span style="color:var(--cyan)">${Number(item.price || 0).toLocaleString('ar', { minimumFractionDigits: 2 })} ₪</span></span><button type="button" class="compare-remove" data-remove="${Number(item.id)}" aria-label="إزالة"><i class="ti ti-x"></i></button></div>`).join('');
+        list.innerHTML = selected.map(item => `<div class="compare-item"><img src="${escapeHtml(item.image)}" alt=""><span><b>${escapeHtml(item.name)}</b><br><span style="color:var(--cyan)">${Number(item.price || 0).toLocaleString('ar', { minimumFractionDigits: 2 })} ₪</span></span><button type="button" class="compare-remove" data-remove="${Number(item.id)}" aria-label="{{ __('إزالة') }}"><i class="ti ti-x"></i></button></div>`).join('');
         syncButtons();
         save();
     };
     const rows = [['price', 'السعر', value => `${Number(value || 0).toLocaleString('ar', { minimumFractionDigits: 2 })} ₪`], ['brand', 'الماركة'], ['model', 'الموديل'], ['condition', 'الحالة'], ['network', 'الشبكة'], ['screen', 'الشاشة'], ['processor', 'المعالج'], ['storage', 'سعات التخزين'], ['ram', 'الرام'], ['colors', 'الألوان'], ['battery', 'البطارية'], ['battery_health', 'صحة البطارية', value => value ? `${value}%` : '—'], ['cameras', 'الكاميرات'], ['warranty', 'الضمان', value => value ? `${value} شهر` : '—']];
     const openComparison = () => {
         if (selected.length < 2) return;
-        const heading = `<tr><th>المواصفة</th>${selected.map(item => `<th class="compare-product"><img src="${escapeHtml(item.image)}" alt=""><b>${escapeHtml(item.name)}</b><a href="${escapeHtml(item.url)}">عرض الجهاز <i class="ti ti-arrow-up-left"></i></a></th>`).join('')}</tr>`;
+        const heading = `<tr><th>{{ __('المواصفة') }}</th>${selected.map(item => `<th class="compare-product"><img src="${escapeHtml(item.image)}" alt=""><b>${escapeHtml(item.name)}</b><a href="${escapeHtml(item.url)}">{{ __('عرض الجهاز') }} <i class="ti ti-arrow-up-left"></i></a></th>`).join('')}</tr>`;
         const body = rows.map(([key, label, format]) => {
             const values = selected.map(item => item[key] ?? '');
             const different = new Set(values.map(value => String(value).trim().toLowerCase())).size > 1;

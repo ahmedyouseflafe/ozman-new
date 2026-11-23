@@ -8,11 +8,11 @@
 @endphp
 <article class="card">
     @include('front.partials.product_like', ['product' => $product])
-    <button class="picture" type="button" data-image="{{ $image }}" aria-label="تكبير صورة {{ $name }}"><img src="{{ $image }}" alt="{{ $name }}" loading="lazy">@if($product->is_featured)<span class="badge"><i class="ti ti-sparkles"></i> مميز</span>@endif</button>
+    <button class="picture" type="button" data-image="{{ $image }}" aria-label="تكبير صورة {{ $name }}"><img src="{{ $image }}" alt="{{ $name }}" loading="lazy">@if($product->is_featured)<span class="badge"><i class="ti ti-sparkles"></i> {{ __('مميز') }}</span>@endif</button>
     <div class="body">
         <div class="small-brand">{{ $brand ?: 'صناعة '.$shop->name }}</div>
         <h4 class="name">{{ $name }}</h4>
         <p class="description">{{ $description ?: 'حلاوة خاصة تُجهز لتكمل لحظتك الحلوة.' }}</p>
-        <div class="foot"><div class="prices">@if($oldPrice)<span class="was">{{ number_format($oldPrice, 2) }} ₪</span>@endif<span class="price">{{ number_format($price, 2) }} ₪</span></div><button class="add" type="button" data-add="{{ $product->id }}" data-name="{{ e($name) }}" data-price="{{ $price }}"><i class="ti ti-plus"></i> أضف للسلة</button></div>
+        <div class="foot"><div class="prices">@if($oldPrice)<span class="was">{{ number_format($oldPrice, 2) }} ₪</span>@endif<span class="price">{{ number_format($price, 2) }} ₪</span></div><button class="add" type="button" data-add="{{ $product->id }}" data-name="{{ e($name) }}" data-price="{{ $price }}"><i class="ti ti-plus"></i> {{ __('أضف للسلة') }}</button></div>
     </div>
 </article>

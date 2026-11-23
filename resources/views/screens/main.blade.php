@@ -15,9 +15,9 @@
         <header class="topbar">
             <div class="ticker-box">
                 <div class="ticker">
-                    <span>أهلاً بك في هيبتي شوب</span>
-                    <span>منتجات العناية الفاخرة</span>
-                    <span>جمالك يستحق العناية الفائقة</span>
+                    <span>{{ __('أهلاً بك في هيبتي شوب') }}</span>
+                    <span>{{ __('منتجات العناية الفاخرة') }}</span>
+                    <span>{{ __('جمالك يستحق العناية الفائقة') }}</span>
                     <span>{{ $title }}</span>
                 </div>
             </div>
@@ -53,7 +53,7 @@
                                     @endif
                                 </div>
                                 @if($item->type === 'video')
-                                    <button type="button" class="sound-toggle" data-sound-toggle aria-label="تفعيل صوت الفيديو" aria-pressed="false" title="تفعيل الصوت">
+                                    <button type="button" class="sound-toggle" data-sound-toggle aria-label="{{ __('تفعيل صوت الفيديو') }}" aria-pressed="false" title="{{ __('تفعيل الصوت') }}">
                                         <i class="ti ti-volume-off" aria-hidden="true"></i>
                                     </button>
                                 @endif
@@ -63,12 +63,12 @@
                     @endforeach
                 </div>
             @else
-                <div class="empty">لا يوجد محتوى نشط للعرض حالياً.</div>
+                <div class="empty">{{ __('لا يوجد محتوى نشط للعرض حالياً.') }}</div>
             @endif
         </main>
 
         <footer class="bottom-nav">
-            <button class="order-btn">اطلب الآن</button>
+            <button class="order-btn">{{ __('اطلب الآن') }}</button>
             <div class="nav-icons">
                 <i class="ti ti-brand-whatsapp"></i>
                 <i class="ti ti-message-circle"></i>

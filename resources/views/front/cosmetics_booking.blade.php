@@ -19,21 +19,21 @@
 <body>
 <main class="booking-shell">
     <header class="booking-top">
-        <a class="booking-back" href="{{ route('cosmetics.store', $shop) }}"><i class="ti ti-arrow-right"></i> العودة للمتجر</a>
-        <div class="booking-logo"><img src="{{ $shopLogo }}" alt="{{ $shop->name }}"><div><strong>{{ $shop->name }}</strong><span>حجز موعد الصالون</span></div></div>
+        <a class="booking-back" href="{{ route('cosmetics.store', $shop) }}"><i class="ti ti-arrow-right"></i> {{ __('العودة للمتجر') }}</a>
+        <div class="booking-logo"><img src="{{ $shopLogo }}" alt="{{ $shop->name }}"><div><strong>{{ $shop->name }}</strong><span>{{ __('حجز موعد الصالون') }}</span></div></div>
     </header>
     <div class="booking-layout">
         <section class="booking-form-card">
-            <p class="booking-kicker">موعدك الخاص</p><h1>احجزي لحظتك الجميلة</h1>
-            <p class="booking-lead">اختاري الخدمة والموعد المناسبين، ثم أرسلي طلب الحجز. سيتواصل معك الصالون لتأكيده.</p>
+            <p class="booking-kicker">{{ __('موعدك الخاص') }}</p><h1>{{ __('احجزي لحظتك الجميلة') }}</h1>
+            <p class="booking-lead">{{ __('اختاري الخدمة والموعد المناسبين، ثم أرسلي طلب الحجز. سيتواصل معك الصالون لتأكيده.') }}</p>
             <form class="booking-form" id="salonBookingForm">
-                <div class="booking-section"><h2>الخدمة المطلوبة</h2><div class="booking-grid"><label class="booking-field full">اختاري الخدمة<select name="service" required><option value="">اختاري خدمة</option><option>تسريحة شعر</option><option>مكياج</option><option>عناية بالبشرة</option><option>رموش وحواجب</option><option>استشارة عناية وجمال</option><option>خدمة أخرى</option></select></label></div></div>
-                <div class="booking-section"><h2>اختاري الوقت</h2><div class="booking-grid"><label class="booking-field">التاريخ<input type="date" name="date" id="bookingDate" required></label><label class="booking-field">الوقت المفضل<select name="time" id="bookingTime" required><option value="">اختاري الوقت</option><option value="10:00">10:00 صباحًا</option><option value="12:00">12:00 ظهرًا</option><option value="14:00">2:00 مساءً</option><option value="16:00">4:00 مساءً</option><option value="18:00">6:00 مساءً</option></select></label></div></div>
-                <div class="booking-section"><h2>بيانات التواصل</h2><div class="booking-grid"><label class="booking-field">الاسم<input name="name" autocomplete="name" required></label><label class="booking-field">الجوال أو واتساب<input name="phone" inputmode="tel" autocomplete="tel" required></label><label class="booking-field full">ملاحظات إضافية (اختياري)<textarea name="notes" placeholder="مثلاً: نوع المناسبة أو أي طلب خاص"></textarea></label></div></div>
-                <button class="booking-submit" type="submit"><i class="ti ti-brand-whatsapp"></i> إرسال طلب الحجز</button><div class="booking-note" id="bookingNote"></div>
+                <div class="booking-section"><h2>{{ __('الخدمة المطلوبة') }}</h2><div class="booking-grid"><label class="booking-field full">{{ __('اختاري الخدمة') }}<select name="service" required><option value="">{{ __('اختاري خدمة') }}</option><option>{{ __('تسريحة شعر') }}</option><option>{{ __('مكياج') }}</option><option>{{ __('عناية بالبشرة') }}</option><option>{{ __('رموش وحواجب') }}</option><option>{{ __('استشارة عناية وجمال') }}</option><option>{{ __('خدمة أخرى') }}</option></select></label></div></div>
+                <div class="booking-section"><h2>{{ __('اختاري الوقت') }}</h2><div class="booking-grid"><label class="booking-field">{{ __('التاريخ') }}<input type="date" name="date" id="bookingDate" required></label><label class="booking-field">{{ __('الوقت المفضل') }}<select name="time" id="bookingTime" required><option value="">{{ __('اختاري الوقت') }}</option><option value="10:00">{{ __('10:00 صباحًا') }}</option><option value="12:00">{{ __('12:00 ظهرًا') }}</option><option value="14:00">{{ __('2:00 مساءً') }}</option><option value="16:00">{{ __('4:00 مساءً') }}</option><option value="18:00">{{ __('6:00 مساءً') }}</option></select></label></div></div>
+                <div class="booking-section"><h2>{{ __('بيانات التواصل') }}</h2><div class="booking-grid"><label class="booking-field">{{ __('الاسم') }}<input name="name" autocomplete="name" required></label><label class="booking-field">{{ __('الجوال أو واتساب') }}<input name="phone" inputmode="tel" autocomplete="tel" required></label><label class="booking-field full">{{ __('ملاحظات إضافية (اختياري)') }}<textarea name="notes" placeholder="{{ __('مثلاً: نوع المناسبة أو أي طلب خاص') }}"></textarea></label></div></div>
+                <button class="booking-submit" type="submit"><i class="ti ti-brand-whatsapp"></i> {{ __('إرسال طلب الحجز') }}</button><div class="booking-note" id="bookingNote"></div>
             </form>
         </section>
-        <aside class="booking-side"><div class="booking-side-icon"><i class="ti ti-calendar-heart"></i></div><h2>حجز بسيط وسريع</h2><p>لا يوجد دفع الآن؛ طلبك يصل إلى الصالون عبر واتساب ليتم تأكيد الموعد المناسب.</p><div class="booking-steps"><div class="booking-step"><span>1</span>اختاري الخدمة</div><div class="booking-step"><span>2</span>حددي الوقت</div><div class="booking-step"><span>3</span>نؤكد الموعد</div></div></aside>
+        <aside class="booking-side"><div class="booking-side-icon"><i class="ti ti-calendar-heart"></i></div><h2>{{ __('حجز بسيط وسريع') }}</h2><p>{{ __('لا يوجد دفع الآن؛ طلبك يصل إلى الصالون عبر واتساب ليتم تأكيد الموعد المناسب.') }}</p><div class="booking-steps"><div class="booking-step"><span>1</span>{{ __('اختاري الخدمة') }}</div><div class="booking-step"><span>2</span>{{ __('حددي الوقت') }}</div><div class="booking-step"><span>3</span>{{ __('نؤكد الموعد') }}</div></div></aside>
     </div>
 </main>
 <script>

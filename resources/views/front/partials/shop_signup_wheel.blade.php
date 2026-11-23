@@ -29,7 +29,7 @@
 @viewStyle('front.partials.shop_signup_wheel')
 <button type="button" id="signupWheelReopen" hidden>{{ $signupWheelCopy['open'] }}</button>
 <dialog id="shopSignupWheel" aria-labelledby="signupWheelTitle" data-preview="{{ !empty($signupPreview) ? '1' : '0' }}" data-url="{{ empty($signupPreview) ? route('restaurant.signup-reward', $shop) : '' }}" data-csrf-url="{{ route('csrf.refresh') }}">
-    @if(!empty($signupPreview))<p style="color:#ffe29a;font-size:12px;margin-bottom:10px">معاينة تجريبية — لا تُحفظ جائزة ولا تُستهلك مرات ظهور.</p>@endif
+    @if(!empty($signupPreview))<p style="color:#ffe29a;font-size:12px;margin-bottom:10px">{{ __('معاينة تجريبية — لا تُحفظ جائزة ولا تُستهلك مرات ظهور.') }}</p>@endif
     <p class="signup-wheel-kicker">{{ $shop->name }} · {{ $signupWheelCopy['intro'] }}</p>
     <h2 class="signup-wheel-title" id="signupWheelTitle"></h2>
     <p class="signup-wheel-hint">{{ $signupWheelCopy['hint'] }}</p>

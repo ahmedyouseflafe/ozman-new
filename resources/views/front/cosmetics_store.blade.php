@@ -112,7 +112,7 @@
                     <small class="brand-description">{{ $shopLocationUnavailable }}</small>
                 @endif
             @else
-                <a class="beauty-booking-link" href="{{ route('cosmetics.booking', $shop) }}"><i class="ti ti-calendar-heart"></i> احجزي موعد في الصالون</a>
+                <a class="beauty-booking-link" href="{{ route('cosmetics.booking', $shop) }}"><i class="ti ti-calendar-heart"></i> {{ __('احجزي موعد في الصالون') }}</a>
             @endif
             @if($socialLinks->isNotEmpty())<nav class="beauty-socials" aria-label="{{ __('التواصل الاجتماعي') }}">@foreach($socialLinks as $link)<a class="beauty-social" href="{{ $link['url'] }}" target="_blank" rel="noopener noreferrer" title="{{ $link['label'] }}" aria-label="{{ $link['label'] }}"><i class="ti {{ $link['icon'] }}"></i></a>@endforeach</nav>@endif
         </header>
@@ -128,34 +128,34 @@
 <aside class="beauty-cart" aria-live="polite"><div><strong id="beautyCartCount">0 {{ __('منتجات في السلة') }}</strong><small id="beautyCartTotal">0.00 ₪</small></div><button type="button" id="openBeautyCart"><i class="ti ti-shopping-bag"></i></button></aside>
 <dialog class="cart-sheet beauty-viewport-modal" id="beautyCartSheet" aria-hidden="true" aria-label="{{ __('سلة الطلب') }}"><section class="cart-card"><button type="button" class="beauty-cart-close-top" id="closeBeautyCartTop" aria-label="{{ __('إغلاق') }}" autofocus>×</button><h2>{{ __('سلة طلبك') }}</h2><div class="cart-items" id="beautyCartItems"></div><div class="cart-total"><span>{{ __('المجموع') }}</span><span id="beautyCartSheetTotal">0.00 ₪</span></div>@include('front.partials.loyalty_hint', ['total' => '#beautyCartSheetTotal'])<div class="cart-actions"><a id="beautyWhatsappOrder" class="disabled" target="_blank" rel="noopener noreferrer"><i class="ti ti-brand-whatsapp"></i>&nbsp; {{ __('إرسال الطلب واتساب') }}</a><button type="button" id="closeBeautyCart">{{ __('إغلاق') }}</button></div></section></dialog>
 @if(!empty($purchaseRewardWheels) || $raffleCardsAvailable)
-<aside class="beauty-reward-tools" aria-label="جوائز المتجر">
-    @if(!empty($purchaseRewardWheels))<button type="button" class="beauty-reward-tool" id="beautyPurchaseWheelOpen"><span>◉</span><span><strong>عجلة الشراء</strong><small>ادخل على الجائزة بعد إتمام طلبك</small></span></button>@endif
-    @if($raffleCardsAvailable)<button type="button" class="beauty-reward-tool" id="beautyRaffleOpen"><span>▣</span><span><strong>فحص بطاقة الربح</strong><small>أدخل رقم بطاقتك أو امسحها</small></span></button>@endif
+<aside class="beauty-reward-tools" aria-label="{{ __('جوائز المتجر') }}">
+    @if(!empty($purchaseRewardWheels))<button type="button" class="beauty-reward-tool" id="beautyPurchaseWheelOpen"><span>◉</span><span><strong>{{ __('عجلة الشراء') }}</strong><small>{{ __('ادخل على الجائزة بعد إتمام طلبك') }}</small></span></button>@endif
+    @if($raffleCardsAvailable)<button type="button" class="beauty-reward-tool" id="beautyRaffleOpen"><span>▣</span><span><strong>{{ __('فحص بطاقة الربح') }}</strong><small>{{ __('أدخل رقم بطاقتك أو امسحها') }}</small></span></button>@endif
 </aside>
 @endif
 @if(!empty($purchaseRewardWheels))
-<div class="beauty-modal" id="beautyWheelModal" aria-hidden="true"><section class="beauty-modal-card" role="dialog" aria-modal="true" aria-labelledby="beautyWheelTitle"><button type="button" class="beauty-modal-close" data-close-beauty-modal="beautyWheelModal" aria-label="إغلاق">×</button><p class="beauty-modal-kicker">مكافأة الشراء</p><h2 id="beautyWheelTitle">عجلة الحظ</h2><p class="beauty-modal-intro" id="beautyWheelIntro">أتمم طلبك أولاً، ثم لف العجلة لتكشف هديتك.</p><div class="beauty-wheel-wrap"><button type="button" class="beauty-wheel" id="beautyWheelSpin" disabled aria-label="لف عجلة الحظ"></button></div><div class="beauty-wheel-result" id="beautyWheelResult">الجائزة ستظهر هنا.</div></section></div>
+<div class="beauty-modal" id="beautyWheelModal" aria-hidden="true"><section class="beauty-modal-card" role="dialog" aria-modal="true" aria-labelledby="beautyWheelTitle"><button type="button" class="beauty-modal-close" data-close-beauty-modal="beautyWheelModal" aria-label="{{ __('إغلاق') }}">×</button><p class="beauty-modal-kicker">{{ __('مكافأة الشراء') }}</p><h2 id="beautyWheelTitle">{{ __('عجلة الحظ') }}</h2><p class="beauty-modal-intro" id="beautyWheelIntro">{{ __('أتمم طلبك أولاً، ثم لف العجلة لتكشف هديتك.') }}</p><div class="beauty-wheel-wrap"><button type="button" class="beauty-wheel" id="beautyWheelSpin" disabled aria-label="{{ __('لف عجلة الحظ') }}"></button></div><div class="beauty-wheel-result" id="beautyWheelResult">{{ __('الجائزة ستظهر هنا.') }}</div></section></div>
 @endif
 @if($raffleCardsAvailable)
-<div class="beauty-modal" id="beautyRaffleModal" aria-hidden="true"><section class="beauty-modal-card" role="dialog" aria-modal="true" aria-labelledby="beautyRaffleTitle"><button type="button" class="beauty-modal-close" data-close-beauty-modal="beautyRaffleModal" aria-label="إغلاق">×</button><p class="beauty-modal-kicker">بطاقات الربح</p><h2 id="beautyRaffleTitle">تحقق من رقم بطاقتك</h2><p class="beauty-modal-intro">اكتب رقم البطاقة من 6 أرقام أو امسح رمزها بالكاميرا.</p><form class="beauty-form" id="beautyRaffleForm"><label class="beauty-field">رقم البطاقة<input class="beauty-card-number" id="beautyRaffleNumber" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required></label><label class="beauty-field">الاسم<input id="beautyRaffleName" autocomplete="name" required></label><label class="beauty-field">الجوال أو واتساب<input id="beautyRaffleWhatsapp" inputmode="tel" autocomplete="tel" required></label><button type="submit" class="beauty-form-action">تحقق من البطاقة</button><button type="button" class="beauty-form-action beauty-scan-action" id="beautyStartScan">مسح البطاقة بالكاميرا</button></form><div class="beauty-scanner" id="beautyScanner"><video id="beautyScannerVideo" playsinline muted></video></div><div class="beauty-raffle-result" id="beautyRaffleResult"></div></section></div>
+<div class="beauty-modal" id="beautyRaffleModal" aria-hidden="true"><section class="beauty-modal-card" role="dialog" aria-modal="true" aria-labelledby="beautyRaffleTitle"><button type="button" class="beauty-modal-close" data-close-beauty-modal="beautyRaffleModal" aria-label="{{ __('إغلاق') }}">×</button><p class="beauty-modal-kicker">{{ __('بطاقات الربح') }}</p><h2 id="beautyRaffleTitle">{{ __('تحقق من رقم بطاقتك') }}</h2><p class="beauty-modal-intro">{{ __('اكتب رقم البطاقة من 6 أرقام أو امسح رمزها بالكاميرا.') }}</p><form class="beauty-form" id="beautyRaffleForm"><label class="beauty-field">{{ __('رقم البطاقة') }}<input class="beauty-card-number" id="beautyRaffleNumber" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required></label><label class="beauty-field">{{ __('الاسم') }}<input id="beautyRaffleName" autocomplete="name" required></label><label class="beauty-field">{{ __('الجوال أو واتساب') }}<input id="beautyRaffleWhatsapp" inputmode="tel" autocomplete="tel" required></label><button type="submit" class="beauty-form-action">{{ __('تحقق من البطاقة') }}</button><button type="button" class="beauty-form-action beauty-scan-action" id="beautyStartScan">{{ __('مسح البطاقة بالكاميرا') }}</button></form><div class="beauty-scanner" id="beautyScanner"><video id="beautyScannerVideo" playsinline muted></video></div><div class="beauty-raffle-result" id="beautyRaffleResult"></div></section></div>
 @endif
 <dialog class="beauty-product-video-modal beauty-viewport-modal" id="beautyProductVideoModal" aria-hidden="true" aria-labelledby="beautyProductVideoTitle">
-    <button type="button" class="beauty-product-video-close" id="beautyProductVideoClose" aria-label="إغلاق الفيديو">×</button>
+    <button type="button" class="beauty-product-video-close" id="beautyProductVideoClose" aria-label="{{ __('إغلاق الفيديو') }}">×</button>
     <section class="beauty-product-video-dialog">
         <video id="beautyProductVideoPlayer" controls playsinline preload="metadata"></video>
-        <div class="beauty-product-video-meta"><strong id="beautyProductVideoTitle"></strong><span>الصوت مفعّل</span></div>
+        <div class="beauty-product-video-meta"><strong id="beautyProductVideoTitle"></strong><span>{{ __('الصوت مفعّل') }}</span></div>
     </section>
 </dialog>
 @viewStyle('front.cosmetics_store-10')
 @viewStyle('front.cosmetics_store-11')
-<dialog class="beauty-product-image-modal beauty-viewport-modal" id="beautyProductImageModal" aria-hidden="true" aria-label="صورة المنتج المكبرة">
-    <button type="button" class="beauty-product-image-close" id="beautyProductImageClose" aria-label="إغلاق الصورة">×</button>
+<dialog class="beauty-product-image-modal beauty-viewport-modal" id="beautyProductImageModal" aria-hidden="true" aria-label="{{ __('صورة المنتج المكبرة') }}">
+    <button type="button" class="beauty-product-image-close" id="beautyProductImageClose" aria-label="{{ __('إغلاق الصورة') }}">×</button>
     <section class="beauty-product-image-dialog">
         <img id="beautyProductImageViewer" src="" alt="">
-        <nav class="beauty-gallery-controls" aria-label="صور المنتج">
-            <button type="button" id="beautyImagePrev" aria-label="الصورة السابقة">&#10095;</button>
+        <nav class="beauty-gallery-controls" aria-label="{{ __('صور المنتج') }}">
+            <button type="button" id="beautyImagePrev" aria-label="{{ __('الصورة السابقة') }}">&#10095;</button>
             <output id="beautyImageCount" aria-live="polite" dir="ltr"></output>
-            <button type="button" id="beautyImageNext" aria-label="الصورة التالية">&#10094;</button>
+            <button type="button" id="beautyImageNext" aria-label="{{ __('الصورة التالية') }}">&#10094;</button>
         </nav>
     </section>
 </dialog>

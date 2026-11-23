@@ -40,19 +40,19 @@
         <section class="card" id="customerGate">
             <div class="brand"><i class="ti ti-bolt"></i> Ozman</div>
             <header class="gate-head">
-                <div class="kicker">أهلاً بك في Ozman</div>
-                <h1>سجل دخولك لتلف العجلة</h1>
-                <p>عبّي بياناتك مرة واحدة، وبعدها بتظهرلك العجلة المباشرة الخاصة بالمسوق.</p>
+                <div class="kicker">{{ __('أهلاً بك في Ozman') }}</div>
+                <h1>{{ __('سجل دخولك لتلف العجلة') }}</h1>
+                <p>{{ __('عبّي بياناتك مرة واحدة، وبعدها بتظهرلك العجلة المباشرة الخاصة بالمسوق.') }}</p>
             </header>
 
-            <div class="type-picker" aria-label="نوع التسجيل">
+            <div class="type-picker" aria-label="{{ __('نوع التسجيل') }}">
                 <button class="type-btn active" type="button" aria-pressed="true">
                     <i class="ti ti-user"></i>
-                    عميل
+                    {{ __('عميل') }}
                 </button>
-                <button class="type-btn" type="button" aria-pressed="false" disabled title="هذه العجلة مخصصة للعملاء">
+                <button class="type-btn" type="button" aria-pressed="false" disabled title="{{ __('هذه العجلة مخصصة للعملاء') }}">
                     <i class="ti ti-building-store"></i>
-                    صاحب متجر
+                    {{ __('صاحب متجر') }}
                 </button>
             </div>
 
@@ -66,32 +66,32 @@
                 <input type="hidden" name="map_link" id="customerMapLink">
 
                 <label>
-                    الاسم
-                    <input type="text" name="name" id="customerName" placeholder="اكتب اسمك" required>
+                    {{ __('الاسم') }}
+                    <input type="text" name="name" id="customerName" placeholder="{{ __('اكتب اسمك') }}" required>
                 </label>
                 <label>
-                    رقم الهاتف
+                    {{ __('رقم الهاتف') }}
                     <input type="tel" name="phone" id="customerPhone" placeholder="05xxxxxxxx" inputmode="tel" maxlength="16"
                         pattern="(?:05[02345689][0-9]{7}|(?:\+|00)?9705[69][0-9]{7}|(?:\+|00)?9725[023458][0-9]{7})"
-                        title="أدخل رقم جوال صحيح مثل 0591234567" dir="ltr" required>
+                        title="{{ __('أدخل رقم جوال صحيح مثل 0591234567') }}" dir="ltr" required>
                 </label>
                 <label>
-                    مكان السكن
-                    <textarea name="residence_address" id="customerAddress" placeholder="المدينة، الحي، أقرب علامة" required></textarea>
+                    {{ __('مكان السكن') }}
+                    <textarea name="residence_address" id="customerAddress" placeholder="{{ __('المدينة، الحي، أقرب علامة') }}" required></textarea>
                 </label>
                 <div class="location-row">
                     <label>
-                        لوكيشن العميل
-                        <input type="text" id="customerLocationPreview" placeholder="اضغط تحديد الموقع" readonly required>
+                        {{ __('لوكيشن العميل') }}
+                        <input type="text" id="customerLocationPreview" placeholder="{{ __('اضغط تحديد الموقع') }}" readonly required>
                     </label>
                     <button class="btn secondary" type="button" id="detectLocationBtn">
                         <i class="ti ti-map-pin"></i>
-                        تحديد الموقع
+                        {{ __('تحديد الموقع') }}
                     </button>
                 </div>
                 <button class="btn" type="submit" id="saveCustomerBtn">
                     <i class="ti ti-login-2"></i>
-                    تسجيل وفتح العجلة
+                    {{ __('تسجيل وفتح العجلة') }}
                 </button>
                 <div class="status" id="gateStatus"></div>
             </form>
@@ -99,15 +99,15 @@
 
         <section class="card wheel-card hidden" id="wheelStage">
             <header class="wheel-head">
-                <div class="kicker">عجلة مباشرة</div>
+                <div class="kicker">{{ __('عجلة مباشرة') }}</div>
                 <h1>{{ $wheel->title }}</h1>
-                <p>اضغط لف العجلة وشوف جائزتك فوراً.</p>
+                <p>{{ __('اضغط لف العجلة وشوف جائزتك فوراً.') }}</p>
                 <span class="marketer-pill"><i class="ti ti-user-star"></i> المسوق: {{ $marketer->name }}</span>
             </header>
 
             <section class="wheel-panel">
                 @if(! $wheel->is_active)
-                    <div class="inactive">العجلة غير مفعلة حالياً.</div>
+                    <div class="inactive">{{ __('العجلة غير مفعلة حالياً.') }}</div>
                 @endif
 
                 <div class="wheel-wrap">
@@ -130,7 +130,7 @@
 
                 <button class="btn" id="spinBtn" type="button" @disabled(! $wheel->is_active || $segments->isEmpty())>
                     <i class="ti ti-rotate-clockwise" aria-hidden="true"></i>
-                    لف العجلة
+                    {{ __('لف العجلة') }}
                 </button>
                 <div class="result" id="result"></div>
             </section>
