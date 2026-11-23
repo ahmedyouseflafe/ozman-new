@@ -19,6 +19,8 @@ use Illuminate\View\View;
 
 class FrontController extends Controller
 {
+    public function __construct(private \App\Services\Storefront\StorefrontPayloads $payloads) {}
+
     public function csrfToken(): JsonResponse
     {
         return response()
@@ -147,9 +149,9 @@ class FrontController extends Controller
             'ozmanScreens' => $ozmanScreens,
             'ozmanAdvertisements' => $ozmanAdvertisements,
             'frontData' => $this->frontData($frontShops, $ozmanCategories, $ozmanShop, $ozmanBottomScreens),
-            'customerSignupWheel' => $this->customerSignupWheelPayload(),
-            'purchaseRewardWheels' => $this->purchaseRewardWheelsPayload($shop),
-            'raffleSettings' => $this->raffleSettings(),
+            'customerSignupWheel' => $this->payloads->customerSignupWheelPayload(),
+            'purchaseRewardWheels' => $this->payloads->purchaseRewardWheelsPayload($shop),
+            'raffleSettings' => $this->payloads->raffleSettings(),
         ]);
     }
 
@@ -271,9 +273,9 @@ class FrontController extends Controller
                 ->latest()
                 ->get(),
             'frontData' => $this->frontData($shops, $ozmanCategories, $ozmanShop, $ozmanBottomScreens),
-            'customerSignupWheel' => $this->customerSignupWheelPayload(),
-            'purchaseRewardWheels' => $this->purchaseRewardWheelsPayload($selectedShop),
-            'raffleSettings' => $this->raffleSettings(),
+            'customerSignupWheel' => $this->payloads->customerSignupWheelPayload(),
+            'purchaseRewardWheels' => $this->payloads->purchaseRewardWheelsPayload($selectedShop),
+            'raffleSettings' => $this->payloads->raffleSettings(),
             'initialPersonContext' => [
                 'type' => 'distributor',
                 'id' => $distributor->id,
@@ -342,7 +344,7 @@ class FrontController extends Controller
             'frontData' => $this->frontData($shops, $ozmanCategories, null, collect()),
             'customerSignupWheel' => null,
             'purchaseRewardWheels' => [],
-            'raffleSettings' => $this->raffleSettings(),
+            'raffleSettings' => $this->payloads->raffleSettings(),
             'isDashboardPreview' => true,
         ]);
     }
@@ -435,28 +437,28 @@ class FrontController extends Controller
         foreach ($ozmanCategories as $category) {
             $categoryTitle = $category->localized('name');
             $productsDb[$categoryTitle] = $category->products
-                ->map(fn($product) => $this->productPayload($product))
+                ->map(fn($product) => $this->payloads->productPayload($product))
                 ->values()
                 ->all();
         }
 
         $centersData = $shops->map(function (Shop $shop) use (&$productsDb, $shops, $ozmanShop, $ozmanBottomScreens, $ozmanCategories) {
             if (! $shop->relationLoaded('categories')) {
-                return $this->lightweightShopPayload($shop);
+                return $this->payloads->lightweightShopPayload($shop);
             }
 
             $shopProductsDb = [];
             $shopDepartments = [];
 
             $shopDepartments = $shop->categories->map(function ($category) use (&$productsDb, &$shopProductsDb) {
-                    $products = $category->products->map(fn($product) => $this->productPayload($product))->values()->all();
+                    $products = $category->products->map(fn($product) => $this->payloads->productPayload($product))->values()->all();
                     $categoryTitle = $category->localized('name');
                     $productsDb[$categoryTitle] = $products;
                     $shopProductsDb[$categoryTitle] = $products;
 
                     return [
                         'title' => $categoryTitle,
-                        'img' => $this->imageUrl($category->image, 'images/logo.jpg'),
+                        'img' => $this->payloads->imageUrl($category->image, 'images/logo.jpg'),
                     ];
                 })->values()->all();
 
@@ -467,7 +469,7 @@ class FrontController extends Controller
                 foreach ($ozmanCategories as $category) {
                     $categoryTitle = $category->localized('name');
                     $products = $category->products
-                        ->map(fn($product) => $this->productPayload($product))
+                        ->map(fn($product) => $this->payloads->productPayload($product))
                         ->values()
                         ->all();
 
@@ -482,7 +484,7 @@ class FrontController extends Controller
                     $shopProductsDb[$categoryTitle] = $products;
                     $shopDepartments[] = [
                         'title' => $categoryTitle,
-                        'img' => $this->imageUrl($category->image, 'images/logo.jpg'),
+                        'img' => $this->payloads->imageUrl($category->image, 'images/logo.jpg'),
                         'shared_source' => 'ozman',
                     ];
                 }
@@ -493,29 +495,29 @@ class FrontController extends Controller
                 $displayItems = $ozmanBottomScreens->toBase()->concat($displayItems);
             }
 
-            $shopOrderContext = $this->shopOrderContext($shop);
+            $shopOrderContext = $this->payloads->shopOrderContext($shop);
 
             return [
                 'id' => $shop->id,
                 'title' => $shop->name,
                 'catalog_type' => $shop->catalog_type,
                 'home_section' => $shop->home_section ?: $shop->catalog_type,
-                'public_url' => $this->shopPublicUrl($shop),
-                'img' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
-                'logo' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
+                'public_url' => $this->payloads->shopPublicUrl($shop),
+                'img' => $this->payloads->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
+                'logo' => $this->payloads->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
                 'whatsapp_number' => $shopOrderContext['whatsapp_number'],
                 'marketing_context' => $shopOrderContext['marketing_context'],
-                'purchase_reward_wheels' => $this->purchaseRewardWheelsPayload($shop),
-                'social_links' => $this->socialLinksPayload($shop),
-                'agents' => $this->contactPeoplePayload($shop->agents ?? collect(), $shop, 'agent', $shopProductsDb, $shopDepartments, $shops),
-                'distributors' => $this->contactPeoplePayload($shop->distributors ?? collect(), $shop, 'distributor', $shopProductsDb, $shopDepartments, $shops),
-                'display_items' => $this->displayItemsPayload($displayItems),
+                'purchase_reward_wheels' => $this->payloads->purchaseRewardWheelsPayload($shop),
+                'social_links' => $this->payloads->socialLinksPayload($shop),
+                'agents' => $this->payloads->contactPeoplePayload($shop->agents ?? collect(), $shop, 'agent', $shopProductsDb, $shopDepartments, $shops),
+                'distributors' => $this->payloads->contactPeoplePayload($shop->distributors ?? collect(), $shop, 'distributor', $shopProductsDb, $shopDepartments, $shops),
+                'display_items' => $this->payloads->displayItemsPayload($displayItems),
                 'departments' => $shopDepartments,
                 'products_db' => $shopProductsDb,
                 'address' => $shop->address,
                 'latitude' => $shop->latitude !== null ? (float) $shop->latitude : null,
                 'longitude' => $shop->longitude !== null ? (float) $shop->longitude : null,
-                'map_url' => $this->shopMapUrl($shop),
+                'map_url' => $this->payloads->shopMapUrl($shop),
             ];
         })->values()->all();
 
@@ -524,14 +526,14 @@ class FrontController extends Controller
             $ozmanDepartments = [];
 
             $ozmanDepartments = $ozmanCategories->map(function ($category) use (&$productsDb, &$ozmanProductsDb) {
-                    $products = $category->products->map(fn($product) => $this->productPayload($product))->values()->all();
+                    $products = $category->products->map(fn($product) => $this->payloads->productPayload($product))->values()->all();
                     $categoryTitle = $category->localized('name');
                     $productsDb[$categoryTitle] = $products;
                     $ozmanProductsDb[$categoryTitle] = $products;
 
                     return [
                         'title' => $categoryTitle,
-                        'img' => $this->imageUrl($category->image, 'images/logo.jpg'),
+                        'img' => $this->payloads->imageUrl($category->image, 'images/logo.jpg'),
                     ];
                 })->values()->all();
 
@@ -540,22 +542,22 @@ class FrontController extends Controller
                 'title' => $ozmanShop->name,
                 'catalog_type' => $ozmanShop->catalog_type,
                 'home_section' => $ozmanShop->home_section ?: $ozmanShop->catalog_type,
-                'public_url' => $this->shopPublicUrl($ozmanShop),
-                'img' => $this->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
-                'logo' => $this->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
-                'whatsapp_number' => $this->contactWhatsappNumber($ozmanShop->whatsapp ?: $ozmanShop->phone),
+                'public_url' => $this->payloads->shopPublicUrl($ozmanShop),
+                'img' => $this->payloads->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
+                'logo' => $this->payloads->imageUrl($ozmanShop->logo ?: $ozmanShop->banner, 'images/logo.jpg'),
+                'whatsapp_number' => $this->payloads->contactWhatsappNumber($ozmanShop->whatsapp ?: $ozmanShop->phone),
                 'marketing_context' => null,
-                'purchase_reward_wheels' => $this->purchaseRewardWheelsPayload($ozmanShop),
-                'social_links' => $this->socialLinksPayload($ozmanShop),
-                'agents' => $this->contactPeoplePayload($ozmanShop->agents ?? collect(), $ozmanShop, 'agent', $ozmanProductsDb, $ozmanDepartments, $shops),
-                'distributors' => $this->contactPeoplePayload($ozmanShop->distributors ?? collect(), $ozmanShop, 'distributor', $ozmanProductsDb, $ozmanDepartments, $shops),
-                'display_items' => $this->displayItemsPayload($ozmanBottomScreens->toBase()->concat($ozmanShop->activeScreens)->concat($ozmanShop->advertisements ?? collect())),
+                'purchase_reward_wheels' => $this->payloads->purchaseRewardWheelsPayload($ozmanShop),
+                'social_links' => $this->payloads->socialLinksPayload($ozmanShop),
+                'agents' => $this->payloads->contactPeoplePayload($ozmanShop->agents ?? collect(), $ozmanShop, 'agent', $ozmanProductsDb, $ozmanDepartments, $shops),
+                'distributors' => $this->payloads->contactPeoplePayload($ozmanShop->distributors ?? collect(), $ozmanShop, 'distributor', $ozmanProductsDb, $ozmanDepartments, $shops),
+                'display_items' => $this->payloads->displayItemsPayload($ozmanBottomScreens->toBase()->concat($ozmanShop->activeScreens)->concat($ozmanShop->advertisements ?? collect())),
                 'departments' => $ozmanDepartments,
                 'products_db' => $ozmanProductsDb,
                 'address' => $ozmanShop->address,
                 'latitude' => $ozmanShop->latitude !== null ? (float) $ozmanShop->latitude : null,
                 'longitude' => $ozmanShop->longitude !== null ? (float) $ozmanShop->longitude : null,
-                'map_url' => $this->shopMapUrl($ozmanShop),
+                'map_url' => $this->payloads->shopMapUrl($ozmanShop),
             ];
         }
 
@@ -563,8 +565,8 @@ class FrontController extends Controller
             ->mapWithKeys(fn($category) => [$category->localized('name') => [
                 'name' => $category->localized('name'),
                 'price' => '',
-                'img' => $this->imageUrl($category->image, 'images/logo.jpg'),
-                'gallery' => [$this->imageUrl($category->image, 'images/logo.jpg')],
+                'img' => $this->payloads->imageUrl($category->image, 'images/logo.jpg'),
+                'gallery' => [$this->payloads->imageUrl($category->image, 'images/logo.jpg')],
                 'description' => 'فئة من متجر Ozman.',
             ]])
             ->all();
@@ -576,433 +578,4 @@ class FrontController extends Controller
         ];
     }
 
-    private function lightweightShopPayload(Shop $shop): array
-    {
-        return [
-            'id' => $shop->id,
-            'title' => $shop->name,
-            'catalog_type' => $shop->catalog_type,
-            'home_section' => $shop->home_section ?: $shop->catalog_type,
-            'public_url' => $this->shopPublicUrl($shop),
-            'img' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
-            'logo' => $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg'),
-            'whatsapp_number' => $this->contactWhatsappNumber($shop->whatsapp ?: $shop->phone),
-            'marketing_context' => null,
-            'purchase_reward_wheels' => [],
-            'social_links' => [],
-            'agents' => [],
-            'distributors' => [],
-            'display_items' => [],
-            'departments' => [],
-            'products_db' => [],
-            'address' => $shop->address,
-            'latitude' => $shop->latitude !== null ? (float) $shop->latitude : null,
-            'longitude' => $shop->longitude !== null ? (float) $shop->longitude : null,
-            'map_url' => $this->shopMapUrl($shop),
-        ];
-    }
-
-    private function productPayload(Product $product): array
-    {
-        $gallery = $product->images
-            ->pluck('image')
-            ->prepend($product->main_image)
-            ->filter()
-            ->map(fn($image) => $this->imageUrl($image, 'images/1.jpg'))
-            ->unique()
-            ->values()
-            ->all();
-
-        $campaignMedia = $product->campaigns
-            ->map(fn($campaign) => [
-                'type' => $campaign->type,
-                'src' => $this->imageUrl($campaign->media, ''),
-                'title' => $campaign->localized('title'),
-                // An offer outside its dates keeps its media but stops changing the cart price,
-                // exactly like the server-side pricing in FrontOrderPricing.
-                'offer_type' => FrontOrderPricing::campaignIsRunning($campaign) ? $campaign->offer_type : null,
-                'unit_key' => $campaign->unit_key,
-                'offer_quantity' => $campaign->offer_quantity,
-                'min_quantity' => $campaign->min_quantity,
-                'max_quantity' => $campaign->max_quantity,
-                'offer_price' => $campaign->offer_price !== null ? (float) $campaign->offer_price : null,
-                'offer_note' => $campaign->localized('offer_note'),
-                'starts_at' => $campaign->starts_at?->toDateString(),
-                'ends_at' => $campaign->ends_at?->toDateString(),
-            ])
-            ->filter(fn($campaign) => filled($campaign['src']) || filled($campaign['title']) || filled($campaign['offer_note']))
-            ->values()
-            ->all();
-
-        $image = $this->imageUrl($product->main_image, 'images/1.jpg');
-        $customerPackagePrice = $product->show_customer_package_price && $product->customer_package_price !== null ? (float) $product->customer_package_price : null;
-        $customerCartonPrice = $product->show_customer_carton_price && $product->customer_carton_price !== null ? (float) $product->customer_carton_price : null;
-        $customerPalletPrice = $product->show_customer_pallet_price && $product->customer_pallet_price !== null ? (float) $product->customer_pallet_price : null;
-        $packagePrice = $product->show_package_price && $product->package_price !== null ? (float) $product->package_price : null;
-        $palletPrice = $product->show_pallet_price && $product->pallet_price !== null ? (float) $product->pallet_price : null;
-        $cartonPrice = $product->show_carton_price && $product->carton_price !== null ? (float) $product->carton_price : null;
-        $customerDefaultPrice = $customerPackagePrice ?? $customerCartonPrice ?? $customerPalletPrice;
-        $merchantDefaultPrice = $packagePrice ?? $cartonPrice ?? $palletPrice;
-
-        return [
-            'id' => $product->id,
-            'name' => $product->localized('name'),
-            'price' => $customerDefaultPrice !== null ? number_format($customerDefaultPrice, 2) . ' ₪' : null,
-            'customer_price' => $customerDefaultPrice !== null ? number_format($customerDefaultPrice, 2) . ' ₪' : null,
-            'customer_package_price' => $customerPackagePrice !== null ? number_format($customerPackagePrice, 2) . ' ₪' : null,
-            'customer_carton_price' => $customerCartonPrice !== null ? number_format($customerCartonPrice, 2) . ' ₪' : null,
-            'customer_pallet_price' => $customerPalletPrice !== null ? number_format($customerPalletPrice, 2) . ' ₪' : null,
-            'merchant_price' => $merchantDefaultPrice !== null ? number_format($merchantDefaultPrice, 2) . ' ₪' : null,
-            'package_price' => $packagePrice !== null ? number_format($packagePrice, 2) . ' ₪' : null,
-            'pallet_price' => $palletPrice !== null ? number_format($palletPrice, 2) . ' ₪' : null,
-            'carton_price' => $cartonPrice !== null ? number_format($cartonPrice, 2) . ' ₪' : null,
-            'img' => $image,
-            'gallery' => $gallery ?: [$image],
-            'video' => $this->imageUrl($product->video, ''),
-            'campaigns' => $campaignMedia,
-            'description' => $product->localized('description'),
-        ];
-    }
-
-    private function imageUrl(?string $path, string $fallback): string
-    {
-        if ($fallback === 'images/logo.jpg') {
-            $fallback = 'images/logo.svg';
-        }
-
-        if (!$path) {
-            if ($fallback === '') {
-                return '';
-            }
-
-            return asset($fallback);
-        }
-
-        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-            return $path;
-        }
-
-        return asset($path);
-    }
-
-    private function shopOrderContext(Shop $shop): array
-    {
-        $marketer = $shop->distributorMarketer;
-        $distributor = $marketer?->distributor;
-
-        if ($marketer?->is_active && $distributor?->is_active) {
-            return [
-                'whatsapp_number' => $this->contactWhatsappNumber($distributor->whatsapp ?: $distributor->phone),
-                'marketing_context' => [
-                    'source' => 'marketer',
-                    'distributor_id' => $distributor->id,
-                    'distributor_name' => $distributor->name,
-                    'marketer_id' => $marketer->id,
-                    'marketer_name' => $marketer->name,
-                    'tracking_code' => $marketer->tracking_code,
-                    'commission_rate' => $marketer->commission_rate,
-                ],
-            ];
-        }
-
-        return [
-            'whatsapp_number' => $this->contactWhatsappNumber($shop->whatsapp ?: $shop->phone),
-            'marketing_context' => null,
-        ];
-    }
-
-    private function socialLinksPayload(?Shop $shop): array
-    {
-        $social = optional($shop?->social);
-        $normalize = function (?string $url): ?string {
-            if (! filled($url)) return null;
-
-            $url = trim($url);
-            if (str_starts_with($url, '@')) return null;
-
-            return preg_match('/^https?:\/\//i', $url)
-                ? $url
-                : 'https://' . ltrim($url, '/');
-        };
-        $normalizeWhatsapp = function (?string $value): ?string {
-            if (! filled($value)) return null;
-
-            $value = trim($value);
-
-            if (preg_match('/^https?:\/\//i', $value)) {
-                return $value;
-            }
-
-            $digits = preg_replace('/\D+/', '', $value);
-
-            return $digits ? 'https://wa.me/' . $digits : null;
-        };
-
-        return collect([
-            ['title' => 'فيسبوك', 'icon' => 'fab fa-facebook-f', 'url' => $normalize($social->facebook)],
-            ['title' => 'تويتر', 'icon' => 'fab fa-twitter', 'url' => $normalize($social->twitter)],
-            ['title' => 'انستجرام', 'icon' => 'fab fa-instagram', 'url' => $normalize($social->instagram)],
-            ['title' => 'تيك توك', 'icon' => 'fab fa-tiktok', 'url' => $normalize($social->tiktok)],
-            ['title' => 'تلجرام', 'icon' => 'fab fa-telegram', 'url' => $normalize($social->telegram)],
-            ['title' => 'يوتيوب', 'icon' => 'fab fa-youtube', 'url' => $normalize($social->youtube)],
-            ['title' => 'سناب شات', 'icon' => 'fab fa-snapchat', 'url' => $normalize($social->snapchat)],
-            ['title' => 'واتساب', 'icon' => 'fab fa-whatsapp', 'url' => $normalizeWhatsapp($social->whatsapp ?: $shop?->whatsapp)],
-        ])->filter(fn($item) => filled($item['url']))->values()->all();
-    }
-
-    private function contactPeoplePayload($people, Shop $shop, string $type, array $shopProductsDb = [], array $shopDepartments = [], $availableShops = null): array
-    {
-        $fallbackLogo = $this->imageUrl($shop->logo ?: $shop->banner, 'images/logo.jpg');
-        $availableShops = collect($availableShops ?? []);
-
-        return collect($people)
-            ->map(function ($person) use ($shop, $fallbackLogo, $type, $shopProductsDb, $shopDepartments, $availableShops) {
-                $personProductsDb = $type === 'agent'
-                    ? $this->personProductsDb($person->products ?? collect(), $person->categories ?? collect())
-                    : [];
-                $personDepartments = $type === 'agent'
-                    ? $this->personDepartments($personProductsDb, $shop, $person->categories ?? collect())
-                    : [];
-                $ownedShops = $this->ownedShopChoicesForPerson($person, $availableShops);
-                $mergedProductsDb = $type === 'agent'
-                    ? $this->mergeProductsDb($shopProductsDb, $personProductsDb)
-                    : $shopProductsDb;
-                $mergedDepartments = $ownedShops !== []
-                    ? $ownedShops
-                    : ($type === 'agent'
-                        ? $this->mergeDepartments($shopDepartments, $personDepartments)
-                        : $shopDepartments);
-
-                return [
-                    'id' => $person->id,
-                    'type' => $type,
-                    'display_label' => $type === 'distributor' ? 'الموزع' : 'الوكيل',
-                    'name' => $person->name,
-                    'image' => $person->image ? $this->imageUrl($person->image, 'images/logo.jpg') : $fallbackLogo,
-                    'contact' => $person->phone ?: $person->whatsapp ?: $shop->name,
-                    'whatsapp_number' => $this->contactWhatsappNumber($person->whatsapp ?: $person->phone ?: $shop->whatsapp ?: $shop->phone),
-                    'shop_id' => $shop->id,
-                    'shop_title' => $shop->name,
-                    'address' => $person->address,
-                    'latitude' => $person->latitude !== null ? (float) $person->latitude : null,
-                    'longitude' => $person->longitude !== null ? (float) $person->longitude : null,
-                    'map_url' => $this->personMapUrl($person),
-                    'owned_shops' => $ownedShops,
-                    'departments' => $mergedDepartments,
-                    'products_db' => $mergedProductsDb,
-                ];
-            })
-            ->values()
-            ->all();
-    }
-
-    private function personMapUrl($person): string
-    {
-        if ($person->latitude !== null && $person->longitude !== null) {
-            return 'https://www.google.com/maps/dir/?api=1&destination=' . $person->latitude . ',' . $person->longitude;
-        }
-
-        if (filled($person->address)) {
-            return 'https://www.google.com/maps/search/?api=1&query=' . urlencode($person->address);
-        }
-
-        return '#';
-    }
-
-    private function contactWhatsappNumber(?string $value): ?string
-    {
-        $number = preg_replace('/\D+/', '', (string) $value);
-
-        return $number !== '' ? $number : null;
-    }
-
-    private function ownedShopChoicesForPerson($person, $availableShops): array
-    {
-        if (! $person->user_id) {
-            return [];
-        }
-
-        return collect($availableShops)
-            ->filter(fn(Shop $candidate) => (int) $candidate->user_id === (int) $person->user_id)
-            ->map(fn(Shop $candidate) => [
-                'title' => $candidate->name,
-                'img' => $this->imageUrl($candidate->logo ?: $candidate->banner, 'images/logo.jpg'),
-                'kind' => 'shop',
-                'shop_id' => $candidate->id,
-                'contact' => $candidate->address ?: $candidate->phone ?: $candidate->city ?: '',
-            ])
-            ->values()
-            ->all();
-    }
-
-    private function mergeProductsDb(array $shopProductsDb, array $personProductsDb): array
-    {
-        $merged = $shopProductsDb;
-
-        foreach ($personProductsDb as $categoryName => $products) {
-            $merged[$categoryName] = array_values(array_merge($merged[$categoryName] ?? [], $products));
-        }
-
-        return $merged;
-    }
-
-    private function mergeDepartments(array $shopDepartments, array $personDepartments): array
-    {
-        $merged = collect($shopDepartments)->keyBy('title');
-
-        foreach ($personDepartments as $department) {
-            $merged->put($department['title'], $department);
-        }
-
-        return $merged->values()->all();
-    }
-
-    private function personProductsDb($products, $categories): array
-    {
-        $productsDb = collect($categories)
-            ->mapWithKeys(fn($category) => [$category->localized('name') => []])
-            ->all();
-
-        collect($products)
-            ->filter(fn($product) => $product->category)
-            ->groupBy(fn($product) => $product->category->localized('name'))
-            ->each(function ($group, $categoryName) use (&$productsDb) {
-                $productsDb[$categoryName] = $group
-                ->map(fn($product) => $this->productPayload($product))
-                ->values()
-                    ->all();
-            });
-
-        return $productsDb;
-    }
-
-    private function personDepartments(array $productsDb, Shop $shop, $categories): array
-    {
-        return collect($productsDb)
-            ->map(function ($products, $categoryName) use ($shop, $categories) {
-                $category = collect($categories)->first(fn($category) => $category->localized('name') === $categoryName)
-                    ?: $shop->categories->first(fn($category) => $category->localized('name') === $categoryName);
-
-                return [
-                    'title' => $categoryName,
-                    'img' => $this->imageUrl($category?->image, 'images/logo.jpg'),
-                ];
-            })
-            ->values()
-            ->all();
-    }
-
-    private function displayItemsPayload($items): array
-    {
-        return collect($items)
-            ->filter(fn($item) => filled($item->media))
-            ->map(fn($item) => [
-                'type' => $item->type ?? 'image',
-                'src' => $this->imageUrl($item->media, ''),
-                'title' => $item->title ?? '',
-                'duration' => max((int) ($item->duration ?? 8), 1) * 1000,
-            ])
-            ->values()
-            ->all();
-    }
-
-    private function shopMapUrl(Shop $shop): string
-    {
-        if ($shop->latitude !== null && $shop->longitude !== null) {
-            return 'https://www.google.com/maps/dir/?api=1&destination=' . $shop->latitude . ',' . $shop->longitude;
-        }
-
-        return 'https://www.google.com/maps/search/?api=1&query=' . urlencode($shop->address ?: $shop->name);
-    }
-
-    private function customerSignupWheelPayload(): ?array
-    {
-        $wheel = RewardWheel::query()
-            ->where('key', RewardWheel::CUSTOMER_SIGNUP_DISCOUNTS)
-            ->where('is_active', true)
-            ->with(['segments' => fn($query) => $query
-                ->where('is_active', true)
-                ->orderBy('sort_order')
-            ])
-            ->first();
-
-        if (! $wheel || $wheel->segments->count() < 2) {
-            return null;
-        }
-
-        return [
-            'title' => $wheel->title,
-            'segments' => $wheel->segments
-                ->map(fn($segment) => [
-                    'label' => $segment->label,
-                    'discount_value' => $segment->discount_value,
-                    'discount_type' => $segment->discount_type,
-                    'gift_image' => $segment->discount_type === 'gift' && $segment->gift_image ? asset($segment->gift_image) : null,
-                    'color' => $segment->color,
-                ])
-                ->values()
-                ->all(),
-        ];
-    }
-
-    private function raffleSettings(): array
-    {
-        $defaults = [
-            'whatsapp' => '',
-        ];
-
-        if (! Storage::disk('local')->exists('ozman_settings.json')) {
-            return $defaults;
-        }
-
-        $stored = json_decode(Storage::disk('local')->get('ozman_settings.json'), true);
-        $settings = is_array($stored) ? ($stored['raffle'] ?? []) : [];
-
-        return array_replace($defaults, is_array($settings) ? $settings : []);
-    }
-
-    private function shopPublicUrl(Shop $shop): string
-    {
-        return $shop->publicUrl();
-    }
-
-    private function purchaseRewardWheelsPayload(?Shop $shop): array
-    {
-        if (! $shop?->exists) {
-            return [];
-        }
-
-        $wheels = $shop->relationLoaded('rewardWheels')
-            ? $shop->rewardWheels
-            : $shop->rewardWheels()
-                ->where('wheel_type', RewardWheel::TYPE_PURCHASE_AMOUNT)
-                ->where('is_active', true)
-                ->with(['segments' => fn($query) => $query
-                    ->where('is_active', true)
-                    ->orderBy('sort_order')
-                ])
-                ->orderBy('min_order_total')
-                ->get();
-
-        return $wheels
-            ->filter(fn($wheel) => $wheel->segments->count() >= 2)
-            ->map(fn($wheel) => [
-                'id' => $wheel->id,
-                'title' => $wheel->title,
-                'min_order_total' => (float) $wheel->min_order_total,
-                'max_order_total' => $wheel->max_order_total !== null ? (float) $wheel->max_order_total : null,
-                'segments' => $wheel->segments
-                    ->map(fn($segment) => [
-                        'label' => $segment->label,
-                        'discount_value' => $segment->discount_value,
-                        'discount_type' => $segment->discount_type,
-                        'gift_image' => $segment->discount_type === 'gift' && $segment->gift_image ? asset($segment->gift_image) : null,
-                        'color' => $segment->color,
-                    ])
-                    ->values()
-                    ->all(),
-            ])
-            ->values()
-            ->all();
-    }
 }
