@@ -19,6 +19,12 @@ use Illuminate\View\View;
 
 class ProductController extends Controller
 {
+    public function __construct(
+        private \App\Services\Products\ProductMedia $media,
+        private \App\Services\Products\ProductCampaigns $campaigns,
+    ) {
+    }
+
     public function index(Request $request): View
     {
         $shops = $this->accessibleShops();
@@ -104,7 +110,7 @@ class ProductController extends Controller
         $data['is_active'] = $request->boolean('is_active');
 
         if ($request->hasFile('main_image')) {
-            $data['main_image'] = $this->storeProductImage(
+            $data['main_image'] = $this->media->storeProductImage(
                 $request->file('main_image'),
                 'products/main',
                 $this->isElectronicsShop((int) $data['shop_id'])
@@ -112,13 +118,13 @@ class ProductController extends Controller
         }
 
         if ($request->hasFile('video')) {
-            $data['video'] = $this->storeUpload($request, 'video', 'products/videos');
+            $data['video'] = $this->media->storeUpload($request, 'video', 'products/videos');
         }
 
         $product = Product::create($data);
         $this->syncVariants($request, $product);
-        $this->storeGalleryImages($request, $product);
-        $createdCampaigns = $this->storeCampaigns($request, $product);
+        $this->media->storeGalleryImages($request, $product);
+        $createdCampaigns = $this->campaigns->storeCampaigns($request, $product);
 
         $this->notifySuperAdmin(
             'product_created',
@@ -211,32 +217,32 @@ class ProductController extends Controller
         $data['is_active'] = $request->boolean('is_active');
 
         if ($request->hasFile('main_image')) {
-            $this->deleteUpload($product->main_image);
-            $data['main_image'] = $this->storeProductImage(
+            $this->media->deleteUpload($product->main_image);
+            $data['main_image'] = $this->media->storeProductImage(
                 $request->file('main_image'),
                 'products/main',
                 $this->isElectronicsShop((int) $data['shop_id'])
             );
         } elseif ($request->boolean('delete_main_image')) {
-            $this->deleteUpload($product->main_image);
+            $this->media->deleteUpload($product->main_image);
             $data['main_image'] = null;
         }
 
         if ($request->hasFile('video')) {
-            $this->deleteUpload($product->video);
-            $data['video'] = $this->storeUpload($request, 'video', 'products/videos');
+            $this->media->deleteUpload($product->video);
+            $data['video'] = $this->media->storeUpload($request, 'video', 'products/videos');
         } elseif ($request->boolean('delete_video')) {
-            $this->deleteUpload($product->video);
+            $this->media->deleteUpload($product->video);
             $data['video'] = null;
         }
 
         $product->update($data);
         $this->syncVariants($request, $product);
-        $this->deleteGalleryImages($request, $product);
-        $this->deleteCampaigns($request, $product);
-        $this->updateCampaigns($request, $product);
-        $this->storeGalleryImages($request, $product);
-        $createdCampaigns = $this->storeCampaigns($request, $product);
+        $this->media->deleteGalleryImages($request, $product);
+        $this->campaigns->deleteCampaigns($request, $product);
+        $this->campaigns->updateCampaigns($request, $product);
+        $this->media->storeGalleryImages($request, $product);
+        $createdCampaigns = $this->campaigns->storeCampaigns($request, $product);
 
         if ($wasInStock && (int) $product->quantity <= 0) {
             $this->notifySuperAdmin(
@@ -310,15 +316,15 @@ class ProductController extends Controller
         $this->authorizeShopAccess($product);
         $isRestaurant = $product->shop?->catalog_type === 'restaurant';
         $product->load(['images', 'campaigns']);
-        $this->deleteUpload($product->main_image);
-        $this->deleteUpload($product->video);
+        $this->media->deleteUpload($product->main_image);
+        $this->media->deleteUpload($product->video);
 
         foreach ($product->images as $image) {
-            $this->deleteUpload($image->image);
+            $this->media->deleteUpload($image->image);
         }
 
         foreach ($product->campaigns as $campaign) {
-            $this->deleteUpload($campaign->media);
+            $this->media->deleteUpload($campaign->media);
         }
 
         $product->delete();
@@ -394,23 +400,7 @@ class ProductController extends Controller
 
     private function currentUserAgentIds(): array
     {
-        $user = auth()->user();
-
-        if (! $user) {
-            return [];
-        }
-
-        return Agent::query()
-            ->where(function ($query) use ($user) {
-                $query->where('user_id', $user->id);
-
-                if ($user->email) {
-                    $query->orWhere('email', $user->email);
-                }
-            })
-            ->pluck('id')
-            ->map(fn($id) => (int) $id)
-            ->all();
+        return \App\Support\AgentAccess::idsFor(auth()->user());
     }
 
     private function currentUserAgentIdForShop(int $shopId): ?int
@@ -677,231 +667,6 @@ class ProductController extends Controller
         );
     }
 
-    private function storeGalleryImages(Request $request, Product $product): void
-    {
-        foreach ($request->file('images', []) as $image) {
-            $storedPath = $this->storeProductImage(
-                $image,
-                'products/gallery',
-                $product->shop?->catalog_type === 'electronics'
-            );
-
-            ProductImage::create([
-                'product_id' => $product->id,
-                'image' => $storedPath,
-            ]);
-        }
-    }
-
-    private function deleteGalleryImages(Request $request, Product $product): void
-    {
-        $ids = collect($request->input('delete_image_ids', []))
-            ->map(fn($id) => (int) $id)
-            ->filter()
-            ->all();
-
-        if (empty($ids)) {
-            return;
-        }
-
-        $images = $product->images()->whereIn('id', $ids)->get();
-
-        foreach ($images as $image) {
-            $this->deleteUpload($image->image);
-            $image->delete();
-        }
-    }
-
-    private function storeCampaigns(Request $request, Product $product): \Illuminate\Support\Collection
-    {
-        $createdCampaigns = collect();
-
-        foreach ($request->input('campaigns', []) as $index => $campaign) {
-            $title = trim($campaign['title'] ?? '');
-            $titleEn = trim($campaign['title_en'] ?? '');
-            $titleHe = trim($campaign['title_he'] ?? '');
-            $type = $campaign['type'] ?? null;
-            $file = $request->file("campaigns.{$index}.media");
-            $offerType = $campaign['offer_type'] ?? null;
-            $unitKey = $campaign['unit_key'] ?? null;
-            $offerQuantity = $campaign['offer_quantity'] ?? null;
-            $minQuantity = $campaign['min_quantity'] ?? null;
-            $maxQuantity = $campaign['max_quantity'] ?? null;
-            $offerPrice = $campaign['offer_price'] ?? null;
-            $offerNote = trim($campaign['offer_note'] ?? '');
-            $offerNoteEn = trim($campaign['offer_note_en'] ?? '');
-            $offerNoteHe = trim($campaign['offer_note_he'] ?? '');
-            $startsAt = $campaign['starts_at'] ?? null;
-            $endsAt = $campaign['ends_at'] ?? null;
-            $hasOffer = filled($offerQuantity)
-                || filled($minQuantity)
-                || filled($maxQuantity)
-                || filled($offerPrice)
-                || $offerNote !== ''
-                || filled($startsAt)
-                || filled($endsAt);
-
-            if ($title === '' && ! $file && ! $hasOffer) {
-                continue;
-            }
-
-            if ($title === '' && $hasOffer) {
-                $title = filled($offerQuantity) && filled($offerPrice)
-                    ? "عرض {$offerQuantity} بسعر {$offerPrice}"
-                    : 'عرض المنتج';
-            }
-
-            if ($title === '') {
-                continue;
-            }
-
-            $media = null;
-            if ($file) {
-                if (! in_array($type, ['image', 'video'], true)) {
-                    continue;
-                }
-
-                $this->validateCampaignFile($file, $type);
-
-                $directory = $type === 'image' ? 'products/campaigns/images' : 'products/campaigns/videos';
-                $path = $file->store($directory, 'public');
-                $media = 'storage/' . $path;
-            }
-
-            $campaign = ProductCampaign::create([
-                'product_id' => $product->id,
-                'title' => $title,
-                'title_translations' => array_filter([
-                    'ar' => $title,
-                    'en' => $titleEn,
-                    'he' => $titleHe,
-                ], fn($value) => filled($value)),
-                'type' => $file ? $type : 'image',
-                'media' => $media,
-                'offer_type' => $offerType ?: null,
-                'unit_key' => $unitKey ?: null,
-                'offer_quantity' => filled($offerQuantity) ? (int) $offerQuantity : null,
-                'min_quantity' => filled($minQuantity) ? (int) $minQuantity : null,
-                'max_quantity' => filled($maxQuantity) ? (int) $maxQuantity : null,
-                'offer_price' => filled($offerPrice) ? $offerPrice : null,
-                'offer_note' => $offerNote !== '' ? $offerNote : null,
-                'offer_note_translations' => array_filter([
-                    'ar' => $offerNote,
-                    'en' => $offerNoteEn,
-                    'he' => $offerNoteHe,
-                ], fn($value) => filled($value)),
-                'starts_at' => $startsAt ?: null,
-                'ends_at' => $endsAt ?: null,
-                'is_active' => true,
-            ]);
-            $createdCampaigns->push($campaign);
-        }
-
-        return $createdCampaigns;
-    }
-
-    private function deleteCampaigns(Request $request, Product $product): void
-    {
-        $ids = collect($request->input('delete_campaign_ids', []))
-            ->map(fn($id) => (int) $id)
-            ->filter()
-            ->all();
-
-        if (empty($ids)) {
-            return;
-        }
-
-        $campaigns = $product->campaigns()->whereIn('id', $ids)->get();
-
-        foreach ($campaigns as $campaign) {
-            $this->deleteUpload($campaign->media);
-            $campaign->delete();
-        }
-    }
-
-    private function updateCampaigns(Request $request, Product $product): void
-    {
-        $deletedIds = collect($request->input('delete_campaign_ids', []))
-            ->map(fn($id) => (int) $id)
-            ->filter()
-            ->all();
-
-        foreach ($request->input('existing_campaigns', []) as $campaignId => $campaignData) {
-            $campaignId = (int) $campaignId;
-
-            if (in_array($campaignId, $deletedIds, true)) {
-                continue;
-            }
-
-            $campaign = $product->campaigns()->whereKey($campaignId)->first();
-            if (! $campaign) {
-                continue;
-            }
-
-            $title = trim($campaignData['title'] ?? '');
-            $titleEn = trim($campaignData['title_en'] ?? '');
-            $titleHe = trim($campaignData['title_he'] ?? '');
-            $offerNote = trim($campaignData['offer_note'] ?? '');
-            $offerNoteEn = trim($campaignData['offer_note_en'] ?? '');
-            $offerNoteHe = trim($campaignData['offer_note_he'] ?? '');
-            $type = $campaignData['type'] ?? $campaign->type;
-            $unitKey = $campaignData['unit_key'] ?? null;
-            $file = $request->file("existing_campaigns.{$campaignId}.media");
-
-            if ($title === '') {
-                $title = $campaign->title ?: (
-                    filled($campaignData['offer_quantity'] ?? null) && filled($campaignData['offer_price'] ?? null)
-                        ? "عرض {$campaignData['offer_quantity']} بسعر {$campaignData['offer_price']}"
-                        : 'عرض المنتج'
-                );
-            }
-
-            $updates = [
-                'title' => $title,
-                'title_translations' => array_filter([
-                    'ar' => $title,
-                    'en' => $titleEn,
-                    'he' => $titleHe,
-                ], fn($value) => filled($value)),
-                'type' => in_array($type, ['image', 'video'], true) ? $type : $campaign->type,
-                'offer_type' => $campaignData['offer_type'] ?? null,
-                'unit_key' => $unitKey ?: null,
-                'offer_quantity' => filled($campaignData['offer_quantity'] ?? null) ? (int) $campaignData['offer_quantity'] : null,
-                'min_quantity' => filled($campaignData['min_quantity'] ?? null) ? (int) $campaignData['min_quantity'] : null,
-                'max_quantity' => filled($campaignData['max_quantity'] ?? null) ? (int) $campaignData['max_quantity'] : null,
-                'offer_price' => filled($campaignData['offer_price'] ?? null) ? $campaignData['offer_price'] : null,
-                'offer_note' => $offerNote !== '' ? $offerNote : null,
-                'offer_note_translations' => array_filter([
-                    'ar' => $offerNote,
-                    'en' => $offerNoteEn,
-                    'he' => $offerNoteHe,
-                ], fn($value) => filled($value)),
-                'starts_at' => $campaignData['starts_at'] ?? null ?: null,
-                'ends_at' => $campaignData['ends_at'] ?? null ?: null,
-            ];
-
-            if ($file) {
-                $mediaType = $updates['type'];
-                $this->validateCampaignFile($file, $mediaType);
-                $this->deleteUpload($campaign->media);
-
-                $directory = $mediaType === 'image' ? 'products/campaigns/images' : 'products/campaigns/videos';
-                $path = $file->store($directory, 'public');
-                $updates['media'] = 'storage/' . $path;
-            }
-
-            $campaign->update($updates);
-        }
-    }
-
-    private function validateCampaignFile($file, string $type): void
-    {
-        $mime = $file->getMimeType();
-
-        abort_if($type === 'image' && ! str_starts_with($mime, 'image/'), 422);
-        abort_if($type === 'video' && ! str_starts_with($mime, 'video/'), 422);
-    }
-
     private function localizedInput(Request $request, string $field, ?string $arabicValue = null): array
     {
         return array_filter([
@@ -909,13 +674,6 @@ class ProductController extends Controller
             'en' => $request->input("{$field}_en"),
             'he' => $request->input("{$field}_he"),
         ], fn($value) => filled($value));
-    }
-
-    private function storeUpload(Request $request, string $field, string $directory): string
-    {
-        $path = $request->file($field)->store($directory, 'public');
-
-        return 'storage/' . $path;
     }
 
     private function isElectronicsShop(int $shopId): bool
@@ -928,84 +686,4 @@ class ProductController extends Controller
         return Shop::query()->whereKey($shopId)->where('catalog_type', 'restaurant')->exists();
     }
 
-    private function storeProductImage(UploadedFile $file, string $directory, bool $removeWhiteBackground): string
-    {
-        if (! $removeWhiteBackground || ! function_exists('imagecreatefromstring')) {
-            return 'storage/' . $file->store($directory, 'public');
-        }
-
-        $source = @imagecreatefromstring((string) file_get_contents($file->getRealPath()));
-        if (! $source) {
-            return 'storage/' . $file->store($directory, 'public');
-        }
-
-        $width = imagesx($source);
-        $height = imagesy($source);
-        imagealphablending($source, false);
-        imagesavealpha($source, true);
-
-        $visited = array_fill(0, $width * $height, false);
-        $queue = new \SplQueue();
-        $enqueue = function (int $x, int $y) use (&$visited, $queue, $width, $height, $source): void {
-            if ($x < 0 || $y < 0 || $x >= $width || $y >= $height) {
-                return;
-            }
-            $index = ($y * $width) + $x;
-            if ($visited[$index]) {
-                return;
-            }
-            $rgba = imagecolorat($source, $x, $y);
-            $red = ($rgba >> 16) & 0xff;
-            $green = ($rgba >> 8) & 0xff;
-            $blue = $rgba & 0xff;
-            if (min($red, $green, $blue) < 225 || max($red, $green, $blue) - min($red, $green, $blue) > 28) {
-                return;
-            }
-            $visited[$index] = true;
-            $queue->enqueue([$x, $y]);
-        };
-
-        for ($x = 0; $x < $width; $x++) {
-            $enqueue($x, 0);
-            $enqueue($x, $height - 1);
-        }
-        for ($y = 0; $y < $height; $y++) {
-            $enqueue(0, $y);
-            $enqueue($width - 1, $y);
-        }
-
-        while (! $queue->isEmpty()) {
-            [$x, $y] = $queue->dequeue();
-            $rgba = imagecolorat($source, $x, $y);
-            $red = ($rgba >> 16) & 0xff;
-            $green = ($rgba >> 8) & 0xff;
-            $blue = $rgba & 0xff;
-            $whiteness = min($red, $green, $blue);
-            $alpha = max(0, min(127, (int) round(($whiteness - 220) / 35 * 127)));
-            imagesetpixel($source, $x, $y, imagecolorallocatealpha($source, $red, $green, $blue, $alpha));
-            $enqueue($x - 1, $y);
-            $enqueue($x + 1, $y);
-            $enqueue($x, $y - 1);
-            $enqueue($x, $y + 1);
-        }
-
-        $path = trim($directory, '/') . '/' . Str::uuid() . '.png';
-        ob_start();
-        imagepng($source, null, 7);
-        $png = ob_get_clean();
-        imagedestroy($source);
-        Storage::disk('public')->put($path, $png);
-
-        return 'storage/' . $path;
-    }
-
-    private function deleteUpload(?string $path): void
-    {
-        if (!$path) {
-            return;
-        }
-
-        $path = Str::of($path)->replaceStart('storage/', '')->toString();
-        Storage::disk('public')->delete($path);
-    }
 }

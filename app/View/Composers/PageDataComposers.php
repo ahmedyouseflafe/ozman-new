@@ -38,18 +38,7 @@ class PageDataComposers
     public function agentIds(View $view): void
     {
         $user = auth()->user();
-        $view->with('currentUserAgentIds', $user?->isAgent()
-            ? Agent::query()
-                ->where(function ($query) use ($user) {
-                    $query->where('user_id', $user->id);
-                    if ($user->email) {
-                        $query->orWhere('email', $user->email);
-                    }
-                })
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id)
-                ->all()
-            : []);
+        $view->with('currentUserAgentIds', $user?->isAgent() ? \App\Support\AgentAccess::idsFor($user) : []);
     }
 
     /** Storefront share button: the shop's star rating. */
