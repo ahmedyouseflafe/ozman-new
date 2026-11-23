@@ -560,5 +560,7 @@
     "مساعدة التسوّق": "Shopping assistant",
     "مساعدتك الذكية": "Your smart assistant",
     "أهلاً! أنا :name 🌸 شو بتدوّر عليه اليوم؟": "Hi! I'm :name 🌸 what are you looking for today?",
-    "أهلاً! أنا :name 🌸 اسألني أي إشي عن :shop": "Hi! I'm :name 🌸 ask me anything about :shop"
+    "أهلاً! أنا :name 🌸 اسألني أي إشي عن :shop": "Hi! I'm :name 🌸 ask me anything about :shop",
+    "العرض بينتهي": "Offer ends",
+    "اختياري، الزبون بيشوف عدّاد": "optional, customers see a countdown"
 }

@@ -455,6 +455,7 @@ class ProductController extends Controller
             'catalog_attributes.*' => ['nullable'],
             'price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'discount_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'discount_ends_at' => ['nullable', 'date', 'after:now'],
             'customer_package_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'show_customer_package_price' => ['nullable', 'boolean'],
             'customer_carton_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
@@ -623,6 +624,10 @@ class ProductController extends Controller
         $data['discount_price'] = filled($data['discount_price'] ?? null)
             ? $data['discount_price']
             : null;
+        // The form's time is the shop's local time; it is kept in UTC like every other time.
+        if (filled($data['discount_ends_at'] ?? null)) {
+            $data['discount_ends_at'] = \Illuminate\Support\Carbon::parse($data['discount_ends_at'], 'Asia/Hebron')->utc();
+        }
     }
 
     private function uniqueSlug(string $value, ?Product $product = null): string

@@ -61,6 +61,7 @@ class MerchantCatalogController extends Controller
                 'description' => $data['description'] ?? null,
                 'description_translations' => array_filter(['ar' => $data['description'] ?? null]),
                 'price' => $data['price'], 'discount_price' => $data['discount_price'] ?? null,
+                'discount_ends_at' => $data['discount_ends_at'] ?? null,
                 // Restaurants don't count stock; other shops start uncounted (0) like the website.
                 'quantity' => $shop->catalog_type === 'restaurant' ? 1 : 0, 'rating' => 0,
                 'is_active' => $data['is_active'] ?? true, 'is_featured' => $data['is_featured'] ?? false,
@@ -87,6 +88,9 @@ class MerchantCatalogController extends Controller
             $changes = collect($data)->only(['name', 'description', 'price', 'category_id', 'is_active', 'is_featured'])->all();
             if (array_key_exists('discount_price', $data)) {
                 $changes['discount_price'] = filled($data['discount_price']) ? $data['discount_price'] : null;
+            }
+            if (array_key_exists('discount_ends_at', $data)) {
+                $changes['discount_ends_at'] = $data['discount_ends_at'] ?: null;
             }
             if (isset($data['name'])) {
                 $changes['name_translations'] = ['ar' => $data['name']] + (array) $product->name_translations;
@@ -187,6 +191,7 @@ class MerchantCatalogController extends Controller
             'description' => ['nullable', 'string', 'max:5000'],
             'price' => [$need, 'numeric', 'min:0', 'max:99999999.99'],
             'discount_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'discount_ends_at' => ['nullable', 'date', 'after:now'],
             'category_id' => [$need, 'integer', Rule::exists('categories', 'id')->where('shop_id', $shop->id)],
             'is_active' => ['sometimes', 'boolean'],
             'is_featured' => ['sometimes', 'boolean'],
@@ -290,6 +295,7 @@ class MerchantCatalogController extends Controller
             'id' => $product->id, 'name' => $product->name, 'category_id' => $product->category_id,
             'image' => Presenter::media($product->main_image),
             'price' => Presenter::price($product->price), 'discount_price' => Presenter::price($product->discount_price),
+            'discount_ends_at' => $product->discount_ends_at?->toIso8601String(),
             'is_active' => (bool) $product->is_active, 'is_featured' => (bool) $product->is_featured,
         ];
         if ($full) {

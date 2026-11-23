@@ -82,6 +82,9 @@ class Presenter
             'price' => $price,
             'discount_price' => $discount && $price && $discount < $price ? $discount : null,
             'final_price' => $discount && $price && $discount < $price ? $discount : $price,
+            // When the offer ends, if the shop set an end (the app shows a countdown).
+            'discount_ends_at' => $discount && $price && $discount < $price && $product->discount_ends_at?->isFuture()
+                ? $product->discount_ends_at->toIso8601String() : null,
             // The website does not track stock (quantity is 0 by default), so products are always orderable.
             'in_stock' => true,
             'is_featured' => (bool) $product->is_featured,

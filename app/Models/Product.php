@@ -12,6 +12,13 @@ class Product extends Model
 
     protected static function booted(): void
     {
+        // No discount, no end to it.
+        static::saving(function (Product $product) {
+            if ((float) $product->discount_price <= 0) {
+                $product->discount_ends_at = null;
+            }
+        });
+
         // A product going on offer (a new discount, or a lower one) tells the shop's followers.
         static::saved(function (Product $product) {
             $now = (float) $product->discount_price;
@@ -39,6 +46,7 @@ class Product extends Model
         'description_translations',
         'price',
         'discount_price',
+        'discount_ends_at',
         'customer_package_price',
         'show_customer_package_price',
         'customer_carton_price',
@@ -69,6 +77,7 @@ class Product extends Model
         'model_3d_size' => 'array',
         'price' => 'decimal:2',
         'discount_price' => 'decimal:2',
+        'discount_ends_at' => 'datetime',
         'customer_package_price' => 'decimal:2',
         'show_customer_package_price' => 'boolean',
         'customer_carton_price' => 'decimal:2',

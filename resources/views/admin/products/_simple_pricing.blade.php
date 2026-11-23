@@ -16,6 +16,7 @@
             <div class="form-grid">
                 <div class="form-group"><label class="form-label" for="simple_price">السعر الأساسي</label><input type="number" step="0.01" min="0" id="simple_price" name="price" value="{{ old('price', $editingProduct?->price) }}" required></div>
                 <div class="form-group"><label class="form-label" for="simple_discount_price">سعر التخفيض <small style="color:var(--dim)">(اختياري)</small></label><input type="number" step="0.01" min="0" id="simple_discount_price" name="discount_price" value="{{ old('discount_price', $editingProduct?->discount_price) }}"></div>
+                <div class="form-group"><label class="form-label" for="simple_discount_ends_at">{{ __('العرض بينتهي') }} <small style="color:var(--dim)">({{ __('اختياري، الزبون بيشوف عدّاد') }})</small></label><input type="datetime-local" id="simple_discount_ends_at" name="discount_ends_at" value="{{ old('discount_ends_at', $editingProduct?->discount_ends_at?->timezone('Asia/Hebron')->format('Y-m-d\TH:i')) }}"></div>
             </div>
         </div>
         <div class="pricing-card inventory" style="grid-column:1 / -1">
