@@ -142,14 +142,15 @@ class MobileGroupOneApiTest extends TestCase
         $phone->variants()->create(['storage' => '128GB', 'color' => '#000000', 'price' => 900, 'quantity' => 3, 'is_active' => true]);
 
         $this->post("/api/v1/merchant/products/{$meal->id}", ['name' => 'Burger XL', 'price' => 45], $this->auth($chef) + ['Accept' => 'application/json'])
-            ->assertOk()->assertJsonPath('product.has_website_options', true);
+            // Sizes and add-ons are now edited in the app itself, so they are shown there, and kept by a plain save.
+            ->assertOk()->assertJsonPath('product.has_website_options', false)->assertJsonPath('product.meal_options.sizes.1.name', 'دبل');
         $this->assertSame(['عادي:40', 'دبل:52'], $meal->fresh()->catalog_attributes['meal_size_prices']);
 
         $sellerHeaders = $this->auth($seller) + ['Accept' => 'application/json'];
         $this->post("/api/v1/merchant/products/{$phone->id}", ['description' => 'New'], $sellerHeaders)->assertOk();
         $this->assertSame(1, $phone->variants()->count());
-        // Devices need storage/colour options, which only the website's form builds.
-        $this->getJson("/api/v1/merchant/shops/{$tech->id}/products", $sellerHeaders)->assertJsonPath('can_create', false);
+        // Devices can be added from the app, but only with their storage/colour options.
+        $this->getJson("/api/v1/merchant/shops/{$tech->id}/products", $sellerHeaders)->assertJsonPath('can_create', true);
         $this->post("/api/v1/merchant/shops/{$tech->id}/products", ['name' => 'Tablet', 'price' => 500, 'category_id' => $phones->id], $sellerHeaders)->assertStatus(422);
     }
 

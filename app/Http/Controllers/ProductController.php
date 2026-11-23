@@ -22,6 +22,7 @@ class ProductController extends Controller
     public function __construct(
         private \App\Services\Products\ProductMedia $media,
         private \App\Services\Products\ProductCampaigns $campaigns,
+        private \App\Services\Products\ProductVariants $variants,
     ) {
     }
 
@@ -522,42 +523,7 @@ class ProductController extends Controller
 
     private function syncVariants(Request $request, Product $product): void
     {
-        $shopType = $product->shop()->value('catalog_type') ?: 'general';
-        if (! in_array($shopType, ['clothing', 'shoes', 'electronics'], true)) {
-            $product->variants()->delete();
-            return;
-        }
-
-        $variants = collect($request->input('variants', []))
-            ->filter(fn ($variant) => filled($variant['size'] ?? null) || filled($variant['storage'] ?? null) || filled($variant['ram'] ?? null) || filled($variant['color'] ?? null))
-            ->map(fn ($variant) => [
-                'size' => filled($variant['size'] ?? null) ? trim($variant['size']) : null,
-                'storage' => filled($variant['storage'] ?? null) ? trim($variant['storage']) : null,
-                'ram' => filled($variant['ram'] ?? null) ? trim($variant['ram']) : null,
-                'color' => filled($variant['color'] ?? null) ? trim($variant['color']) : null,
-                'color_name' => filled($variant['color_name'] ?? null) ? trim($variant['color_name']) : null,
-                'sku' => filled($variant['sku'] ?? null) ? trim($variant['sku']) : null,
-                'price' => filled($variant['price'] ?? null) ? $variant['price'] : null,
-                'quantity' => max(0, (int) ($variant['quantity'] ?? 0)),
-                'is_active' => filter_var($variant['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
-            ])
-            ->values();
-
-        if ($shopType === 'electronics') {
-            abort_if($variants->isEmpty(), 422, 'أضف خيار تخزين ولون واحدًا على الأقل للجهاز.');
-            abort_if($variants->contains(fn ($variant) => ! filled($variant['storage']) || ! filled($variant['color']) || $variant['price'] === null), 422, 'التخزين واللون والسعر مطلوبة لكل خيار جهاز.');
-            abort_if($variants->contains(fn ($variant) => ! preg_match('/^#[0-9a-fA-F]{6}$/', (string) $variant['color'])), 422, 'اختر لونًا صحيحًا لكل خيار جهاز.');
-        }
-
-        $product->variants()->delete();
-        if ($variants->isNotEmpty()) {
-            $product->variants()->createMany($variants->all());
-            $updates = ['quantity' => $variants->where('is_active', true)->sum('quantity')];
-            if ($shopType === 'electronics') {
-                $updates['price'] = $variants->where('is_active', true)->min('price') ?? $variants->min('price') ?? 0;
-            }
-            $product->update($updates);
-        }
+        $this->variants->sync($product, (array) $request->input('variants', []));
     }
 
     private function catalogAttributes(Request $request, int $shopId): array

@@ -12,16 +12,22 @@ use Illuminate\Validation\Rule;
 /**
  * The shop's products and sections, managed from the phone.
  *
- * Deliberately narrower than the website's product form: it edits the everyday fields (name, price,
- * photo, section, visibility, sizes and colours) and never touches what only the website can set up
- * (meal choices, device options, campaigns), so saving from the app can't wipe them.
+ * Narrower than the website's product form: it edits the everyday fields (name, price, photo, section,
+ * visibility, sizes and colours), a meal's options and a device's options. What only the website sets up
+ * (campaigns, choice groups filled from the menu, clothing stock per size) is never touched, so saving
+ * from the app can't wipe it.
  */
 class MerchantCatalogController extends Controller
 {
     private const IMAGE = ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'];
 
     /** Shop types whose products need options that only the website's form can build. */
-    private const WEBSITE_ONLY_CREATION = ['electronics', 'real_estate'];
+    private const WEBSITE_ONLY_CREATION = ['real_estate'];
+
+    public function __construct(
+        private \App\Services\Products\MealOptions $mealOptions,
+        private \App\Services\Products\ProductVariants $variants,
+    ) {}
 
     public function products(Request $request, Shop $shop): JsonResponse
     {
@@ -50,8 +56,8 @@ class MerchantCatalogController extends Controller
     public function store(Request $request, Shop $shop): JsonResponse
     {
         $this->authorizeShop($request->user(), $shop, 'products.store');
-        abort_if(in_array($shop->catalog_type, self::WEBSITE_ONLY_CREATION, true), 422, 'إضافة هذا النوع بتحتاج خيارات (تخزين ولون) من لوحة التحكم على الموقع.');
-        $data = $this->validated($request, $shop, true);
+        abort_if(in_array($shop->catalog_type, self::WEBSITE_ONLY_CREATION, true), 422, 'إضافة هذا النوع بتكون من لوحة التحكم على الموقع.');
+        $data = $this->devicePrice($shop, $this->validated($request, $shop, true));
         $this->checkDiscount($data);
 
         $product = DB::transaction(function () use ($request, $shop, $data) {
@@ -60,15 +66,19 @@ class MerchantCatalogController extends Controller
                 'name_translations' => ['ar' => $data['name']], 'slug' => $this->productSlug($data['name']),
                 'description' => $data['description'] ?? null,
                 'description_translations' => array_filter(['ar' => $data['description'] ?? null]),
-                'price' => $data['price'], 'discount_price' => $data['discount_price'] ?? null,
+                // A device's price comes from its cheapest option, set just below.
+                'price' => $data['price'] ?? 0, 'discount_price' => $data['discount_price'] ?? null,
                 'discount_ends_at' => $data['discount_ends_at'] ?? null,
                 // Restaurants don't count stock; other shops start uncounted (0) like the website.
                 'quantity' => $shop->catalog_type === 'restaurant' ? 1 : 0, 'rating' => 0,
                 'is_active' => $data['is_active'] ?? true, 'is_featured' => $data['is_featured'] ?? false,
-                'catalog_attributes' => $this->sizeAttributes($shop, $data, []),
+                'catalog_attributes' => $this->attributes($shop, $data, []),
                 'main_image' => $request->hasFile('image') ? $this->storeImage($request->file('image'), 'products/main') : null,
             ]);
             $this->addGallery($request, $product);
+            if ($this->isElectronics($shop)) {
+                $this->variants->sync($product, $data['variants'] ?? []);
+            }
 
             return $product;
         });
@@ -81,7 +91,7 @@ class MerchantCatalogController extends Controller
     public function update(Request $request, Product $product): JsonResponse
     {
         $shop = $this->shopOf($request->user(), $product, 'products.update');
-        $data = $this->validated($request, $shop, false);
+        $data = $this->devicePrice($shop, $this->validated($request, $shop, false));
         $this->checkDiscount($data, $product);
 
         DB::transaction(function () use ($request, $product, $shop, $data) {
@@ -98,8 +108,8 @@ class MerchantCatalogController extends Controller
             if (array_key_exists('description', $data)) {
                 $changes['description_translations'] = array_filter(['ar' => $data['description']] + (array) $product->description_translations);
             }
-            if (array_key_exists('sizes', $data) || array_key_exists('colors', $data)) {
-                $changes['catalog_attributes'] = $this->sizeAttributes($shop, $data, (array) $product->catalog_attributes);
+            if (array_key_exists('sizes', $data) || array_key_exists('colors', $data) || array_key_exists('meal_options', $data)) {
+                $changes['catalog_attributes'] = $this->attributes($shop, $data, (array) $product->catalog_attributes);
             }
             if ($request->hasFile('image')) {
                 $old = $product->main_image;
@@ -112,6 +122,9 @@ class MerchantCatalogController extends Controller
                 $image->delete();
             }
             $this->addGallery($request, $product);
+            if ($this->isElectronics($shop) && array_key_exists('variants', $data)) {
+                $this->variants->sync($product, $data['variants']);
+            }
         });
 
         return response()->json(['product' => $this->present($product->fresh('images'), true), 'message' => 'تم الحفظ.']);
@@ -185,11 +198,18 @@ class MerchantCatalogController extends Controller
                 $request->merge([$list => array_values(array_filter(array_map('trim', explode(',', (string) $request->input($list))), fn ($v) => $v !== ''))]);
             }
         }
+        // Options travel as JSON text inside the multipart form.
+        foreach (['meal_options', 'variants'] as $json) {
+            if (is_string($request->input($json))) {
+                $request->merge([$json => json_decode($request->input($json), true)]);
+            }
+        }
+        $priceNeed = $creating && ! $this->isElectronics($shop) ? 'required' : 'sometimes';
 
         return $request->validate([
             'name' => [$need, 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
-            'price' => [$need, 'numeric', 'min:0', 'max:99999999.99'],
+            'price' => [$priceNeed, 'numeric', 'min:0', 'max:99999999.99'],
             'discount_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'discount_ends_at' => ['nullable', 'date', 'after:now'],
             'category_id' => [$need, 'integer', Rule::exists('categories', 'id')->where('shop_id', $shop->id)],
@@ -200,7 +220,23 @@ class MerchantCatalogController extends Controller
             'image' => ['nullable', ...self::IMAGE],
             'images' => ['nullable', 'array', 'max:8'], 'images.*' => self::IMAGE,
             'delete_image_ids' => ['nullable', 'array'], 'delete_image_ids.*' => ['integer'],
-        ], ['category_id.exists' => 'اختار قسم من أقسام محلك.']);
+            'meal_options' => [$shop->catalog_type === 'restaurant' ? 'sometimes' : 'prohibited', 'array'],
+            'variants' => [$this->isElectronics($shop) ? ($creating ? 'required' : 'sometimes') : 'prohibited', 'array', 'max:60'],
+            'variants.*.storage' => ['required', 'string', 'max:100'],
+            'variants.*.ram' => ['nullable', 'string', 'max:100'],
+            'variants.*.color' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'variants.*.color_name' => ['nullable', 'string', 'max:100'],
+            'variants.*.price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
+            'variants.*.quantity' => ['nullable', 'integer', 'min:0', 'max:99999999'],
+            'variants.*.is_active' => ['nullable', 'boolean'],
+            'variants.*.sku' => ['nullable', 'string', 'max:255'],
+        ], [
+            'category_id.exists' => 'اختار قسم من أقسام محلك.',
+            'variants.required' => 'أضف خيار واحد على الأقل (تخزين ولون وسعر).',
+            'variants.*.storage.required' => 'اكتب التخزين لكل خيار.',
+            'variants.*.color.*' => 'اختار لون لكل خيار.',
+            'variants.*.price.required' => 'اكتب السعر لكل خيار.',
+        ]);
     }
 
     /** The sale price must be below the price it replaces (the one being saved, or the current one). */
@@ -218,9 +254,28 @@ class MerchantCatalogController extends Controller
         return in_array($shop->catalog_type, ['clothing', 'shoes'], true);
     }
 
-    /** Sizes and colours live in catalog_attributes; every other attribute is kept as it was. */
-    private function sizeAttributes(Shop $shop, array $data, array $current): ?array
+    /** A device costs what its cheapest option costs (the same rule ProductVariants applies when saving). */
+    private function devicePrice(Shop $shop, array $data): array
     {
+        if ($this->isElectronics($shop) && ! empty($data['variants'])) {
+            $variants = collect($data['variants']);
+            $data['price'] = $variants->filter(fn ($variant) => filter_var($variant['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN))->min('price') ?? $variants->min('price');
+        }
+
+        return $data;
+    }
+
+    private function isElectronics(Shop $shop): bool
+    {
+        return $shop->catalog_type === 'electronics';
+    }
+
+    /** Sizes, colours and meal options live in catalog_attributes; every other attribute is kept as it was. */
+    private function attributes(Shop $shop, array $data, array $current): ?array
+    {
+        if ($shop->catalog_type === 'restaurant' && is_array($data['meal_options'] ?? null)) {
+            $current = $this->mealOptions->apply($current, $data['meal_options'], $shop->id);
+        }
         if ($this->hasSizes($shop)) {
             foreach (['sizes', 'colors'] as $key) {
                 if (array_key_exists($key, $data)) {
@@ -299,12 +354,20 @@ class MerchantCatalogController extends Controller
             'is_active' => (bool) $product->is_active, 'is_featured' => (bool) $product->is_featured,
         ];
         if ($full) {
+            $type = Shop::whereKey($product->shop_id)->value('catalog_type');
+            $meal = $type === 'restaurant' ? $this->mealOptions->present($product) : null;
             $data += [
                 'description' => $product->description,
                 'sizes' => Presenter::optionList($product, 'sizes'), 'colors' => Presenter::optionList($product, 'colors'),
                 'images' => $product->images->map(fn ($image) => ['id' => $image->id, 'url' => Presenter::media($image->image)])->values(),
+                'meal_options' => $meal,
+                'variants' => $type === 'electronics' ? $product->variants()->orderBy('id')->get()->map(fn ($variant) => [
+                    'storage' => $variant->storage, 'ram' => $variant->ram, 'color' => $variant->color, 'color_name' => $variant->color_name,
+                    'price' => (float) $variant->price, 'quantity' => (int) $variant->quantity, 'is_active' => (bool) $variant->is_active, 'sku' => $variant->sku,
+                ])->values() : null,
                 // Things set up on the website that the app leaves untouched.
-                'has_website_options' => Presenter::mealOptions($product) !== null || $product->variants()->exists(),
+                'has_website_options' => ($meal && $meal['website_groups'] !== [])
+                    || (in_array($type, ['clothing', 'shoes'], true) && $product->variants()->exists()),
             ];
         }
 
