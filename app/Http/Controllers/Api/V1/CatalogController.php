@@ -31,7 +31,12 @@ class CatalogController extends Controller
     {
         $locale = app()->getLocale();
         $counts = Shop::where('is_active', true)->selectRaw('catalog_type, COUNT(*) AS c')->groupBy('catalog_type')->pluck('c', 'catalog_type');
-        $types = collect(self::TYPES)->map(fn ($names, $key) => ['key' => $key, 'name' => $names[$locale] ?? $names['ar'], 'shops_count' => (int) ($counts[$key] ?? 0)])
+        // A few shops of each type (name and logo): the app shows them in the little bubbles when a type is tapped.
+        $faces = Shop::where('is_active', true)->latest('id')->limit(600)->get(['id', 'name', 'logo', 'catalog_type'])
+            ->groupBy('catalog_type')
+            ->map(fn ($shops) => $shops->take(6)->map(fn ($shop) => ['name' => $shop->name, 'logo' => Presenter::media($shop->logo)])->values());
+        $types = collect(self::TYPES)->map(fn ($names, $key) => ['key' => $key, 'name' => $names[$locale] ?? $names['ar'], 'shops_count' => (int) ($counts[$key] ?? 0),
+            'shops' => $faces[$key] ?? []])
             ->filter(fn ($type) => $type['shops_count'] > 0)->values();
 
         return response()->json([

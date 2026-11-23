@@ -64,6 +64,20 @@ class GrowthFeaturesTest extends TestCase
         $this->assertEquals(4, collect($this->getJson('/api/v1/shops')->json('data'))->firstWhere('id', $shop->id)['rating']['average']);
     }
 
+    public function test_home_types_carry_a_few_shop_names_and_logos_for_the_bubbles(): void
+    {
+        for ($i = 0; $i < 8; $i++) {
+            $this->shop(['name' => "حلويات {$i}"]);
+        }
+        $this->shop(['catalog_type' => 'clothing', 'name' => 'ستايل', 'logo' => 'shops/logos/style.png']);
+
+        $types = collect($this->getJson('/api/v1/home')->assertOk()->json('types'))->keyBy('key');
+        $this->assertCount(6, $types['sweets']['shops']);
+        $this->assertSame('حلويات 7', $types['sweets']['shops'][0]['name']);
+        $this->assertSame('ستايل', $types['clothing']['shops'][0]['name']);
+        $this->assertStringContainsString('style.png', $types['clothing']['shops'][0]['logo']);
+    }
+
     public function test_followers_get_one_notification_when_a_shop_puts_something_on_offer(): void
     {
         $firebase = Mockery::mock(FirebaseMessagingService::class);
