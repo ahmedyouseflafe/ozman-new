@@ -298,6 +298,8 @@ Route::get('/restaurant-orders/{order}/tracking', [RestaurantController::class, 
     ->name('restaurant.orders.track');
 Route::get('/restaurant-tables/{table:code}/qr.svg', [RestaurantController::class, 'tableQr'])->name('restaurant.tables.qr');
 Route::get('/distributor-stores/{distributor}', [FrontController::class, 'distributor'])->name('front.distributor');
+// The till QR opened with a phone camera: signs in if needed, then adds the points.
+Route::get('/points/claim/{token}', \App\Http\Controllers\StorePointsClaimController::class)->where('token', '[A-Za-z0-9]{20,64}')->middleware('throttle:20,1')->name('store-points.claim');
 Route::get('/marketer-stores/{marketer:tracking_code}', [FrontController::class, 'marketer'])->name('front.marketer');
 Route::get('/marketer-wheel/{marketer:tracking_code}', [RewardWheelController::class, 'publicMarketerDirect'])->name('front.marketer.direct-wheel');
 Route::post('/marketer-wheel/{marketer:tracking_code}/spin', [RewardWheelController::class, 'publicMarketerDirectSpin'])->name('front.marketer.direct-wheel.spin');

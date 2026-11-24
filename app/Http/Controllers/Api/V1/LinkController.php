@@ -41,6 +41,7 @@ class LinkController extends Controller
             in_array($name, self::SHOP_ROUTES, true) => ($shop = $this->shop($param('shop'))) ? ['type' => 'shop', 'id' => $shop->id, 'name' => $shop->name] : null,
             $name === 'cosmetics.booking' => ($shop = $this->shop($param('shop'))) ? ['type' => 'booking', 'id' => $shop->id, 'name' => $shop->name] : null,
             $name === 'restaurant.table' => ['type' => 'table', 'slug' => $param('shop'), 'code' => $param('tableCode')],
+            $name === 'store-points.claim' => ['type' => 'store_points', 'token' => $param('token')],
             $name === 'share.product', $name === 'electronics.product' => ($product = $this->product($param('product'))) ? ['type' => 'product', 'id' => $product->id] : null,
             $name === 'promoters.show' => ['type' => 'promoter', 'slug' => $param('slug')],
             $name === 'market.show' => ['type' => 'market_item', 'id' => (int) $param('listing')],

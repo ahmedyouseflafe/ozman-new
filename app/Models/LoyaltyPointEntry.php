@@ -12,6 +12,8 @@ class LoyaltyPointEntry extends Model
     public const TYPE_MANUAL = 'manual_adjust';
     public const TYPE_REDEEM = 'redeem';
     public const TYPE_GIFT = 'gift';
+    /** Points for a purchase in the shop itself, from the QR at the till. */
+    public const TYPE_STORE = 'store';
 
     public const PENDING = 'pending';
     public const CONFIRMED = 'confirmed';
@@ -49,6 +51,7 @@ class LoyaltyPointEntry extends Model
             self::TYPE_MANUAL => __('تعديل من الإدارة'),
             self::TYPE_REDEEM => __('استبدال نقاط'),
             self::TYPE_GIFT => __('هدية لمروّج'),
+            self::TYPE_STORE => __('شراء من المحل'),
             default => $this->type,
         };
     }

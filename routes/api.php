@@ -138,6 +138,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/me/network/distributors/{distributor}/marketers', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'storeMarketer'])->middleware('throttle:30,1')->name('network.marketers.store');
         Route::post('/me/network/marketers/{marketer}', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'updateMarketer'])->middleware('throttle:60,1')->name('network.marketers.update');
         Route::delete('/me/network/marketers/{marketer}', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'destroyMarketer'])->name('network.marketers.destroy');
+        Route::post('/merchant/shops/{shop:id}/store-points', [\App\Http\Controllers\Api\V1\StorePointsController::class, 'store'])->middleware('throttle:30,1,store-points')->name('merchant.store-points.store');
+        Route::get('/merchant/store-points/{code}', [\App\Http\Controllers\Api\V1\StorePointsController::class, 'show'])->name('merchant.store-points.show');
+        Route::delete('/merchant/store-points/{code}', [\App\Http\Controllers\Api\V1\StorePointsController::class, 'destroy'])->name('merchant.store-points.destroy');
+        Route::post('/points/claim', [\App\Http\Controllers\Api\V1\StorePointsController::class, 'claim'])->middleware('throttle:20,1,points-claim')->name('points.claim');
         Route::get('/merchant/shops/{shop:id}/demand', [\App\Http\Controllers\Api\V1\DemandController::class, 'forShop'])->name('merchant.demand');
         Route::get('/merchant/shops/{shop:id}/insights', [\App\Http\Controllers\Api\V1\InsightsController::class, 'show'])->name('merchant.insights');
         Route::get('/merchant/shops/{shop:id}/reviews', [\App\Http\Controllers\Api\V1\ReviewController::class, 'merchant'])->name('merchant.reviews');
