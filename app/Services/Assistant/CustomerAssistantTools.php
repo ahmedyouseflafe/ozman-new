@@ -357,7 +357,7 @@ class CustomerAssistantTools
                 'shop_id' => $line['product']['shop_id'] ?? null] + array_intersect_key($line, array_flip(['size', 'color'])))->all(),
             'shops' => $shops->count(),
             'skipped' => $skipped,
-            'note' => 'A "put in basket" button appears under your reply. Nothing is ordered yet: they press it, check the basket and send it. '
+            'note' => 'A button to put these in the basket appears under your reply (mention "the button under the message", don\'t quote its label). Nothing is ordered yet: they press it, check the basket and send it. '
                 .($shops->count() > 1 ? 'Each shop gets its own order and delivers it itself. ' : '')
                 .'Write a short reply listing what is ready (qty × name, price), and anything skipped with why (they pick it again on the product). Don\'t say you ordered or added anything.',
         ];
