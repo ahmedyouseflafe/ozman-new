@@ -25,7 +25,8 @@ class ApiCheck extends Command
         [$token, $plain] = $user ? ApiToken::issue($user) : [null, null];
         $path = '/api/v1/'.ltrim((string) $this->argument('path'), '/');
         $data = json_decode((string) $this->option('data'), true) ?: [];
-        $request = Request::create($path, strtoupper((string) $this->argument('method')), [], [], [], array_filter([
+        // Built on the site's real address, so links in the answer look the way the app gets them.
+        $request = Request::create(rtrim((string) config('app.url'), '/').$path, strtoupper((string) $this->argument('method')), [], [], [], array_filter([
             'HTTP_ACCEPT' => 'application/json', 'CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT_LANGUAGE' => 'ar',
             'HTTP_AUTHORIZATION' => $plain ? 'Bearer '.$plain : null,
         ]), $data ? json_encode($data) : null);
