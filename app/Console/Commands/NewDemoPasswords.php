@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
  */
 class NewDemoPasswords extends Command
 {
-    protected $signature = 'demo:new-passwords {emails?* : demo account emails (default: the demo restaurant owner and the demo customer)} {--file= : where to write them (default: ~/staging-demo-passwords.txt)}';
+    protected $signature = 'demo:new-passwords {emails?* : demo account emails (default: the demo restaurant owner and the demo customer)} {--file= : where to write them (default: ~/staging-demo-passwords.txt)} {--in-app : write to storage/app/private/staging-demo-passwords.txt inside the app instead}';
 
     protected $description = 'Staging only: new random passwords for demo accounts, saved to a private file in the home folder';
 
@@ -26,7 +26,12 @@ class NewDemoPasswords extends Command
             return self::FAILURE;
         }
         $emails = $this->argument('emails') ?: ['demo-owner-restaurant@staging.ozman.test', 'demo-customer@staging.ozman.test'];
-        $file = $this->option('file') ?: rtrim((string) (getenv('HOME') ?: dirname(base_path())), '/').'/staging-demo-passwords.txt';
+        $file = $this->option('file') ?: ($this->option('in-app')
+            ? storage_path('app/private/staging-demo-passwords.txt')
+            : rtrim((string) (getenv('HOME') ?: dirname(base_path())), '/').'/staging-demo-passwords.txt');
+        if (! is_dir(dirname($file))) {
+            @mkdir(dirname($file), 0700, true);
+        }
         $public = realpath(public_path()) ?: public_path();
         if (str_starts_with((string) (realpath(dirname($file)) ?: dirname($file)), $public)) {
             $this->error('The file must be outside the public website folder.');
@@ -60,7 +65,7 @@ class NewDemoPasswords extends Command
         file_put_contents($file, "Ozman staging demo accounts (".now('Asia/Hebron')->format('Y-m-d H:i').")\n".implode("\n", $lines)."\n");
         umask($old);
         @chmod($file, 0600);
-        $this->info('Saved '.count($lines).' to '.$file.' (only the hosting account can read it).');
+        $this->info('Saved '.count($lines).' to '.$file.' (only the hosting account can read it). App folder: '.base_path());
 
         return self::SUCCESS;
     }
