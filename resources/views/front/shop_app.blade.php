@@ -40,7 +40,7 @@
                     <p>بعد الإضافة افتح التطبيق من أيقونة {{ $shop->name }} على الشاشة الرئيسية.</p>
                     <p>{{ __('إذا خيار الإضافة مش ظاهر، انزل لآخر قائمة المشاركة واضغط «تعديل الإجراءات» وأضف «إضافة إلى الشاشة الرئيسية».') }}</p>
                 </section>
-                <a class="btn" href="{{ $shop->publicUrl() }}">{{ $shop->catalog_type === 'restaurant' ? 'فتح قائمة الطعام' : 'فتح المحل' }}</a>
+                <a class="btn" href="{{ $shop->publicUrl() }}">{{ $shop->catalog_type === 'restaurant' ? __('فتح قائمة الطعام') : __('فتح المحل') }}</a>
                 <button class="btn" type="button" data-shop-pwa-share>{{ __('مشاركة رابط التطبيق') }}</button>
                 <button class="btn" type="button" data-shop-pwa-copy>{{ __('نسخ رابط التثبيت') }}</button>
             </div>

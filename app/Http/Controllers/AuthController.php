@@ -155,7 +155,7 @@ class AuthController extends Controller
         if (! $this->resolvedMerchantReferral($request)) {
             return redirect()
                 ->route('merchant.login')
-                ->withErrors(['email' => 'إنشاء متجر جديد متاح بعد مسح QR موزع أو مروّج فعال.']);
+                ->withErrors(['email' => __('إنشاء متجر جديد متاح بعد مسح QR موزع أو مروّج فعال.')]);
         }
 
         return view('front.merchant_register', [

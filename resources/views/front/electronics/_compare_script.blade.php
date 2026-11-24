@@ -35,7 +35,7 @@
         const item = productFrom(button);
         const on = item && selected.some(saved => Number(saved.id) === Number(item.id));
         button.classList.toggle('selected', Boolean(on));
-        button.setAttribute('aria-label', on ? 'إزالة من المقارنة' : 'إضافة للمقارنة');
+        button.setAttribute('aria-label', on ? '{{ __('إزالة من المقارنة') }}' : '{{ __('إضافة للمقارنة') }}');
         button.setAttribute('aria-pressed', String(Boolean(on)));
     });
     const draw = () => {

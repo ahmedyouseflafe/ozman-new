@@ -150,7 +150,7 @@ class ScreenController extends Controller
             ->get();
 
         return view('screens.main', [
-            'title' => 'الشاشة الرئيسية',
+            'title' => __('الشاشة الرئيسية'),
             'items' => $items,
             'shop' => null,
         ]);

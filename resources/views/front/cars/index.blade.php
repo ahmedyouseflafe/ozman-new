@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <meta name="theme-color" content="#101c20">
-    @include('front.partials.seo', ['title'=>'أوزمان موتورز | سوق السيارات', 'description'=>'معاينة تصميم سوق السيارات الجديدة والمستعملة في أوزمان.', 'robots'=>'noindex, nofollow', 'image'=>route('cars.media','hero.png')])
+    @include('front.partials.seo', ['title'=>__('أوزمان موتورز | سوق السيارات'), 'description'=>__('معاينة تصميم سوق السيارات الجديدة والمستعملة في أوزمان.'), 'robots'=>'noindex, nofollow', 'image'=>route('cars.media','hero.png')])
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -68,7 +68,7 @@
         <div class="body-options"><button data-body="" class="selected" aria-pressed="true">{{ __('كل الأنواع') }}</button><button data-body="sedan" aria-pressed="false"><svg><use href="#i-car"/></svg> {{ __('سيدان') }}</button><button data-body="suv" aria-pressed="false"><svg><use href="#i-car"/></svg> {{ __('دفع رباعي') }} <b>SUV</b></button><button data-body="hatchback" aria-pressed="false"><svg><use href="#i-car"/></svg> {{ __('هاتشباك') }}</button><button data-body="coupe" aria-pressed="false"><svg><use href="#i-car"/></svg> {{ __('كوبيه ورياضية') }}</button></div>
     </section>
     <section class="inventory wrap" id="inventory" aria-labelledby="inventoryTitle">
-        <div class="section-title"><div><span class="eyebrow light">{{ __('اكتشف. قارن. اختار.') }}</span><h2 id="inventoryTitle">{{ __('سيارتك الجاية هون') }}<span>.</span></h2><p id="resultCount" role="status">{{ count($cars) }} سيارات في معاينة التصميم</p></div><div class="inventory-actions"><button class="reset-button" id="resetFilters" hidden>{{ __('مسح الفلاتر') }}</button><label class="sort-label">{{ __('الترتيب') }}<select id="sortCars"><option value="featured">{{ __('المميزة أولًا') }}</option><option value="priceAsc">{{ __('السعر: الأقل أولًا') }}</option><option value="priceDesc">{{ __('السعر: الأعلى أولًا') }}</option><option value="newest">{{ __('سنة الصنع: الأحدث') }}</option></select></label></div></div>
+        <div class="section-title"><div><span class="eyebrow light">{{ __('اكتشف. قارن. اختار.') }}</span><h2 id="inventoryTitle">{{ __('سيارتك الجاية هون') }}<span>.</span></h2><p id="resultCount" role="status">{{ __(':count سيارات في معاينة التصميم', ['count' => count($cars)]) }}</p></div><div class="inventory-actions"><button class="reset-button" id="resetFilters" hidden>{{ __('مسح الفلاتر') }}</button><label class="sort-label">{{ __('الترتيب') }}<select id="sortCars"><option value="featured">{{ __('المميزة أولًا') }}</option><option value="priceAsc">{{ __('السعر: الأقل أولًا') }}</option><option value="priceDesc">{{ __('السعر: الأعلى أولًا') }}</option><option value="newest">{{ __('سنة الصنع: الأحدث') }}</option></select></label></div></div>
         <div class="car-grid" id="carGrid">
             @foreach($cars as $car)
             <article class="car-card" data-car="{{ $car['id'] }}">

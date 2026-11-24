@@ -1,5 +1,5 @@
 @extends('promoters.layout')
-@section('title','حسابي • مجتمع أوزمان')
+@section('title', __('حسابي • مجتمع أوزمان'))
 @section('content')
 @php
     $pendingCreator = $user->isPromoter() && $user->promoterProfile?->isPending();
@@ -68,7 +68,7 @@
 
     <section class="hub-section" id="updates">
         <div class="hub-section-head"><h2>{{ __('🔔 آخر التحديثات') }}</h2></div>
-        <div class="stack">@forelse($updates as $update)<article class="community-update {{ $update->read_at ? '' : 'is-unread' }}"><span aria-hidden="true">{{ $update->post->kind==='story'?'◉':'▷' }}</span><div><strong>{{ $update->post->profile->display_name }}</strong><p>{{ $update->post->kind==='story'?'نشر ستوري جديدة':'نشر محتوى جديد' }} · {{ $update->created_at->diffForHumans() }}</p></div><form method="post" action="{{ route('community.read',$update) }}">@csrf<button class="button small outline">{{ __('شاهد') }}</button></form></article>@empty<div class="quiet-empty">{{ __('أول ما ينزل جديد من الحسابات اللي بتتابعها، بتلاقيه هون.') }} <a class="text-link" href="{{ route('promoters.index') }}">{{ __('اكتشف المروّجين') }}</a></div>@endforelse</div>
+        <div class="stack">@forelse($updates as $update)<article class="community-update {{ $update->read_at ? '' : 'is-unread' }}"><span aria-hidden="true">{{ $update->post->kind==='story'?'◉':'▷' }}</span><div><strong>{{ $update->post->profile->display_name }}</strong><p>{{ $update->post->kind==='story'?__('نشر ستوري جديدة'):__('نشر محتوى جديد') }} · {{ $update->created_at->diffForHumans() }}</p></div><form method="post" action="{{ route('community.read',$update) }}">@csrf<button class="button small outline">{{ __('شاهد') }}</button></form></article>@empty<div class="quiet-empty">{{ __('أول ما ينزل جديد من الحسابات اللي بتتابعها، بتلاقيه هون.') }} <a class="text-link" href="{{ route('promoters.index') }}">{{ __('اكتشف المروّجين') }}</a></div>@endforelse</div>
         @include('promoters.pagination',['items'=>$updates])
     </section>
 </div>

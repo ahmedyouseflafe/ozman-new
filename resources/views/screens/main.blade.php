@@ -28,14 +28,14 @@
                 @else
                     <div class="brand-logo"><i class="ti ti-wolf"></i></div>
                 @endif
-                <div class="location"><i class="ti ti-map-pin"></i>{{ $shop ? 'حدد موقعك' : 'الشاشة الرئيسية' }}</div>
+                <div class="location"><i class="ti ti-map-pin"></i>{{ $shop ? __('حدد موقعك') : __('الشاشة الرئيسية') }}</div>
             </div>
         </header>
 
         <main class="stage">
             @if($items->isNotEmpty())
                 <div class="carousel" id="carousel">
-                    <div class="section-title">{{ $shop ? 'إعلانات المتجر' : 'الشاشة الرئيسية' }}</div>
+                    <div class="section-title">{{ $shop ? __('إعلانات المتجر') : __('الشاشة الرئيسية') }}</div>
 
                     @foreach($items as $index => $item)
                         <article class="slide" data-duration="{{ max((int) $item->duration, 1) * 1000 }}" style="{{ $index === 0 ? '' : 'display:none' }}">

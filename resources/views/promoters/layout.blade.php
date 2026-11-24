@@ -6,8 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="referrer" content="same-origin">
     <script>{!! file_get_contents(public_path('promoter-theme.js')) !!}</script>
-    <title>{{ $__env->yieldContent('title', 'مروّجين أوزمان') }}</title>
-    <meta name="description" content="{{ $__env->yieldContent('description', 'اكتشف المحلات من خلال ستوريات وفيديوهات مروّجين أوزمان.') }}">
+    <title>{{ $__env->yieldContent('title', __('مروّجين أوزمان')) }}</title>
+    <meta name="description" content="{{ $__env->yieldContent('description', __('اكتشف المحلات من خلال ستوريات وفيديوهات مروّجين أوزمان.')) }}">
     <style>{!! file_get_contents(public_path('promoter-social.css')) !!}</style>
     <style>{!! file_get_contents(public_path('community.css')) !!}</style>
     <style>{!! file_get_contents(public_path('community-shell.css')) !!}</style>
@@ -29,7 +29,7 @@
         <a href="{{ route('market.index') }}" @class(['is-current' => $inMarket]) @if($inMarket) aria-current="page" @endif>🛍 {{ __('المتجر الحر') }}</a>
     </div>
     <div class="app-actions">
-        <button type="button" class="theme-toggle" id="promoterThemeToggle" aria-label="الوضع الداكن" aria-pressed="false"><span aria-hidden="true">☾</span><span data-theme-label class="visually-hidden">Dark</span></button>
+        <button type="button" class="theme-toggle" id="promoterThemeToggle" aria-label="{{ __('الوضع الداكن') }}" aria-pressed="false"><span aria-hidden="true">☾</span><span data-theme-label class="visually-hidden">Dark</span></button>
         @auth
             <details class="account-menu">
                 <summary class="account-button" title="{{ __('حسابي') }}">@if($me->earnsPoints())@include('promoters.customer-avatar', ['user' => $me, 'class' => 'is-small'])@else<span class="customer-avatar is-small" aria-hidden="true">{{ $me->avatarInitial() }}</span>@endif<span class="account-name">{{ __('حسابي') }}</span>@if($me->earnsPoints())<span class="account-points" title="{{ __('رصيد النقاط') }}">⭐ {{ number_format(app(\App\Services\LoyaltyPoints::class)->balance($me)) }}</span>@endif @if($alerts)<span class="pending-count" title="{{ __('بانتظارك') }}">{{ $alerts }}</span>@endif</summary>
@@ -61,10 +61,10 @@
 </div></header>
 <main class="social-wrap">
     @if(session('status'))<div class="notice" role="status">{{ session('status') }}</div>@endif
-    @if($errors->any())<div class="notice error" role="alert"><strong>راجع البيانات التالية:</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+    @if($errors->any())<div class="notice error" role="alert"><strong>{{ __('راجع البيانات التالية:') }}</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
     @yield('content')
 </main>
-<footer class="social-wrap social-footer"><span>اكتشافات قريبة منك.</span><a href="{{ route('home') }}">جزء من أوزمان ↗</a></footer>
+<footer class="social-wrap social-footer"><span>{{ __('اكتشافات قريبة منك.') }}</span><a href="{{ route('home') }}">{{ __('جزء من أوزمان ↗') }}</a></footer>
 <div class="app-bottom-bar" role="navigation" aria-label="{{ __('التنقل') }}">
     <a href="{{ route('promoters.index') }}" @class(['is-current' => request()->routeIs('promoters.*', 'promoter.manage')])><span aria-hidden="true">★</span>{{ __('المروّجين') }}</a>
     <a href="{{ route('market.index') }}" @class(['is-current' => request()->routeIs('market.index', 'market.show')])><span aria-hidden="true">🛍</span>{{ __('المتجر') }}</a>

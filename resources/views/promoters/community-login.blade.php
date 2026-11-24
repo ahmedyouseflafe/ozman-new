@@ -1,8 +1,8 @@
 @extends('promoters.layout')
-@section('title', ($registerFirst ?? false) ? 'إنشاء حساب • مجتمع أوزمان' : 'تسجيل الدخول • مجتمع أوزمان')
+@section('title', ($registerFirst ?? false) ? __('إنشاء حساب • مجتمع أوزمان') : __('تسجيل الدخول • مجتمع أوزمان'))
 @section('content')
 @auth
-<section class="panel narrow-panel"><h2>أنت مسجّل باسم {{ auth()->user()->name }}</h2><a class="button" href="{{ route(auth()->user()->isSuperAdmin() || (auth()->user()->isPromoter() && ! auth()->user()->promoterProfile?->isPending()) ? 'promoter.dashboard' : 'community.account') }}">افتح حسابي</a><form method="post" action="{{ route('logout') }}">@csrf<button class="text-link">تسجيل الخروج لتبديل الحساب</button></form></section>
+<section class="panel narrow-panel"><h2>{{ __('أنت مسجّل باسم :name', ['name' => auth()->user()->name]) }}</h2><a class="button" href="{{ route(auth()->user()->isSuperAdmin() || (auth()->user()->isPromoter() && ! auth()->user()->promoterProfile?->isPending()) ? 'promoter.dashboard' : 'community.account') }}">{{ __('افتح حسابي') }}</a><form method="post" action="{{ route('logout') }}">@csrf<button class="text-link">{{ __('تسجيل الخروج لتبديل الحساب') }}</button></form></section>
 @else
 {{-- One centred card like Instagram: log in by default, sign up with ?tab=register. --}}
 <div class="auth-stack">

@@ -2,7 +2,7 @@
 <div class="overlay try-on-overlay" id="tryOnLayer" role="dialog" aria-modal="true" aria-labelledby="photoTryTitle" data-kind="{{ $watchTryOn ? 'watch' : 'clothing' }}"
      data-endpoint="{{ route($watchTryOn ? 'watch.photo-tryon' : 'clothing.photo-tryon', $shop) }}" data-enabled="{{ \App\Http\Controllers\ClothingPhotoTryOnController::enabled($shop) ? '1' : '0' }}" data-csrf="{{ csrf_token() }}">
     <section class="photo-try-card">
-        <header><div><small>OZMAN · PHOTO TRY-ON</small><h2 id="photoTryTitle">{{ $watchTryOn ? 'شوف الساعة على إيدك' : 'شوف القطعة عليك بصورة' }}</h2></div><button class="x" type="button" data-close="tryOnLayer" aria-label="{{ __('إغلاق') }}">×</button></header>
+        <header><div><small>OZMAN · PHOTO TRY-ON</small><h2 id="photoTryTitle">{{ $watchTryOn ? __('شوف الساعة على إيدك') : __('شوف القطعة عليك بصورة') }}</h2></div><button class="x" type="button" data-close="tryOnLayer" aria-label="{{ __('إغلاق') }}">×</button></header>
         @if($watchTryOn)
         <p>{{ __('صوّر معصمك بدون ساعة بإضاءة واضحة، أو ارفع صورته من جهازك.') }}</p>
         <details id="photoTryExample"><summary>{{ __('نصائح لصورة واضحة') }}</summary><p>{{ __('خلي المعصم قريب وواضح، وصوّر بإضاءة متساوية بدون فلاتر. المعاينة مولّدة وقد تختلف التفاصيل، ولا تحدد قياس الساعة أو السوار.') }}</p></details>
@@ -28,7 +28,7 @@
         <p>{{ __('ارفع صورة البلوزة كاملة من الأمام، بدون قص الأكمام أو الحافة. للتفاصيل الأفضل استخدم إضاءة متساوية وخفف الثنيات قبل التصوير.') }}</p>
         <button type="button" id="photoTryOriginalGarment" hidden>{{ __('رجوع للقطعة الأصلية') }}</button>
         </div>
-        <label class="photo-upload">{{ $watchTryOn ? 'أو ارفع صورة معصمك بدل الكاميرا' : 'أو ارفع صورتك بدل الكاميرا' }} <input type="file" id="photoTryPersonFile" accept="image/jpeg,image/png,image/webp"></label>
+        <label class="photo-upload">{{ $watchTryOn ? __('أو ارفع صورة معصمك بدل الكاميرا') : __('أو ارفع صورتك بدل الكاميرا') }} <input type="file" id="photoTryPersonFile" accept="image/jpeg,image/png,image/webp"></label>
         @if($watchTryOn)
         <input type="hidden" id="photoTryQuality" value="detail">
         <p>{{ __('رح نستخدم صورة الساعة المختارة لتوليد معاينة على صورة معصمك.') }}</p>
@@ -48,7 +48,7 @@
             <p class="photo-try-notice">{{ __('التقاط الصورة والنموذج جاهزان. تجربة القطعة على صورتك تحتاج تفعيل خدمة الصور لدى المحل.') }}</p>
         @endif
         <figure id="photoTryResult" hidden><figcaption>{{ __('نتيجتك · معاينة مولّدة، لا تحدد المقاس الفعلي') }}</figcaption><img id="photoTryResultImage" alt="{{ __('نتيجة تجربة القطعة على صورتك') }}"></figure>
-        <div class="photo-try-actions photo-try-submit"><button type="button" id="photoTryGenerate" disabled>{{ $watchTryOn ? 'جرّب الساعة على صورتي' : 'جرّب القطعة على صورتي' }}</button></div>
+        <div class="photo-try-actions photo-try-submit"><button type="button" id="photoTryGenerate" disabled>{{ $watchTryOn ? __('جرّب الساعة على صورتي') : __('جرّب القطعة على صورتي') }}</button></div>
     </section>
 </div>
 @viewStyle('front.partials.clothing_photo_tryon')

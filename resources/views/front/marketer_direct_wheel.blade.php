@@ -102,7 +102,7 @@
                 <div class="kicker">{{ __('عجلة مباشرة') }}</div>
                 <h1>{{ $wheel->title }}</h1>
                 <p>{{ __('اضغط لف العجلة وشوف جائزتك فوراً.') }}</p>
-                <span class="marketer-pill"><i class="ti ti-user-star"></i> المسوق: {{ $marketer->name }}</span>
+                <span class="marketer-pill"><i class="ti ti-user-star"></i> {{ __('المسوق: :name', ['name' => $marketer->name]) }}</span>
             </header>
 
             <section class="wheel-panel">

@@ -74,12 +74,12 @@
         <article class="bakery-moment"><i class="ti ti-ice-cream-2"></i><small>DAILY LITTLE JOY</small><strong>{{ __('حلاوة اليوم') }}</strong><p>{{ __('اختار قطعة صغيرة تغيّر مزاجك.') }}</p></article>
     </section>
     <section class="catalog" id="catalog">
-        <header class="catalog-header"><div><span class="eyebrow">SWEET SELECTION</span><h2>{{ __('اختار الحلو اللي نفسك فيه') }}</h2><p>تشكيلة طازجة من {{ $shop->name }}</p></div><span class="count">{{ $categories->sum(fn($category) => $category->products->count()) + $uncategorizedProducts->count() }} صنف</span></header>
+        <header class="catalog-header"><div><span class="eyebrow">SWEET SELECTION</span><h2>{{ __('اختار الحلو اللي نفسك فيه') }}</h2><p>تشكيلة طازجة من {{ $shop->name }}</p></div><span class="count">{{ __(':count صنف', ['count' => $categories->sum(fn($category) => $category->products->count()) + $uncategorizedProducts->count()]) }}</span></header>
         <div class="layout">
             <nav class="category-groups" aria-label="{{ __('أقسام الحلويات') }}">
                 @foreach(['cups' => $cupCategories, 'plates' => $plateCategories] as $group => $groupCategories)
                     @if($groupCategories->isNotEmpty() || ($group === 'plates' && ($categories->isEmpty() || $uncategorizedProducts->isNotEmpty())))
-                    <div class="categories" data-category-group="{{ $group }}" role="group" aria-label="{{ $group === 'cups' ? 'المشروبات وأصناف الكاسات' : 'الحلويات وأصناف الصحون' }}">
+                    <div class="categories" data-category-group="{{ $group }}" role="group" aria-label="{{ $group === 'cups' ? __('المشروبات وأصناف الكاسات') : __('الحلويات وأصناف الصحون') }}">
                 @foreach($groupCategories as $category)
                     @php($categoryImage = $category->image ?: $category->products->first()?->main_image)
                     <button class="category {{ $category->id === $categories->first()?->id ? 'active' : '' }}" type="button" data-tab="{{ $category->id }}"><figure>@if($categoryImage)<img src="{{ $mediaUrl($categoryImage) }}" alt="">@else<i class="ti ti-cookie"></i>@endif</figure><span>{{ $category->localized('name') }}</span></button>
@@ -96,12 +96,12 @@
             </nav>
             <div class="content">
                 @forelse($categories as $category)
-                    <section class="pane" data-pane="{{ $category->id }}" @if(! $loop->first) hidden @endif><header class="pane-head"><h3>{{ $category->localized('name') }}</h3><small>{{ $category->products->count() }} صنف</small></header><div class="grid">@forelse($category->products as $product) @include('front.partials.sweet_product_card', ['product' => $product, 'mediaUrl' => $mediaUrl, 'shop' => $shop]) @empty <div class="empty">{{ __('قريبًا ستتوفر أصناف لذيذة في هذا القسم 🍰') }}</div> @endforelse</div></section>
+                    <section class="pane" data-pane="{{ $category->id }}" @if(! $loop->first) hidden @endif><header class="pane-head"><h3>{{ $category->localized('name') }}</h3><small>{{ __(':count صنف', ['count' => $category->products->count()]) }}</small></header><div class="grid">@forelse($category->products as $product) @include('front.partials.sweet_product_card', ['product' => $product, 'mediaUrl' => $mediaUrl, 'shop' => $shop]) @empty <div class="empty">{{ __('قريبًا ستتوفر أصناف لذيذة في هذا القسم 🍰') }}</div> @endforelse</div></section>
                 @empty
-                    <section class="pane" data-pane="items"><header class="pane-head"><h3>{{ __('أصنافنا') }}</h3><small>{{ $uncategorizedProducts->count() }} صنف</small></header><div class="grid">@forelse($uncategorizedProducts as $product) @include('front.partials.sweet_product_card', ['product' => $product, 'mediaUrl' => $mediaUrl, 'shop' => $shop]) @empty <div class="empty">{{ __('أضف أصناف الحلويات من لوحة التحكم لتظهر هنا 🍰') }}</div> @endforelse</div></section>
+                    <section class="pane" data-pane="items"><header class="pane-head"><h3>{{ __('أصنافنا') }}</h3><small>{{ __(':count صنف', ['count' => $uncategorizedProducts->count()]) }}</small></header><div class="grid">@forelse($uncategorizedProducts as $product) @include('front.partials.sweet_product_card', ['product' => $product, 'mediaUrl' => $mediaUrl, 'shop' => $shop]) @empty <div class="empty">{{ __('أضف أصناف الحلويات من لوحة التحكم لتظهر هنا 🍰') }}</div> @endforelse</div></section>
                 @endforelse
                 @if($categories->isNotEmpty() && $uncategorizedProducts->isNotEmpty())
-                    <section class="pane" data-pane="uncategorized" hidden><header class="pane-head"><h3>{{ __('أصناف أخرى') }}</h3><small>{{ $uncategorizedProducts->count() }} صنف</small></header><div class="grid">@foreach($uncategorizedProducts as $product) @include('front.partials.sweet_product_card', ['product' => $product, 'mediaUrl' => $mediaUrl, 'shop' => $shop]) @endforeach</div></section>
+                    <section class="pane" data-pane="uncategorized" hidden><header class="pane-head"><h3>{{ __('أصناف أخرى') }}</h3><small>{{ __(':count صنف', ['count' => $uncategorizedProducts->count()]) }}</small></header><div class="grid">@foreach($uncategorizedProducts as $product) @include('front.partials.sweet_product_card', ['product' => $product, 'mediaUrl' => $mediaUrl, 'shop' => $shop]) @endforeach</div></section>
                 @endif
             </div>
         </div>

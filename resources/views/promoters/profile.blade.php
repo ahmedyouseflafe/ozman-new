@@ -1,10 +1,10 @@
 @extends('promoters.layout')
-@section('title', $profile->display_name.' | مروّجين أوزمان')
-@section('description', $profile->bio ?: 'ستوريات وفيديوهات '.$profile->display_name.' لاكتشاف محلات أوزمان.')
+@section('title', $profile->display_name.' | '.__('مروّجين أوزمان'))
+@section('description', $profile->bio ?: __('ستوريات وفيديوهات :name لاكتشاف محلات أوزمان.', ['name' => $profile->display_name]))
 @section('content')
 <style>{!! file_get_contents(public_path('promoter-profile.css')) !!}</style>
 @include('promoters.profile-content')
-<dialog class="social-viewer" id="socialViewer" aria-label="عارض المنشورات والستوريات"><header><span>{{ $profile->display_name }}</span><button type="button" id="viewerClose" aria-label="إغلاق">×</button></header><div class="story-progress" id="storyProgress" hidden><span></span></div><div class="viewer-media" id="viewerMedia"></div><div class="viewer-nav"><button type="button" id="viewerPrevious" aria-label="السابق">→</button><span id="viewerCounter"></span><button type="button" id="viewerPause" hidden>إيقاف مؤقت</button><button type="button" id="viewerNext" aria-label="التالي">←</button></div><footer><p id="viewerCaption"></p><div class="viewer-actions"><a id="viewerShop" class="button" hidden>زور المحل ←</a>@if(! $canManage && $gifting['gifts']->isNotEmpty())<button type="button" class="button gift-open" id="viewerGift" data-gift-open>{{ __('🎁 أهدي على هالمنشور') }}</button>@endif</div><p id="viewerStatus" role="status"></p></footer></dialog>
+<dialog class="social-viewer" id="socialViewer" aria-label="{{ __('عارض المنشورات والستوريات') }}"><header><span>{{ $profile->display_name }}</span><button type="button" id="viewerClose" aria-label="{{ __('إغلاق') }}">×</button></header><div class="story-progress" id="storyProgress" hidden><span></span></div><div class="viewer-media" id="viewerMedia"></div><div class="viewer-nav"><button type="button" id="viewerPrevious" aria-label="{{ __('السابق') }}">→</button><span id="viewerCounter"></span><button type="button" id="viewerPause" hidden>{{ __('إيقاف مؤقت') }}</button><button type="button" id="viewerNext" aria-label="{{ __('التالي') }}">←</button></div><footer><p id="viewerCaption"></p><div class="viewer-actions"><a id="viewerShop" class="button" hidden>{{ __('زور المحل ←') }}</a>@if(! $canManage && $gifting['gifts']->isNotEmpty())<button type="button" class="button gift-open" id="viewerGift" data-gift-open>{{ __('🎁 أهدي على هالمنشور') }}</button>@endif</div><p id="viewerStatus" role="status"></p></footer></dialog>
 @endsection
 @section('scripts')
 @php

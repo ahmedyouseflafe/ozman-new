@@ -1,5 +1,5 @@
 @extends('promoters.layout')
-@section('title', 'مروّجين أوزمان | قصص ومحلات تستحق الاكتشاف')
+@section('title', __('مروّجين أوزمان | قصص ومحلات تستحق الاكتشاف'))
 @section('content')
 <section class="page-intro">
     <div><h1>{{ __('اكتشف المروّجين') }}</h1><p>{{ __('ستوريات وفيديوهات من ناس بتحكي عن محلات أوزمان. تابع اللي بيعجبك وادخل المحل اللي لفت نظرك.') }}</p></div>
@@ -33,7 +33,7 @@
         <span class="creator-arrow" aria-hidden="true">←</span>
     </a>
     @empty
-    <div class="empty-state"><span class="empty-icon">✳</span><h2>الحكايات بتبدأ قريبًا</h2><p>صفحات المروّجين بتظهر هون أول ما تنضاف.</p>@if(auth()->user()?->isSuperAdmin())<a class="button" href="{{ route('promoter.accounts') }}">إضافة حساب مروّج</a>@endif</div>
+    <div class="empty-state"><span class="empty-icon">✳</span><h2>{{ __('الحكايات بتبدأ قريبًا') }}</h2><p>{{ __('صفحات المروّجين بتظهر هون أول ما تنضاف.') }}</p>@if(auth()->user()?->isSuperAdmin())<a class="button" href="{{ route('promoter.accounts') }}">{{ __('إضافة حساب مروّج') }}</a>@endif</div>
     @endforelse
 </section>
 @include('promoters.pagination', ['items' => $profiles])
