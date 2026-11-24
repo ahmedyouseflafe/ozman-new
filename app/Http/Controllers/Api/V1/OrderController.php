@@ -177,30 +177,7 @@ class OrderController extends Controller
         abort_unless((int) $order->user_id === (int) $request->user()->id, 404);
         $shop = $order->shop;
         abort_unless($shop && $shop->is_active, 404, __('المحل مش متاح هلقيت.'));
-        $products = \App\Models\Product::with(['images', 'variants', 'shop'])->where('shop_id', $shop->id)->where('is_active', true)
-            ->whereIn('id', collect($order->items ?? [])->pluck('product_id')->filter())->get()->keyBy('id');
-        $lines = [];
-        $skipped = [];
-        foreach ($order->items ?? [] as $item) {
-            $product = $products->get($item['product_id'] ?? 0);
-            $custom = ! empty($item['addons']) || ! empty($item['choices']) || ! empty($item['excluded']);
-            if (! $product || $custom) {
-                $skipped[] = $item['name'] ?? __('صنف');
-                continue;
-            }
-            $variantId = $item['variant_id'] ?? null;
-            if ($variantId && ! $product->variants->where('is_active', true)->contains('id', (int) $variantId)) {
-                $skipped[] = $item['name'] ?? __('صنف');
-                continue;
-            }
-            $lines[] = array_filter([
-                'product' => Presenter::product($product, true),
-                'qty' => max(1, (int) ($item['qty'] ?? 1)),
-                'variant_id' => $variantId ? (int) $variantId : null,
-                'size' => $item['size'] ?? null,
-                'color' => $item['color'] ?? null,
-            ], fn ($v) => $v !== null);
-        }
+        ['lines' => $lines, 'skipped' => $skipped] = \App\Services\Basket\BasketLines::from($order->items ?? [], $shop->id);
 
         return response()->json(['shop' => Presenter::shop($shop), 'lines' => $lines, 'skipped' => $skipped,
             'accepting_orders' => (bool) $shop->is_accepting_orders]);

@@ -68,7 +68,8 @@
         div.className = `oz-sa-msg ${m.role}`;
         div.innerHTML = m.role === 'assistant' ? render(m.content) : `<p>${esc(m.content)}</p>`;
         log.append(div);
-        const cards = [...(m.products || []).map((p) => `<a class="oz-sa-card" href="${esc(p.url)}">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : '<span class="ph"></span>'}<b>${esc(p.name)}</b><small>${esc(p.shop?.name)}</small><span><span class="price">${money(p.final_price)}</span>${p.discount_price ? `<s>${money(p.price)}</s>` : ''}</span></a>`),
+        const basket = (m.basket?.lines || []).map((l) => ({ ...l.product, url: l.url, shop: l.shop })).filter((b, i, all) => all.findIndex((x) => x.id === b.id) === i && !(m.products || []).some((p) => p.id === b.id));
+        const cards = [...[...(m.products || []), ...basket].map((p) => `<a class="oz-sa-card" href="${esc(p.url)}">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : '<span class="ph"></span>'}<b>${esc(p.name)}</b><small>${esc(p.shop?.name)}</small><span><span class="price">${money(p.final_price)}</span>${p.discount_price ? `<s>${money(p.price)}</s>` : ''}</span></a>`),
             ...(m.shops || []).map((s) => `<a class="oz-sa-card" href="${esc(s.web_url)}">${s.logo ? `<img src="${esc(s.logo)}" alt="" loading="lazy">` : '<span class="ph"></span>'}<b>${esc(s.name)}</b><small>${esc(s.city || '')}</small></a>`)];
         if (cards.length) { const row = document.createElement('div'); row.className = 'oz-sa-cards'; row.innerHTML = cards.join(''); log.append(row); }
         (m.actions || []).forEach((a) => log.append(actionCard(a)));

@@ -2200,7 +2200,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            itemsEl.innerHTML = ozmanCart.map((item, index) => `
+            // Items from several shops are listed under each shop's name; each shop gets its own order at checkout.
+            const groupKeys = ozmanCart.map((item) => itemRecipientContext(item).key);
+            const firstOfGroup = (key) => groupKeys.indexOf(key);
+            const multiShop = new Set(groupKeys).size > 1;
+            const listOrder = ozmanCart.map((item, index) => index)
+                .sort((a, b) => firstOfGroup(groupKeys[a]) - firstOfGroup(groupKeys[b]) || a - b);
+            itemsEl.innerHTML = (multiShop ? `<div class="cart-split-note">${escapeCartHtml(frontLabel('cartSplitNote', 'السلة من أكثر من محل: كل محل بيوصله طلبه لحاله.'))}</div>` : '')
+                + listOrder.map((index, position) => {
+                const item = ozmanCart[index];
+                const head = multiShop && (position === 0 || groupKeys[listOrder[position - 1]] !== groupKeys[index])
+                    ? `<div class="cart-shop-head"><i class="fas fa-store"></i> ${escapeCartHtml(itemRecipientContext(item).recipient_name || '')}</div>`
+                    : '';
+                return head + `
                 <div class="cart-item" data-cart-index="${index}">
                     <img src="${escapeCartHtml(item.img || 'images/logo.svg')}" alt="${escapeCartHtml(item.name)}">
                     <div class="cart-item-main">
@@ -2218,7 +2230,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
             itemsEl.querySelectorAll('[data-cart-action]').forEach(button => {
                 button.addEventListener('click', (event) => {

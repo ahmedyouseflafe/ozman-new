@@ -6167,3 +6167,8 @@ html[dir="ltr"] .products-scatter-header .back-btn i {
             transform: translateX(-50%) translateY(5px) scale(1.06) !important;
         }
     
+
+/* The basket from several shops: a line per shop over its items */
+.cart-split-note { font-size: .82rem; color: rgba(255, 255, 255, .65); margin: 0 0 8px; line-height: 1.5; }
+.cart-shop-head { font-weight: 800; margin: 12px 0 6px; color: var(--primary-color); display: flex; align-items: center; gap: 6px; }
+.cart-shop-head:first-of-type { margin-top: 0; }

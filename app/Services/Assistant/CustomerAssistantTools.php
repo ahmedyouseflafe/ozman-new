@@ -54,6 +54,19 @@ class CustomerAssistantTools
                 'input_schema' => ['type' => 'object', 'required' => ['shop_id'], 'properties' => ['shop_id' => ['type' => 'integer']]]],
             ['name' => 'my_orders', 'description' => 'The signed-in customer\'s own recent orders with status, items, total, delivery time and driver.',
                 'input_schema' => ['type' => 'object', 'properties' => ['limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 10]]]],
+            ['name' => 'my_usuals', 'description' => 'What the signed-in customer usually orders, from their own past orders: for each shop, the items with how many times they ordered each, the usual quantity and option, and their last order there. Use it for "my usual", "like last time", "the same as Friday".',
+                'input_schema' => ['type' => 'object', 'properties' => ['shop_id' => ['type' => 'integer', 'description' => 'only this shop']]]],
+            ['name' => 'propose_basket', 'description' => 'Prepare a basket for the signed-in customer: shows a "put in basket" button under your reply with these items, which may come from several shops (each shop gets its own order and delivers it itself). Nothing is ordered: they press the button, check the basket and send it themselves. Give either order_number (to repeat a past order of theirs) or items (product ids from my_usuals or search results, with quantity and the option they had).',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'order_number' => ['type' => 'string', 'description' => 'one of the customer\'s own order numbers, to repeat it'],
+                    'items' => ['type' => 'array', 'maxItems' => 15, 'items' => ['type' => 'object', 'required' => ['product_id'], 'properties' => [
+                        'product_id' => ['type' => 'integer'],
+                        'qty' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 20],
+                        'variant_id' => ['type' => 'integer'],
+                        'size' => ['type' => 'string'],
+                        'color' => ['type' => 'string'],
+                    ]]],
+                ]]],
             ['name' => 'my_points', 'description' => 'The signed-in customer\'s loyalty points: balance, pending, per shop, and how points are earned.',
                 'input_schema' => ['type' => 'object', 'properties' => (object) []]],
             ['name' => 'my_appointments', 'description' => 'The signed-in customer\'s salon bookings.',
@@ -94,6 +107,8 @@ class CustomerAssistantTools
                 'search_shops' => $this->searchShops($input),
                 'shop_details' => $this->shopDetails((int) ($input['shop_id'] ?? 0)),
                 'my_orders' => $this->myOrders($user, $input),
+                'my_usuals' => $this->myUsuals($user, $input),
+                'propose_basket' => $this->proposeBasket($input, $user, $cards),
                 'my_points' => $this->myPoints($user),
                 'my_appointments' => $this->myAppointments($user),
                 'check_coupon' => $this->checkCoupon($input, $user),
@@ -264,6 +279,90 @@ class CustomerAssistantTools
         ])->all(), 'note' => $orders->isEmpty() ? 'This account has no orders. Orders placed as a guest are not linked to an account.' : null];
     }
 
+    /** The customer's own habits, per shop: their memory of "the usual". Only from their own orders. */
+    private function myUsuals(?User $user, array $input): array
+    {
+        $user = $this->needUser($user);
+        $orders = FrontOrder::with('shop:id,name,catalog_type,is_active')->where('user_id', $user->id)->where('status', '!=', 'cancelled')
+            ->when(! empty($input['shop_id']), fn ($q) => $q->where('shop_id', (int) $input['shop_id']))
+            ->where('created_at', '>=', now()->subDays(180))->latest('id')->limit(40)->get()
+            ->filter(fn (FrontOrder $o) => $o->shop?->is_active);
+        if ($orders->isEmpty()) {
+            return ['shops' => [], 'note' => 'No orders on this account in the last 6 months. Orders placed as a guest are not linked to an account.'];
+        }
+        $active = Product::where('is_active', true)->whereIn('id', $orders->flatMap(fn ($o) => collect($o->items ?? [])->pluck('product_id'))->filter()->unique())
+            ->pluck('id')->flip();
+
+        $shops = $orders->groupBy('shop_id')->take(6)->map(function ($shopOrders) use ($active) {
+            $items = [];
+            // Newest first, so the usual quantity and option are the latest ones.
+            foreach ($shopOrders as $order) {
+                foreach ($order->items ?? [] as $item) {
+                    $id = (int) ($item['product_id'] ?? 0);
+                    $custom = ! empty($item['addons']) || ! empty($item['choices']) || ! empty($item['excluded']);
+                    $key = $id.'|'.($item['variant_id'] ?? '').'|'.($item['size'] ?? '').'|'.($item['color'] ?? '').'|'.($custom ? 'custom' : '');
+                    $items[$key] ??= array_filter([
+                        'product_id' => $id ?: null, 'name' => $item['name'] ?? null, 'times' => 0, 'usual_qty' => max(1, (int) ($item['qty'] ?? 1)),
+                        'variant_id' => $item['variant_id'] ?? null, 'size' => $item['size'] ?? null, 'color' => $item['color'] ?? null,
+                        'still_sold' => $id && isset($active[$id]),
+                        'note' => $custom ? 'had extras or meal choices: the customer picks them again on the product' : null,
+                    ], fn ($v) => $v !== null && $v !== '');
+                    $items[$key]['times']++;
+                }
+            }
+            $last = $shopOrders->first();
+
+            return [
+                'shop' => ['id' => $last->shop->id, 'name' => $last->shop->name, 'type' => $last->shop->catalog_type],
+                'orders' => $shopOrders->count(),
+                'items' => collect($items)->sortByDesc('times')->take(8)->values()->all(),
+                'last_order' => ['number' => $last->order_number, 'placed_at' => $last->created_at?->timezone(self::TZ)->format('Y-m-d H:i'),
+                    'items' => collect($last->items ?? [])->map(fn ($i) => ($i['qty'] ?? 1).'× '.($i['name'] ?? ''))->implode('، ')],
+            ];
+        })->values()->all();
+
+        return ['shops' => $shops];
+    }
+
+    /** A "put in basket" button with these lines. It only fills the basket in the app; the customer sends the orders. */
+    private function proposeBasket(array $input, ?User $user, array &$cards): array
+    {
+        $user = $this->needUser($user);
+        if (! empty($input['order_number'])) {
+            $order = FrontOrder::where('user_id', $user->id)->where('order_number', (string) $input['order_number'])->first();
+            if (! $order) {
+                return ['error' => 'No order with this number on this account.'];
+            }
+            $items = $order->items ?? [];
+        } else {
+            $items = collect((array) ($input['items'] ?? []))->take(15)->filter(fn ($item) => is_array($item) && ! empty($item['product_id']))
+                ->map(fn ($item) => array_intersect_key($item, array_flip(['product_id', 'qty', 'variant_id', 'size', 'color'])))->values()->all();
+        }
+        if (empty($items)) {
+            return ['error' => 'Give order_number or items.'];
+        }
+        ['lines' => $lines, 'skipped' => $skipped] = \App\Services\Basket\BasketLines::from($items);
+        if (empty($lines)) {
+            return ['error' => 'None of these can be put in the basket now.', 'skipped' => $skipped];
+        }
+        // Kept as the item specs; the card is built fresh (prices, stock) each time the message is shown.
+        $cards['basket'] = [
+            'items' => collect($lines)->map(fn ($line) => array_intersect_key($line, array_flip(['qty', 'variant_id', 'size', 'color'])) + ['product_id' => $line['product']['id']])->all(),
+            'skipped' => $skipped,
+        ];
+        $shops = collect($lines)->groupBy(fn ($line) => $line['product']['shop_id'] ?? 0);
+
+        return [
+            'ready' => collect($lines)->map(fn ($line) => ['name' => $line['product']['name'], 'qty' => $line['qty'], 'price' => $line['product']['final_price'] ?? null,
+                'shop_id' => $line['product']['shop_id'] ?? null] + array_intersect_key($line, array_flip(['size', 'color'])))->all(),
+            'shops' => $shops->count(),
+            'skipped' => $skipped,
+            'note' => 'A "put in basket" button appears under your reply. Nothing is ordered yet: they press it, check the basket and send it. '
+                .($shops->count() > 1 ? 'Each shop gets its own order and delivers it itself. ' : '')
+                .'Write a short reply listing what is ready (qty × name, price), and anything skipped with why (they pick it again on the product). Don\'t say you ordered or added anything.',
+        ];
+    }
+
     private function myPoints(?User $user): array
     {
         $user = $this->needUser($user);
@@ -411,7 +510,14 @@ class CustomerAssistantTools
         $actions = empty($cards['actions']) ? [] : AssistantAction::whereIn('id', $cards['actions'])->get()
             ->map(fn (AssistantAction $a) => self::presentAction($a))->values()->all();
 
-        return ['products' => $products->all(), 'shops' => $shops->all(), 'actions' => $actions];
+        // A ready basket: the app shows a "put in basket" button; the website shows its products as cards.
+        $basket = null;
+        if (! empty($cards['basket']['items'])) {
+            $built = \App\Services\Basket\BasketLines::from($cards['basket']['items'], null, true);
+            $basket = $built['lines'] ? ['lines' => $built['lines'], 'skipped' => array_values(array_unique([...($cards['basket']['skipped'] ?? []), ...$built['skipped']]))] : null;
+        }
+
+        return ['products' => $products->all(), 'shops' => $shops->all(), 'actions' => $actions, 'basket' => $basket];
     }
 
     public static function presentAction(AssistantAction $action): array

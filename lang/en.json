@@ -1746,5 +1746,6 @@
   "انضافت :points نقطة": ":points points added",
   "على شرائك من :shop. شكراً إنك اخترت محل على أوزمان.": "For your purchase at :shop. Thanks for choosing a shop on Ozman.",
   "شوف نقاطي ←": "See my points ←",
-  "ما انضافت النقاط": "The points weren't added"
+  "ما انضافت النقاط": "The points weren't added",
+  "السلة من أكثر من محل: كل محل بيوصله طلبه لحاله.": "The basket has items from several shops: each shop gets its own order."
 }
