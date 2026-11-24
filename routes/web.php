@@ -350,6 +350,8 @@ Route::get('/display', [ScreenController::class, 'mainDisplay'])->name('display.
 Route::get('/display/shop/{shop}', [ScreenController::class, 'shopDisplay'])->name('display.shop');
 
 Route::middleware(['auth', 'admin.access'])->group(function () {
+    // What customers searched for and didn't find (shop owners: their shops; admins: all of Ozman).
+    Route::get('/lost-demand', [\App\Http\Controllers\LostDemandPageController::class, 'index'])->name('demand.index');
     Route::get('/push-notifications', [PushNotificationController::class, 'index'])->name('push-notifications.index');
     Route::post('/push-notifications', [PushNotificationController::class, 'send'])->name('push-notifications.send');
     Route::get('/shops/{shop}/salon-appointments', [SalonAppointmentController::class, 'index'])->name('salon-appointments.index');

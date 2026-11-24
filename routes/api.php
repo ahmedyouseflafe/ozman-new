@@ -36,6 +36,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::post('/auth/register-shop', [AuthController::class, 'registerShop'])->middleware('throttle:5,1,auth.register-shop')->name('auth.register-shop');
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1,auth.forgot')->name('auth.forgot');
 
+    // The website's search box reports searches that found nothing (anonymous).
+    Route::post('/search-misses', [\App\Http\Controllers\Api\V1\DemandController::class, 'miss'])->middleware('throttle:20,1,search-misses')->name('search-misses');
     Route::middleware('throttle:120,1,api')->group(function () {
         Route::get('/home', [CatalogController::class, 'home'])->name('home');
         Route::get('/shops', [CatalogController::class, 'shops'])->name('shops.index');
@@ -136,6 +138,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/me/network/distributors/{distributor}/marketers', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'storeMarketer'])->middleware('throttle:30,1')->name('network.marketers.store');
         Route::post('/me/network/marketers/{marketer}', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'updateMarketer'])->middleware('throttle:60,1')->name('network.marketers.update');
         Route::delete('/me/network/marketers/{marketer}', [\App\Http\Controllers\Api\V1\KremboManageController::class, 'destroyMarketer'])->name('network.marketers.destroy');
+        Route::get('/merchant/shops/{shop:id}/demand', [\App\Http\Controllers\Api\V1\DemandController::class, 'forShop'])->name('merchant.demand');
         Route::get('/merchant/shops/{shop:id}/insights', [\App\Http\Controllers\Api\V1\InsightsController::class, 'show'])->name('merchant.insights');
         Route::get('/merchant/shops/{shop:id}/reviews', [\App\Http\Controllers\Api\V1\ReviewController::class, 'merchant'])->name('merchant.reviews');
         Route::post('/merchant/reviews/{review}/reply', [\App\Http\Controllers\Api\V1\ReviewController::class, 'reply'])->name('merchant.reviews.reply');

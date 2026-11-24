@@ -23,6 +23,7 @@ Schedule::command('salon:send-reminders')->everyFiveMinutes()->withoutOverlappin
 // Shop owners: today's orders and sales, every evening at 22:30 local time.
 Schedule::command('products:end-offers')->everyMinute()->withoutOverlapping(5);
 Schedule::command('merchant:daily-summary')->dailyAt('22:30')->timezone('Asia/Hebron')->withoutOverlapping(30)->onOneServer();
+Schedule::command('demand:weekly-summary')->weeklyOn(6, '10:20')->timezone('Asia/Hebron')->withoutOverlapping(30)->onOneServer();
 
 // Photos owners send to their assistant are kept only long enough to confirm a social post with them.
 Schedule::call(function () {

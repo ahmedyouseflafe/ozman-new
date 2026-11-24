@@ -127,6 +127,14 @@
         </a>
         @endif
 
+        @if($canSee(['demand.index']))
+        <a href="{{ route('demand.index', $previewShopId ? ['shop_id' => $previewShopId] : []) }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('demand.index') ? 'active' : '' }}">
+             <i class="ti ti-zoom-question" aria-hidden="true"></i>
+             {{ __('شو بدوّروا الزباين') }}
+        </a>
+        @endif
+
         @if($canSee(['social.index']))
         <a href="{{ route('social.index', $previewShopId ? ['shop_id' => $previewShopId] : []) }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('social.*') ? 'active' : '' }}">

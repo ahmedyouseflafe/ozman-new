@@ -96,6 +96,9 @@ class CatalogController extends Controller
             ->when($data['q'] ?? null, fn ($q, $term) => $q->where('products.name', 'like', '%'.addcslashes($term, '%_\\').'%'))
             ->orderByDesc('products.is_featured')->orderBy('products.id')
             ->paginate($data['per_page'] ?? 50);
+        if (filled($data['q'] ?? null) && $products->total() === 0) {
+            app(\App\Services\Demand\LostDemand::class)->record($data['q'], 'app_shop', $shop);
+        }
 
         return response()->json([
             'data' => collect($products->items())->map(fn ($p) => Presenter::product($p)),
@@ -172,6 +175,10 @@ class CatalogController extends Controller
             // Name matches first, then featured items.
             ->orderByRaw('CASE WHEN products.name LIKE ? THEN 0 ELSE 1 END', [$like])
             ->orderByDesc('products.is_featured')->limit(40)->get();
+
+        if ($shops->isEmpty() && $products->isEmpty()) {
+            app(\App\Services\Demand\LostDemand::class)->record($data['q'], 'app');
+        }
 
         return response()->json([
             'shops' => $shops->map(fn ($shop) => Presenter::shop($shop)),

@@ -5863,6 +5863,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 navSearchBtn.classList.remove('active');
             }
 
+            // Tells the site what people looked for and didn't find (anonymous), once they stop typing.
+            let searchMissTimer = null;
+            let lastSearchMiss = '';
+            function reportSearchMiss(query) {
+                clearTimeout(searchMissTimer);
+                searchMissTimer = setTimeout(() => {
+                    const term = String(query || '').trim();
+                    if (term.length < 2 || term === lastSearchMiss) return;
+                    lastSearchMiss = term;
+                    fetch('/api/v1/search-misses', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({ q: term.slice(0, 100) }),
+                        keepalive: true,
+                    }).catch(() => {});
+                }, 1500);
+            }
+
             function renderFrontSearchResults(query) {
                 if (!frontSearchResults) return;
 
@@ -5878,6 +5896,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (results.length === 0) {
                     frontSearchResults.innerHTML = '<div class="front-search-empty">ما لقينا نتائج مطابقة</div>';
+                    reportSearchMiss(query);
                     return;
                 }
 

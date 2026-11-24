@@ -104,7 +104,7 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="name"><i class="ti ti-tag"></i>اسم {{ $itemLabel }}</label>
-                                <input type="text" id="name" name="name" value="{{ old('name') }}"
+                                <input type="text" id="name" name="name" value="{{ old('name', mb_substr((string) request('name'), 0, 255)) }}"
                                     data-auto-translate-source
                                     required>
                             </div>

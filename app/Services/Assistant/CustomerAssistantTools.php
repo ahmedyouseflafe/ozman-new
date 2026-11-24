@@ -151,6 +151,11 @@ class CustomerAssistantTools
         };
         $limit = max(1, min(20, (int) ($input['limit'] ?? 10)));
         $total = (clone $query)->count();
+        // Only a plain "is there any X?" counts as lost demand, not a search narrowed by price or offers.
+        if ($total === 0 && filled($input['query'] ?? null) && ! isset($input['max_price']) && ! isset($input['min_price']) && empty($input['on_offer'])) {
+            app(\App\Services\Demand\LostDemand::class)->record((string) $input['query'], 'assistant',
+                ! empty($input['shop_id']) ? Shop::find($input['shop_id']) : null, $input['shop_type'] ?? null);
+        }
         $products = $query->limit($limit)->get();
         // Rank by how many keywords each product matches, so "برغر لحم" puts beef burgers first.
         if (count($words) > 1) {
