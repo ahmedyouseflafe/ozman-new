@@ -1,0 +1,47 @@
+# Read-only: counts what test and demo data staging holds, so a cleanup can be planned. Changes nothing, prints no names, emails or phones.
+name: Staging data report
+
+on:
+  workflow_dispatch:
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Count staging data
+        env:
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          HOST: 82.198.227.221
+          PORT: 65002
+          USER_NAME: u379351114
+        run: |
+          set -e
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' | sed '/^[[:space:]]*$/d' > ~/.ssh/staging_key
+          chmod 600 ~/.ssh/staging_key
+          ssh-keyscan -p "$PORT" "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh -i ~/.ssh/staging_key -o IdentitiesOnly=yes -p "$PORT" "$USER_NAME@$HOST" 'cd ~/staging-app && php artisan tinker --execute="
+            \$demoShops = App\Models\Shop::where(\"slug\", \"like\", \"demo-%\")->pluck(\"id\");
+            \$testUsers = App\Models\User::where(fn (\$q) => \$q->where(\"email\", \"like\", \"%@staging.ozman.test\")->orWhere(\"email\", \"like\", \"%@local.test\")->orWhere(\"email\", \"like\", \"%@example.%\")->orWhere(\"phone\", \"like\", \"0599000%\"));
+            \$rows = [
+              \"users (all)\" => App\Models\User::count(),
+              \"users by role\" => App\Models\User::selectRaw(\"role, count(*) c\")->groupBy(\"role\")->pluck(\"c\", \"role\")->toJson(),
+              \"test accounts (test emails / 0599000… phones)\" => (clone \$testUsers)->count(),
+              \"deleted accounts\" => App\Models\User::where(\"email\", \"like\", \"deleted-%\")->count(),
+              \"shops (all)\" => App\Models\Shop::count(),
+              \"demo shops (slug demo-…)\" => \$demoShops->count(),
+              \"other shops\" => App\Models\Shop::whereNotIn(\"id\", \$demoShops)->count(),
+              \"products in demo shops\" => App\Models\Product::whereIn(\"shop_id\", \$demoShops)->count(),
+              \"products in other shops\" => App\Models\Product::whereNotIn(\"shop_id\", \$demoShops)->count(),
+              \"orders (all)\" => App\Models\FrontOrder::count(),
+              \"orders in demo shops\" => App\Models\FrontOrder::whereIn(\"shop_id\", \$demoShops)->count(),
+              \"orders by test accounts\" => App\Models\FrontOrder::whereIn(\"user_id\", (clone \$testUsers)->pluck(\"id\"))->count(),
+              \"orders by month\" => App\Models\FrontOrder::selectRaw(\"date_format(created_at, \\\"%Y-%m\\\") m, count(*) c\")->groupBy(\"m\")->pluck(\"c\", \"m\")->toJson(),
+              \"phones registered for push\" => App\Models\PushDevice::count(),
+              \"admin notifications\" => App\Models\AdminNotification::count(),
+              \"free market listings\" => class_exists(App\Models\MarketListing::class) ? App\Models\MarketListing::count() : \"-\",
+              \"promoter profiles\" => class_exists(App\Models\PromoterProfile::class) ? App\Models\PromoterProfile::count() : \"-\",
+            ];
+            foreach (\$rows as \$k => \$v) echo str_pad(\$k, 48), \$v, PHP_EOL;
+          " 2>&1; echo "=== uploaded files ==="; du -sh storage/app/public 2>/dev/null; du -sh storage/app/public/* 2>/dev/null | sort -rh | head -12'
