@@ -346,9 +346,13 @@ class CustomerAssistantTools
             return ['error' => 'None of these can be put in the basket now.', 'skipped' => $skipped];
         }
         // Kept as the item specs; the card is built fresh (prices, stock) each time the message is shown.
+        // Several calls in one reply (an old order, then another shop's item) add up to one basket.
+        $new = collect($lines)->map(fn ($line) => array_intersect_key($line, array_flip(['qty', 'variant_id', 'size', 'color'])) + ['product_id' => $line['product']['id']]);
         $cards['basket'] = [
-            'items' => collect($lines)->map(fn ($line) => array_intersect_key($line, array_flip(['qty', 'variant_id', 'size', 'color'])) + ['product_id' => $line['product']['id']])->all(),
-            'skipped' => $skipped,
+            'items' => collect($cards['basket']['items'] ?? [])->concat($new)
+                ->unique(fn ($item) => $item['product_id'].'|'.($item['variant_id'] ?? '').'|'.($item['size'] ?? '').'|'.($item['color'] ?? ''))
+                ->take(20)->values()->all(),
+            'skipped' => array_values(array_unique([...($cards['basket']['skipped'] ?? []), ...$skipped])),
         ];
         $shops = collect($lines)->groupBy(fn ($line) => $line['product']['shop_id'] ?? 0);
 

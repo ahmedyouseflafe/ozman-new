@@ -100,5 +100,12 @@ class AssistantBasketTest extends TestCase
         $this->assertSame([['name' => 'برغر', 'qty' => 3, 'price' => 30.0, 'shop_id' => $grill->id]], $result['ready']);
         $this->assertSame(['برغر مع إضافات'], $result['skipped']);
         $this->assertSame([['qty' => 3, 'product_id' => $burger->id]], $cards['basket']['items']);
+
+        // A second call in the same reply (another shop's item) adds to the same basket.
+        [$sweets, $sweetsCat] = $this->shop('sweets', 'sweets');
+        $knafeh = $this->product($sweets, $sweetsCat, 'كنافة', 15);
+        $tools->run('propose_basket', ['items' => [['product_id' => $knafeh->id]]], $lina, $cards);
+        $this->assertSame([$burger->id, $knafeh->id], array_column($cards['basket']['items'], 'product_id'));
+        $this->assertSame(['برغر مع إضافات'], $cards['basket']['skipped']);
     }
 }
