@@ -97,7 +97,31 @@ class AuthController extends Controller
         if (! \Illuminate\Support\Facades\Hash::check($request->input('password'), $user->password)) {
             throw \Illuminate\Validation\ValidationException::withMessages(['password' => 'كلمة السر مش صحيحة.']);
         }
-        abort_unless(in_array($user->role, ['customer', 'promoter'], true), 422, 'حسابات أصحاب المحلات والإدارة بتنحذف من خلال فريق أوزمان.');
+        abort_if($user->isSuperAdmin(), 422, 'حسابات الإدارة بتنحذف من لوحة التحكم.');
+
+        // An account tied to a shop (owner, staff, driver, distributor…) can't vanish on its own: the request
+        // reaches the Ozman team, who delete it within 7 days as the account-deletion page says.
+        if (! in_array($user->role, ['customer', 'promoter'], true)) {
+            $alreadyAsked = \App\Models\AdminNotification::where('type', 'account_deletion_requested')
+                ->where('subject_type', $user::class)->where('subject_id', $user->id)
+                ->where('created_at', '>=', now()->subDays(7))->exists();
+            if (! $alreadyAsked) {
+                $this->notifySuperAdmin(
+                    'account_deletion_requested',
+                    $user,
+                    'طلب حذف حساب',
+                    "{$user->name} ({$user->email}) طلب حذف حسابه من التطبيق. لازم ينحذف خلال 7 أيام.",
+                    route('users'),
+                    ['shop_id' => $user->shops()->value('id')]
+                );
+            }
+
+            return response()->json([
+                'deleted' => false,
+                'requested' => true,
+                'message' => 'وصل طلب حذف حسابك لفريق أوزمان، ومنحذفه خلال 7 أيام. إذا في محل مربوط بالحساب، منتواصل معك قبل.',
+            ]);
+        }
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($user) {
             ApiToken::where('user_id', $user->id)->delete();

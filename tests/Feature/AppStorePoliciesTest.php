@@ -47,11 +47,31 @@ class AppStorePoliciesTest extends TestCase
         $this->getJson('/api/v1/auth/me', $headers)->assertUnauthorized();
     }
 
-    public function test_shop_owners_cannot_delete_themselves_from_the_app(): void
+    public function test_a_shop_owner_asks_for_deletion_from_the_app_and_the_team_is_told_once(): void
     {
         $owner = User::factory()->create(['role' => 'shop_owner', 'is_active' => true, 'password' => Hash::make('secret-pass')]);
+        $shop = Shop::create(['user_id' => $owner->id, 'name' => 'S', 'slug' => 's-'.uniqid(), 'catalog_type' => 'clothing', 'is_active' => true]);
         [, $plain] = ApiToken::issue($owner);
-        $this->postJson('/api/v1/auth/delete-account', ['password' => 'secret-pass'], ['Authorization' => 'Bearer '.$plain])->assertStatus(422);
+        $headers = ['Authorization' => 'Bearer '.$plain];
+
+        $this->postJson('/api/v1/auth/delete-account', ['password' => 'wrong'], $headers)->assertStatus(422);
+        $this->postJson('/api/v1/auth/delete-account', ['password' => 'secret-pass'], $headers)
+            ->assertOk()->assertJsonPath('requested', true)->assertJsonPath('deleted', false);
+        $this->postJson('/api/v1/auth/delete-account', ['password' => 'secret-pass'], $headers)->assertOk();
+
+        // The shop keeps working until the team handles it; the team gets one notice, not one per tap.
         $this->assertTrue((bool) $owner->fresh()->is_active);
+        $notices = \App\Models\AdminNotification::where('type', 'account_deletion_requested')->get();
+        $this->assertCount(1, $notices);
+        $this->assertSame($shop->id, $notices[0]->shop_id);
+        $this->assertSame($owner->id, $notices[0]->subject_id);
+    }
+
+    public function test_an_admin_account_is_not_deleted_from_the_app(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'is_active' => true, 'password' => Hash::make('secret-pass')]);
+        [, $plain] = ApiToken::issue($admin);
+        $this->postJson('/api/v1/auth/delete-account', ['password' => 'secret-pass'], ['Authorization' => 'Bearer '.$plain])->assertStatus(422);
+        $this->assertTrue((bool) $admin->fresh()->is_active);
     }
 }
