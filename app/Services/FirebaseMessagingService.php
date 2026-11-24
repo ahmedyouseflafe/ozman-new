@@ -31,6 +31,11 @@ class FirebaseMessagingService
                             'sound' => 'default',
                         ],
                     ],
+                    // iPhones play no sound unless the message asks for one.
+                    'apns' => [
+                        'headers' => ['apns-priority' => '10'],
+                        'payload' => ['aps' => ['sound' => 'default']],
+                    ],
                 ],
             ])->throw();
     }
