@@ -38,7 +38,7 @@
     opacity: 0;
 }
 .oz-av[data-state="speaking"] .oz-av-talk {
-    animation: ozAvBreath 3.8s ease-in-out infinite, ozAvTalk 0.38s ease-in-out infinite alternate;
+    animation: ozAvBreath 3.8s ease-in-out infinite, ozAvTalk 1.44s linear infinite;
 }
 .oz-av[data-state="speaking"] .oz-av-f {
     animation-name: ozAvNod;
@@ -46,8 +46,8 @@
 }
 .oz-av[data-state="speaking"] .oz-av-talk {
     animation-name: ozAvNod, ozAvTalk;
-    animation-duration: 1.6s, 0.38s;
-    animation-direction: normal, alternate;
+    animation-duration: 1.6s, 1.44s;
+    animation-timing-function: ease-in-out, linear;
 }
 .oz-av[data-state="speaking"] .oz-av-blink {
     animation-name: ozAvNod, ozAvBlink;
@@ -91,7 +91,8 @@
 .oz-av[data-state="thinking"] .oz-av-dots i:nth-child(3) {
     animation-delay: 0.4s;
 }
-/* The frames melt into each other, so the smile and the talking look soft: eyes close and open in about a fifth of a second. */
+/* Eyes close and open in about a fifth of a second. Talking moves like syllables: short uneven beats, each change
+   quick, so there's never a long half-open blur; the talk frame only changes her mouth. */
 @keyframes ozAvBlink {
     0%,
     94.5% {
@@ -106,10 +107,79 @@
     }
 }
 @keyframes ozAvTalk {
-    0% {
-        opacity: 0.05;
+    0.00% {
+        opacity: 0.95;
     }
-    100% {
+    3.75% {
+        opacity: 0;
+    }
+    8.33% {
+        opacity: 0;
+    }
+    12.08% {
+        opacity: 0.98;
+    }
+    16.67% {
+        opacity: 0.98;
+    }
+    20.42% {
+        opacity: 0;
+    }
+    25.00% {
+        opacity: 0;
+    }
+    28.75% {
+        opacity: 0.87;
+    }
+    33.33% {
+        opacity: 0.87;
+    }
+    37.08% {
+        opacity: 0;
+    }
+    41.67% {
+        opacity: 0;
+    }
+    45.42% {
+        opacity: 0.84;
+    }
+    50.00% {
+        opacity: 0.84;
+    }
+    53.75% {
+        opacity: 0.89;
+    }
+    58.33% {
+        opacity: 0.89;
+    }
+    62.08% {
+        opacity: 0;
+    }
+    66.67% {
+        opacity: 0;
+    }
+    70.42% {
+        opacity: 0;
+    }
+    75.00% {
+        opacity: 0;
+    }
+    78.75% {
+        opacity: 0.86;
+    }
+    83.33% {
+        opacity: 0.86;
+    }
+    87.08% {
+        opacity: 0.99;
+    }
+    91.67% {
+        opacity: 0.99;
+    }
+    95.42% {
+        opacity: 0.95;
+    }
+    100.00% {
         opacity: 0.95;
     }
 }
