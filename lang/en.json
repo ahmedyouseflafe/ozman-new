@@ -1747,5 +1747,22 @@
   "على شرائك من :shop. شكراً إنك اخترت محل على أوزمان.": "For your purchase at :shop. Thanks for choosing a shop on Ozman.",
   "شوف نقاطي ←": "See my points ←",
   "ما انضافت النقاط": "The points weren't added",
-  "السلة من أكثر من محل: كل محل بيوصله طلبه لحاله.": "The basket has items from several shops: each shop gets its own order."
+  "السلة من أكثر من محل: كل محل بيوصله طلبه لحاله.": "The basket has items from several shops: each shop gets its own order.",
+  "زبون جديد": "New customer",
+  "طلبات مروّجين بانتظار الموافقة": "Promoter requests awaiting approval",
+  "انلغى الكود": "The code was cancelled",
+  "نقاط للزبون بالمحل": "In-store points",
+  "الزبون بيمسحه بتطبيق أوزمان أو بكاميرا جواله · باقي :time": "The customer scans it with the Ozman app or the phone camera · :time left",
+  "على شراء بـ": "On a purchase of",
+  "اعمل الكود": "Make the code",
+  "مبلغ الشراء ₪": "Purchase amount ₪",
+  "لـ :name": "For :name",
+  "ما قدرنا نعمل الكود، جرّب كمان مرة.": "We couldn't make the code, try again.",
+  "كود النقاط": "Points code",
+  "السوشال ميديا": "Social media",
+  "نقاط الولاء": "Loyalty points",
+  "الكود بينفع مرة وحدة، لمدة :minutes دقايق.": "The code works once, for :minutes minutes.",
+  "خلص وقت الكود": "The code expired",
+  "اكتب مبلغ الشراء، وورّي الزبون الكود ليمسحه بتطبيق أوزمان أو بكاميرا جواله. النقاط بتنضاف لحسابه فوراً.": "Type the purchase amount and show the customer the code to scan with the Ozman app or the phone camera. The points go to their account at once.",
+  "إلغاء الكود": "Cancel the code"
 }

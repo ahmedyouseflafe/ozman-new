@@ -79,7 +79,9 @@ class EnsureAdminAccess
             $isShopOutletRoute = str_starts_with((string) $request->route()?->getName(), 'shop-outlets.');
             // The assistant only reads the owner's own shop and proposes changes that run through the same permission checks.
             $isAssistantRoute = str_starts_with((string) $request->route()?->getName(), 'shop-assistant.');
-            abort_unless($isSalonAppointmentRoute || $isShopOutletRoute || $isAssistantRoute || $user->canAccessRouteName($request->route()?->getName()), 403);
+            // Points for purchases at the owner's own till; the controller limits every code to the owner's shops.
+            $isTillPointsRoute = in_array($request->route()?->getName(), ['store-points.till', 'store-points.make', 'store-points.status', 'store-points.cancel'], true);
+            abort_unless($isSalonAppointmentRoute || $isShopOutletRoute || $isAssistantRoute || $isTillPointsRoute || $user->canAccessRouteName($request->route()?->getName()), 403);
             $activeOwnedShopIds = $activeOwnedShops->pluck('id')->map(fn ($id) => (int) $id)->all();
         }
 

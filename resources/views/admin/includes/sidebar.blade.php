@@ -135,6 +135,14 @@
         </a>
         @endif
 
+        @if($canSee(['store-points.till']))
+        <a href="{{ route('store-points.till', $previewShopId ? ['shop_id' => $previewShopId] : []) }}"
+             class="admin-sidebar-item nav-item {{ request()->routeIs('store-points.*') ? 'active' : '' }}">
+             <i class="ti ti-qrcode" aria-hidden="true"></i>
+             {{ __('نقاط للزبون بالمحل') }}
+        </a>
+        @endif
+
         @if($canSee(['social.index']))
         <a href="{{ route('social.index', $previewShopId ? ['shop_id' => $previewShopId] : []) }}"
              class="admin-sidebar-item nav-item {{ request()->routeIs('social.*') ? 'active' : '' }}">

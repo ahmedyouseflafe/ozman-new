@@ -354,6 +354,11 @@ Route::get('/display/shop/{shop}', [ScreenController::class, 'shopDisplay'])->na
 Route::middleware(['auth', 'admin.access'])->group(function () {
     // What customers searched for and didn't find (shop owners: their shops; admins: all of Ozman).
     Route::get('/lost-demand', [\App\Http\Controllers\LostDemandPageController::class, 'index'])->name('demand.index');
+    // Points for purchases in the shop: the till's one-time QR, like the app's.
+    Route::get('/store-points', [\App\Http\Controllers\StorePointsTillController::class, 'page'])->name('store-points.till');
+    Route::post('/store-points/shops/{shop}', [\App\Http\Controllers\StorePointsTillController::class, 'store'])->middleware('throttle:30,1')->name('store-points.make');
+    Route::get('/store-points/codes/{code}', [\App\Http\Controllers\StorePointsTillController::class, 'show'])->name('store-points.status');
+    Route::delete('/store-points/codes/{code}', [\App\Http\Controllers\StorePointsTillController::class, 'destroy'])->name('store-points.cancel');
     Route::get('/push-notifications', [PushNotificationController::class, 'index'])->name('push-notifications.index');
     Route::post('/push-notifications', [PushNotificationController::class, 'send'])->name('push-notifications.send');
     Route::get('/shops/{shop}/salon-appointments', [SalonAppointmentController::class, 'index'])->name('salon-appointments.index');

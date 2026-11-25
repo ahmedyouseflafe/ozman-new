@@ -164,6 +164,7 @@ return [
             'description' => 'أرصدة نقاط الولاء لعملاء المجتمع والتعديل اليدوي عليها.',
             'permissions' => [
                 'customer_points.view' => ['label' => 'عرض نقاط العملاء', 'description' => 'قائمة العملاء وأرصدتهم المؤكدة والمعلّقة.', 'routes' => ['customer-points.index']],
+                'customer_points.till' => ['label' => 'نقاط للزبون بالمحل (كود QR)', 'description' => 'عمل كود لمرة وحدة لشراء من المحل، الزبون بيمسحه وبتنضافله النقاط.', 'routes' => ['store-points.till', 'store-points.make', 'store-points.status', 'store-points.cancel']],
                 'customer_points.adjust' => ['label' => 'تعديل نقاط العملاء يدوياً', 'description' => 'إضافة أو خصم نقاط مع سبب إجباري يُسجَّل باسم الموظف.', 'routes' => ['customer-points.adjust']],
             ],
         ],
