@@ -222,7 +222,11 @@
         }
 
         // A short delay lets the visitor see the page first; browsers also trust prompts after engagement.
-        window.setTimeout(mountPrompt, Number(config.promptDelayMs ?? 6000));
+        // While Fulla is introducing herself, the offers prompt waits until she's closed.
+        const mountWhenFree = () => (window.OzmanFullaIntroOpen
+            ? window.addEventListener('ozman:fulla-intro-closed', () => window.setTimeout(mountPrompt, 1500), { once: true })
+            : mountPrompt());
+        window.setTimeout(mountWhenFree, Number(config.promptDelayMs ?? 6000));
     };
 
     if (document.readyState === 'loading') {

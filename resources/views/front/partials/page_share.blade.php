@@ -17,4 +17,5 @@
 @once
     @include('front.partials.product_like_assets')
     @include('front.partials.shopping_assistant')
+    @include('front.partials.fulla_intro')
 @endonce

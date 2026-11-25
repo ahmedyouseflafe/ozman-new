@@ -483,3 +483,5 @@
 @once
 @viewScript('admin.includes.sidebar')
 @endonce
+{{-- Fulla introduces herself to shop owners the first time they open the dashboard. --}}
+@include('front.partials.fulla_intro', ['onDashboard' => true])

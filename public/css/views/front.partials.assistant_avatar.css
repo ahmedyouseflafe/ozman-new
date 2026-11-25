@@ -32,13 +32,13 @@
 /* Blink and talk frames sit on top, hidden until their moment. */
 .oz-av-blink {
     opacity: 0;
-    animation: ozAvBreath 3.8s ease-in-out infinite, ozAvBlink 4.3s steps(1, end) infinite;
+    animation: ozAvBreath 3.8s ease-in-out infinite, ozAvBlink 4.3s ease-in-out infinite;
 }
 .oz-av-talk {
     opacity: 0;
 }
 .oz-av[data-state="speaking"] .oz-av-talk {
-    animation: ozAvBreath 3.8s ease-in-out infinite, ozAvTalk 0.52s steps(1, end) infinite;
+    animation: ozAvBreath 3.8s ease-in-out infinite, ozAvTalk 0.38s ease-in-out infinite alternate;
 }
 .oz-av[data-state="speaking"] .oz-av-f {
     animation-name: ozAvNod;
@@ -46,7 +46,8 @@
 }
 .oz-av[data-state="speaking"] .oz-av-talk {
     animation-name: ozAvNod, ozAvTalk;
-    animation-duration: 1.6s, 0.52s;
+    animation-duration: 1.6s, 0.38s;
+    animation-direction: normal, alternate;
 }
 .oz-av[data-state="speaking"] .oz-av-blink {
     animation-name: ozAvNod, ozAvBlink;
@@ -90,23 +91,26 @@
 .oz-av[data-state="thinking"] .oz-av-dots i:nth-child(3) {
     animation-delay: 0.4s;
 }
+/* The frames melt into each other, so the smile and the talking look soft: eyes close and open in about a fifth of a second. */
 @keyframes ozAvBlink {
-    0% {
+    0%,
+    94.5% {
         opacity: 0;
     }
-    96% {
+    96.5% {
         opacity: 1;
     }
-    99% {
+    99%,
+    100% {
         opacity: 0;
     }
 }
 @keyframes ozAvTalk {
     0% {
-        opacity: 1;
+        opacity: 0.05;
     }
-    50% {
-        opacity: 0;
+    100% {
+        opacity: 0.95;
     }
 }
 @keyframes ozAvBreath {
