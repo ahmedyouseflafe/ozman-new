@@ -153,14 +153,15 @@
         if (calm) return done();
         // She "says" it: the words appear as if spoken, while her mouth moves.
         if (av) av.dataset.state = 'speaking';
-        const text = full.join('\n');
+        // Counted in letters as people see them, so an emoji (🌸) is never cut in half while typing.
+        const letters = Array.from(full.join('\n'));
         let n = 0;
         timer = setInterval(() => {
             n += 1;
-            const shown = text.slice(0, n), cut = shown.indexOf('\n');
+            const shown = letters.slice(0, n).join(''), cut = shown.indexOf('\n');
             hello.textContent = cut < 0 ? shown : shown.slice(0, cut);
             intro.textContent = cut < 0 ? '' : shown.slice(cut + 1);
-            if (n >= text.length) done();
+            if (n >= letters.length) done();
         }, 24);
     }
 
