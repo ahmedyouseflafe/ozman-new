@@ -36,6 +36,8 @@ class CustomerAssistantController extends Controller
             'message' => ['required', 'string', 'max:1000'],
             'conversation_id' => ['nullable', 'integer'],
             'shop_id' => ['nullable', 'integer'],
+            // "robot": spoken to Fulla the robot in the app.
+            'via' => ['nullable', 'string', 'in:chat,robot'],
         ]);
         if (! $this->assistant->enabled()) {
             return response()->json(['message' => __('المساعد مش مفعّل هلقيت.')], 503);
@@ -48,7 +50,7 @@ class CustomerAssistantController extends Controller
         }
         $conversation = $this->assistant->conversation($user, $data['conversation_id'] ?? null);
         try {
-            $message = $this->assistant->reply($conversation, $user, $data['message'], $this->shop($request));
+            $message = $this->assistant->reply($conversation, $user, $data['message'], $this->shop($request), ($data['via'] ?? null) === 'robot');
         } catch (\Throwable $e) {
             report($e);
 
@@ -124,7 +126,7 @@ class CustomerAssistantController extends Controller
             'role' => $message->role,
             'content' => $message->content,
             'created_at' => $message->created_at?->toIso8601String(),
-        ] + ($message->role === 'assistant' ? CustomerAssistantTools::cardsFor($message->attachments) : ['products' => [], 'shops' => [], 'actions' => [], 'basket' => null]);
+        ] + ($message->role === 'assistant' ? CustomerAssistantTools::cardsFor($message->attachments) : ['products' => [], 'shops' => [], 'actions' => [], 'basket' => null, 'guide' => []]);
     }
 
     private function usage(Request $request): array

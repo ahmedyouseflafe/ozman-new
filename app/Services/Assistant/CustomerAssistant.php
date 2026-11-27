@@ -52,7 +52,8 @@ class CustomerAssistant
         return $query->latest('id')->first() ?? AssistantConversation::create(['kind' => 'customer', 'user_id' => $user->id]);
     }
 
-    public function reply(AssistantConversation $conversation, User $user, string $text, ?Shop $shop = null): AssistantMessage
+    /** With $robot, the question was spoken to Fulla the robot in the app: a short answer read aloud, and she can point at buttons. */
+    public function reply(AssistantConversation $conversation, User $user, string $text, ?Shop $shop = null, bool $robot = false): AssistantMessage
     {
         if (! $this->enabled()) {
             throw new RuntimeException('The assistant is not configured.');
@@ -61,8 +62,8 @@ class CustomerAssistant
         $cards = ['products' => [], 'shops' => []];
         $result = $this->engine->run(
             config('services.anthropic.customer_assistant.model') ?: config('services.anthropic.model'),
-            $this->system($user, $shop),
-            $this->tools->definitions($shop),
+            $this->system($user, $shop, $robot),
+            $this->tools->definitions($shop, $robot),
             [...$this->engine->history($conversation, self::HISTORY), $this->engine->userTurn($text)],
             function (string $name, array $input) use ($user, &$cards, $conversation) {
                 return $this->tools->run($name, $input, $user, $cards, $conversation);
@@ -85,8 +86,18 @@ class CustomerAssistant
         });
     }
 
-    private function system(User $user, ?Shop $shop): string
+    private function system(User $user, ?Shop $shop, bool $robot = false): string
     {
+        $voice = $robot ? <<<'TXT'
+
+Right now the customer is talking to you out loud through your little robot, who flies over the app's screens.
+Your reply is read aloud and shown in a small bubble, so:
+- Answer in one to three short spoken sentences. No bullets, no bold, no lists; name at most three things (the cards show the rest).
+- When they ask how or where to do something in the app (order, the basket, search, scan a table, points, follow an order,
+  find shops, the free market, their account), call guide_to with the buttons in order, and say in a few words that you'll show them.
+- For things to buy, still use show_products / propose_basket: they appear as cards and a button in the bubble.
+TXT : '';
+
         $now = now(CustomerAssistantTools::TZ);
         $context = $shop
             ? "The customer opened you from the page of the shop \"{$shop->name}\" (id {$shop->id}, kind {$shop->catalog_type}). Questions without a shop name are about this shop; search other shops only when they ask."
@@ -127,6 +138,7 @@ Rules:
 - Stay on shopping on Ozman. For unrelated requests, say briefly you help with shopping on Ozman.
 - Reply in the language of the customer's latest message: Arabic in a friendly Palestinian/Levantine dialect, Hebrew or English.
   Short and friendly. Plain text, "- " bullets, **bold** for prices and key facts. No tables, no links (the cards have the buttons).
+{$voice}
 TXT;
     }
 }

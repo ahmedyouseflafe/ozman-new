@@ -24,11 +24,39 @@ class CustomerAssistantTools
 
     public function __construct(private LoyaltyPoints $loyalty) {}
 
-    public function definitions(?Shop $shop): array
+    /**
+     * Places in the app that Fulla the robot can fly to and point at, with what each one is.
+     * The app marks the same names on its buttons.
+     */
+    public const SPOTS = [
+        'nav.home' => 'bottom bar: home tab',
+        'nav.shops' => 'bottom bar: shops tab (all shops, by kind)',
+        'nav.cart' => 'bottom bar: basket tab',
+        'nav.more' => 'bottom bar: "more" (free market, promoters, raffle cards)',
+        'nav.account' => 'bottom bar: account tab (profile, orders, points, favourites, language, sign in)',
+        'home.search' => 'home: search button (shops and products, also by voice)',
+        'home.qr' => 'home: scan a restaurant table QR to order to the table',
+        'home.order' => 'home: the card of the customer\'s order on its way (tap to follow it)',
+        'home.offers' => 'home: today\'s offers',
+        'account.points' => 'account tab: "my points"',
+        'product.add' => 'product page: the "add to basket" button',
+        'cart.checkout' => 'basket tab: the "continue" button that goes to sending the order',
+        'checkout.send' => 'order page: the "send order" button',
+    ];
+
+    public function definitions(?Shop $shop, bool $robot = false): array
     {
         $type = ['type' => 'string', 'enum' => self::TYPES, 'description' => 'kind of shop'];
+        $guide = $robot ? [['name' => 'guide_to', 'description' => 'Fly the robot to buttons in the app, one step after another, pointing at each and saying a short line, so the customer sees where to tap. Use it when they ask how or where to do something in the app. Steps run in order; each next step waits until the customer tapped and that button is on screen. Spots: '
+            .collect(self::SPOTS)->map(fn ($what, $spot) => "$spot = $what")->implode('; ').'.',
+            'input_schema' => ['type' => 'object', 'required' => ['steps'], 'properties' => [
+                'steps' => ['type' => 'array', 'minItems' => 1, 'maxItems' => 5, 'items' => ['type' => 'object', 'required' => ['spot', 'say'], 'properties' => [
+                    'spot' => ['type' => 'string', 'enum' => array_keys(self::SPOTS)],
+                    'say' => ['type' => 'string', 'maxLength' => 90, 'description' => 'a few words shown next to the button, in the customer\'s language, e.g. "اكبس هون عشان تفتح السلة"'],
+                ]]],
+            ]]]] : [];
 
-        return [
+        return [...$guide,
             ['name' => 'search_products', 'description' => 'Find products in shops on Ozman by keywords (Arabic, Hebrew or English names). Short keywords work best, e.g. "برغر" or "فستان". Filter by shop, kind of shop, price, or only discounted items. Returns id, name, price, discount price, shop, whether the shop is open now.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'query' => ['type' => 'string'],
@@ -97,6 +125,21 @@ class CustomerAssistantTools
         ];
     }
 
+    /** The robot's steps: known spots only, short lines, at most five. */
+    private function guide(mixed $steps, array &$cards): array
+    {
+        $clean = collect(is_array($steps) ? $steps : [])
+            ->filter(fn ($step) => is_array($step) && isset(self::SPOTS[$step['spot'] ?? '']))
+            ->map(fn ($step) => ['spot' => $step['spot'], 'say' => mb_substr(trim((string) ($step['say'] ?? '')), 0, 90)])
+            ->take(5)->values()->all();
+        if (! $clean) {
+            throw new \InvalidArgumentException('No known spots. Use one of: '.implode(', ', array_keys(self::SPOTS)));
+        }
+        $cards['guide'] = $clean;
+
+        return ['shown' => count($clean), 'note' => 'The robot will fly to these buttons after your reply is read. Mention it in a few words ("خليني أوريك"), don\'t describe the buttons again.'];
+    }
+
     /** @param  array{products: int[], shops: int[], actions?: int[]}  $cards */
     public function run(string $name, array $input, ?User $user, array &$cards, ?AssistantConversation $conversation = null): array
     {
@@ -116,6 +159,7 @@ class CustomerAssistantTools
                 'propose_booking' => $this->proposeBooking($input, $user, $conversation, $cards),
                 'show_products' => $this->show('products', $input['product_ids'] ?? [], $cards),
                 'show_shops' => $this->show('shops', $input['shop_ids'] ?? [], $cards),
+                'guide_to' => $this->guide($input['steps'] ?? [], $cards),
                 default => ['error' => 'unknown tool'],
             };
         } catch (\InvalidArgumentException $e) {
@@ -521,7 +565,9 @@ class CustomerAssistantTools
             $basket = $built['lines'] ? ['lines' => $built['lines'], 'skipped' => array_values(array_unique([...($cards['basket']['skipped'] ?? []), ...$built['skipped']]))] : null;
         }
 
-        return ['products' => $products->all(), 'shops' => $shops->all(), 'actions' => $actions, 'basket' => $basket];
+        $guide = collect($cards['guide'] ?? [])->filter(fn ($step) => is_array($step) && isset(self::SPOTS[$step['spot'] ?? '']))->values()->all();
+
+        return ['products' => $products->all(), 'shops' => $shops->all(), 'actions' => $actions, 'basket' => $basket, 'guide' => $guide];
     }
 
     public static function presentAction(AssistantAction $action): array
