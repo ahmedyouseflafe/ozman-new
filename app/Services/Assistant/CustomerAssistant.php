@@ -53,7 +53,8 @@ class CustomerAssistant
     }
 
     /** With $robot, the question was spoken to Fulla the robot in the app: a short answer read aloud, and she can point at buttons. */
-    public function reply(AssistantConversation $conversation, User $user, string $text, ?Shop $shop = null, bool $robot = false): AssistantMessage
+    /** @param  array<string, array>  $basket  with $robot: the app's basket now, key (L1…) → line */
+    public function reply(AssistantConversation $conversation, User $user, string $text, ?Shop $shop = null, bool $robot = false, array $basket = []): AssistantMessage
     {
         if (! $this->enabled()) {
             throw new RuntimeException('The assistant is not configured.');
@@ -61,9 +62,10 @@ class CustomerAssistant
         $text = trim($text);
         $cards = ['products' => [], 'shops' => []];
         $this->tools->robot = $robot;
+        $this->tools->basket = $robot ? $basket : [];
         $result = $this->engine->run(
             config('services.anthropic.customer_assistant.model') ?: config('services.anthropic.model'),
-            $this->system($user, $shop, $robot),
+            $this->system($user, $shop, $robot, $basket),
             $this->tools->definitions($shop, $robot),
             [...$this->engine->history($conversation, self::HISTORY), $this->engine->userTurn($text)],
             function (string $name, array $input) use ($user, &$cards, $conversation) {
@@ -87,8 +89,10 @@ class CustomerAssistant
         });
     }
 
-    private function system(User $user, ?Shop $shop, bool $robot = false): string
+    private function system(User $user, ?Shop $shop, bool $robot = false, array $basket = []): string
     {
+        $inBasket = collect($basket)->map(fn ($line, $key) => "{$key} = {$line['qty']}× {$line['name']}"
+            .(empty($line['options']) ? '' : " ({$line['options']})")." from {$line['shop']}, {$line['price']}₪ each")->implode('; ');
         $voice = $robot ? <<<'TXT'
 
 Right now the customer is talking to you out loud: you are the little robot girl flying over the app's screens
@@ -104,10 +108,15 @@ Your reply is read aloud and shown in a small bubble, so:
   - "show me" / "ورجيني" / "افتحلي" a product or shop, or their basket, orders or points: call open_page; it opens on their screen.
   - Recommendations: show_products (small cards in your bubble).
 - It's one ongoing conversation: "it", "that one", "the dress" mean what you just talked about. Use the ids from earlier results.
-- Here adding to the basket happens at once (not by a button), so you may say you added it; that's not ordering. You still never
-  order, pay, cancel or change orders: they send the order from the basket themselves.
+- Here adding to the basket happens at once (not by a button), so you may say you added it.
+- You can also send orders from their basket with send_order, only the lines they want; the rest stays. First say exactly what
+  will be sent (items, shop, pickup, total) and ask "أبعته؟"; call send_order only when they say yes. Payment is on pickup.
+  For delivery, open the basket page (open_page basket) so they type the address. You never pay, cancel or change orders.
 - Talk to the customer in the masculine (the general form) unless they're clearly a woman, and say «اكبس» for tapping.
 TXT : '';
+        if ($robot) {
+            $voice .= '- Their basket now: '.($inBasket !== '' ? $inBasket : 'empty').".\n";
+        }
 
         $now = now(CustomerAssistantTools::TZ);
         $context = $shop
@@ -152,4 +161,5 @@ Rules:
 {$voice}
 TXT;
     }
+
 }

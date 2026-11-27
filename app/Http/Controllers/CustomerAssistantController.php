@@ -38,6 +38,14 @@ class CustomerAssistantController extends Controller
             'shop_id' => ['nullable', 'integer'],
             // "robot": spoken to Fulla the robot in the app.
             'via' => ['nullable', 'string', 'in:chat,robot'],
+            // With "robot": what is in the app's basket now, so she can send part of it.
+            'basket' => ['nullable', 'array', 'max:30'],
+            'basket.*.key' => ['required_with:basket', 'string', 'regex:/^L\d{1,2}$/'],
+            'basket.*.name' => ['required_with:basket', 'string', 'max:120'],
+            'basket.*.qty' => ['required_with:basket', 'integer', 'min:1', 'max:99'],
+            'basket.*.shop' => ['required_with:basket', 'string', 'max:120'],
+            'basket.*.price' => ['nullable', 'numeric', 'min:0'],
+            'basket.*.options' => ['nullable', 'string', 'max:160'],
         ]);
         if (! $this->assistant->enabled()) {
             return response()->json(['message' => __('المساعد مش مفعّل هلقيت.')], 503);
@@ -50,7 +58,11 @@ class CustomerAssistantController extends Controller
         }
         $conversation = $this->assistant->conversation($user, $data['conversation_id'] ?? null);
         try {
-            $message = $this->assistant->reply($conversation, $user, $data['message'], $this->shop($request), ($data['via'] ?? null) === 'robot');
+            $basket = collect($data['basket'] ?? [])->keyBy('key')->map(fn ($line) => [
+                'name' => $line['name'], 'qty' => (int) $line['qty'], 'shop' => $line['shop'],
+                'price' => (float) ($line['price'] ?? 0), 'options' => (string) ($line['options'] ?? ''),
+            ])->all();
+            $message = $this->assistant->reply($conversation, $user, $data['message'], $this->shop($request), ($data['via'] ?? null) === 'robot', $basket);
         } catch (\Throwable $e) {
             report($e);
 
@@ -126,7 +138,7 @@ class CustomerAssistantController extends Controller
             'role' => $message->role,
             'content' => $message->content,
             'created_at' => $message->created_at?->toIso8601String(),
-        ] + ($message->role === 'assistant' ? CustomerAssistantTools::cardsFor($message->attachments) : ['products' => [], 'shops' => [], 'actions' => [], 'basket' => null, 'guide' => [], 'open' => null]);
+        ] + ($message->role === 'assistant' ? CustomerAssistantTools::cardsFor($message->attachments) : ['products' => [], 'shops' => [], 'actions' => [], 'basket' => null, 'guide' => [], 'open' => null, 'send' => []]);
     }
 
     private function usage(Request $request): array

@@ -47,6 +47,9 @@ class CustomerAssistantTools
     /** The question was spoken to Fulla the robot in the app: she adds to the basket and opens pages herself. */
     public bool $robot = false;
 
+    /** What is in the customer's basket in the app right now (key → line), sent with a question to the robot. */
+    public array $basket = [];
+
     /** Pages the robot can open on the customer's screen. */
     public const PAGES = ['product', 'shop', 'basket', 'orders', 'points'];
 
@@ -61,6 +64,11 @@ class CustomerAssistantTools
                     'say' => ['type' => 'string', 'maxLength' => 90, 'description' => 'a few words shown next to the button, in the customer\'s language, e.g. "اكبس هون عشان تفتح السلة"'],
                 ]]],
             ]]],
+            ['name' => 'send_order', 'description' => 'Send orders from the customer\'s basket in the app, only the lines they chose (by key, e.g. L1); the rest stays in the basket. Each shop gets its own order, picked up at the shop (or to their table if they scanned one); payment on pickup. Call it ONLY after you told them exactly what will be sent (items, shop, total) and they said yes in their latest message. For delivery, open the basket page instead (they type the address there).',
+                'input_schema' => ['type' => 'object', 'required' => ['lines', 'customer_said_yes'], 'properties' => [
+                    'lines' => ['type' => 'array', 'minItems' => 1, 'maxItems' => 30, 'items' => ['type' => 'string']],
+                    'customer_said_yes' => ['type' => 'boolean', 'description' => 'true only if their latest message confirms sending exactly these'],
+                ]]],
             ['name' => 'open_page', 'description' => 'Open a page on the customer\'s screen right away: a product (its photos, price, options), a shop, their basket, their orders or their points. Use it when they say show me / open it / let me see it, or when seeing it is the natural next step. product and shop need the id from search results.',
                 'input_schema' => ['type' => 'object', 'required' => ['page'], 'properties' => [
                     'page' => ['type' => 'string', 'enum' => self::PAGES],
@@ -134,6 +142,23 @@ class CustomerAssistantTools
             ['name' => 'show_shops', 'description' => 'Show shop cards under your answer (logo, open now, open button). Up to 6 ids from search results.',
                 'input_schema' => ['type' => 'object', 'required' => ['shop_ids'], 'properties' => ['shop_ids' => ['type' => 'array', 'items' => ['type' => 'integer'], 'maxItems' => 6]]]],
         ];
+    }
+
+    /** Orders the app sends from its basket: only lines that are in it, and only after the customer said yes. */
+    private function sendOrder(array $input, array &$cards): array
+    {
+        if (($input['customer_said_yes'] ?? false) !== true) {
+            return ['error' => 'Not sent. Tell them what will be sent and ask; call this only after they say yes.'];
+        }
+        $lines = collect((array) ($input['lines'] ?? []))->map(fn ($key) => (string) $key)->unique()->values();
+        $unknown = $lines->reject(fn ($key) => isset($this->basket[$key]));
+        if ($lines->isEmpty() || $unknown->isNotEmpty()) {
+            return ['error' => 'Use the keys of lines in their basket ('.(implode(', ', array_keys($this->basket)) ?: 'it is empty').').'];
+        }
+        $cards['send'] = ['lines' => $lines->all()];
+        $chosen = $lines->map(fn ($key) => $this->basket[$key]);
+
+        return ['sending' => $chosen->all(), 'note' => 'The app sends these now (each shop its own order) and shows the order numbers. Say in a few words that you are sending them; the rest stays in the basket.'];
     }
 
     /** For each item, the sizes / colours its product offers when none was given (and the given one when it isn't offered). */
@@ -213,6 +238,7 @@ class CustomerAssistantTools
                 'show_shops' => $this->show('shops', $input['shop_ids'] ?? [], $cards),
                 'guide_to' => $this->guide($input['steps'] ?? [], $cards),
                 'open_page' => $this->openPage($input, $cards),
+                'send_order' => $this->sendOrder($input, $cards),
                 default => ['error' => 'unknown tool'],
             };
         } catch (\InvalidArgumentException $e) {
@@ -625,11 +651,12 @@ class CustomerAssistantTools
             $basket = $built['lines'] ? ['lines' => $built['lines'], 'skipped' => array_values(array_unique([...($cards['basket']['skipped'] ?? []), ...$built['skipped']]))] : null;
         }
 
+        $send = collect($cards['send']['lines'] ?? [])->filter(fn ($key) => is_string($key) && preg_match('/^L\d{1,2}$/', $key))->values()->all();
         $open = isset($cards['open']['page']) && in_array($cards['open']['page'], self::PAGES, true)
             ? ['page' => $cards['open']['page'], 'id' => isset($cards['open']['id']) ? (int) $cards['open']['id'] : null] : null;
         $guide = collect($cards['guide'] ?? [])->filter(fn ($step) => is_array($step) && isset(self::SPOTS[$step['spot'] ?? '']))->values()->all();
 
-        return ['products' => $products->all(), 'shops' => $shops->all(), 'actions' => $actions, 'basket' => $basket, 'guide' => $guide, 'open' => $open];
+        return ['products' => $products->all(), 'shops' => $shops->all(), 'actions' => $actions, 'basket' => $basket, 'guide' => $guide, 'open' => $open, 'send' => $send];
     }
 
     public static function presentAction(AssistantAction $action): array

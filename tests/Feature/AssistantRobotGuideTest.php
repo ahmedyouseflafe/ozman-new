@@ -109,4 +109,33 @@ class AssistantRobotGuideTest extends TestCase
         $this->assertArrayNotHasKey('error', $result);
         $this->assertSame('M', CustomerAssistantTools::cardsFor($cards)['basket']['lines'][0]['size']);
     }
+
+    public function test_the_robot_sends_only_lines_in_the_basket_and_only_after_a_yes(): void
+    {
+        $tools = app(CustomerAssistantTools::class);
+        $tools->robot = true;
+        $tools->basket = [
+            'L1' => ['name' => 'كنافة', 'qty' => 5, 'shop' => 'حلويات', 'price' => 65, 'options' => ''],
+            'L2' => ['name' => 'جاكيت', 'qty' => 1, 'shop' => 'ستايل', 'price' => 199, 'options' => 'M · أسود'],
+        ];
+        $this->assertContains('send_order', collect($tools->definitions(null, true))->pluck('name')->all());
+        $this->assertNotContains('send_order', collect($tools->definitions(null))->pluck('name')->all());
+
+        $cards = [];
+        $this->assertArrayHasKey('error', $tools->run('send_order', ['lines' => ['L1'], 'customer_said_yes' => false], null, $cards));
+        $this->assertArrayHasKey('error', $tools->run('send_order', ['lines' => ['L9'], 'customer_said_yes' => true], null, $cards));
+        $this->assertSame([], CustomerAssistantTools::cardsFor($cards)['send']);
+
+        $result = $tools->run('send_order', ['lines' => ['L1'], 'customer_said_yes' => true], null, $cards);
+        $this->assertSame('كنافة', $result['sending'][0]['name']);
+        $this->assertSame(['L1'], CustomerAssistantTools::cardsFor($cards)['send']);
+    }
+
+    public function test_the_app_basket_is_checked_when_it_comes_with_a_question(): void
+    {
+        $lina = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+        [, $token] = \App\Models\ApiToken::issue($lina);
+        $this->postJson('/api/v1/assistant', ['message' => 'ابعت', 'via' => 'robot', 'basket' => [['key' => 'X1; drop', 'name' => 'a', 'qty' => 1, 'shop' => 's']]],
+            ['Authorization' => 'Bearer '.$token, 'Accept' => 'application/json'])->assertStatus(422)->assertJsonValidationErrors('basket.0.key');
+    }
 }
