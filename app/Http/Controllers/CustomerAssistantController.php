@@ -126,7 +126,7 @@ class CustomerAssistantController extends Controller
             'role' => $message->role,
             'content' => $message->content,
             'created_at' => $message->created_at?->toIso8601String(),
-        ] + ($message->role === 'assistant' ? CustomerAssistantTools::cardsFor($message->attachments) : ['products' => [], 'shops' => [], 'actions' => [], 'basket' => null, 'guide' => []]);
+        ] + ($message->role === 'assistant' ? CustomerAssistantTools::cardsFor($message->attachments) : ['products' => [], 'shops' => [], 'actions' => [], 'basket' => null, 'guide' => [], 'open' => null]);
     }
 
     private function usage(Request $request): array

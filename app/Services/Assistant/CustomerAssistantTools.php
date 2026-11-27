@@ -44,6 +44,12 @@ class CustomerAssistantTools
         'checkout.send' => 'order page: the "send order" button',
     ];
 
+    /** The question was spoken to Fulla the robot in the app: she adds to the basket and opens pages herself. */
+    public bool $robot = false;
+
+    /** Pages the robot can open on the customer's screen. */
+    public const PAGES = ['product', 'shop', 'basket', 'orders', 'points'];
+
     public function definitions(?Shop $shop, bool $robot = false): array
     {
         $type = ['type' => 'string', 'enum' => self::TYPES, 'description' => 'kind of shop'];
@@ -54,7 +60,12 @@ class CustomerAssistantTools
                     'spot' => ['type' => 'string', 'enum' => array_keys(self::SPOTS)],
                     'say' => ['type' => 'string', 'maxLength' => 90, 'description' => 'a few words shown next to the button, in the customer\'s language, e.g. "اكبس هون عشان تفتح السلة"'],
                 ]]],
-            ]]]] : [];
+            ]]],
+            ['name' => 'open_page', 'description' => 'Open a page on the customer\'s screen right away: a product (its photos, price, options), a shop, their basket, their orders or their points. Use it when they say show me / open it / let me see it, or when seeing it is the natural next step. product and shop need the id from search results.',
+                'input_schema' => ['type' => 'object', 'required' => ['page'], 'properties' => [
+                    'page' => ['type' => 'string', 'enum' => self::PAGES],
+                    'id' => ['type' => 'integer', 'description' => 'the product or shop id'],
+                ]]]] : [];
 
         return [...$guide,
             ['name' => 'search_products', 'description' => 'Find products in shops on Ozman by keywords (Arabic, Hebrew or English names). Short keywords work best, e.g. "برغر" or "فستان". Filter by shop, kind of shop, price, or only discounted items. Returns id, name, price, discount price, shop, whether the shop is open now.',
@@ -125,6 +136,25 @@ class CustomerAssistantTools
         ];
     }
 
+    /** A page the robot opens on the customer's screen: a known page, and a product or shop that is really on sale. */
+    private function openPage(array $input, array &$cards): array
+    {
+        $page = (string) ($input['page'] ?? '');
+        $id = (int) ($input['id'] ?? 0);
+        if (! in_array($page, self::PAGES, true)) {
+            throw new \InvalidArgumentException('Unknown page. Use one of: '.implode(', ', self::PAGES));
+        }
+        if ($page === 'product' && ! $this->products()->whereKey($id)->exists()) {
+            throw new \InvalidArgumentException('No product with this id on sale.');
+        }
+        if ($page === 'shop' && ! Shop::where('is_active', true)->whereKey($id)->exists()) {
+            throw new \InvalidArgumentException('No shop with this id.');
+        }
+        $cards['open'] = ['page' => $page, 'id' => in_array($page, ['product', 'shop'], true) ? $id : null];
+
+        return ['opened' => $page, 'note' => 'It opens on their screen as your reply is read. Say it in a few words ("هيو قدامك").'];
+    }
+
     /** The robot's steps: known spots only, short lines, at most five. */
     private function guide(mixed $steps, array &$cards): array
     {
@@ -160,6 +190,7 @@ class CustomerAssistantTools
                 'show_products' => $this->show('products', $input['product_ids'] ?? [], $cards),
                 'show_shops' => $this->show('shops', $input['shop_ids'] ?? [], $cards),
                 'guide_to' => $this->guide($input['steps'] ?? [], $cards),
+                'open_page' => $this->openPage($input, $cards),
                 default => ['error' => 'unknown tool'],
             };
         } catch (\InvalidArgumentException $e) {
@@ -405,9 +436,11 @@ class CustomerAssistantTools
                 'shop_id' => $line['product']['shop_id'] ?? null] + array_intersect_key($line, array_flip(['size', 'color'])))->all(),
             'shops' => $shops->count(),
             'skipped' => $skipped,
-            'note' => 'A button to put these in the basket appears under your reply (mention "the button under the message", don\'t quote its label). Nothing is ordered yet: they press it, check the basket and send it. '
+            'note' => ($this->robot
+                ? 'The app puts these in the customer\'s basket right away, no button. Say in a few words that you added them (qty × name). Nothing is ordered yet: they send the order from the basket. '
+                : 'A button to put these in the basket appears under your reply (mention "the button under the message", don\'t quote its label). Nothing is ordered yet: they press it, check the basket and send it. ')
                 .($shops->count() > 1 ? 'Each shop gets its own order and delivers it itself. ' : '')
-                .'Write a short reply listing what is ready (qty × name, price), and anything skipped with why (they pick it again on the product). Don\'t say you ordered or added anything.',
+                .($this->robot ? 'Mention anything skipped with why.' : 'Write a short reply listing what is ready (qty × name, price), and anything skipped with why (they pick it again on the product). Don\'t say you ordered or added anything.'),
         ];
     }
 
@@ -565,9 +598,11 @@ class CustomerAssistantTools
             $basket = $built['lines'] ? ['lines' => $built['lines'], 'skipped' => array_values(array_unique([...($cards['basket']['skipped'] ?? []), ...$built['skipped']]))] : null;
         }
 
+        $open = isset($cards['open']['page']) && in_array($cards['open']['page'], self::PAGES, true)
+            ? ['page' => $cards['open']['page'], 'id' => isset($cards['open']['id']) ? (int) $cards['open']['id'] : null] : null;
         $guide = collect($cards['guide'] ?? [])->filter(fn ($step) => is_array($step) && isset(self::SPOTS[$step['spot'] ?? '']))->values()->all();
 
-        return ['products' => $products->all(), 'shops' => $shops->all(), 'actions' => $actions, 'basket' => $basket, 'guide' => $guide];
+        return ['products' => $products->all(), 'shops' => $shops->all(), 'actions' => $actions, 'basket' => $basket, 'guide' => $guide, 'open' => $open];
     }
 
     public static function presentAction(AssistantAction $action): array

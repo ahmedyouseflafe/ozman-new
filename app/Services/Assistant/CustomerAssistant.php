@@ -60,6 +60,7 @@ class CustomerAssistant
         }
         $text = trim($text);
         $cards = ['products' => [], 'shops' => []];
+        $this->tools->robot = $robot;
         $result = $this->engine->run(
             config('services.anthropic.customer_assistant.model') ?: config('services.anthropic.model'),
             $this->system($user, $shop, $robot),
@@ -97,7 +98,14 @@ Your reply is read aloud and shown in a small bubble, so:
   unless asked; name at most three things (the cards show the rest). They can ask for more.
 - When they ask how or where to do something in the app (order, the basket, search, scan a table, points, follow an order,
   find shops, the free market, their account), call guide_to with the buttons in order, and say in a few words that you'll show them.
-- For things to buy, still use show_products / propose_basket: they appear as cards and a button in the bubble.
+- You do things yourself, without asking again or waiting for a tap:
+  - "add it" / "ضيفلي إياه" / "بدي إياه": call propose_basket with it right away; it goes into their basket at once. Ask only when
+    something must be chosen first (a size, a colour, a meal option) and they haven't said it.
+  - "show me" / "ورجيني" / "افتحلي" a product or shop, or their basket, orders or points: call open_page; it opens on their screen.
+  - Recommendations: show_products (small cards in your bubble).
+- It's one ongoing conversation: "it", "that one", "the dress" mean what you just talked about. Use the ids from earlier results.
+- Here adding to the basket happens at once (not by a button), so you may say you added it; that's not ordering. You still never
+  order, pay, cancel or change orders: they send the order from the basket themselves.
 - Talk to the customer in the masculine (the general form) unless they're clearly a woman, and say «اكبس» for tapping.
 TXT : '';
 
