@@ -88,4 +88,25 @@ class AssistantRobotGuideTest extends TestCase
         $this->assertStringContainsString('button', $chat['note']);
         $this->assertStringContainsString('right away', $robot['note']);
     }
+
+    public function test_a_dress_is_not_added_before_its_size_and_colour_are_picked(): void
+    {
+        $owner = User::factory()->create(['role' => 'shop_owner', 'is_active' => true]);
+        $shop = Shop::create(['user_id' => $owner->id, 'name' => 'Dresses', 'slug' => 'dresses3', 'catalog_type' => 'clothing', 'is_active' => true, 'is_accepting_orders' => true]);
+        $category = Category::create(['shop_id' => $shop->id, 'name' => 'Main', 'slug' => 'main-dresses3', 'is_active' => true]);
+        $dress = Product::create(['shop_id' => $shop->id, 'category_id' => $category->id, 'name' => 'فستان', 'slug' => 'dress3', 'price' => 129, 'quantity' => 5, 'rating' => 0, 'is_active' => true,
+            'catalog_attributes' => ['sizes' => ['S', 'M', 'L'], 'colors' => ['أسود', 'أبيض']]]);
+        $lina = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+        $tools = app(CustomerAssistantTools::class);
+
+        $cards = [];
+        $result = $tools->run('propose_basket', ['items' => [['product_id' => $dress->id, 'size' => 'M']]], $lina, $cards);
+        $this->assertArrayHasKey('error', $result);
+        $this->assertSame([['product' => 'فستان', 'choose' => 'color', 'options' => ['أسود', 'أبيض']]], $result['missing']);
+        $this->assertArrayNotHasKey('basket', $cards);
+
+        $result = $tools->run('propose_basket', ['items' => [['product_id' => $dress->id, 'size' => 'M', 'color' => 'أسود']]], $lina, $cards);
+        $this->assertArrayNotHasKey('error', $result);
+        $this->assertSame('M', CustomerAssistantTools::cardsFor($cards)['basket']['lines'][0]['size']);
+    }
 }

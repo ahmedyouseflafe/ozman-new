@@ -136,6 +136,28 @@ class CustomerAssistantTools
         ];
     }
 
+    /** For each item, the sizes / colours its product offers when none was given (and the given one when it isn't offered). */
+    private function missingChoices(array $items): array
+    {
+        $products = Product::whereIn('id', collect($items)->pluck('product_id')->map(fn ($id) => (int) $id)->all())->get()->keyBy('id');
+        $missing = [];
+        foreach ($items as $item) {
+            $product = $products->get((int) ($item['product_id'] ?? 0));
+            if (! $product) {
+                continue;
+            }
+            foreach (['size' => 'sizes', 'color' => 'colors'] as $field => $list) {
+                $offered = \App\Http\Controllers\Api\V1\Presenter::optionList($product, $list);
+                $given = trim((string) ($item[$field] ?? ''));
+                if ($offered && ! in_array($given, $offered, true)) {
+                    $missing[] = ['product' => $product->name, 'choose' => $field, 'options' => $offered];
+                }
+            }
+        }
+
+        return $missing;
+    }
+
     /** A page the robot opens on the customer's screen: a known page, and a product or shop that is really on sale. */
     private function openPage(array $input, array &$cards): array
     {
@@ -415,6 +437,11 @@ class CustomerAssistantTools
         }
         if (empty($items)) {
             return ['error' => 'Give order_number or items.'];
+        }
+        // A size or colour the product needs and the customer hasn't picked: ask before anything goes in the basket.
+        $missing = $this->missingChoices($items);
+        if ($missing) {
+            return ['error' => 'Not added: a choice is missing. Ask the customer which one, then call propose_basket again with it.', 'missing' => $missing];
         }
         ['lines' => $lines, 'skipped' => $skipped] = \App\Services\Basket\BasketLines::from($items);
         if (empty($lines)) {
