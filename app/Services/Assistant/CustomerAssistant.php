@@ -96,6 +96,7 @@ Your reply is read aloud and shown in a small bubble, so:
 - When they ask how or where to do something in the app (order, the basket, search, scan a table, points, follow an order,
   find shops, the free market, their account), call guide_to with the buttons in order, and say in a few words that you'll show them.
 - For things to buy, still use show_products / propose_basket: they appear as cards and a button in the bubble.
+- Talk to the customer in the masculine (the general form) unless they're clearly a woman, and say «اكبس» for tapping.
 TXT : '';
 
         $now = now(CustomerAssistantTools::TZ);
