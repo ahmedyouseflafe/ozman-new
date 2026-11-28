@@ -46,6 +46,8 @@ class CustomerAssistantController extends Controller
             'basket.*.shop' => ['required_with:basket', 'string', 'max:120'],
             'basket.*.price' => ['nullable', 'numeric', 'min:0'],
             'basket.*.options' => ['nullable', 'string', 'max:160'],
+            // With "robot": the page the customer is looking at in the app.
+            'screen' => ['nullable', 'string', 'max:200'],
         ]);
         if (! $this->assistant->enabled()) {
             return response()->json(['message' => __('المساعد مش مفعّل هلقيت.')], 503);
@@ -62,7 +64,7 @@ class CustomerAssistantController extends Controller
                 'name' => $line['name'], 'qty' => (int) $line['qty'], 'shop' => $line['shop'],
                 'price' => (float) ($line['price'] ?? 0), 'options' => (string) ($line['options'] ?? ''),
             ])->all();
-            $message = $this->assistant->reply($conversation, $user, $data['message'], $this->shop($request), ($data['via'] ?? null) === 'robot', $basket);
+            $message = $this->assistant->reply($conversation, $user, $data['message'], $this->shop($request), ($data['via'] ?? null) === 'robot', $basket, (string) ($data['screen'] ?? ''));
         } catch (\Throwable $e) {
             report($e);
 

@@ -54,7 +54,7 @@ class CustomerAssistant
 
     /** With $robot, the question was spoken to Fulla the robot in the app: a short answer read aloud, and she can point at buttons. */
     /** @param  array<string, array>  $basket  with $robot: the app's basket now, key (L1…) → line */
-    public function reply(AssistantConversation $conversation, User $user, string $text, ?Shop $shop = null, bool $robot = false, array $basket = []): AssistantMessage
+    public function reply(AssistantConversation $conversation, User $user, string $text, ?Shop $shop = null, bool $robot = false, array $basket = [], string $screen = ''): AssistantMessage
     {
         if (! $this->enabled()) {
             throw new RuntimeException('The assistant is not configured.');
@@ -65,7 +65,7 @@ class CustomerAssistant
         $this->tools->basket = $robot ? $basket : [];
         $result = $this->engine->run(
             config('services.anthropic.customer_assistant.model') ?: config('services.anthropic.model'),
-            $this->system($user, $shop, $robot, $basket),
+            $this->system($user, $shop, $robot, $basket, $screen),
             $this->tools->definitions($shop, $robot),
             [...$this->engine->history($conversation, self::HISTORY), $this->engine->userTurn($text)],
             function (string $name, array $input) use ($user, &$cards, $conversation) {
@@ -89,7 +89,7 @@ class CustomerAssistant
         });
     }
 
-    private function system(User $user, ?Shop $shop, bool $robot = false, array $basket = []): string
+    private function system(User $user, ?Shop $shop, bool $robot = false, array $basket = [], string $screen = ''): string
     {
         $inBasket = collect($basket)->map(fn ($line, $key) => "{$key} = {$line['qty']}× {$line['name']}"
             .(empty($line['options']) ? '' : " ({$line['options']})")." from {$line['shop']}, {$line['price']}₪ each")->implode('; ');
@@ -116,6 +116,10 @@ Your reply is read aloud and shown in a small bubble, so:
 TXT : '';
         if ($robot) {
             $voice .= '- Their basket now: '.($inBasket !== '' ? $inBasket : 'empty').".\n";
+            // Data from the app, not instructions: only a page name and title.
+            $page = trim(preg_replace('/\s+/u', ' ', $screen));
+            $voice .= '- The page on their screen now: '.($page !== '' ? '«'.mb_substr($page, 0, 200).'»' : 'unknown')
+                .'. For "where am I?" / "وين أنا؟" / "شو هاي الصفحة؟" answer from this and say what they can do there; don\'t open another page for it.'."\n";
         }
 
         $now = now(CustomerAssistantTools::TZ);
