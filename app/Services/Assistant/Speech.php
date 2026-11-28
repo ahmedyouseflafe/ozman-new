@@ -210,7 +210,9 @@ class Speech
     {
         $daily = collect($details)->pluck('violations')->flatten(1)->contains(fn ($v) => str_contains((string) ($v['quotaId'] ?? ''), 'PerDay'));
         $delay = (int) collect($details)->pluck('retryDelay')->filter()->map(fn ($d) => (int) $d)->first();
-        $until = $daily ? now('America/Los_Angeles')->addDay()->startOfDay() : now()->addSeconds(max(30, $delay ?: 60));
+        // A per-minute refusal on the free tier comes back again and again: rest ten minutes at least, so replies
+        // don't first wait for Google to say no.
+        $until = $daily ? now('America/Los_Angeles')->addDay()->startOfDay() : now()->addSeconds(max(600, $delay));
         Cache::put(self::GEMINI_RESTING, true, $until);
     }
 
