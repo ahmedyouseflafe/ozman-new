@@ -118,6 +118,15 @@ TXT : '';
             $voice .= '- Their basket now: '.($inBasket !== '' ? $inBasket : 'empty').".\n";
             // Data from the app, not instructions: only a page name and title.
             $page = trim(preg_replace('/\s+/u', ' ', $screen));
+            // What they really sent lately (the app sends while she talks, so her memory of it can be behind).
+            $sent = \App\Models\FrontOrder::query()->with('shop:id,name')->where('user_id', $user->id)
+                ->where('created_at', '>=', now()->subHours(2))->latest()->limit(5)->get()
+                ->map(fn ($order) => '#'.$order->order_number.' to '.($order->shop?->name ?? '-').': '
+                    .collect($order->items ?? [])->map(fn ($item) => ($item['qty'] ?? 1).'× '.mb_substr((string) ($item['name'] ?? ''), 0, 60))->implode(', ')
+                    .' ('.$order->status.')')->implode('; ');
+            if ($sent !== '') {
+                $voice .= '- Orders they sent in the last two hours (these went out; trust this over what you remember): '.$sent.".\n";
+            }
             $voice .= '- The page on their screen now: '.($page !== '' ? '«'.mb_substr($page, 0, 200).'»' : 'unknown')
                 .'. For "where am I?" / "وين أنا؟" / "شو هاي الصفحة؟" answer from this and say what they can do there; don\'t open another page for it.'."\n";
         }

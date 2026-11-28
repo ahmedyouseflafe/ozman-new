@@ -122,6 +122,19 @@ class CustomerAssistantTest extends TestCase
         $this->assertArrayHasKey('error', $this->tools(null, 'my_points'));
     }
 
+    public function test_the_robot_knows_which_orders_really_went_out(): void
+    {
+        $shop = $this->shop('clothing');
+        $customer = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+        FrontOrder::create(['shop_id' => $shop->id, 'user_id' => $customer->id, 'order_number' => 'APP-JKT', 'order_channel' => 'app',
+            'customer_name' => 'Ahmed', 'customer_phone' => '0590000000', 'items' => [['name' => 'جاكيت · M', 'qty' => 1]],
+            'subtotal' => 120, 'total' => 120, 'status' => 'new']);
+        Http::fake(['api.anthropic.com/*' => Http::response($this->text('العفو!'))]);
+
+        $this->postJson('/api/v1/assistant', ['message' => 'يعطيك العافية', 'via' => 'robot'], $this->auth($customer))->assertOk();
+        Http::assertSent(fn (HttpRequest $r) => str_contains($r->data()['system'], '#APP-JKT to '.$shop->name.': 1× جاكيت · M (new)'));
+    }
+
     public function test_opening_from_a_shop_page_tells_the_assistant_which_shop(): void
     {
         $shop = $this->shop('cosmetics');
