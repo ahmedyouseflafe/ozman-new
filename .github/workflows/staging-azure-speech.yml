@@ -1,0 +1,53 @@
+# Puts the Microsoft Azure Speech key (Fulla's natural voice) on staging without anyone pasting it into a chat or a
+# file manager, then makes her say a line to check it works.
+# Set the repository secret STAGING_AZURE_SPEECH_KEY first (KEY 1 from the Speech resource), then run this by hand
+# with the resource's region (Location/Region on the same page, e.g. westeurope).
+name: Staging Azure voice
+
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "The Speech resource's region (e.g. westeurope)"
+        default: "westeurope"
+
+jobs:
+  set-key:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Write AZURE_SPEECH_KEY and AZURE_SPEECH_REGION into staging .env, then check her voice
+        env:
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          NEW_KEY: ${{ secrets.STAGING_AZURE_SPEECH_KEY }}
+          REGION: ${{ inputs.region }}
+          HOST: 82.198.227.221
+          PORT: 65002
+          USER_NAME: u379351114
+        run: |
+          set -e
+          NEW_KEY="$(printf '%s' "$NEW_KEY" | tr -d '\r\n ')"
+          REGION="$(printf '%s' "$REGION" | tr -d '\r\n ' | tr 'A-Z' 'a-z')"
+          if [ -z "$NEW_KEY" ]; then echo "::error::Add the repository secret STAGING_AZURE_SPEECH_KEY first."; exit 1; fi
+          if ! printf '%s' "$NEW_KEY" | grep -Eq '^[A-Za-z0-9]{20,}$'; then echo "::error::The secret doesn't look like a Speech key (letters and numbers, 20+ long)."; exit 1; fi
+          if ! printf '%s' "$REGION" | grep -Eq '^[a-z0-9]{3,30}$'; then echo "::error::The region looks wrong (e.g. westeurope)."; exit 1; fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' | sed '/^[[:space:]]*$/d' > ~/.ssh/staging_key
+          chmod 600 ~/.ssh/staging_key
+          ssh-keyscan -p "$PORT" "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          # The key goes in the script text on stdin, not on any command line.
+          ssh -i ~/.ssh/staging_key -o IdentitiesOnly=yes -p "$PORT" "$USER_NAME@$HOST" 'bash -s' <<REMOTE
+            set -e
+            cd ~/staging-app
+            export NEW_KEY='$NEW_KEY'
+            export REGION='$REGION'
+            php -r '\$f = ".env"; \$env = file_get_contents(\$f);
+              foreach (["AZURE_SPEECH_KEY" => getenv("NEW_KEY"), "AZURE_SPEECH_REGION" => getenv("REGION")] as \$name => \$value) {
+                \$line = \$name."=".\$value;
+                \$env = preg_match("/^".\$name."=.*\$/m", \$env) ? preg_replace("/^".\$name."=.*\$/m", \$line, \$env) : rtrim(\$env)."\n".\$line."\n";
+              }
+              file_put_contents(\$f, \$env);'
+            php artisan optimize:clear > /dev/null
+            echo "Staging now has an Azure Speech key (ends with ...\${NEW_KEY: -4}), region \$REGION."
+            php artisan ozman:speech-check
+          REMOTE
