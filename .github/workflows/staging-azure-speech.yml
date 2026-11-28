@@ -10,6 +10,9 @@ on:
       region:
         description: "The Speech resource's region (e.g. westeurope)"
         default: "westeurope"
+      sample:
+        description: "A line for her to say, printed as audio (base64) in the log to listen to"
+        default: ""
 
 jobs:
   set-key:
@@ -21,6 +24,7 @@ jobs:
           SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
           NEW_KEY: ${{ secrets.STAGING_AZURE_SPEECH_KEY }}
           REGION: ${{ inputs.region }}
+          SAMPLE: ${{ inputs.sample }}
           HOST: 82.198.227.221
           PORT: 65002
           USER_NAME: u379351114
@@ -51,3 +55,11 @@ jobs:
             echo "Staging now has an Azure Speech key (ends with ...\${NEW_KEY: -4}), region \$REGION."
             php artisan ozman:speech-check
           REMOTE
+          # A sample line: sent on stdin as base64 so no quote in it can break the script.
+          if [ -n "$SAMPLE" ]; then
+            B64="$(printf '%s' "$SAMPLE" | base64 -w0)"
+            ssh -i ~/.ssh/staging_key -o IdentitiesOnly=yes -p "$PORT" "$USER_NAME@$HOST" 'bash -s' <<REMOTE2
+              cd ~/staging-app
+              php artisan ozman:speech-check "\$(printf '%s' '$B64' | base64 -d)" --dump
+          REMOTE2
+          fi

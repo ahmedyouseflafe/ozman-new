@@ -38,6 +38,24 @@ class AssistantSpeechTest extends TestCase
             && ! str_contains($request->body(), 'https') && ! str_contains($request->body(), '**'));
     }
 
+    public function test_azure_reads_arabic_with_its_diacritics_so_dialect_words_sound_local(): void
+    {
+        Storage::fake('local');
+        config(['services.azure_speech.key' => 'test-key', 'services.azure_speech.region' => 'uaenorth', 'services.anthropic.key' => 'a-key']);
+        Http::fake([
+            'api.anthropic.com/*' => Http::response(['content' => [['type' => 'text', 'text' => 'شُو بِدَّك اليُوم؟']], 'stop_reason' => 'end_turn']),
+            'uaenorth.tts.speech.microsoft.com/*' => Http::response(str_repeat('M', 400), 200, ['Content-Type' => 'audio/mpeg']),
+        ]);
+        $user = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+
+        $this->post('/api/v1/assistant/speech', ['text' => 'شو بدك اليوم؟', 'lang' => 'ar'], $this->auth($user))->assertOk();
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'tts.speech.microsoft.com') && str_contains($request->body(), 'شُو بِدَّك اليُوم؟'));
+        // English isn't sent for diacritics.
+        $this->post('/api/v1/assistant/speech', ['text' => 'Hello there', 'lang' => 'en'], $this->auth($user))->assertOk();
+        Http::assertSentCount(3);
+    }
+
     public function test_without_a_key_or_when_the_service_fails_the_apps_are_told_to_use_the_phone_voice(): void
     {
         Storage::fake('local');

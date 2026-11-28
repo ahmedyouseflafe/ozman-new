@@ -106,6 +106,11 @@ class Speech
             throw new RuntimeException('Nothing to read.');
         }
         $provider = $this->provider() ?? throw new RuntimeException('No natural voice is set up.');
+        // Azure's Arabic voices guess the vowels of standard Arabic, so dialect words come out wrong. Given the reply
+        // with its diacritics as a Palestinian says it, they read it the local way. (Gemini is told the accent instead.)
+        if ($provider === 'azure' && $lang === 'ar') {
+            $words = $this->spokenText($text, 'ar');
+        }
         $voice = $provider === 'azure'
             ? (string) config("services.azure_speech.voices.$lang")
             : (string) config('services.gemini_tts.model').'/'.config('services.gemini_tts.voice');
