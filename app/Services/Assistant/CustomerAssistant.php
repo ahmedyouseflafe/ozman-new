@@ -24,7 +24,7 @@ class CustomerAssistant
 
     public function dailyLimit(): int
     {
-        return (int) config('services.anthropic.customer_assistant.daily_limit', 40);
+        return (int) config('services.anthropic.customer_assistant.daily_limit', 150);
     }
 
     public function usedToday(User $user): int

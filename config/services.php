@@ -123,7 +123,7 @@ return [
         'customer_assistant' => [
             'enabled' => env('CUSTOMER_ASSISTANT_ENABLED', true),
             'model' => env('CUSTOMER_ASSISTANT_MODEL'),
-            'daily_limit' => (int) env('CUSTOMER_ASSISTANT_DAILY_LIMIT', 40),
+            'daily_limit' => (int) env('CUSTOMER_ASSISTANT_DAILY_LIMIT', 150),
             'site_daily_limit' => (int) env('CUSTOMER_ASSISTANT_SITE_DAILY_LIMIT', 3000),
         ],
     ],
