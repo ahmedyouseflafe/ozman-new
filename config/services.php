@@ -15,7 +15,7 @@ return [
         'key' => env('AZURE_SPEECH_KEY'),
         'region' => env('AZURE_SPEECH_REGION', 'westeurope'),
         'voices' => [
-            'ar' => env('AZURE_SPEECH_VOICE_AR', 'ar-JO-SanaNeural'),
+            'ar' => env('AZURE_SPEECH_VOICE_AR', 'ar-LB-LaylaNeural'),
             'he' => env('AZURE_SPEECH_VOICE_HE', 'he-IL-HilaNeural'),
             'en' => env('AZURE_SPEECH_VOICE_EN', 'en-US-AvaNeural'),
         ],

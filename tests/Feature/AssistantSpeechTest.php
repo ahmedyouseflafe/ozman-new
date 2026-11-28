@@ -33,7 +33,7 @@ class AssistantSpeechTest extends TestCase
 
         Http::assertSentCount(1);
         Http::assertSent(fn ($request) => $request->hasHeader('Ocp-Apim-Subscription-Key', 'test-key')
-            && str_contains($request->body(), 'ar-JO-SanaNeural')
+            && str_contains($request->body(), 'ar-LB-LaylaNeural')
             && str_contains($request->body(), 'كنافة بـ 30 شيكل')
             && ! str_contains($request->body(), 'https') && ! str_contains($request->body(), '**'));
     }
