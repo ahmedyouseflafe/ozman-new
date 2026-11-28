@@ -110,6 +110,7 @@ class AssistantEngine
 
     private function send(array $payload): array
     {
+        $payload = self::cached($payload);
         $response = Http::withHeaders([
             'x-api-key' => config('services.anthropic.key'),
             'anthropic-version' => '2023-06-01',
@@ -119,5 +120,32 @@ class AssistantEngine
         }
 
         return (array) $response->json();
+    }
+
+    /**
+     * Prompt caching: the tools, and everything up to the newest message, are kept by Anthropic for a few minutes.
+     * The next step of the same answer (after a tool) and the next question in a talk then start from the kept part,
+     * so the reply comes sooner and costs less.
+     */
+    public static function cached(array $payload): array
+    {
+        $mark = ['type' => 'ephemeral'];
+        if (! empty($payload['tools'])) {
+            $last = array_key_last($payload['tools']);
+            $payload['tools'][$last]['cache_control'] = $mark;
+        }
+        $last = array_key_last($payload['messages'] ?? []);
+        if ($last !== null) {
+            $content = $payload['messages'][$last]['content'];
+            if (is_string($content)) {
+                $content = [['type' => 'text', 'text' => $content]];
+            }
+            if (is_array($content) && $content !== []) {
+                $content[array_key_last($content)]['cache_control'] = $mark;
+                $payload['messages'][$last]['content'] = $content;
+            }
+        }
+
+        return $payload;
     }
 }
