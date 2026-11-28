@@ -4,6 +4,7 @@ namespace App\Services\Assistant;
 
 use Illuminate\Support\Facades\{Cache, Http, Storage};
 use RuntimeException;
+use Throwable;
 
 /**
  * The assistants' voice: a natural (Azure neural) reading of a reply, as mp3. The same text is read once and kept,
@@ -16,7 +17,10 @@ class Speech
     /** Set while Google refuses the free voice (quota used up), so replies don't wait for a refusal every time. */
     public const GEMINI_RESTING = 'gemini-tts-resting';
 
-    /** A natural voice is set up: Azure first, otherwise Google's Gemini voice. */
+    /**
+     * A natural voice is set up: Google's Gemini voice first (it speaks the Palestinian dialect), Azure while Google
+     * rests after its free quota is used up.
+     */
     public function ready(): bool
     {
         return $this->provider() !== null;
@@ -25,8 +29,8 @@ class Speech
     public function provider(): ?string
     {
         return match (true) {
-            filled(config('services.azure_speech.key')) => 'azure',
             filled(config('services.gemini_tts.key')) && ! Cache::has(self::GEMINI_RESTING) => 'gemini',
+            filled(config('services.azure_speech.key')) => 'azure',
             default => null,
         };
     }
@@ -106,8 +110,23 @@ class Speech
             throw new RuntimeException('Nothing to read.');
         }
         $provider = $this->provider() ?? throw new RuntimeException('No natural voice is set up.');
+        try {
+            return $this->audioFrom($provider, $text, $words, $lang);
+        } catch (Throwable $e) {
+            // Google refused (quota used up, or down): Azure reads it instead of the phone, when it's set up.
+            if ($provider !== 'gemini' || ! filled(config('services.azure_speech.key'))) {
+                throw $e;
+            }
+            report($e);
+
+            return $this->audioFrom('azure', $text, $words, $lang);
+        }
+    }
+
+    private function audioFrom(string $provider, string $text, string $words, string $lang): string
+    {
         // Azure's Arabic voices guess the vowels of standard Arabic, so dialect words come out wrong. Given the reply
-        // with its diacritics as a Palestinian says it, they read it the local way. (Gemini is told the accent instead.)
+        // with its diacritics as a Palestinian says it, they read it closer to the local way. (Gemini is told the accent.)
         if ($provider === 'azure' && $lang === 'ar') {
             $words = $this->spokenText($text, 'ar');
         }

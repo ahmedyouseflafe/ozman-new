@@ -56,6 +56,33 @@ class AssistantSpeechTest extends TestCase
         Http::assertSentCount(3);
     }
 
+    public function test_gemini_speaks_first_and_azure_reads_it_while_google_rests(): void
+    {
+        Storage::fake('local');
+        Cache::flush();
+        config(['services.azure_speech.key' => 'az-key', 'services.azure_speech.region' => 'uaenorth', 'services.gemini_tts.key' => 'g-key', 'services.anthropic.key' => null]);
+        $wav = Speech::wav(str_repeat("\x01\x00", 600), 24000);
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::sequence()
+                ->push(['candidates' => [['content' => ['parts' => [['inlineData' => ['mimeType' => 'audio/wav', 'data' => base64_encode($wav)]]]]]]])
+                ->push(['error' => ['code' => 429, 'message' => 'quota', 'details' => [
+                    ['@type' => 'type.googleapis.com/google.rpc.QuotaFailure', 'violations' => [['quotaId' => 'GenerateRequestsPerDayPerProjectPerModel-FreeTier']]],
+                ]]], 429),
+            'uaenorth.tts.speech.microsoft.com/*' => Http::response(str_repeat('M', 400), 200, ['Content-Type' => 'audio/mpeg']),
+        ]);
+        $user = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+        $h = $this->auth($user);
+
+        $this->assertSame('gemini', app(Speech::class)->provider());
+        $this->post('/api/v1/assistant/speech', ['text' => 'أهلين', 'lang' => 'ar'], $h)->assertOk()->assertHeader('Content-Type', 'audio/wav');
+        // Google's free quota runs out: the same reply comes in Azure's voice, not the phone's.
+        $this->post('/api/v1/assistant/speech', ['text' => 'شو بدك؟', 'lang' => 'ar'], $h)->assertOk()->assertHeader('Content-Type', 'audio/mpeg');
+        // And Google isn't asked again until its quota is back.
+        $this->assertSame('azure', app(Speech::class)->provider());
+        $this->post('/api/v1/assistant/speech', ['text' => 'وين طلبي؟', 'lang' => 'ar'], $h)->assertOk()->assertHeader('Content-Type', 'audio/mpeg');
+        Http::assertSentCount(4);
+    }
+
     public function test_without_a_key_or_when_the_service_fails_the_apps_are_told_to_use_the_phone_voice(): void
     {
         Storage::fake('local');
